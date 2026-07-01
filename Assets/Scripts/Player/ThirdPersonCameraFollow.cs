@@ -40,38 +40,48 @@ public class ThirdPersonCameraFollow : MonoBehaviour
     [SerializeField] private float minPitch = 5f;
     [SerializeField] private float maxPitch = 60f;
 
+    [Header("DEBUG - Temporary First Person Toggle")]
+    [SerializeField] private bool firstPersonMode = false;
+
+    [SerializeField] private KeyCode toggleKey = KeyCode.Q;
+
+    [SerializeField] private float firstPersonHeight = 1.7f;
+
     private float yaw;
     private float pitch = 20f;
 
     private void Start()
     {
-        // Lock and hide the cursor for a game-like feel during editor testing.
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
 
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false; 
+        
         if (target != null)
         {
             yaw = target.eulerAngles.y;
         }
     }
 
-    private void LateUpdate()
-    {
-        if (target == null) return;
+    // Test: Third Person
+    // private void LateUpdate()
+    // {
+    //     if (target == null) return;
 
-        // --- MOUSE INPUT ---
-        yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
-        pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
-        pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
+    //     // --- MOUSE INPUT ---
+    //     yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
+    //     pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
+    //     pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
 
-        // --- CALCULATE DESIRED POSITION ---
-        Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
-        Vector3 desiredPosition = target.position - (rotation * Vector3.forward * distance) + Vector3.up * height;
+    //     // --- CALCULATE DESIRED POSITION ---
+    //     Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
+    //     Vector3 desiredPosition = target.position - (rotation * Vector3.forward * distance) + Vector3.up * height;
 
-        // --- SMOOTH FOLLOW ---
-        transform.position = Vector3.Lerp(transform.position, desiredPosition, followSmoothness * Time.deltaTime);
-        transform.LookAt(target.position + Vector3.up * (height * 0.5f));
-    }
+    //     // --- SMOOTH FOLLOW ---
+    //     transform.position = Vector3.Lerp(transform.position, desiredPosition, followSmoothness * Time.deltaTime);
+    //     transform.LookAt(target.position + Vector3.up * (height * 0.5f));
+    // }
+
+
 
     /// <summary>
     /// Allows other scripts (like a future CameraController) to assign the target
@@ -80,5 +90,48 @@ public class ThirdPersonCameraFollow : MonoBehaviour
     public void SetTarget(Transform newTarget)
     {
         target = newTarget;
+    }
+
+
+    // Test: Third and First Person Toggle
+    private void LateUpdate()
+    {
+        if (target == null) return;
+
+        // Mouse look
+        yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
+        pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
+        pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
+
+        Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
+
+        if (firstPersonMode)
+        {
+            // FIRST PERSON
+            transform.position = target.position + Vector3.up * firstPersonHeight;
+            transform.rotation = Quaternion.Euler(pitch, yaw, 0f);        
+        }
+        else
+        {
+            // THIRD PERSON
+            Vector3 desiredPosition =
+                target.position
+                - (rotation * Vector3.forward * distance)
+                + Vector3.up * height;
+
+            transform.position = Vector3.Lerp(
+                transform.position,
+                desiredPosition,
+                followSmoothness * Time.deltaTime);
+
+            transform.LookAt(target.position + Vector3.up * (height * 0.5f));
+        }
+    }
+    private void Update()
+    {
+        if (Input.GetKeyDown(toggleKey))
+        {
+            firstPersonMode = !firstPersonMode;
+        }
     }
 }

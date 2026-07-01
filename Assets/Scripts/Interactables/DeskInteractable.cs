@@ -2,23 +2,26 @@ using UnityEngine;
 
 /// <summary>
 /// PURPOSE:
-/// Example/placeholder implementation of IInteractable, attached to the Desk
-/// object. For this milestone, it only highlights on focus and logs a message
-/// on interact — this is purely to prove the interaction system end-to-end.
+/// Desk interactable. On interact, triggers the CameraController to switch
+/// into first-person mode focused on this desk's viewpoint, matching the
+/// design doc's "Receive Case" flow: "The camera transitions from third-person
+/// view to first-person view. The player is now seated at the desk."
 ///
-/// FUTURE (Milestone 3):
-/// This script will be expanded (or replaced by a more complete version) to
-/// trigger the third-person → first-person camera transition and open the
-/// desk workstation view, per the "Use Computer & Tax Calculator" and
-/// "Stamp Case Assessment" phases in the design document.
+/// FUTURE (Milestone 5+):
+/// This will also trigger opening the Case Folder UI once at the desk. For
+/// now, entering first-person mode is the complete, testable behavior.
 ///
 /// CONNECTS WITH:
 /// - HighlightEffect (same GameObject) for visual feedback
-/// - Interactor.cs (on Player) which calls these methods via the IInteractable interface
+/// - CameraController for the camera transition
+/// - deskViewpoint: child Transform marking where the camera should sit
 /// </summary>
 [RequireComponent(typeof(HighlightEffect))]
 public class DeskInteractable : MonoBehaviour, IInteractable
 {
+    [Tooltip("Child transform marking the first-person camera position/rotation for this desk.")]
+    [SerializeField] private Transform deskViewpoint;
+
     private HighlightEffect highlight;
 
     private void Awake()
@@ -38,12 +41,11 @@ public class DeskInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract()
     {
-        // Placeholder behavior for this milestone only.
-        Debug.Log("[DeskInteractable] Desk interacted with — camera/workstation logic arrives in Milestone 3.");
+        CameraController.Instance.EnterFirstPerson(deskViewpoint);
     }
 
     public string GetPromptText()
     {
-        return "Click to interact with Desk";
+        return "Click to sit at Desk";
     }
 }

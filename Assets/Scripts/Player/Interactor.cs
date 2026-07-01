@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// PURPOSE:
@@ -105,53 +106,15 @@ public class Interactor : MonoBehaviour
     /// Isolated into its own method so swapping input methods later (mobile touch
     /// button, controller button, etc.) only requires changing this one place.
     /// </summary>
-    // private void HandleInteractInput()
-    // {
-    //     if (TryGetInteractInput())
-    //     {
-    //         Debug.Log("[Interactor] E key pressed.");
 
-    //         if (currentFocus != null)
-    //         {
-    //             Debug.Log("[Interactor] Interacting with: " + ((MonoBehaviour)currentFocus).gameObject.name);
-
-    //             currentFocus.OnInteract();
-    //         }
-    //         else
-    //         {
-    //             Debug.Log("[Interactor] No interactable object currently focused.");
-    //         }
-    //     }
-    // }
     private void HandleInteractInput()
     {
-        // Only run when E is actually pressed
-        if (!TryGetInteractInput())
-            return;
-
-        Debug.Log("[Interactor] E key pressed.");
-
-        if (currentFocus == null)
+        if (currentFocus == null) return;
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
+        if (TryGetInteractInput())
         {
-            Debug.LogWarning("[Interactor] No interactable object is currently focused.");
-            return;
+            currentFocus.OnInteract();
         }
-
-        // Print information about what we're interacting with
-        Debug.Log("[Interactor] Current Focus Type: " + currentFocus.GetType().Name);
-
-        MonoBehaviour interactable = currentFocus as MonoBehaviour;
-
-        if (interactable != null)
-        {
-            Debug.Log("[Interactor] GameObject: " + interactable.gameObject.name);
-        }
-
-        Debug.Log("[Interactor] Calling OnInteract()...");
-
-        currentFocus.OnInteract();
-
-        Debug.Log("[Interactor] OnInteract() completed.");
     }
 
     /// <summary>
@@ -159,15 +122,10 @@ public class Interactor : MonoBehaviour
     /// Replace this method's contents when switching to mobile touch input —
     /// no other part of Interactor.cs needs to change.
     /// </summary>
+
     private bool TryGetInteractInput()
     {
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            Debug.Log("[Interactor] E detected.");
-            return true;
-        }
-
-        return false;
+        return Input.GetMouseButtonDown(0);
     }
 
     // Optional: visualize the interact ray in the Scene view for debugging.
@@ -176,5 +134,11 @@ public class Interactor : MonoBehaviour
         if (Camera.main == null) return;
         Gizmos.color = Color.yellow;
         Gizmos.DrawRay(Camera.main.transform.position, Camera.main.transform.forward * interactRange);
+    }
+
+    public void ClearFocus()
+    {
+        currentFocus?.OnUnfocus();
+        currentFocus = null;
     }
 }
