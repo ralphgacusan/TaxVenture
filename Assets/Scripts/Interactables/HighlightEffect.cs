@@ -18,32 +18,56 @@ using UnityEngine;
 ///   on the same GameObject and calls Highlight()/Unhighlight() from its own
 ///   OnFocus()/OnUnfocus().
 /// </summary>
-[RequireComponent(typeof(Renderer))]
 public class HighlightEffect : MonoBehaviour
 {
     [Header("Highlight Materials")]
     [Tooltip("Material applied when the object is focused/highlighted.")]
     [SerializeField] private Material highlightMaterial;
 
-    private Renderer objectRenderer;
-    private Material originalMaterial;
+    private Renderer[] renderers;
+    private Material[][] originalMaterials;
 
     private void Awake()
     {
-        objectRenderer = GetComponent<Renderer>();
-        originalMaterial = objectRenderer.material;
+        // Finds every renderer on this object and all of its children.
+        renderers = GetComponentsInChildren<Renderer>();
+
+        if (renderers.Length == 0)
+        {
+            Debug.LogWarning($"[{nameof(HighlightEffect)}] No Renderer found on '{name}' or its children.");
+            return;
+        }
+
+        originalMaterials = new Material[renderers.Length][];
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            originalMaterials[i] = renderers[i].materials;
+        }
     }
 
     public void Highlight()
     {
-        if (highlightMaterial != null)
+        if (highlightMaterial == null) return;
+
+        foreach (Renderer renderer in renderers)
         {
-            objectRenderer.material = highlightMaterial;
+            Material[] materials = new Material[renderer.materials.Length];
+
+            for (int i = 0; i < materials.Length; i++)
+            {
+                materials[i] = highlightMaterial;
+            }
+
+            renderer.materials = materials;
         }
     }
 
     public void Unhighlight()
     {
-        objectRenderer.material = originalMaterial;
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            renderers[i].materials = originalMaterials[i];
+        }
     }
 }

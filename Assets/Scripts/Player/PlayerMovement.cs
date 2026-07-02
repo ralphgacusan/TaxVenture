@@ -40,7 +40,7 @@ public class PlayerMovement : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         // Prevent the capsule from tipping over during movement/collisions.
         rb.constraints = RigidbodyConstraints.FreezeRotationX |
-                        RigidbodyConstraints.FreezeRotationZ;    
+                        RigidbodyConstraints.FreezeRotationZ;
     }
 
     private void Update()

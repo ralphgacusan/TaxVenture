@@ -56,11 +56,6 @@ public class GameStateMachine : MonoBehaviour
         ChangeState(new ReceiveCaseState());
     }
 
-    private void Update()
-    {
-        CurrentState?.Tick();
-    }
-
     /// <summary>
     /// Transitions from the current state to a new one, calling Exit() on the
     /// old state and Enter() on the new one. This is the ONLY way the active

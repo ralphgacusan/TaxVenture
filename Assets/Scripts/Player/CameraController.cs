@@ -68,6 +68,12 @@ public class CameraController : MonoBehaviour
     [Tooltip("Time in seconds for the camera to move/rotate into position.")]
     [SerializeField] private float transitionDuration = 0.5f;
 
+    [Tooltip("Cursor-based interactor used only while at a workstation (e.g. clicking the folder on the desk).")]
+    [SerializeField] private WorkstationInteractor workstationInteractor;
+
+    [Header("Desk Items")]
+    [SerializeField] private DeskItemHighlight[] deskItemHighlights;
+
     private Coroutine activeTransition;
     private Transform currentViewpoint;
 
@@ -88,7 +94,10 @@ public class CameraController : MonoBehaviour
 
         thirdPersonFollow.enabled = false;
         playerMovement.enabled = false;
+
+        playerInteractor.ClearFocus();
         playerInteractor.enabled = false;
+        workstationInteractor.enabled = true;
 
         // Unlock cursor so the player can click UI (Close button, folder pages, etc.)
         Cursor.lockState = CursorLockMode.None;
@@ -99,6 +108,10 @@ public class CameraController : MonoBehaviour
         {
             firstPersonHands.Show();
             workstationUI.Show();
+            foreach (DeskItemHighlight item in deskItemHighlights)
+            {
+                item.ShowHighlight();
+            }
         }));
     }
 
@@ -114,12 +127,18 @@ public class CameraController : MonoBehaviour
         firstPersonHands.Hide();
         workstationUI.Hide();
 
+        foreach (DeskItemHighlight item in deskItemHighlights)
+        {
+            item.HideHighlight();
+        }
+
         if (activeTransition != null) StopCoroutine(activeTransition);
         activeTransition = StartCoroutine(TransitionCamera(cameraTransform.position, cameraTransform.rotation, onComplete: () =>
         {
             thirdPersonFollow.enabled = true;
             playerMovement.enabled = true;
             playerInteractor.enabled = true;
+            workstationInteractor.enabled = false;   // <-- ADD THIS
 
             // Re-lock cursor for exploration/mouse-look.
             Cursor.lockState = CursorLockMode.Locked;

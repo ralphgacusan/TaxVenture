@@ -60,14 +60,6 @@ public class DebugStateLabel : MonoBehaviour
 
     private void HandleStateChanged(IGameState newState)
     {
-        if (label != null)
-        {
-            label.text = $"State: {newState.StateName}";
-        }
-    }
-
-    private void HandleStateChanged(IGameState newState)
-    {
         UpdateLabel();
     }
 
