@@ -39,6 +39,9 @@ public class CaseFolderUI : MonoBehaviour
     [SerializeField] private GameObject previousButton;
     [SerializeField] private GameObject nextButton;
 
+    [Header("Page 6 Document Links")]
+    [SerializeField] private SupportingDocumentsPageLink supportingDocumentsPageLink;
+
     private List<CaseFolderPageContent> pages;
     private int currentPageIndex = 0;
     private bool hasOpenedBefore = false;
@@ -108,6 +111,8 @@ public class CaseFolderUI : MonoBehaviour
         // Disable Previous/Next at the ends instead of letting them wrap or error.
         previousButton.SetActive(index > 0);
         nextButton.SetActive(index < pages.Count - 1);
+
+        supportingDocumentsPageLink?.OnFolderPageChanged(index);
     }
 
     /// <summary>
@@ -176,7 +181,11 @@ public class CaseFolderUI : MonoBehaviour
         {
             p6.AppendLine($"{(doc.isReviewed ? "[x]" : "[ ]")} {doc.documentName}");
         }
-        list.Add(new CaseFolderPageContent("Supporting Documents", p6.ToString()));
+        list.Add(new CaseFolderPageContent(
+            "Supporting Documents",
+            "" // left blank — SupportingDocumentsPageLink displays the clickable list instead
+        ));
+
 
         // Page 7 - Consultant Findings
         StringBuilder p7 = new StringBuilder();
