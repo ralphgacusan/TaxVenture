@@ -170,4 +170,41 @@ public class CameraController : MonoBehaviour
         cameraTransform.rotation = targetRot;
         onComplete?.Invoke();
     }
+
+    /// <summary>
+    /// Switches into Interview mode. Similar to first-person mode, but intended
+    /// for NPC conversations rather than workstation interactions. The player
+    /// cannot move or look around, the camera transitions to a predefined
+    /// interview viewpoint, and the cursor is unlocked for dialogue UI.
+    /// </summary>
+    public void EnterInterviewView(Transform viewpoint)
+    {
+        if (CurrentMode != CameraMode.ThirdPerson)
+            return;
+
+        CurrentMode = CameraMode.FirstPerson; // Or create CameraMode.Interview later if you want.
+
+        thirdPersonFollow.enabled = false;
+        playerMovement.enabled = false;
+
+        playerInteractor.ClearFocus();
+        playerInteractor.enabled = false;
+
+        workstationInteractor.enabled = false;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        if (activeTransition != null)
+            StopCoroutine(activeTransition);
+
+        activeTransition = StartCoroutine(
+            TransitionCamera(
+                viewpoint.position,
+                viewpoint.rotation,
+                null
+            ));
+    }
+
+
 }

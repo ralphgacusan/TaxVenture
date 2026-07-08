@@ -2,17 +2,31 @@ using UnityEngine;
 
 /// <summary>
 /// PURPOSE:
-
+/// The Client NPC placeholder (capsule) in the conference room. Interacting
+/// with it opens the interview dialogue and, if the game is currently in
+/// ReviewDocumentsState, advances the FSM to InterviewClientState.
 ///
 /// PER DESIGN DOC:
-
+/// "The player approaches the client... clicks the client... interview
+/// scene begins." We simplify the sitting animation and camera panel setup
+/// described in the doc into an instant dialogue panel appearing, consistent
+/// with the no-animation greybox scope of this phase.
+///
+/// FUTURE (Milestone 8):
+/// This script's responsibilities will likely be absorbed into a proper NPC
+/// FSM (Idle -> Waiting -> Interact -> Dialogue -> Completed). For now, it's
+/// a simple, testable IInteractable exactly like Desk/CaseFolder.
 ///
 /// CONNECTS WITH:
-
+/// - HighlightEffect (same GameObject)
+/// - InterviewClientUI: calls Show() on interact
+/// - GameStateMachine: requests ReviewDocuments -> InterviewClient transition
 /// </summary>
 [RequireComponent(typeof(HighlightEffect))]
 public class ClientInteractable : MonoBehaviour, IInteractable
 {
+    [SerializeField] private InterviewClientUI interviewClientUI;
+    [SerializeField] private Transform interviewViewpoint; // camera position/rotation for "sitting across the table"
 
     private HighlightEffect highlight;
 
@@ -26,9 +40,16 @@ public class ClientInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract()
     {
-        // Debug: Log a message to indicate that the Client has been clicked
-        Debug.Log("Client clicked! Implement the logic to open the Client UI here.");
+        if (GameStateMachine.Instance.CurrentState is ReviewDocumentsState)
+        {
+            GameStateMachine.Instance.ChangeState(new InterviewClientState());
+        }
+
+        CameraController.Instance.EnterFirstPerson(interviewViewpoint);
+        interviewClientUI.Show();
     }
 
-    public string GetPromptText() => "Click to open Client";
+    public string GetPromptText() => "Click to talk to Client";
+
+
 }
