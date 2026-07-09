@@ -997,6 +997,7 @@ MonoBehaviour:
   questionButtonListRoot: {fileID: 705322923}
   questionButtonPrefab: {fileID: 7399011668380905906, guid: 9d2bfe2c2018dec4cb3f14957b652382, type: 3}
   finishInterviewButton: {fileID: 1837865293}
+  clientNpcState: {fileID: 739575923}
 --- !u!114 &163575276
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2400,13 +2401,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 478263554}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.9390377, z: 0.3438144, w: 0}
-  m_LocalPosition: {x: 0.000000059604645, y: 1.5, z: 0.9899999}
+  m_LocalRotation: {x: 0.0012656151, y: -0.9805494, z: 0.1962498, w: -0.0027300117}
+  m_LocalPosition: {x: 0.000000059604645, y: 1.223, z: 1.224001}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 190001482}
-  m_LocalEulerAnglesHint: {x: 40.219, y: -180, z: 0}
+  m_LocalEulerAnglesHint: {x: 22.635, y: -180.363, z: -0.221}
 --- !u!1 &494388211
 GameObject:
   m_ObjectHideFlags: 0
@@ -3929,6 +3930,8 @@ GameObject:
   - component: {fileID: 739575918}
   - component: {fileID: 739575922}
   - component: {fileID: 739575921}
+  - component: {fileID: 739575923}
+  - component: {fileID: 739575924}
   m_Layer: 3
   m_Name: Client
   m_TagString: Untagged
@@ -4058,6 +4061,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
   highlightMaterial: {fileID: 2100000, guid: f2521fd75cd166c4284aec7e0d9b6442, type: 2}
+--- !u!114 &739575923
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 739575916}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ddaf1cece5e5b934a8a22cbcd68247b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStateMachine
+--- !u!114 &739575924
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 739575916}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 541b21b396cf7c84d8ed02d9331d0c28, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcVisualIndicator
+  idleColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  waitingColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  interactColor: {r: 1, g: 0.6, b: 0, a: 1}
+  dialogueColor: {r: 0, g: 1, b: 1, a: 1}
+  completedColor: {r: 0, g: 1, b: 0, a: 1}
 --- !u!1 &776287677
 GameObject:
   m_ObjectHideFlags: 0
@@ -6109,15 +6141,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ThirdPersonCameraFollow
   target: {fileID: 959859126}
-  distance: 6
-  height: 2.5
+  distance: 4
+  height: 1.7
   followSmoothness: 10
+  lookHeight: 1.2
   mouseSensitivity: 3
   minPitch: 5
   maxPitch: 60
-  firstPersonMode: 0
+  firstPersonMode: 1
   toggleKey: 113
-  firstPersonHeight: 1.7
+  firstPersonHeight: 0.8
 --- !u!114 &1250158809
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7322,6 +7355,7 @@ GameObject:
   - component: {fileID: 1529582764}
   - component: {fileID: 1529582763}
   - component: {fileID: 1529582767}
+  - component: {fileID: 1529582768}
   m_Layer: 3
   m_Name: Client1
   m_TagString: Untagged
@@ -7451,6 +7485,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ClientInteractable
   interviewClientUI: {fileID: 0}
   interviewViewpoint: {fileID: 0}
+--- !u!114 &1529582768
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1529582760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ddaf1cece5e5b934a8a22cbcd68247b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStateMachine
 --- !u!1 &1537718863
 GameObject:
   m_ObjectHideFlags: 0
@@ -7916,6 +7962,7 @@ GameObject:
   - component: {fileID: 1742861000}
   - component: {fileID: 1742861004}
   - component: {fileID: 1742861003}
+  - component: {fileID: 1742861005}
   m_Layer: 3
   m_Name: Receptionist
   m_TagString: Untagged
@@ -8043,6 +8090,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
   highlightMaterial: {fileID: 2100000, guid: f2521fd75cd166c4284aec7e0d9b6442, type: 2}
+--- !u!114 &1742861005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1742860998}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ca6eb05854a0e54cb0a66d2b576b0c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameStateMachine
 --- !u!1 &1752182488
 GameObject:
   m_ObjectHideFlags: 0
@@ -10097,6 +10156,7 @@ GameObject:
   - component: {fileID: 2117401588}
   - component: {fileID: 2117401587}
   - component: {fileID: 2117401591}
+  - component: {fileID: 2117401592}
   m_Layer: 3
   m_Name: Client2
   m_TagString: Untagged
@@ -10226,6 +10286,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ClientInteractable
   interviewClientUI: {fileID: 0}
   interviewViewpoint: {fileID: 0}
+--- !u!114 &2117401592
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2117401584}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ddaf1cece5e5b934a8a22cbcd68247b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStateMachine
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -28,6 +28,7 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
     {
         // Debug: Log a message to indicate that the Receptionist has been clicked
         Debug.Log("Receptionist clicked! Implement the logic to open the Receptionist UI here.");
+        GameStateMachine.Instance.ChangeState(new ReceiveCaseState());
     }
 
     public string GetPromptText() => "Click to open Receptionist";

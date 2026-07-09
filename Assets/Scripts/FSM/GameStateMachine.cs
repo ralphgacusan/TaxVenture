@@ -53,7 +53,7 @@ public class GameStateMachine : MonoBehaviour
         // gameplay loop starting point. This is the ONLY place a state is
         // hardcoded — every subsequent transition is requested by the states
         // themselves or by interactables, never hardcoded here.
-        ChangeState(new ReceiveCaseState());
+        ChangeState(new IdleGameState());
     }
 
     /// <summary>

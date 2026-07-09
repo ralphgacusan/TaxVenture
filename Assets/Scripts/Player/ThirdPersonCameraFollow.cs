@@ -27,13 +27,13 @@ public class ThirdPersonCameraFollow : MonoBehaviour
 
     [Header("Follow Settings")]
     [Tooltip("Distance from the target.")]
-    [SerializeField] private float distance = 6f;
-
+    [SerializeField] private float distance = 3.8f;
     [Tooltip("Height offset above the target.")]
-    [SerializeField] private float height = 2.5f;
-
+    [SerializeField] private float height = 1.6f;
     [Tooltip("How quickly the camera catches up to the desired position.")]
     [SerializeField] private float followSmoothness = 10f;
+    [Tooltip("Look Height offset above the target's position for the camera to look at.")]
+    [SerializeField] private float lookHeight = 1.2f;
 
     [Header("Mouse Look Settings")]
     [SerializeField] private float mouseSensitivity = 3f;
@@ -45,17 +45,17 @@ public class ThirdPersonCameraFollow : MonoBehaviour
 
     [SerializeField] private KeyCode toggleKey = KeyCode.Q;
 
-    [SerializeField] private float firstPersonHeight = 1.7f;
+    [SerializeField] private float firstPersonHeight = 0.8f;
 
     private float yaw;
-    private float pitch = 20f;
+    private float pitch = 0f;
 
     private void Start()
     {
 
         Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false; 
-        
+        Cursor.visible = false;
+
         if (target != null)
         {
             yaw = target.eulerAngles.y;
@@ -109,7 +109,7 @@ public class ThirdPersonCameraFollow : MonoBehaviour
         {
             // FIRST PERSON
             transform.position = target.position + Vector3.up * firstPersonHeight;
-            transform.rotation = Quaternion.Euler(pitch, yaw, 0f);        
+            transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
         }
         else
         {
@@ -124,7 +124,7 @@ public class ThirdPersonCameraFollow : MonoBehaviour
                 desiredPosition,
                 followSmoothness * Time.deltaTime);
 
-            transform.LookAt(target.position + Vector3.up * (height * 0.5f));
+            transform.LookAt(target.position + Vector3.up * lookHeight);
         }
     }
     private void Update()

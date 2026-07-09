@@ -21,6 +21,9 @@ public class InterviewClientUI : MonoBehaviour
     [Header("Finish")]
     [SerializeField] private GameObject finishInterviewButton;
 
+    [Header("NPC Reference")]
+    [SerializeField] private NpcStateMachine clientNpcState;
+
     private List<InterviewSection> sections;
     private int currentSectionIndex;
     private List<GameObject> spawnedButtons = new List<GameObject>();
@@ -32,6 +35,7 @@ public class InterviewClientUI : MonoBehaviour
 
     public void Show()
     {
+        Debug.Log("Interview UI SHOW");
         sections = InterviewDataProvider.GetSections();
         currentSectionIndex = 0;
         clientLineText.text = "Good morning! Thank you for taking my case. What would you like to know?";
@@ -41,6 +45,7 @@ public class InterviewClientUI : MonoBehaviour
 
     public void Hide()
     {
+        Debug.Log("Interview UI HIDE");
         interviewPanelRoot.SetActive(false);
     }
 
@@ -116,7 +121,12 @@ public class InterviewClientUI : MonoBehaviour
 
     public void OnFinishInterviewPressed()
     {
+        Debug.Log("Finish Interview button pressed!");
+
         Hide();
-        CameraController.Instance.ExitFirstPerson();
+
+        clientNpcState?.ChangeState(new NpcCompletedState());
+
+        CameraController.Instance.ExitInterview();
     }
 }

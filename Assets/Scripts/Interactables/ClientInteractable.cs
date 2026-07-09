@@ -23,29 +23,52 @@ using UnityEngine;
 /// - GameStateMachine: requests ReviewDocuments -> InterviewClient transition
 /// </summary>
 [RequireComponent(typeof(HighlightEffect))]
+[RequireComponent(typeof(NpcStateMachine))]
 public class ClientInteractable : MonoBehaviour, IInteractable
 {
     [SerializeField] private InterviewClientUI interviewClientUI;
     [SerializeField] private Transform interviewViewpoint; // camera position/rotation for "sitting across the table"
 
     private HighlightEffect highlight;
+    private NpcStateMachine npcState;
 
     private void Awake()
     {
         highlight = GetComponent<HighlightEffect>();
+        npcState = GetComponent<NpcStateMachine>();
     }
 
-    public void OnFocus() => highlight.Highlight();
-    public void OnUnfocus() => highlight.Unhighlight();
+    public void OnFocus()
+    {
+        highlight.Highlight();
+        if (npcState.CurrentState is NpcIdleState)
+        {
+            npcState.ChangeState(new NpcWaitingState());
+        }
+    }
+    public void OnUnfocus()
+    {
+        highlight.Unhighlight();
+        // Only fall back to Idle if we were merely Waiting (looked at but
+        // not clicked). Do NOT interrupt an active Dialogue just because
+        // the player's cursor drifted off the NPC mid-conversation.
+        if (npcState.CurrentState is NpcWaitingState)
+        {
+            npcState.ChangeState(new NpcIdleState());
+        }
+    }
 
     public void OnInteract()
     {
+        npcState.ChangeState(new NpcInteractState());
+        npcState.ChangeState(new NpcDialogueState());
+
         if (GameStateMachine.Instance.CurrentState is ReviewDocumentsState)
         {
             GameStateMachine.Instance.ChangeState(new InterviewClientState());
         }
 
-        CameraController.Instance.EnterFirstPerson(interviewViewpoint);
+        CameraController.Instance.EnterInterview(interviewViewpoint);
         interviewClientUI.Show();
     }
 

@@ -42,7 +42,12 @@ public class CameraController : MonoBehaviour
 {
     public static CameraController Instance { get; private set; }
 
-    public enum CameraMode { ThirdPerson, FirstPerson }
+    public enum CameraMode
+    {
+        ThirdPerson,
+        Workstation,
+        Interview
+    }
     public CameraMode CurrentMode { get; private set; } = CameraMode.ThirdPerson;
 
     [Header("References")]
@@ -88,9 +93,9 @@ public class CameraController : MonoBehaviour
     /// </summary>
     public void EnterFirstPerson(Transform viewpoint)
     {
-        if (CurrentMode == CameraMode.FirstPerson) return;
+        if (CurrentMode == CameraMode.Workstation) return;
         currentViewpoint = viewpoint;
-        CurrentMode = CameraMode.FirstPerson;
+        CurrentMode = CameraMode.Workstation;
 
         thirdPersonFollow.enabled = false;
         playerMovement.enabled = false;
@@ -121,7 +126,8 @@ public class CameraController : MonoBehaviour
     /// </summary>
     public void ExitFirstPerson()
     {
-        if (CurrentMode == CameraMode.ThirdPerson) return;
+        if (CurrentMode != CameraMode.Workstation)
+            return;
         CurrentMode = CameraMode.ThirdPerson;
 
         firstPersonHands.Hide();
@@ -177,12 +183,12 @@ public class CameraController : MonoBehaviour
     /// cannot move or look around, the camera transitions to a predefined
     /// interview viewpoint, and the cursor is unlocked for dialogue UI.
     /// </summary>
-    public void EnterInterviewView(Transform viewpoint)
+    public void EnterInterview(Transform viewpoint)
     {
         if (CurrentMode != CameraMode.ThirdPerson)
             return;
 
-        CurrentMode = CameraMode.FirstPerson; // Or create CameraMode.Interview later if you want.
+        CurrentMode = CameraMode.Interview;
 
         thirdPersonFollow.enabled = false;
         playerMovement.enabled = false;
@@ -204,6 +210,31 @@ public class CameraController : MonoBehaviour
                 viewpoint.rotation,
                 null
             ));
+    }
+
+    public void ExitInterview()
+    {
+        if (CurrentMode != CameraMode.Interview)
+            return;
+
+        CurrentMode = CameraMode.ThirdPerson;
+
+        if (activeTransition != null)
+            StopCoroutine(activeTransition);
+
+        activeTransition = StartCoroutine(
+            TransitionCamera(
+                cameraTransform.position,
+                cameraTransform.rotation,
+                () =>
+                {
+                    thirdPersonFollow.enabled = true;
+                    playerMovement.enabled = true;
+                    playerInteractor.enabled = true;
+
+                    Cursor.lockState = CursorLockMode.Locked;
+                    Cursor.visible = false;
+                }));
     }
 
 

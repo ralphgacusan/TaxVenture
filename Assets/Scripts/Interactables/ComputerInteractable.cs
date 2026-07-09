@@ -25,7 +25,7 @@ public class ComputerInteractable : MonoBehaviour, IInteractable
     public void OnUnfocus()
     {
         if (CameraController.Instance.CurrentMode ==
-            CameraController.CameraMode.FirstPerson)
+            CameraController.CameraMode.Workstation)
             return;
 
         highlight.Unhighlight();

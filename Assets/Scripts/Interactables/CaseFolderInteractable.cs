@@ -36,7 +36,7 @@ public class CaseFolderInteractable : MonoBehaviour, IInteractable
     public void OnUnfocus()
     {
         if (CameraController.Instance.CurrentMode ==
-            CameraController.CameraMode.FirstPerson)
+            CameraController.CameraMode.Workstation)
             return;
 
         highlight.Unhighlight();
@@ -44,6 +44,8 @@ public class CaseFolderInteractable : MonoBehaviour, IInteractable
     public void OnInteract()
     {
         caseFolderUI.Show();
+        GameStateMachine.Instance.ChangeState(new ReviewDocumentsState());
+
     }
 
     public string GetPromptText() => "Click to open Case Folder";
