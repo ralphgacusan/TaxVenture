@@ -42,7 +42,7 @@ A 3D scenario-based mobile game designed to improve income tax literacy through 
 
 # About the Project
 
-**TaxVenture** is a **3D scenario-based mobile educational game** developed as a supplementary learning tool to improve **income tax literacy**.
+**TaxVenture** is a **3D scenario-based mobile game** developed as a supplementary tool to improve **income tax literacy**.
 
 Players assume the role of a **Tax Consultant** working inside an office where they perform realistic taxation-related tasks such as:
 
@@ -54,7 +54,7 @@ Players assume the role of a **Tax Consultant** working inside an office where t
 - Conducting compliance audits
 - Solving tax-related cases
 
-Unlike traditional learning materials, TaxVenture transforms taxation into an interactive simulation where players learn by completing realistic office scenarios.
+TaxVenture transforms taxation into an interactive simulation where players learn by completing realistic office scenarios.
 
 The project uses the **Finite State Machine (FSM)** algorithm to control:
 
@@ -209,25 +209,25 @@ No:
   - Greybox office
   - Third-person controller
 
-- ⏳ Milestone 2
+- ✅ Milestone 2
   - Interaction System
 
-- ⏳ Milestone 3
+- ✅ Milestone 3
   - Camera Switching
 
-- ⏳ Milestone 4
+- ✅ Milestone 4
   - Game FSM
 
-- ⏳ Milestone 5
+- ✅ Milestone 5
   - Case Folder
 
-- ⏳ Milestone 6
+- ✅ Milestone 6
   - Document Viewer
 
-- ⏳ Milestone 7
+- ✅ Milestone 7
   - Dialogue System
 
-- ⏳ Milestone 8
+- ✅ Milestone 8
   - NPC FSM
 
 - ⏳ Milestone 9
@@ -602,19 +602,6 @@ Current milestone:
 - Analytics
 - Expanded NPC AI
 - Additional taxation scenarios
-
----
-
-# Contributors
-
-Developed as a Capstone Project by:
-
-- Ralph Jayrell Gacusan
-- _(Add other members here)_
-
-Institution:
-
-**Technological Institute of the Philippines - Quezon City**
 
 ---
 
