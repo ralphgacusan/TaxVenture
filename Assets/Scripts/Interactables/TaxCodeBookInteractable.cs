@@ -13,7 +13,7 @@ using UnityEngine;
 [RequireComponent(typeof(HighlightEffect))]
 public class TaxCodeBookInteractable : MonoBehaviour, IInteractable
 {
-
+    [SerializeField] private TaxCodeBookUI taxCodeBookUI;
     private HighlightEffect highlight;
 
     private void Awake()
@@ -32,8 +32,7 @@ public class TaxCodeBookInteractable : MonoBehaviour, IInteractable
     }
     public void OnInteract()
     {
-        // Debug: Log a message to indicate that the Tax Code Book has been clicked
-        Debug.Log("Tax Code Book clicked! Implement the logic to open the Tax Code Book UI here.");
+        taxCodeBookUI.Show();
     }
 
     public string GetPromptText() => "Click to open Tax Code Book";

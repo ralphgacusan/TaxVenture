@@ -1,0 +1,89 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bf5fd56daae6224299eebd748d911eb, type: 3}
+  m_Name: TaxCodeBookData_Main
+  m_EditorClassIdentifier: Assembly-CSharp::TaxCodeBookData
+  sections:
+  - heading: "Section 1 \u2013 Residency Status"
+    body: "Resident Citizen\nA Filipino citizen residing in the Philippines.\nTaxable
+      on income earned within and outside the Philippines.\n\nNon-Resident Citizen\nA
+      Filipino citizen residing or working abroad.\nTaxable only on income earned
+      within the Philippines.\n\nResident Alien\nA foreign national residing in the
+      Philippines.\nTaxable only on income earned within the Philippines.\n\nNon-Resident
+      Alien\nA foreign national not residing in the Philippines.\nTaxable only on
+      income earned within the Philippines.\n\nUsed For:\n\u2713 Residency Status
+      field"
+  - heading: "Section 2 \u2013 Taxpayer Type"
+    body: "Compensation Earner\nEarns income from employment.\n\nSelf-Employed\nEarns
+      income from operating a business.\n\nProfessional\nEarns income from providing
+      professional services independently.\n\nMixed Income Earner\nEarns both employment
+      income and business or professional income.\n\nUsed For:\n\u2713 Taxpayer Type
+      field"
+  - heading: "Section 3 \u2013 Income Sources"
+    body: "Employment Income\nIncome received from an employer.\n\nBusiness Income\nIncome
+      earned from business activities.\n\nProfessional Income\nIncome earned from
+      professional services.\n\nMixed Income\nCombination of multiple income sources.\n\nUsed
+      For:\n\u2713 Income Source field"
+  - heading: "Section 4 \u2013 Business Registration"
+    body: "Registered\nA valid BIR Form 2303 exists.\n\nNot Registered\nNo business
+      registration document exists.\n\nUsed For:\n\u2713 Business Registration field"
+  - heading: "Section 5 \u2013 Tax Options"
+    body: "Graduated Tax Rate\nTax is computed using income tax brackets under the
+      National Internal Revenue Code.\n\n8% Tax Rate\nOptional tax rate available
+      to qualified self-employed individuals and professionals.\n\nReference:\nRepublic
+      Act No. 10963 (TRAIN Law)\n\nUsed For:\n\u2713 Tax Option field"
+  - heading: "Section 6 \u2013 Required Supporting Documents"
+    body: "BIR Form 2316\nVerifies employment income and tax withheld.\n\nBIR Form
+      2303\nVerifies business registration and tax type.\n\nFinancial Statements\nVerify
+      sales, expenses, and net income.\n\nSales Records\nVerify declared revenue.\n\nBank
+      Statements\nVerify deposits and cash flow.\n\nProperty Documents\nVerify property
+      transactions.\n\nPrevious Year's ITR\nVerify prior declarations and compliance
+      history.\n\nUsed For:\n\u2713 Document Verification"
+  - heading: "Section 7 \u2013 Income Tax Computation"
+    body: "Gross Income\nTotal income earned before deductions.\n\nAllowable Expenses\nQualified
+      expenses that may reduce taxable income.\n\nTaxable Income\nIncome subject
+      to tax.\n\nFormula:\nTaxable Income = Gross Income \u2212 Allowable Expenses\n\nTax
+      Due\nTax computed using the applicable tax rate.\n\nTax Withheld / Tax Credits\nTaxes
+      already paid or withheld.\n\nFinal Tax Payable\nRemaining tax due after deductions.\n\nFormula:\nFinal
+      Tax Payable = Tax Due \u2212 Tax Credits\n\nUsed For:\n\u2713 Tax Computation
+      Information"
+  - heading: "Section 8 \u2013 Form Selection Guide"
+    body: "BIR Form 1700\nUsed by Compensation Earners.\n\nBIR Form 1701\nUsed by
+      Self-Employed, Professionals, and Mixed Income Earners using Graduated Tax
+      Rates.\n\nBIR Form 1701A\nUsed by qualified Self-Employed Individuals and Professionals
+      using the 8% Tax Rate.\n\nUsed For:\n\u2713 Required Form field"
+  - heading: "Section 9 \u2013 Common Tax Issues"
+    body: "Missing Income\nIncome appears in documents but was not declared.\n\nIncome
+      Mismatch\nDifferent documents show conflicting income amounts.\n\nMultiple
+      Employers\nMore than one employer appears in records.\n\nUnregistered Business\nBusiness
+      income exists but no registration is found.\n\nLarge Unexplained Deposits\nBank
+      deposits exceed reported income.\n\nMissing Documents\nRequired documents are
+      incomplete.\n\nUsed For:\n\u2713 Potential Issues Identified"
+  - heading: "Section 10 \u2013 Case Assessment Guide"
+    body: "Under Review\nAdditional verification is required.\n\nReady for Computation\nEnough
+      information exists to calculate taxes.\n\nReady for Filing\nClassification,
+      computation, and documentation are complete.\n\nFiled\nThe tax return has been
+      successfully prepared and submitted.\n\nUsed For:\n\u2713 Case Assessment field"
+  - heading: "Section 11 \u2013 Interview Guide"
+    body: "Determine Residency Status\nAsk where the taxpayer resides or works.\n\nDetermine
+      Taxpayer Type\nAsk how the taxpayer earns income.\n\nDetermine Income Sources\nIdentify
+      all income earned during the taxable year.\n\nDetermine Business Registration\nVerify
+      whether the taxpayer operates a registered business.\n\nDetermine Tax Option\nVerify
+      tax type using BIR Form 2303 and taxpayer information.\n\nClarify Inconsistencies\nAsk
+      about missing documents, unusual deposits, or income discrepancies.\n\nUsed
+      For:\n\u2713 Interview Client Phase"
+  - heading: "Section 12 \u2013 Compliance Checklist"
+    body: "Before marking a case Ready for Filing:\n\n\u2713 Residency Status Determined\n\u2713
+      Taxpayer Type Determined\n\u2713 Income Source Determined\n\u2713 Business
+      Registration Verified\n\u2713 Tax Option Verified\n\u2713 Supporting Documents
+      Verified\n\u2713 Tax Computation Completed\n\u2713 Correct BIR Form Selected\n\u2713
+      No Unresolved Issues Remain\n\nUsed For:\n\u2713 Compliance Audit Phase"

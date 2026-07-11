@@ -37,7 +37,7 @@ public class ThirdPersonCameraFollow : MonoBehaviour
 
     [Header("Mouse Look Settings")]
     [SerializeField] private float mouseSensitivity = 3f;
-    [SerializeField] private float minPitch = 5f;
+    [SerializeField] private float minPitch = -15f;
     [SerializeField] private float maxPitch = 60f;
 
     [Header("DEBUG - Temporary First Person Toggle")]
