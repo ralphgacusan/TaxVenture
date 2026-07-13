@@ -1,26 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 
-/// <summary>
-/// PURPOSE:
-/// One assignable field slot in the calculator (e.g. "Gross Income" input
-/// box). Implements the brief's click-to-assign interaction: the slot shows
-/// its current value (or "Click to assign" if empty), and clicking it while
-/// a source value is "selected" (see ComputerUI.SelectedSourceValue) fills
-/// it in and turns its border green.
-///
-/// RESPONSIBILITIES:
-/// - Display its current value / placeholder text
-/// - On click, ask ComputerUI to assign whatever is currently selected into
-///   this slot
-/// - Show green/red/neutral border state via Image color, matching design
-///   doc's "If correct: green border. If incorrect: red border."
-///
-/// CONNECTS WITH:
-/// - ComputerUI: owns the "currently selected source value" and the overall
-///   validation/calculate flow; this script just represents ONE slot.
-/// </summary>
 public class ComputerFieldSlot : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI valueText;
@@ -37,16 +19,34 @@ public class ComputerFieldSlot : MonoBehaviour
     {
         owner = owningUI;
         slotId = id;
+        slotButton.onClick.RemoveAllListeners();
         slotButton.onClick.AddListener(() => owner.OnSlotClicked(slotId));
         Clear();
     }
 
-    public void AssignValue(float value)
+    /// <summary>
+    /// Attempts to assign the given source value. Returns true/false so
+    /// ComputerUI can decide what happens next (e.g. whether to clear the
+    /// player's selection or let them try a different slot).
+    /// </summary>
+    public bool TryAssign(ComputerSourceValue source)
     {
-        CurrentValue = value;
-        IsFilled = true;
-        valueText.text = $"\u20b1{value:N0}";
-        SetBorder(Color.green);
+        bool isCorrect = source.CorrectSlotId == slotId;
+
+        if (isCorrect)
+        {
+            CurrentValue = source.Value;
+            IsFilled = true;
+            valueText.text = $"\u20b1{source.Value:N0}";
+            SetBorder(Color.green);
+        }
+        else
+        {
+            StopAllCoroutines();
+            StartCoroutine(FlashRedThenReset());
+        }
+
+        return isCorrect;
     }
 
     public void Clear()
@@ -57,9 +57,12 @@ public class ComputerFieldSlot : MonoBehaviour
         SetBorder(Color.white);
     }
 
-    public void FlashIncorrect()
+    private IEnumerator FlashRedThenReset()
     {
         SetBorder(Color.red);
+        yield return new WaitForSeconds(0.6f);
+        // Only reset to white if this slot wasn't correctly filled in the meantime.
+        if (!IsFilled) SetBorder(Color.white);
     }
 
     private void SetBorder(Color color)

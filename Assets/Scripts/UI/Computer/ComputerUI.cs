@@ -1,33 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
-/// <summary>
-/// PURPOSE:
-/// Controls the Computer / Tax Calculator panel (Main Tab 1 - Tax
-/// Computation only, for Part 1). Implements the brief's click-to-assign
-/// interaction: player clicks a source value button (pulled from supporting
-/// documents), then clicks a destination field slot to place it there.
-///
-/// RESPONSIBILITIES:
-/// - Build a list of "source value" buttons from CaseData's supporting
-///   documents (Gross Income sources: BIR 2316 compensation, Financial
-///   Statements gross sales, Sales Records amounts)
-/// - Track which source value is currently "selected" (clicked but not yet placed)
-/// - Validate whether a source placed into a slot is the CORRECT value for
-///   that slot (green) or wrong (red, per design doc)
-/// - Trigger Calculate once required slots are filled, running
-///   TaxComputationCalculator and writing results into CaseData
-///
-/// CONNECTS WITH:
-/// - ComputerInteractable: calls Show() when the Computer is clicked at the desk
-/// - ComputerFieldSlot: individual assignable fields
-/// - CaseManager.Instance.CurrentCase: source of document values AND
-///   destination for computed results
-/// - TaxComputationCalculator: pure calculation logic
-/// </summary>
-public class ComputerUI : MonoBehaviour
+public class ComputerUI : MonoBehaviour, IPointerClickHandler
 {
     [Header("Panel")]
     [SerializeField] private GameObject computerPanelRoot;
@@ -45,8 +22,13 @@ public class ComputerUI : MonoBehaviour
     [SerializeField] private GameObject calculateButton;
     [SerializeField] private TextMeshProUGUI resultSummaryText;
 
-    private float? selectedSourceValue = null;
-    private List<GameObject> spawnedSourceButtons = new List<GameObject>();
+    [Header("Filing (Sub Tab 2)")]
+    [SerializeField] private GameObject fileFormButton;
+    [SerializeField] private TextMeshProUGUI filingResultText;
+
+    private ComputerSourceValue selectedSource = null;
+    private GameObject selectedSourceButtonObj = null;
+    private List<(GameObject obj, ComputerSourceValue data)> spawnedSourceButtons = new List<(GameObject, ComputerSourceValue)>();
 
     private void Awake()
     {
@@ -57,16 +39,18 @@ public class ComputerUI : MonoBehaviour
     {
         computerPanelRoot.SetActive(true);
         BuildSourceButtons();
-        grossIncomeSlot.Clear();
-        allowableExpensesSlot.Clear();
-        taxCreditsSlot.Clear();
-        selectedSourceValue = null;
-        calculateButton.SetActive(false);
-        resultSummaryText.text = "";
 
         grossIncomeSlot.Initialize(this, "GrossIncome");
         allowableExpensesSlot.Initialize(this, "AllowableExpenses");
         taxCreditsSlot.Initialize(this, "TaxCredits");
+
+        selectedSource = null;
+        selectedSourceButtonObj = null;
+        calculateButton.SetActive(false);
+        resultSummaryText.text = "";
+
+        fileFormButton.SetActive(CaseManager.Instance.CurrentCase.computationStatus == ComputationStatus.Computed);
+        filingResultText.text = "";
     }
 
     public void Hide()
@@ -74,66 +58,87 @@ public class ComputerUI : MonoBehaviour
         computerPanelRoot.SetActive(false);
     }
 
-    /// <summary>
-    /// Builds clickable "source" buttons representing values pulled from
-    /// CaseData's supporting documents, per design doc's Sub Tab 1.1/1.2/1.5
-    /// source document lists.
-    /// </summary>
     private void BuildSourceButtons()
     {
-        foreach (var btn in spawnedSourceButtons) Destroy(btn);
+        foreach (var (obj, _) in spawnedSourceButtons) Destroy(obj);
         spawnedSourceButtons.Clear();
 
-        // Hardcoded example values matching DocumentDataProvider's data
-        // (Milestone 6), since this prototype only has one case's documents.
-        AddSourceButton("BIR 2316 - Compensation", 500000f);
-        AddSourceButton("Financial Statements - Gross Sales", 350000f);
-        AddSourceButton("Sales Records - Amount", 25000f);
-        AddSourceButton("Financial Statements - Expenses", 150000f);
-        AddSourceButton("BIR 2316 - Tax Withheld", 45000f);
+        AddSourceButton("BIR 2316 - Compensation", 500000f, "GrossIncome");
+        AddSourceButton("Financial Statements - Gross Sales", 350000f, "GrossIncome"); // deliberately also valid-looking, but only ONE slot ("GrossIncome") — both route to the same correct slot to reflect "Gross Income = combination of sources" per design doc
+        AddSourceButton("Sales Records - Amount", 25000f, "GrossIncome");
+        AddSourceButton("Financial Statements - Expenses", 150000f, "AllowableExpenses");
+        AddSourceButton("BIR 2316 - Tax Withheld", 45000f, "TaxCredits");
     }
 
-    private void AddSourceButton(string label, float value)
+    private void AddSourceButton(string label, float value, string correctSlotId)
     {
         GameObject buttonObj = Instantiate(sourceButtonPrefab, sourceButtonListRoot.transform);
         TextMeshProUGUI text = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
         text.text = $"{label}: \u20b1{value:N0}";
 
-        Button button = buttonObj.GetComponent<Button>();
-        float capturedValue = value;
-        button.onClick.AddListener(() => OnSourceValueSelected(capturedValue));
+        var data = new ComputerSourceValue(label, value, correctSlotId);
 
-        spawnedSourceButtons.Add(buttonObj);
+        Button button = buttonObj.GetComponent<Button>();
+        button.onClick.AddListener(() => OnSourceValueSelected(data, buttonObj));
+
+        spawnedSourceButtons.Add((buttonObj, data));
     }
 
-    private void OnSourceValueSelected(float value)
+    private void OnSourceValueSelected(ComputerSourceValue source, GameObject buttonObj)
     {
-        selectedSourceValue = value;
+        // Deselect previous button's highlight, if any.
+        ClearSelectionHighlight();
+
+        selectedSource = source;
+        selectedSourceButtonObj = buttonObj;
+
+        // Visual "selected" feedback per design doc's "Object becomes selected."
+        Image img = buttonObj.GetComponent<Image>();
+        if (img != null) img.color = new Color(1f, 0.85f, 0.3f); // highlighted yellow
+    }
+
+    private void ClearSelectionHighlight()
+    {
+        if (selectedSourceButtonObj != null)
+        {
+            Image img = selectedSourceButtonObj.GetComponent<Image>();
+            if (img != null) img.color = Color.white;
+        }
+        selectedSourceButtonObj = null;
     }
 
     /// <summary>
-    /// Called by a ComputerFieldSlot when it's clicked. Places the currently
-    /// selected source value into that slot, matching design doc: "The
-    /// player drags a value... drops the value into the corresponding
-    /// computer field... If correct, green border. If incorrect, red border."
+    /// Called by a ComputerFieldSlot when clicked. Now performs real
+    /// validation via ComputerFieldSlot.TryAssign, and clears selection
+    /// regardless of correctness (matching "you tried to place it,
+    /// right or wrong, you're no longer holding it" — a simple, forgiving
+    /// rule appropriate for a prototype; the player just re-selects a
+    /// source and tries again).
     /// </summary>
     public void OnSlotClicked(string slotId)
     {
-        if (!selectedSourceValue.HasValue) return; // nothing selected yet
+        if (selectedSource == null) return;
 
         ComputerFieldSlot targetSlot = GetSlot(slotId);
         if (targetSlot == null) return;
 
-        // Simplified validation for this prototype: any selected value can be
-        // placed into any slot (the player isn't blocked), it just visually
-        // confirms with green since we don't yet have "correct answer" tagging
-        // per source button. A stricter validation (matching specific source
-        // to specific slot) can be added here later without changing the
-        // click-to-assign flow itself.
-        targetSlot.AssignValue(selectedSourceValue.Value);
-        selectedSourceValue = null;
+        targetSlot.TryAssign(selectedSource);
+
+        selectedSource = null;
+        ClearSelectionHighlight();
 
         CheckIfReadyToCalculate();
+    }
+
+    /// <summary>
+    /// IPointerClickHandler on the panel's own background — clicking any
+    /// empty area of the Computer panel cancels the current selection,
+    /// matching a natural "click away to deselect" expectation.
+    /// </summary>
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        selectedSource = null;
+        ClearSelectionHighlight();
     }
 
     private ComputerFieldSlot GetSlot(string slotId)
@@ -153,12 +158,6 @@ public class ComputerUI : MonoBehaviour
         calculateButton.SetActive(allFilled);
     }
 
-    /// <summary>
-    /// Wired to the Calculate button. Runs the pure computation logic and
-    /// writes results directly into CaseData, per design doc: "Once all
-    /// fields are correct, a Calculate button appears... system computes
-    /// the result."
-    /// </summary>
     public void OnCalculatePressed()
     {
         CaseData data = CaseManager.Instance.CurrentCase;
@@ -169,8 +168,6 @@ public class ComputerUI : MonoBehaviour
 
         data.taxableIncome = TaxComputationCalculator.ComputeTaxableIncome(data.grossIncome, data.allowableExpenses);
 
-        // Default to 8% option if the interview hasn't set one yet, so the
-        // calculator doesn't hard-fail if played out of the "ideal" order.
         TaxOption optionToUse = data.taxOption ?? TaxOption.EightPercentTaxRate;
         data.taxDue = TaxComputationCalculator.ComputeTaxDue(data.taxableIncome, optionToUse);
 
@@ -183,5 +180,48 @@ public class ComputerUI : MonoBehaviour
             $"Tax Due: \u20b1{data.taxDue:N0}\n" +
             $"Final Tax Payable: \u20b1{data.finalTaxPayable:N0}\n" +
             $"Status: Computed";
+
+        fileFormButton.SetActive(true);
+    }
+
+    /// <summary>
+    /// SUB TAB 2 — TAX RETURN FILING.
+    /// Determines the correct BIR form per design doc Section 8 (Form
+    /// Selection Guide) from the taxpayer's already-established Taxpayer
+    /// Type and Tax Option, and writes Page 5's Filing Information fields.
+    /// </summary>
+    public void OnFileFormPressed()
+    {
+        CaseData data = CaseManager.Instance.CurrentCase;
+
+        RequiredForm form = DetermineRequiredForm(data.taxpayerType, data.taxOption);
+        data.requiredForm = form;
+        data.filingStatus = FilingStatus.ReadyForFiling;
+
+        filingResultText.text =
+            $"Required Form: {form}\n" +
+            $"Filing Status: Ready For Filing";
+    }
+
+    /// <summary>
+    /// Per design doc Section 8:
+    /// - BIR 1700: Compensation Earner
+    /// - BIR 1701: Self-Employed / Professional / Mixed Income using Graduated Rate
+    /// - BIR 1701A: Qualified Self-Employed/Professional using 8% Rate
+    /// </summary>
+    private RequiredForm DetermineRequiredForm(TaxpayerType? taxpayerType, TaxOption? taxOption)
+    {
+        if (taxpayerType == TaxpayerType.CompensationEarner)
+        {
+            return RequiredForm.BIR1700;
+        }
+
+        if (taxOption == TaxOption.EightPercentTaxRate)
+        {
+            return RequiredForm.BIR1701A;
+        }
+
+        // Mixed Income Earner, Self-Employed, or Professional using Graduated Rate
+        return RequiredForm.BIR1701;
     }
 }
