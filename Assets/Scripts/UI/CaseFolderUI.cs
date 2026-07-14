@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 /// <summary>
 /// PURPOSE:
@@ -42,13 +43,24 @@ public class CaseFolderUI : MonoBehaviour
     [Header("Page 6 Document Links")]
     [SerializeField] private SupportingDocumentsPageLink supportingDocumentsPageLink;
 
+    [Header("Stamping")]
+    [SerializeField] private StampUI stampUI;
+    [SerializeField] private GameObject stampPanel; // holds the 2 stamp buttons, right side of folder
+    [SerializeField] private Button paperClickTarget; // Button component on the Paper background
+
     private List<CaseFolderPageContent> pages;
     private int currentPageIndex = 0;
     private bool hasOpenedBefore = false;
 
+    private bool isStampingMode = false;
+
     private void Awake()
     {
         Hide();
+        if (paperClickTarget != null)
+        {
+            paperClickTarget.onClick.AddListener(OnPaperClicked);
+        }
     }
 
     /// <summary>
@@ -73,9 +85,28 @@ public class CaseFolderUI : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Opens the folder forced to Page 1, with the stamp panel visible on the
+    /// right side. Called by StampSetInteractable instead of the normal Show().
+    /// </summary>
+    public void ShowForStamping()
+    {
+        pages = BuildPages(CaseManager.Instance.CurrentCase);
+        folderPanelRoot.SetActive(true);
+        currentPageIndex = 0;
+        RenderPage(currentPageIndex);
+
+        isStampingMode = true;
+        stampPanel.SetActive(true);
+        stampUI.ResetSelection();
+    }
+
+    // In Hide(), also close stamping mode:
     public void Hide()
     {
         folderPanelRoot.SetActive(false);
+        isStampingMode = false;
+        stampPanel?.SetActive(false);
     }
 
     public void NextPage()
@@ -113,6 +144,11 @@ public class CaseFolderUI : MonoBehaviour
         nextButton.SetActive(index < pages.Count - 1);
 
         supportingDocumentsPageLink?.OnFolderPageChanged(index);
+
+        if (isStampingMode)
+        {
+            stampPanel.SetActive(index == 0); // only show stamps while looking at Page 1
+        }
     }
 
     /// <summary>
@@ -124,10 +160,22 @@ public class CaseFolderUI : MonoBehaviour
     {
         var list = new List<CaseFolderPageContent>();
 
+
         // Page 1 - Case Overview
+        string assessmentText;
+
+        if (!data.assessmentStamped)
+        {
+            assessmentText = "Case Assessment: __________";
+        }
+        else
+        {
+            assessmentText = $"Case Assessment: {FormatEnum(data.caseAssessment.ToString())}";
+        }
+
         list.Add(new CaseFolderPageContent(
             "Case Overview",
-            $"{data.caseTitle}\n\n{data.caseSummary}\n\nCase Assessment: {FormatEnum(data.caseAssessment.ToString())}"
+            $"{data.caseTitle}\n\n{data.caseSummary}\n\n{assessmentText}"
         ));
 
         // Page 2 - Taxpayer Information
@@ -205,5 +253,23 @@ public class CaseFolderUI : MonoBehaviour
     private string FormatEnum(string enumName)
     {
         return System.Text.RegularExpressions.Regex.Replace(enumName, "(\\B[A-Z])", " $1");
+    }
+
+    /// <summary>
+    /// Paper click only does something meaningful while stamping is active;
+    /// otherwise it's just inert background (Next/Previous still work normally).
+    /// </summary>
+    private void OnPaperClicked()
+    {
+        if (isStampingMode && stampUI.HasSelectedStamp)
+        {
+            stampUI.TryApplyStampToPaper();
+        }
+    }
+
+    public void Refresh()
+    {
+        pages = BuildPages(CaseManager.Instance.CurrentCase);
+        RenderPage(currentPageIndex);
     }
 }

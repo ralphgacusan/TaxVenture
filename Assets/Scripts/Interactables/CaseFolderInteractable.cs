@@ -24,6 +24,7 @@ using UnityEngine;
 public class CaseFolderInteractable : MonoBehaviour, IInteractable
 {
     [SerializeField] private CaseFolderUI caseFolderUI;
+    [SerializeField] private StampUI stampUI;
 
     private HighlightEffect highlight;
 
@@ -43,10 +44,18 @@ public class CaseFolderInteractable : MonoBehaviour, IInteractable
     }
     public void OnInteract()
     {
+
         caseFolderUI.Show();
         GameStateMachine.Instance.ChangeState(new ReviewDocumentsState());
 
     }
 
-    public string GetPromptText() => "Click to open Case Folder";
+    public string GetPromptText()
+    {
+        if (stampUI != null && stampUI.HasSelectedStamp)
+        {
+            return "Click to stamp the Case Folder";
+        }
+        return "Click to open Case Folder";
+    }
 }

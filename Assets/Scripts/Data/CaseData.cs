@@ -35,6 +35,8 @@ public class CaseData
     public string caseSummary = "Client seeks assistance in filing an annual income tax return. Employment and business records require verification.";
     public CaseAssessment caseAssessment = CaseAssessment.NotReadyForFiling;
 
+    public bool assessmentStamped = false;
+
     // ---------- Page 2: Taxpayer Information ----------
     public string fullName = "Juan Dela Cruz";
     public string tin = "123-456-789-000";
@@ -95,6 +97,9 @@ public enum TaxOption { GraduatedTaxRate, EightPercentTaxRate }
 public enum ComputationStatus { NotComputed, Computed }
 public enum RequiredForm { BIR1700, BIR1701, BIR1701A }
 public enum FilingStatus { NotReady, ReadyForFiling, Filed }
+
+
+
 
 /// <summary>
 /// A single supporting document entry (Page 6). Full document viewing with
