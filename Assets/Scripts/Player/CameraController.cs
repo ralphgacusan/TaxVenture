@@ -91,7 +91,7 @@ public class CameraController : MonoBehaviour
     /// Called by an interactable (e.g. DeskInteractable) to switch into
     /// first-person mode, focused on the given viewpoint transform.
     /// </summary>
-    public void EnterFirstPerson(Transform viewpoint)
+    public void EnterFirstPerson(Transform viewpoint, bool showHands = true)
     {
         if (CurrentMode == CameraMode.Workstation) return;
         currentViewpoint = viewpoint;
@@ -111,7 +111,11 @@ public class CameraController : MonoBehaviour
         if (activeTransition != null) StopCoroutine(activeTransition);
         activeTransition = StartCoroutine(TransitionCamera(viewpoint.position, viewpoint.rotation, onComplete: () =>
         {
-            firstPersonHands.Show();
+
+            if (showHands)
+                firstPersonHands.Show();
+            else
+                firstPersonHands.Hide();
             workstationUI.Show();
             foreach (DeskItemHighlight item in deskItemHighlights)
             {

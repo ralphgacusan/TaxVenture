@@ -2,23 +2,27 @@ using UnityEngine;
 
 /// <summary>
 /// PURPOSE:
-
-///
-/// PER DESIGN DOC:
-
+/// The physical Corkboard object in the office. On interact, enters
+/// first-person mode focused on CorkboardViewpoint, then tells
+/// CorkboardDocumentSpawner to populate the board. Does NOT manage any UI
+/// panel, document data, or assessment logic itself — purely the entry
+/// point, per the "only enters workstation mode" requirement.
 ///
 /// CONNECTS WITH:
-
+/// - HighlightEffect (same GameObject)
+/// - CameraController: first-person transition, same system as Desk
+/// - CorkboardDocumentSpawner: told to (re)spawn documents once entered
 /// </summary>
-[RequireComponent(typeof(HighlightEffect))]
 public class CorkboardInteractable : MonoBehaviour, IInteractable
 {
+    [SerializeField] private Transform corkboardViewpoint;
+    [SerializeField] private CorkboardDocumentSpawner documentSpawner;
 
     private HighlightEffect highlight;
 
     private void Awake()
     {
-        highlight = GetComponent<HighlightEffect>();
+        highlight = GetComponentInChildren<HighlightEffect>(); // was GetComponent<HighlightEffect>()
     }
 
     public void OnFocus() => highlight.Highlight();
@@ -26,9 +30,9 @@ public class CorkboardInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract()
     {
-        // Debug: Log a message to indicate that the Corkboard has been clicked
-        Debug.Log("Corkboard clicked! Implement the logic to open the Corkboard UI here.");
+        CameraController.Instance.EnterFirstPerson(corkboardViewpoint, false);
+        documentSpawner.SpawnDocuments();
     }
 
-    public string GetPromptText() => "Click to open Corkboard";
+    public string GetPromptText() => "Click to review evidence at Corkboard";
 }

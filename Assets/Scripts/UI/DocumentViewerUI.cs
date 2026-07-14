@@ -35,6 +35,7 @@ public class DocumentViewerUI : MonoBehaviour
     [Header("Optional: refresh Page 6 list on close")]
     [SerializeField] private SupportingDocumentsPageLink supportingDocumentsPageLink;
 
+    [SerializeField] private CorkboardDocumentSpawner corkboardSpawner; // CHANGED from CorkboardUI
     private void Awake()
     {
         Hide();
@@ -66,6 +67,7 @@ public class DocumentViewerUI : MonoBehaviour
     {
         viewerPanelRoot.SetActive(false);
         supportingDocumentsPageLink?.RefreshButtons();
+        corkboardSpawner?.RefreshAllDocumentVisuals();
     }
 
     /// <summary>
