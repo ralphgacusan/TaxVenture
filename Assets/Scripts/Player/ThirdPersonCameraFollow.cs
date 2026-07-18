@@ -47,6 +47,8 @@ public class ThirdPersonCameraFollow : MonoBehaviour
 
     [SerializeField] private float firstPersonHeight = 0.8f;
 
+    [SerializeField] private FirstPersonHands firstPersonHands;
+
     private float yaw;
     private float pitch = 0f;
 
@@ -114,6 +116,9 @@ public class ThirdPersonCameraFollow : MonoBehaviour
         else
         {
             // THIRD PERSON
+            if (firstPersonHands != null)
+                firstPersonHands.Hide();
+
             Vector3 desiredPosition =
                 target.position
                 - (rotation * Vector3.forward * distance)
@@ -132,6 +137,13 @@ public class ThirdPersonCameraFollow : MonoBehaviour
         if (Input.GetKeyDown(toggleKey))
         {
             firstPersonMode = !firstPersonMode;
+            if (firstPersonHands != null)
+            {
+                if (firstPersonMode)
+                    firstPersonHands.Show();
+                else
+                    firstPersonHands.Hide();
+            }
         }
     }
 }

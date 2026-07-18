@@ -13,7 +13,9 @@ using UnityEngine;
 [RequireComponent(typeof(HighlightEffect))]
 public class ComputerInteractable : MonoBehaviour, IInteractable
 {
-    [SerializeField] private ComputerUI computerUI;
+    // [SerializeField] private ComputerUI computerUI;
+
+    [SerializeField] private ComputerHomeUI computerHomeUI;
 
     private HighlightEffect highlight;
 
@@ -35,7 +37,7 @@ public class ComputerInteractable : MonoBehaviour, IInteractable
     {
         // Debug: Log a message to indicate that the Computer has been clicked
         Debug.Log("Computer clicked! Implement the logic to open the Computer UI here.");
-        computerUI.Show();
+        computerHomeUI.Show();
     }
 
     public string GetPromptText() => "Click to open Computer";

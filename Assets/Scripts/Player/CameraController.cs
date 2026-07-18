@@ -112,10 +112,10 @@ public class CameraController : MonoBehaviour
         activeTransition = StartCoroutine(TransitionCamera(viewpoint.position, viewpoint.rotation, onComplete: () =>
         {
 
-            if (showHands)
-                firstPersonHands.Show();
-            else
-                firstPersonHands.Hide();
+            // if (showHands)
+            //     firstPersonHands.Show();
+            // else
+            //     firstPersonHands.Hide();
             workstationUI.Show();
             foreach (DeskItemHighlight item in deskItemHighlights)
             {
@@ -134,7 +134,6 @@ public class CameraController : MonoBehaviour
             return;
         CurrentMode = CameraMode.ThirdPerson;
 
-        firstPersonHands.Hide();
         workstationUI.Hide();
 
         foreach (DeskItemHighlight item in deskItemHighlights)

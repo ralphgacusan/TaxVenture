@@ -30,6 +30,9 @@ public class ComputerUI : MonoBehaviour, IPointerClickHandler
     private GameObject selectedSourceButtonObj = null;
     private List<(GameObject obj, ComputerSourceValue data)> spawnedSourceButtons = new List<(GameObject, ComputerSourceValue)>();
 
+    [Header("Return to Home")]
+    [SerializeField] private ComputerHomeUI computerHomeUI;
+
     private void Awake()
     {
         Hide();
@@ -223,5 +226,17 @@ public class ComputerUI : MonoBehaviour, IPointerClickHandler
 
         // Mixed Income Earner, Self-Employed, or Professional using Graduated Rate
         return RequiredForm.BIR1701;
+    }
+
+    /// <summary>
+    /// Wired to what was previously the "Close" button — now acts as "Back",
+    /// returning to the Computer's desktop instead of exiting first-person
+    /// entirely. The Workstation Close button (unchanged) still exits
+    /// first-person fully.
+    /// </summary>
+    public void OnBackToHomePressed()
+    {
+        Hide();
+        computerHomeUI.Show();
     }
 }

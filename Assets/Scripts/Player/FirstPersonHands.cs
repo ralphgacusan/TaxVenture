@@ -23,9 +23,15 @@ public class FirstPersonHands : MonoBehaviour
     [Tooltip("Parent object containing the placeholder hand meshes. Assign the object that holds both hand capsules.")]
     [SerializeField] private GameObject handsRoot;
 
+    [Header("Carried Document (left hand)")]
+    [SerializeField] private GameObject carriedDocumentVisual; // paper mesh, child of left hand position
+
     private void Awake()
     {
-        Hide();
+        if (handsRoot != null)
+            handsRoot.SetActive(true);
+
+        HideCarriedDocument();
     }
 
     public void Show()
@@ -36,5 +42,16 @@ public class FirstPersonHands : MonoBehaviour
     public void Hide()
     {
         if (handsRoot != null) handsRoot.SetActive(false);
+    }
+
+
+    public void ShowCarriedDocument()
+    {
+        if (carriedDocumentVisual != null) carriedDocumentVisual.SetActive(true);
+    }
+
+    public void HideCarriedDocument()
+    {
+        if (carriedDocumentVisual != null) carriedDocumentVisual.SetActive(false);
     }
 }

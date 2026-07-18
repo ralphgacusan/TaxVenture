@@ -2,16 +2,14 @@ using UnityEngine;
 
 /// <summary>
 /// PURPOSE:
-/// Phase covering Tax Return Preparation / Case Report Encoding — only
-/// reached if the case was stamped Ready For Filing. Per your design doc,
-/// this is where the Filing sub-tab of the Computer (already built in
-/// Milestone 10 Part 2's OnFileFormPressed) gets used in earnest.
+/// Full milestone covering Prepare Tax Return / Case Report Encoding, only
+/// reached if stamped Ready For Filing. Covers: Computer home screen ->
+/// Prepare Tax Return app -> form selection -> manual encoding -> confirm
+/// -> print -> pick up printed form -> walk to Auditor.
 ///
 /// TRANSITIONS TO:
-/// - ComplianceAuditState (Milestone 13)
-///
-/// CONNECTS WITH:
-/// - StampUI: requests this transition after a successful Ready-for-Filing stamp
+/// - ComplianceAuditState, once the player has physically picked up the
+///   printed form AND interacts with the Auditor (see AuditorInteractable).
 /// </summary>
 public class PrepareReturnState : IGameState
 {

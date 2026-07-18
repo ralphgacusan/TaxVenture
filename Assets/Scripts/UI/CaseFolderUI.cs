@@ -220,7 +220,11 @@ public class CaseFolderUI : MonoBehaviour
         p5.AppendLine($"Required Form: {(data.requiredForm.HasValue ? data.requiredForm.ToString() : "?")}");
         p5.AppendLine($"Filing Status: {FormatEnum(data.filingStatus.ToString())}");
         p5.AppendLine($"Submission Date: {(string.IsNullOrEmpty(data.submissionDate) ? "-" : data.submissionDate)}");
-        p5.Append($"Remarks: {(string.IsNullOrEmpty(data.remarks) ? "-" : data.remarks)}");
+        p5.AppendLine($"Remarks: {(string.IsNullOrEmpty(data.remarks) ? "-" : data.remarks)}");
+        if (data.encodedForm != null)
+        {
+            p5.Append($"Encoded Form On File: BIR {data.encodedForm.selectedForm}{(data.encodedForm.isConfirmed ? " (Confirmed)" : " (Draft)")}");
+        }
         list.Add(new CaseFolderPageContent("Filing Information", p5.ToString()));
 
         // Page 6 - Supporting Documents

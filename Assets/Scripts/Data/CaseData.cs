@@ -84,6 +84,20 @@ public class CaseData
         "One sales invoice was not included in declared revenue.",
         "Business income was initially omitted from the case summary."
     };
+
+    // ---------- Compliance Audit (Milestone 13) ----------
+    public int auditMistakeCount = 0;
+    public bool auditPassed = false;
+
+    // ---------- Prepare Tax Return (Milestone 12.5) ----------
+    public bool hasPrintedReturn = false;
+    public bool isCarryingPrintedReturn = false;
+
+    // What the player TYPED, kept separate from the authoritative values above
+    // so ComplianceChecker can compare "typed" vs "actual" without the typed
+    // data ever overwriting real CaseData fields (per "the player must type
+    // EVERYTHING manually, nothing auto-fills").
+    public EncodedFormData encodedForm = null;
 }
 
 public enum CaseAssessment { UnderReview, ReadyForComputation, ReadyForFiling, NotReadyForFiling, Filed }
