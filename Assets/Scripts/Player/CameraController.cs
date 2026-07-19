@@ -241,4 +241,40 @@ public class CameraController : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Freezes player movement and mouse-look WITHOUT any camera transition —
+    /// used for NPC conversations (Client Interview, Auditor) where the camera
+    /// stays exactly where it is, but the player shouldn't be able to walk
+    /// away or look around mid-conversation. Distinct from EnterFirstPerson,
+    /// which also moves the camera to a specific workstation viewpoint.
+    /// </summary>
+    public void LockPlayerControls()
+    {
+        if (CurrentMode != CameraMode.ThirdPerson) return; // NPC conversations only happen during exploration
+
+        thirdPersonFollow.enabled = false;
+        playerMovement.enabled = false;
+        playerInteractor.ClearFocus();
+        playerInteractor.enabled = false;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    /// <summary>
+    /// Reverses LockPlayerControls() — restores movement, mouse-look, and
+    /// re-locks the cursor for exploration.
+    /// </summary>
+    public void UnlockPlayerControls()
+    {
+        if (CurrentMode != CameraMode.ThirdPerson) return;
+
+        thirdPersonFollow.enabled = true;
+        playerMovement.enabled = true;
+        playerInteractor.enabled = true;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
 }

@@ -1,16 +1,16 @@
 /// <summary>
 /// PURPOSE:
-/// One detected problem with the case, found by ComplianceChecker. Plain
-/// data — just a human-readable description of what's wrong, matching the
-/// design doc's Section 12 Compliance Checklist items (e.g. "Residency
-/// Status Determined").
+/// One detected problem with the case. ShortLabel is intentionally VAGUE —
+/// it names WHAT is wrong, never WHY, never the expected value, per design
+/// requirement that the Auditor identifies issues without teaching or
+/// revealing corrections.
 /// </summary>
 public class ComplianceIssue
 {
-    public string Description;
+    public string ShortLabel;
 
-    public ComplianceIssue(string description)
+    public ComplianceIssue(string shortLabel)
     {
-        Description = description;
+        ShortLabel = shortLabel;
     }
 }

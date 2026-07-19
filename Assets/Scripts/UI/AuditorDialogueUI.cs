@@ -4,54 +4,42 @@ using TMPro;
 
 /// <summary>
 /// PURPOSE:
-/// Static dialogue-style panel showing the Auditor's review result — either
-/// a congratulations message (pass) or a list of specific mistakes to fix
-/// (fail), per design doc: "If correct: congratulates... If incorrect:
-/// explains the mistakes."
+/// Interview-style linear dialogue for the Auditor: one line at a time, a
+/// single Continue button, no branching questions (unlike the Client
+/// Interview's question-choice system — the Auditor's dialogue is scripted
+/// and sequential, not player-directed). Each detected issue gets exactly
+/// one vague line; after all issues, a closing statement plays; after that,
+/// the Audit Summary popup appears. Player controls stay locked
+/// (CameraController.LockPlayerControls) for the ENTIRE sequence, only
+/// unlocking after the summary popup is closed.
 ///
-/// RESPONSIBILITIES:
-/// - Run ComplianceChecker against the current case
-/// - Display pass/fail outcome
-/// - Store the mistake count into CaseData for Milestone 14 to consume
-/// - Provide a Continue/Return button appropriate to the outcome
-///
-/// CONNECTS WITH:
-/// - AuditorInteractable: calls Show() when the player hands over the case
-/// - ComplianceChecker: runs the actual rule checks
-/// - CaseManager.Instance.CurrentCase: read + write (auditMistakeCount, auditPassed)
-/// - GameStateMachine: advances to RewardsState on pass
-/// - AuditorInteractable's NpcStateMachine: notified when audit dialogue closes
+/// FLOW:
+/// AuditorInteractable.OnInteract() -> Show()
+///   -> builds vague issue-line queue via ComplianceChecker
+///   -> displays line 1, Continue advances through queue
+///   -> after last issue line, shows closing statement
+///   -> Continue on closing statement -> Hide() + AuditSummaryPopupUI.Show()
+///   -> popup Close -> CameraController.UnlockPlayerControls() + NPC state
+///      + GameStateMachine transition (pass/fail branching, same as before)
 /// </summary>
 public class AuditorDialogueUI : MonoBehaviour
 {
-    [Header("Panel")]
+    [Header("Panel (same structural style as InterviewPanel)")]
     [SerializeField] private GameObject auditorPanelRoot;
-
-    [Header("Content")]
-    [SerializeField] private TextMeshProUGUI resultHeadingText;
-    [SerializeField] private TextMeshProUGUI issuesListText;
-
-    [Header("Continue")]
+    [SerializeField] private TextMeshProUGUI auditorLineText;
     [SerializeField] private GameObject continueButton;
 
-    private NpcStateMachine auditorNpcState;
+    [Header("Summary Popup")]
+    [SerializeField] private AuditSummaryPopupUI summaryPopupUI;
 
-    [Header("Missing Form Warning")]
-    [SerializeField] private TextMeshProUGUI quickWarningText; // small floating text, no full panel
+    [Header("Missing Form Warning (unchanged from before)")]
+    [SerializeField] private TextMeshProUGUI quickWarningText;
     [SerializeField] private float warningDuration = 2.5f;
 
-    public void ShowMissingFormWarning()
-    {
-        if (quickWarningText == null) return;
-        quickWarningText.text = "You need to bring the printed Tax Return before the audit can begin.";
-        CancelInvoke(nameof(ClearWarning));
-        Invoke(nameof(ClearWarning), warningDuration);
-    }
-
-    private void ClearWarning()
-    {
-        if (quickWarningText != null) quickWarningText.text = "";
-    }
+    private List<ComplianceIssue> currentIssues;
+    private int lineIndex;
+    private bool isShowingClosingStatement;
+    private NpcStateMachine auditorNpcState;
 
     private void Awake()
     {
@@ -63,30 +51,15 @@ public class AuditorDialogueUI : MonoBehaviour
         auditorNpcState = npcState;
 
         CaseData data = CaseManager.Instance.CurrentCase;
-        List<ComplianceIssue> issues = ComplianceChecker.RunCheck(data);
+        currentIssues = ComplianceChecker.RunCheck(data);
+        data.auditMistakeCount = currentIssues.Count;
+        data.auditPassed = currentIssues.Count == 0;
 
-        data.auditMistakeCount = issues.Count;
-        data.auditPassed = issues.Count == 0;
-
-        if (data.auditPassed)
-        {
-            resultHeadingText.text = "Audit Passed — Congratulations!";
-            issuesListText.text = "No issues found. Your case handling was thorough and accurate.";
-        }
-        else
-        {
-            resultHeadingText.text = $"Audit Found {issues.Count} Issue(s)";
-            var sb = new System.Text.StringBuilder();
-            foreach (var issue in issues)
-            {
-                sb.AppendLine($"- {issue.Description}");
-            }
-            sb.AppendLine();
-            sb.AppendLine("Please return to your desk and address these before re-submitting for audit.");
-            issuesListText.text = sb.ToString();
-        }
+        lineIndex = 0;
+        isShowingClosingStatement = false;
 
         auditorPanelRoot.SetActive(true);
+        ShowCurrentLine();
     }
 
     public void Hide()
@@ -94,17 +67,52 @@ public class AuditorDialogueUI : MonoBehaviour
         auditorPanelRoot.SetActive(false);
     }
 
+    private void ShowCurrentLine()
+    {
+        if (currentIssues.Count == 0)
+        {
+            auditorLineText.text = "I've reviewed everything, and I found no issues. Well done.";
+            isShowingClosingStatement = true;
+            return;
+        }
+
+        if (lineIndex < currentIssues.Count)
+        {
+            auditorLineText.text = currentIssues[lineIndex].ShortLabel;
+        }
+        else if (!isShowingClosingStatement)
+        {
+            auditorLineText.text = "That concludes my review. Please check the audit summary before making your corrections.";
+            isShowingClosingStatement = true;
+        }
+    }
+
     /// <summary>
-    /// Wired to the Continue button. Closes the panel, marks the Auditor NPC
-    /// Completed, and — only on a pass — advances the game FSM toward Rewards.
-    /// On a fail, the game FSM deliberately stays wherever it was, so the
-    /// player can go fix issues and return to the Auditor again later.
+    /// Wired to the single Continue button. Advances through issue lines,
+    /// then the closing statement, then transitions to the summary popup.
     /// </summary>
     public void OnContinuePressed()
     {
-        CameraController.Instance.ExitInterview();
+        if (isShowingClosingStatement)
+        {
+            Hide();
+            summaryPopupUI.Show(currentIssues, OnSummaryClosed);
+            return;
+        }
 
-        Hide();
+        lineIndex++;
+        ShowCurrentLine();
+    }
+
+    /// <summary>
+    /// Called after the player closes the Audit Summary popup. This is the
+    /// ONLY point where player controls are restored and the FSM/NPC state
+    /// actually advances — matching "Only after the Audit Summary popup is
+    /// closed should player movement and camera controls be restored."
+    /// </summary>
+    private void OnSummaryClosed()
+    {
+        CameraController.Instance.UnlockPlayerControls();
 
         CaseData data = CaseManager.Instance.CurrentCase;
 
@@ -119,9 +127,20 @@ public class AuditorDialogueUI : MonoBehaviour
         }
         else
         {
-            // Fail: return the Auditor to Idle so the player can re-trigger
-            // the audit later without it being stuck in Dialogue/Completed.
             auditorNpcState?.ChangeState(new NpcIdleState());
         }
+    }
+
+    public void ShowMissingFormWarning()
+    {
+        if (quickWarningText == null) return;
+        quickWarningText.text = "You need to bring the printed Tax Return before the audit can begin.";
+        CancelInvoke(nameof(ClearWarning));
+        Invoke(nameof(ClearWarning), warningDuration);
+    }
+
+    private void ClearWarning()
+    {
+        if (quickWarningText != null) quickWarningText.text = "";
     }
 }

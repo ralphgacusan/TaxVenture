@@ -63,13 +63,16 @@ public class ClientInteractable : MonoBehaviour, IInteractable
         npcState.ChangeState(new NpcInteractState());
         npcState.ChangeState(new NpcDialogueState());
 
+        CameraController.Instance.LockPlayerControls(); // NEW
+
+        interviewClientUI.Show();
+
+
         if (GameStateMachine.Instance.CurrentState is ReviewDocumentsState)
         {
             GameStateMachine.Instance.ChangeState(new InterviewClientState());
         }
 
-        CameraController.Instance.EnterInterview(interviewViewpoint);
-        interviewClientUI.Show();
     }
 
     public string GetPromptText() => "Click to talk to Client";

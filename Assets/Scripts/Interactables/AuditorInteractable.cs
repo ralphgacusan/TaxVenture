@@ -54,10 +54,6 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
     {
         CaseData data = CaseManager.Instance.CurrentCase;
 
-        // If the case was stamped Ready For Filing, the Auditor now requires
-        // the player to have physically picked up the printed return before
-        // the audit can begin — matches "hand over the printed BIR Form
-        // instead of magically reviewing invisible paperwork."
         if (data.filingStatus == FilingStatus.ReadyForFiling && !data.isCarryingPrintedReturn)
         {
             auditorDialogueUI.ShowMissingFormWarning();
@@ -66,6 +62,8 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
 
         npcState.ChangeState(new NpcInteractState());
         npcState.ChangeState(new NpcDialogueState());
+
+        CameraController.Instance.LockPlayerControls(); // NEW
 
         if (GameStateMachine.Instance.CurrentState is PrepareReturnState
             || GameStateMachine.Instance.CurrentState is StampAssessmentState)

@@ -1,50 +1,26 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// PURPOSE:
-/// Pure logic that checks a CaseData instance against the design doc's
-/// Section 12 Compliance Checklist:
-///   Residency Status Determined
-///   Taxpayer Type Determined
-///   Income Source Determined
-///   Business Registration Verified
-///   Tax Option Verified
-///   Supporting Documents Verified
-///   Tax Computation Completed
-///   Correct BIR Form Selected
-///   No Unresolved Issues Remain
-///
-/// Zero Unity/UI/NPC dependency — same reasoning as
-/// TaxComputationCalculator: takes data in, returns a list of problems out.
-///
-/// CONNECTS WITH:
-/// - AuditorInteractable / AuditorDialogueUI: calls RunCheck() when the
-///   player hands over the case
-/// </summary>
 public static class ComplianceChecker
 {
     public static List<ComplianceIssue> RunCheck(CaseData data)
     {
         var issues = new List<ComplianceIssue>();
 
-
-
         if (!data.residencyStatus.HasValue)
-            issues.Add(new ComplianceIssue("Residency Status was never determined during the interview."));
+            issues.Add(new ComplianceIssue("Residency status was not verified."));
 
         if (!data.taxpayerType.HasValue)
-            issues.Add(new ComplianceIssue("Taxpayer Type was never determined during the interview."));
+            issues.Add(new ComplianceIssue("Taxpayer type was not verified."));
 
         if (!data.incomeSource.HasValue)
-            issues.Add(new ComplianceIssue("Income Source was never determined during the interview."));
+            issues.Add(new ComplianceIssue("Income source was not verified."));
 
         if (!data.businessRegistration.HasValue)
-            issues.Add(new ComplianceIssue("Business Registration was never verified during the interview."));
+            issues.Add(new ComplianceIssue("Business registration was not verified."));
 
         if (!data.taxOption.HasValue)
-            issues.Add(new ComplianceIssue("Tax Option was never verified during the interview."));
+            issues.Add(new ComplianceIssue("Tax option was not verified."));
 
         int unreviewedCount = 0;
         foreach (var doc in data.supportingDocuments)
@@ -52,30 +28,34 @@ public static class ComplianceChecker
             if (!doc.isReviewed) unreviewedCount++;
         }
         if (unreviewedCount > 0)
-            issues.Add(new ComplianceIssue($"{unreviewedCount} supporting document(s) were never reviewed."));
+            issues.Add(new ComplianceIssue("Some supporting documents were not reviewed."));
 
         if (data.computationStatus != ComputationStatus.Computed)
-            issues.Add(new ComplianceIssue("Tax computation was never completed at the Computer."));
+            issues.Add(new ComplianceIssue("Tax computation was not completed."));
+
+        RequiredForm expectedForm = DetermineExpectedForm(data.taxpayerType, data.taxOption);
 
         if (!data.requiredForm.HasValue)
-            issues.Add(new ComplianceIssue("No BIR Form was determined/filed."));
-        else
         {
-            RequiredForm expectedForm = DetermineExpectedForm(data.taxpayerType, data.taxOption);
-            if (data.requiredForm.Value != expectedForm)
-                issues.Add(new ComplianceIssue($"Incorrect BIR Form selected: filed {data.requiredForm.Value}, expected {expectedForm}."));
+            issues.Add(new ComplianceIssue("No BIR form was determined."));
+        }
+        else if (data.requiredForm.Value != expectedForm)
+        {
+            issues.Add(new ComplianceIssue("The wrong BIR form appears to have been filed."));
         }
 
-        // ---------- Encoded Form Validation (Milestone 12.5) ----------
+        if (data.filingStatus == FilingStatus.NotReady)
+            issues.Add(new ComplianceIssue("The case was never given a final assessment."));
+
         if (data.filingStatus == FilingStatus.ReadyForFiling)
         {
             if (data.encodedForm == null || !data.encodedForm.isConfirmed)
             {
-                issues.Add(new ComplianceIssue("No tax return form was encoded and confirmed."));
+                issues.Add(new ComplianceIssue("The tax return form was never completed."));
             }
             else
             {
-                CheckEncodedForm(data, data.encodedForm, issues);
+                CheckEncodedForm(data, data.encodedForm, expectedForm, issues);
             }
 
             if (!data.hasPrintedReturn)
@@ -84,84 +64,66 @@ public static class ComplianceChecker
             }
         }
 
-
-        if (data.filingStatus == FilingStatus.NotReady)
-            issues.Add(new ComplianceIssue("The case was never stamped with a final assessment."));
-
         return issues;
     }
 
-    /// <summary>
-    /// Compares every manually-typed field in EncodedFormData against the
-    /// authoritative CaseData values. This is the ONLY place typed values are
-    /// validated, per design goal ("The Auditor is the ONLY validation system").
-    /// </summary>
-    private static void CheckEncodedForm(CaseData data, EncodedFormData encoded, List<ComplianceIssue> issues)
+    private static void CheckEncodedForm(CaseData data, EncodedFormData encoded, RequiredForm expectedForm, List<ComplianceIssue> issues)
     {
-        RequiredForm expectedForm = DetermineExpectedForm(data.taxpayerType, data.taxOption);
         if (encoded.selectedForm != expectedForm)
-        {
-            issues.Add(new ComplianceIssue($"Wrong BIR Form encoded: filled out {encoded.selectedForm}, expected {expectedForm}."));
-        }
+            issues.Add(new ComplianceIssue("The wrong BIR form appears to have been encoded."));
 
-        CheckTextField("Full Name", encoded.fullName, data.fullName, issues);
-        CheckTextField("TIN", encoded.tin, data.tin, issues);
+        CheckTextField("An issue was found with the taxpayer's name.", encoded.fullName, data.fullName, issues);
+        CheckTextField("An issue was found with the TIN entered.", encoded.tin, data.tin, issues);
 
         if (!string.IsNullOrEmpty(encoded.address))
-            CheckTextField("Address", encoded.address, data.address, issues);
+            CheckTextField("An issue was found with the address entered.", encoded.address, data.address, issues);
 
         if (!string.IsNullOrEmpty(encoded.residencyStatus) && data.residencyStatus.HasValue)
-            CheckTextField("Residency Status", encoded.residencyStatus, data.residencyStatus.ToString(), issues);
+            CheckTextField("An issue was found with the residency status entered.", encoded.residencyStatus, data.residencyStatus.ToString(), issues);
 
         if (!string.IsNullOrEmpty(encoded.taxpayerType) && data.taxpayerType.HasValue)
-            CheckTextField("Taxpayer Type", encoded.taxpayerType, data.taxpayerType.ToString(), issues);
+            CheckTextField("An issue was found with the taxpayer type entered.", encoded.taxpayerType, data.taxpayerType.ToString(), issues);
 
         if (!string.IsNullOrEmpty(encoded.incomeSource) && data.incomeSource.HasValue)
-            CheckTextField("Income Source", encoded.incomeSource, data.incomeSource.ToString(), issues);
+            CheckTextField("An issue was found with the income source entered.", encoded.incomeSource, data.incomeSource.ToString(), issues);
 
-        CheckNumericField("Gross Income", encoded.grossIncome, data.grossIncome, issues);
+        CheckNumericField("The declared income does not match the supporting records.", encoded.grossIncome, data.grossIncome, issues);
+
         if (!string.IsNullOrEmpty(encoded.allowableExpenses))
-            CheckNumericField("Allowable Expenses", encoded.allowableExpenses, data.allowableExpenses, issues);
+            CheckNumericField("An issue was found with the declared expenses.", encoded.allowableExpenses, data.allowableExpenses, issues);
+
         if (!string.IsNullOrEmpty(encoded.taxableIncome))
-            CheckNumericField("Taxable Income", encoded.taxableIncome, data.taxableIncome, issues);
-        CheckNumericField("Tax Due", encoded.taxDue, data.taxDue, issues);
-        CheckNumericField("Tax Credits", encoded.taxCredits, data.taxWithheldOrCredits, issues);
-        CheckNumericField("Final Tax Payable", encoded.finalTaxPayable, data.finalTaxPayable, issues);
+            CheckNumericField("An issue was found with the taxable income entered.", encoded.taxableIncome, data.taxableIncome, issues);
+
+        CheckNumericField("An issue was found with the declared tax due.", encoded.taxDue, data.taxDue, issues);
+        CheckNumericField("An issue was found with the tax credits entered.", encoded.taxCredits, data.taxWithheldOrCredits, issues);
+        CheckNumericField("An issue was found with the final tax payable.", encoded.finalTaxPayable, data.finalTaxPayable, issues);
     }
 
-    private static void CheckTextField(string fieldName, string typed, string actual, List<ComplianceIssue> issues)
+    private static void CheckTextField(string vagueLabel, string typed, string actual, List<ComplianceIssue> issues)
     {
-        if (typed == null) typed = "";
-        if (!typed.Trim().Equals(actual?.Trim(), System.StringComparison.OrdinalIgnoreCase))
+        string typedTrimmed = (typed ?? "").Trim();
+        string actualTrimmed = (actual ?? "").Trim();
+        if (!typedTrimmed.Equals(actualTrimmed, System.StringComparison.OrdinalIgnoreCase))
         {
-            issues.Add(new ComplianceIssue($"{fieldName} mismatch: entered \"{typed}\", expected \"{actual}\"."));
+            issues.Add(new ComplianceIssue(vagueLabel));
         }
     }
 
-    private static void CheckNumericField(string fieldName, string typed, float actual, List<ComplianceIssue> issues)
+    private static void CheckNumericField(string vagueLabel, string typed, float actual, List<ComplianceIssue> issues)
     {
         if (!float.TryParse(typed, out float typedValue))
         {
-            issues.Add(new ComplianceIssue($"{fieldName} could not be read as a number: \"{typed}\"."));
+            issues.Add(new ComplianceIssue(vagueLabel));
             return;
         }
 
-        // Small tolerance for float rounding, not for actual mistakes.
         if (Mathf.Abs(typedValue - actual) > 1f)
         {
-            issues.Add(new ComplianceIssue($"{fieldName} mismatch: entered {typedValue:N0}, expected {actual:N0}."));
+            issues.Add(new ComplianceIssue(vagueLabel));
         }
     }
 
-    /// <summary>
-    /// Same logic as ComputerUI.DetermineRequiredForm from Milestone 10
-    /// Part 2, duplicated intentionally here rather than shared, since this
-    /// represents the AUDITOR'S independent verification, not a call back
-    /// into the player's own tool. If the two definitions ever diverge,
-    /// that's actually meaningful (the auditor's rulebook vs. the
-    /// consultant's calculator could theoretically disagree in a future
-    /// "gotcha" scenario) — but for now they should stay in sync manually.
-    /// </summary>
     private static RequiredForm DetermineExpectedForm(TaxpayerType? taxpayerType, TaxOption? taxOption)
     {
         if (taxpayerType == TaxpayerType.CompensationEarner) return RequiredForm.BIR1700;

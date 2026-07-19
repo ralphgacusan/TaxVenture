@@ -127,6 +127,6 @@ public class InterviewClientUI : MonoBehaviour
 
         clientNpcState?.ChangeState(new NpcCompletedState());
 
-        CameraController.Instance.ExitInterview();
+        CameraController.Instance.UnlockPlayerControls(); // NEW
     }
 }
