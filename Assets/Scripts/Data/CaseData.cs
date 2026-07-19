@@ -93,6 +93,13 @@ public class CaseData
     public bool hasPrintedReturn = false;
     public bool isCarryingPrintedReturn = false;
 
+
+    // ---------- Case Outcome / Archive (Milestone 14) ----------
+    public bool clientPresentationCompleted = false;
+    public bool isArchived = false;
+    public bool isCarryingCaseFolder = true; // conceptually "in hand" through to archiving; see FilingCabinetInteractable note
+
+
     // What the player TYPED, kept separate from the authoritative values above
     // so ComplianceChecker can compare "typed" vs "actual" without the typed
     // data ever overwriting real CaseData fields (per "the player must type

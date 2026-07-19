@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// PURPOSE:
@@ -60,10 +61,18 @@ public class ClientInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract()
     {
+        // NEW: if we're at the Case Outcome phase, this click means
+        // "present findings," not "interview again."
+        if (GameStateMachine.Instance.CurrentState is CaseOutcomeState)
+        {
+            PresentFindings();
+            return;
+        }
+
         npcState.ChangeState(new NpcInteractState());
         npcState.ChangeState(new NpcDialogueState());
 
-        CameraController.Instance.LockPlayerControls(); // NEW
+        CameraController.Instance.LockPlayerControls();
 
         interviewClientUI.Show();
 
@@ -73,6 +82,38 @@ public class ClientInteractable : MonoBehaviour, IInteractable
             GameStateMachine.Instance.ChangeState(new InterviewClientState());
         }
 
+    }
+
+    private void PresentFindings()
+    {
+        npcState.ChangeState(new NpcInteractState());
+        npcState.ChangeState(new NpcDialogueState());
+
+        CameraController.Instance.LockPlayerControls();
+
+        var lines = new List<string>
+        {
+            "I've completed the review of your tax documents.",
+            "Your tax return has been prepared and reviewed.",
+            "The compliance audit has also been completed.",
+            "Everything is now ready for filing.",
+            "Thank you for handling my case.",
+            "I appreciate your assistance.",
+            "This concludes your consultation."
+        };
+
+        interviewClientUI.ShowPresentation(lines, OnPresentationConcluded);
+    }
+
+    private void OnPresentationConcluded()
+    {
+        CaseManager.Instance.CurrentCase.clientPresentationCompleted = true;
+        npcState.ChangeState(new NpcCompletedState());
+
+        if (GameStateMachine.Instance.CurrentState is CaseOutcomeState)
+        {
+            GameStateMachine.Instance.ChangeState(new ArchiveCaseState());
+        }
     }
 
     public string GetPromptText() => "Click to talk to Client";

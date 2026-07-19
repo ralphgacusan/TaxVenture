@@ -69,6 +69,9 @@ public class PrinterInteractable : MonoBehaviour, IInteractable
 
         firstPersonHands.ShowCarriedDocument();
 
+        GameStateMachine.Instance.ChangeState(new ComplianceAuditState());
+
+
         SetPrintReady(false); // paper collected, printer resets visually
     }
 

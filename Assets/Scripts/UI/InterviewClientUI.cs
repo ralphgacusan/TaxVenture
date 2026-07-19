@@ -15,7 +15,6 @@ public class InterviewClientUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI clientLineText;
 
     [Header("Question List")]
-    [SerializeField] private GameObject questionButtonListRoot;
     [SerializeField] private GameObject questionButtonPrefab;
 
     [Header("Finish")]
@@ -24,9 +23,18 @@ public class InterviewClientUI : MonoBehaviour
     [Header("NPC Reference")]
     [SerializeField] private NpcStateMachine clientNpcState;
 
+    [Header("Presentation Mode (reuses this same panel — no new dialogue system)")]
+    [SerializeField] private GameObject continueButton; // shown only during presentation mode
+    [SerializeField] private GameObject questionButtonListRoot; // already exists — hidden during presentation
+
     private List<InterviewSection> sections;
     private int currentSectionIndex;
     private List<GameObject> spawnedButtons = new List<GameObject>();
+
+    private List<string> presentationLines;
+    private int presentationLineIndex;
+    private bool isPresentationMode = false;
+    private System.Action onPresentationConcluded;
 
     private void Awake()
     {
@@ -128,5 +136,60 @@ public class InterviewClientUI : MonoBehaviour
         clientNpcState?.ChangeState(new NpcCompletedState());
 
         CameraController.Instance.UnlockPlayerControls(); // NEW
+    }
+
+
+    /// <summary>
+    /// Presentation mode: reuses the exact same panel, clientLineText, and
+    /// player-lock flow as the interview, but shows a fixed queue of lines
+    /// (no question choices) advanced one at a time via Continue — same
+    /// linear pattern as AuditorDialogueUI. Used for "Present Findings to
+    /// Client" (Milestone 14) instead of the branching interview questions.
+    /// </summary>
+    public void ShowPresentation(List<string> lines, System.Action onConcluded)
+    {
+        isPresentationMode = true;
+        presentationLines = lines;
+        presentationLineIndex = 0;
+        onPresentationConcluded = onConcluded;
+
+        questionButtonListRoot.SetActive(false);
+        finishInterviewButton.SetActive(false);
+        continueButton.SetActive(true);
+
+        interviewPanelRoot.SetActive(true);
+        RenderCurrentPresentationLine();
+    }
+
+    private void RenderCurrentPresentationLine()
+    {
+        if (presentationLineIndex < presentationLines.Count)
+        {
+            clientLineText.text = presentationLines[presentationLineIndex];
+        }
+    }
+
+    /// <summary>
+    /// Wired to the Continue button, active only during presentation mode.
+    /// </summary>
+    public void OnPresentationContinuePressed()
+    {
+        presentationLineIndex++;
+
+        if (presentationLineIndex >= presentationLines.Count)
+        {
+            // Conversation concluded — close exactly like Finish Interview does,
+            // but route through the presentation-specific callback instead.
+            Hide();
+            isPresentationMode = false;
+            continueButton.SetActive(false);
+            questionButtonListRoot.SetActive(true); // restore normal interview mode for any future reuse
+
+            CameraController.Instance.UnlockPlayerControls();
+            onPresentationConcluded?.Invoke();
+            return;
+        }
+
+        RenderCurrentPresentationLine();
     }
 }

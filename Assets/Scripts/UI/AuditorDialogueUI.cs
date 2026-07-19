@@ -122,7 +122,7 @@ public class AuditorDialogueUI : MonoBehaviour
 
             if (GameStateMachine.Instance.CurrentState is ComplianceAuditState)
             {
-                GameStateMachine.Instance.ChangeState(new RewardsState());
+                GameStateMachine.Instance.ChangeState(new CaseOutcomeState());
             }
         }
         else
