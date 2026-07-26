@@ -28,6 +28,8 @@ public class CaseFolderInteractable : MonoBehaviour, IInteractable
 
     private HighlightEffect highlight;
 
+    private bool hasBeenOpenedOnce = false;
+
     private void Awake()
     {
         highlight = GetComponent<HighlightEffect>();
@@ -45,8 +47,16 @@ public class CaseFolderInteractable : MonoBehaviour, IInteractable
     public void OnInteract()
     {
 
+        if (!hasBeenOpenedOnce)
+        {
+            hasBeenOpenedOnce = true;
+            GameplayEvents.RaiseCaseFolderFirstOpened();
+        }
+
         caseFolderUI.Show();
         GameStateMachine.Instance.ChangeState(new ReviewDocumentsState());
+
+
 
     }
 

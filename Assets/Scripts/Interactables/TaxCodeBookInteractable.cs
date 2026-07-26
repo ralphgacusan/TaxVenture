@@ -16,6 +16,8 @@ public class TaxCodeBookInteractable : MonoBehaviour, IInteractable
     [SerializeField] private TaxCodeBookUI taxCodeBookUI;
     private HighlightEffect highlight;
 
+    private bool hasBeenOpenedOnce = false;
+
     private void Awake()
     {
         highlight = GetComponent<HighlightEffect>();
@@ -32,6 +34,12 @@ public class TaxCodeBookInteractable : MonoBehaviour, IInteractable
     }
     public void OnInteract()
     {
+        if (!hasBeenOpenedOnce)
+        {
+            hasBeenOpenedOnce = true;
+            GameplayEvents.RaiseTaxCodeBookFirstOpened();
+        }
+
         taxCodeBookUI.Show();
     }
 
