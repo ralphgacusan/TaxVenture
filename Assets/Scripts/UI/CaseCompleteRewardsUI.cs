@@ -34,7 +34,7 @@ public class CaseCompleteRewardsUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI mistakeSummaryText;
 
     [Header("Scene Transition")]
-    [SerializeField] private string mainMenuSceneName = "MainMenu";
+    [SerializeField] private string progressSceneName = "Progress";
 
     private void Awake()
     {
@@ -94,6 +94,6 @@ public class CaseCompleteRewardsUI : MonoBehaviour
     {
         Hide();
         GameStateMachine.Instance.ChangeState(new CaseCompleteState());
-        SceneManager.LoadScene(mainMenuSceneName);
+        SceneManager.LoadScene(progressSceneName);
     }
 }

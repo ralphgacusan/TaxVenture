@@ -49,8 +49,13 @@ public class ThirdPersonCameraFollow : MonoBehaviour
 
     [SerializeField] private FirstPersonHands firstPersonHands;
 
+    [Header("Cursor Toggle (for HUD interaction)")]
+    [SerializeField] private KeyCode freeCursorKey = KeyCode.Tab;
+
     private float yaw;
     private float pitch = 0f;
+
+    private bool isCursorFreed = false;
 
     private void Start()
     {
@@ -98,7 +103,8 @@ public class ThirdPersonCameraFollow : MonoBehaviour
     // Test: Third and First Person Toggle
     private void LateUpdate()
     {
-        if (target == null) return;
+
+        if (target == null || isCursorFreed) return; // NEW guard
 
         // Mouse look
         yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
@@ -132,6 +138,23 @@ public class ThirdPersonCameraFollow : MonoBehaviour
             transform.LookAt(target.position + Vector3.up * lookHeight);
         }
     }
+
+    private void ToggleCursorFree()
+    {
+        isCursorFreed = !isCursorFreed;
+
+        if (isCursorFreed)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+    }
+
     private void Update()
     {
         if (Input.GetKeyDown(toggleKey))
@@ -144,6 +167,11 @@ public class ThirdPersonCameraFollow : MonoBehaviour
                 else
                     firstPersonHands.Hide();
             }
+        }
+
+        if (Input.GetKeyDown(freeCursorKey))
+        {
+            ToggleCursorFree();
         }
     }
 }
