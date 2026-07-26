@@ -103,8 +103,7 @@ public class ThirdPersonCameraFollow : MonoBehaviour
     // Test: Third and First Person Toggle
     private void LateUpdate()
     {
-
-        if (target == null || isCursorFreed) return; // NEW guard
+        if (target == null) return;
 
         // Mouse look
         yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
@@ -154,7 +153,6 @@ public class ThirdPersonCameraFollow : MonoBehaviour
             Cursor.visible = false;
         }
     }
-
     private void Update()
     {
         if (Input.GetKeyDown(toggleKey))

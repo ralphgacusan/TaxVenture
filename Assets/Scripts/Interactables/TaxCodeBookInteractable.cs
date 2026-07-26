@@ -40,6 +40,11 @@ public class TaxCodeBookInteractable : MonoBehaviour, IInteractable
             GameplayEvents.RaiseTaxCodeBookFirstOpened();
         }
 
+        if (GameStateMachine.Instance.CurrentState is InterviewClientState
+            || GameStateMachine.Instance.CurrentState is ReviewDocumentsState)
+        {
+            GameStateMachine.Instance.ChangeState(new ResearchTaxState());
+        }
         taxCodeBookUI.Show();
     }
 

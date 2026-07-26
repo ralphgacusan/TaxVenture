@@ -44,7 +44,6 @@ public class AssessmentCardInteractable : MonoBehaviour, IInteractable
     private void OnEnable()
     {
         OnAnyCardSelected += RefreshVisual;
-        RefreshVisual();
     }
 
     private void OnDisable()
@@ -63,17 +62,26 @@ public class AssessmentCardInteractable : MonoBehaviour, IInteractable
     {
         CaseManager.Instance.CurrentCase.caseAssessment = representedAssessment;
         OnAnyCardSelected?.Invoke(); // notifies this card AND its sibling to refresh
+
+        if (GameStateMachine.Instance.CurrentState is AnalyzeEvidenceState
+            || GameStateMachine.Instance.CurrentState is ComputeTaxesState
+            || GameStateMachine.Instance.CurrentState is InterviewClientState
+            || GameStateMachine.Instance.CurrentState is ReviewDocumentsState)
+        {
+            GameStateMachine.Instance.ChangeState(new StampAssessmentState());
+        }
     }
 
     public string GetPromptText() => $"Click to mark case as {representedAssessment}";
 
     public void RefreshVisual()
     {
+        if (CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null) return; // safety guard
+
         bool isSelected = CaseManager.Instance.CurrentCase.caseAssessment == representedAssessment;
         if (cardRenderer != null)
         {
             cardRenderer.material.color = isSelected ? selectedColor : unselectedColor;
         }
-        Debug.Log(cardRenderer.material.color);
     }
 }

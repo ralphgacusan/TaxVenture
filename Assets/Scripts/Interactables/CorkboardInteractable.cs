@@ -32,6 +32,13 @@ public class CorkboardInteractable : MonoBehaviour, IInteractable
     {
         CameraController.Instance.EnterFirstPerson(corkboardViewpoint, false);
         documentSpawner.SpawnDocuments();
+
+        if (GameStateMachine.Instance.CurrentState is ComputeTaxesState
+            || GameStateMachine.Instance.CurrentState is ResearchTaxState
+            || GameStateMachine.Instance.CurrentState is InterviewClientState)
+        {
+            GameStateMachine.Instance.ChangeState(new AnalyzeEvidenceState());
+        }
     }
 
     public string GetPromptText() => "Click to review evidence at Corkboard";

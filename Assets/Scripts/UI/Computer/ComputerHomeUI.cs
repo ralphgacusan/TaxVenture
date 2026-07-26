@@ -65,6 +65,15 @@ public class ComputerHomeUI : MonoBehaviour
     private void LaunchCalculateTaxes()
     {
         homePanelRoot.SetActive(false);
+
+        if (GameStateMachine.Instance.CurrentState is ResearchTaxState
+            || GameStateMachine.Instance.CurrentState is InterviewClientState
+            || GameStateMachine.Instance.CurrentState is ReviewDocumentsState)
+        {
+            GameStateMachine.Instance.ChangeState(new ComputeTaxesState());
+        }
+
+
         computerUI.Show();
     }
 

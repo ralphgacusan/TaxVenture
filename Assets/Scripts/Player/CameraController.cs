@@ -79,6 +79,10 @@ public class CameraController : MonoBehaviour
     [Header("Desk Items")]
     [SerializeField] private DeskItemHighlight[] deskItemHighlights;
 
+    [Header("Player Body (hidden during first-person/interview modes)")]
+    [Tooltip("The player's visible mesh Renderer — toggling Renderer.enabled hides the mesh without disabling the GameObject (which would also disable PlayerMovement/Interactor).")]
+    [SerializeField] private Renderer playerBodyRenderer;
+
     private Coroutine activeTransition;
     private Transform currentViewpoint;
 
@@ -103,6 +107,8 @@ public class CameraController : MonoBehaviour
         playerInteractor.ClearFocus();
         playerInteractor.enabled = false;
         workstationInteractor.enabled = true;
+
+        if (playerBodyRenderer != null) playerBodyRenderer.enabled = false;
 
         // Unlock cursor so the player can click UI (Close button, folder pages, etc.)
         Cursor.lockState = CursorLockMode.None;
@@ -147,7 +153,9 @@ public class CameraController : MonoBehaviour
             thirdPersonFollow.enabled = true;
             playerMovement.enabled = true;
             playerInteractor.enabled = true;
-            workstationInteractor.enabled = false;   // <-- ADD THIS
+            workstationInteractor.enabled = false;
+
+            if (playerBodyRenderer != null) playerBodyRenderer.enabled = true; // NEW
 
             // Re-lock cursor for exploration/mouse-look.
             Cursor.lockState = CursorLockMode.Locked;
@@ -201,6 +209,8 @@ public class CameraController : MonoBehaviour
 
         workstationInteractor.enabled = false;
 
+        if (playerBodyRenderer != null) playerBodyRenderer.enabled = false;
+
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
@@ -235,6 +245,8 @@ public class CameraController : MonoBehaviour
                     playerMovement.enabled = true;
                     playerInteractor.enabled = true;
 
+                    if (playerBodyRenderer != null) playerBodyRenderer.enabled = true;
+
                     Cursor.lockState = CursorLockMode.Locked;
                     Cursor.visible = false;
                 }));
@@ -257,6 +269,8 @@ public class CameraController : MonoBehaviour
         playerInteractor.ClearFocus();
         playerInteractor.enabled = false;
 
+        if (playerBodyRenderer != null) playerBodyRenderer.enabled = false;
+
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
@@ -272,6 +286,8 @@ public class CameraController : MonoBehaviour
         thirdPersonFollow.enabled = true;
         playerMovement.enabled = true;
         playerInteractor.enabled = true;
+
+        if (playerBodyRenderer != null) playerBodyRenderer.enabled = true;
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
