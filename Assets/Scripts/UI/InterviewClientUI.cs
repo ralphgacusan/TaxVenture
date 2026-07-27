@@ -56,13 +56,10 @@ public class InterviewClientUI : MonoBehaviour
     {
         interviewPanelRoot.SetActive(false);
 
-        Debug.Log("Restore document? " + restoreCarriedDocumentOnClose);
-
         if (restoreCarriedDocumentOnClose)
         {
-            Debug.Log("Showing carried document");
             FirstPersonHands.Instance.ShowCarriedDocument();
-            restoreCarriedDocumentOnClose = false;
+            restoreCarriedDocumentOnClose = false; // reset for next use
         }
     }
 
@@ -158,9 +155,9 @@ public class InterviewClientUI : MonoBehaviour
     public void ShowPresentation(
         List<string> lines,
         System.Action onConcluded,
-        bool restoreCarriedDocument = false)
+        bool restoreDocumentOnClose = false)
     {
-        restoreCarriedDocumentOnClose = restoreCarriedDocument;
+        restoreCarriedDocumentOnClose = restoreDocumentOnClose;
 
         isPresentationMode = true;
         presentationLines = lines;
@@ -174,7 +171,6 @@ public class InterviewClientUI : MonoBehaviour
         interviewPanelRoot.SetActive(true);
         RenderCurrentPresentationLine();
     }
-
     private void RenderCurrentPresentationLine()
     {
         if (presentationLineIndex < presentationLines.Count)

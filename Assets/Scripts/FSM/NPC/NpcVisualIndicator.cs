@@ -21,9 +21,11 @@ using UnityEngine;
 /// independent from, focus highlighting.
 /// </summary>
 [RequireComponent(typeof(NpcStateMachine))]
-[RequireComponent(typeof(Renderer))]
 public class NpcVisualIndicator : MonoBehaviour
 {
+    [Header("Visual Root")]
+    [SerializeField] private Transform visualRoot;
+
     [Header("State Colors")]
     [SerializeField] private Color idleColor = Color.gray;
     [SerializeField] private Color waitingColor = Color.yellow;
@@ -32,12 +34,18 @@ public class NpcVisualIndicator : MonoBehaviour
     [SerializeField] private Color completedColor = Color.green;
 
     private NpcStateMachine stateMachine;
-    private Renderer npcRenderer;
-
+    private Renderer[] renderers;
     private void Awake()
     {
         stateMachine = GetComponent<NpcStateMachine>();
-        npcRenderer = GetComponent<Renderer>();
+
+        if (visualRoot == null)
+        {
+            Debug.LogError($"{name}: Visual Root is not assigned.");
+            return;
+        }
+
+        renderers = visualRoot.GetComponentsInChildren<Renderer>();
     }
 
     private void OnEnable()
@@ -62,6 +70,9 @@ public class NpcVisualIndicator : MonoBehaviour
             _ => idleColor
         };
 
-        npcRenderer.material.color = targetColor;
+        foreach (Renderer renderer in renderers)
+        {
+            renderer.material.color = targetColor;
+        }
     }
 }
