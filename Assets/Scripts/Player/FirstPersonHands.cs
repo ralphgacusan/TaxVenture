@@ -20,14 +20,26 @@ using UnityEngine;
 /// </summary>
 public class FirstPersonHands : MonoBehaviour
 {
+    // ADD THIS
+    public static FirstPersonHands Instance { get; private set; }
+
     [Tooltip("Parent object containing the placeholder hand meshes. Assign the object that holds both hand capsules.")]
     [SerializeField] private GameObject handsRoot;
 
     [Header("Carried Document (left hand)")]
-    [SerializeField] private GameObject carriedDocumentVisual; // paper mesh, child of left hand position
+    [SerializeField] private GameObject carriedDocumentVisual;
 
     private void Awake()
     {
+        // ADD THIS
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
         if (handsRoot != null)
             handsRoot.SetActive(true);
 

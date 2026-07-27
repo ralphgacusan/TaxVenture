@@ -51,6 +51,7 @@ public class AuditSummaryPopupUI : MonoBehaviour
     {
         popupPanelRoot.SetActive(false);
         onClosed?.Invoke();
+        FirstPersonHands.Instance.ShowCarriedDocument();
     }
 
     private void Hide()

@@ -4,14 +4,17 @@ using TMPro;
 
 /// <summary>
 /// PURPOSE:
-/// Owns stamp selection + validation logic. Now driven by two UI buttons
-/// inside the folder panel (Ready / Not Ready) rather than physical world
-/// stamps. Validates the selected stamp against CaseData.caseAssessment
-/// (set at the Corkboard), same rule as before.
+/// The ONLY place CaseData.caseAssessment can ever be set. Player selects a
+/// stamp (Ready/Not Ready) based on their own review of the evidence, then
+/// applies it directly to the folder paper — no validation against a prior
+/// Corkboard decision (that system has been removed; the stamp IS the
+/// decision now). Instantly refreshes the open Case Folder UI so Page 1's
+/// assessment text updates immediately without needing to close/reopen it.
 ///
 /// CONNECTS WITH:
 /// - CaseFolderUI: calls SelectStamp() from button OnClick, calls
-///   TryApplyStampToPaper() when the Paper itself is clicked while stamping
+///   TryApplyStampToPaper() when the Paper itself is clicked while stamping;
+///   also has Refresh() called on it directly after a successful stamp
 /// - CaseManager.Instance.CurrentCase: read/write target
 /// - GameStateMachine: transition on success
 /// </summary>
@@ -28,7 +31,6 @@ public class StampUI : MonoBehaviour
     [Header("Feedback")]
     [SerializeField] private TextMeshProUGUI feedbackText;
     [SerializeField] private float feedbackDisplayDuration = 2.5f;
-
 
     private StampType? selectedStampType = null;
 
@@ -59,28 +61,15 @@ public class StampUI : MonoBehaviour
 
     /// <summary>
     /// Called by CaseFolderUI when the Paper itself is clicked while a stamp
-    /// is currently selected. Validates against CaseData.caseAssessment.
+    /// is currently selected. No validation step anymore — whichever stamp
+    /// the player picked IS the final assessment, applied immediately.
     /// </summary>
     public void TryApplyStampToPaper()
     {
         if (!selectedStampType.HasValue) return;
 
         CaseData data = CaseManager.Instance.CurrentCase;
-        bool matchesReady = selectedStampType.Value == StampType.ReadyForFiling
-            && data.caseAssessment == CaseAssessment.ReadyForFiling;
-        bool matchesNotReady = selectedStampType.Value == StampType.NotReadyForFiling
-            && data.caseAssessment == CaseAssessment.NotReadyForFiling;
-
-        if (matchesReady || matchesNotReady)
-        {
-            ApplyStamp(selectedStampType.Value, data);
-        }
-        else
-        {
-            ShowFeedback(
-                $"Mismatch: your evidence review concluded '{data.caseAssessment}', " +
-                $"but you tried to stamp '{selectedStampType.Value}'.", true);
-        }
+        ApplyStamp(selectedStampType.Value, data);
 
         ResetSelection();
     }
@@ -109,6 +98,8 @@ public class StampUI : MonoBehaviour
                 GameStateMachine.Instance.ChangeState(new ComplianceAuditState());
         }
 
+        // Instantly refresh the Case Folder's Page 1 so the new assessment
+        // text shows immediately, matching the old behavior.
         FindFirstObjectByType<CaseFolderUI>()?.Refresh();
     }
 

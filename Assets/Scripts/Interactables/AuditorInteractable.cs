@@ -60,6 +60,9 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
             return;
         }
 
+        FirstPersonHands.Instance.HideCarriedDocument();
+
+
         npcState.ChangeState(new NpcInteractState());
         npcState.ChangeState(new NpcDialogueState());
 

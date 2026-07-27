@@ -42,6 +42,7 @@ public class FormSelectionUI : MonoBehaviour
 
     private void SelectForm(RequiredForm form)
     {
+        CaseManager.Instance.CurrentCase.requiredForm = form;
         Hide();
         encodingUI.Show(form);
     }

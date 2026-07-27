@@ -65,6 +65,8 @@ public class ClientInteractable : MonoBehaviour, IInteractable
         // "present findings," not "interview again."
         if (GameStateMachine.Instance.CurrentState is CaseOutcomeState)
         {
+            FirstPersonHands.Instance.HideCarriedDocument();
+
             PresentFindings();
             return;
         }
@@ -102,7 +104,11 @@ public class ClientInteractable : MonoBehaviour, IInteractable
             "This concludes your consultation."
         };
 
-        interviewClientUI.ShowPresentation(lines, OnPresentationConcluded);
+        interviewClientUI.ShowPresentation(
+            lines,
+            OnPresentationConcluded,
+            true
+        );
     }
 
     private void OnPresentationConcluded()

@@ -50,8 +50,7 @@ public class ComputerHomeUI : MonoBehaviour
         homePanelRoot.SetActive(true);
 
         CaseData data = CaseManager.Instance.CurrentCase;
-        bool readyForFiling = data.caseAssessment == CaseAssessment.ReadyForFiling
-            || data.filingStatus == FilingStatus.ReadyForFiling;
+        bool readyForFiling = data.filingStatus == FilingStatus.ReadyForFiling; // strict: only Stamp sets this
 
         prepareTaxReturnButton.interactable = readyForFiling;
         prepareButtonTooltip.text = readyForFiling ? "" : "Case is not ready for filing.";

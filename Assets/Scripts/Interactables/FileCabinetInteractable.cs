@@ -67,8 +67,11 @@ public class FilingCabinetInteractable : MonoBehaviour, IInteractable
             ShowWarning("You don't have the Case Folder with you.");
             return;
         }
-
+        FirstPersonHands.Instance.HideCarriedDocument();
         ArchiveCase(data);
+
+
+
 
     }
 

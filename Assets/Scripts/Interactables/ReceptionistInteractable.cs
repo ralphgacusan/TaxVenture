@@ -79,7 +79,11 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
             "Good luck!"
         };
 
-        receptionistDialogueUI.ShowPresentation(lines, OnConversationConcluded);
+        receptionistDialogueUI.ShowPresentation(
+            lines,
+            OnConversationConcluded,
+            false
+        );
     }
 
     private void OnConversationConcluded()

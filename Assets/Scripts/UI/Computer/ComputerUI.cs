@@ -22,10 +22,6 @@ public class ComputerUI : MonoBehaviour, IPointerClickHandler
     [SerializeField] private GameObject calculateButton;
     [SerializeField] private TextMeshProUGUI resultSummaryText;
 
-    [Header("Filing (Sub Tab 2)")]
-    [SerializeField] private GameObject fileFormButton;
-    [SerializeField] private TextMeshProUGUI filingResultText;
-
     private ComputerSourceValue selectedSource = null;
     private GameObject selectedSourceButtonObj = null;
     private List<(GameObject obj, ComputerSourceValue data)> spawnedSourceButtons = new List<(GameObject, ComputerSourceValue)>();
@@ -51,9 +47,6 @@ public class ComputerUI : MonoBehaviour, IPointerClickHandler
         selectedSourceButtonObj = null;
         calculateButton.SetActive(false);
         resultSummaryText.text = "";
-
-        fileFormButton.SetActive(CaseManager.Instance.CurrentCase.computationStatus == ComputationStatus.Computed);
-        filingResultText.text = "";
     }
 
     public void Hide()
@@ -184,26 +177,6 @@ public class ComputerUI : MonoBehaviour, IPointerClickHandler
             $"Final Tax Payable: \u20b1{data.finalTaxPayable:N0}\n" +
             $"Status: Computed";
 
-        fileFormButton.SetActive(true);
-    }
-
-    /// <summary>
-    /// SUB TAB 2 — TAX RETURN FILING.
-    /// Determines the correct BIR form per design doc Section 8 (Form
-    /// Selection Guide) from the taxpayer's already-established Taxpayer
-    /// Type and Tax Option, and writes Page 5's Filing Information fields.
-    /// </summary>
-    public void OnFileFormPressed()
-    {
-        CaseData data = CaseManager.Instance.CurrentCase;
-
-        RequiredForm form = DetermineRequiredForm(data.taxpayerType, data.taxOption);
-        data.requiredForm = form;
-        data.filingStatus = FilingStatus.ReadyForFiling;
-
-        filingResultText.text =
-            $"Required Form: {form}\n" +
-            $"Filing Status: Ready For Filing";
     }
 
     /// <summary>

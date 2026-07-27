@@ -92,11 +92,13 @@ public class CaseFolderUI : MonoBehaviour
     public void ShowForStamping()
     {
         pages = BuildPages(CaseManager.Instance.CurrentCase);
+        isStampingMode = true;
+
         folderPanelRoot.SetActive(true);
         currentPageIndex = 0;
+
         RenderPage(currentPageIndex);
 
-        isStampingMode = true;
         stampPanel.SetActive(true);
         stampUI.ResetSelection();
     }
@@ -139,16 +141,22 @@ public class CaseFolderUI : MonoBehaviour
         bodyText.text = page.Body;
         pageIndicatorText.text = $"Page {index + 1} / {pages.Count}";
 
-        // Disable Previous/Next at the ends instead of letting them wrap or error.
-        previousButton.SetActive(index > 0);
-        nextButton.SetActive(index < pages.Count - 1);
-
-        supportingDocumentsPageLink?.OnFolderPageChanged(index);
-
         if (isStampingMode)
         {
-            stampPanel.SetActive(index == 0); // only show stamps while looking at Page 1
+            previousButton.SetActive(false);
+            nextButton.SetActive(false);
+
+            stampPanel.SetActive(index == 0);
         }
+        else
+        {
+            previousButton.SetActive(index > 0);
+            nextButton.SetActive(index < pages.Count - 1);
+
+            stampPanel.SetActive(false);
+        }
+
+        supportingDocumentsPageLink?.OnFolderPageChanged(index);
     }
 
     /// <summary>
@@ -160,7 +168,6 @@ public class CaseFolderUI : MonoBehaviour
     {
         var list = new List<CaseFolderPageContent>();
 
-
         // Page 1 - Case Overview
         string assessmentText;
 
@@ -170,7 +177,7 @@ public class CaseFolderUI : MonoBehaviour
         }
         else
         {
-            assessmentText = $"Case Assessment: {FormatEnum(data.caseAssessment.ToString())}";
+            assessmentText = $"Case Assessment: {EnumDisplayFormatter.Format(data.caseAssessment.ToString())}";
         }
 
         list.Add(new CaseFolderPageContent(
@@ -185,23 +192,23 @@ public class CaseFolderUI : MonoBehaviour
         p2.AppendLine($"Birthdate: {data.birthdate}");
         p2.AppendLine($"Address: {data.address}");
         p2.AppendLine($"Contact Number: {data.contactNumber}");
-        p2.AppendLine($"Civil Status: {data.civilStatus}");
+        p2.AppendLine($"Civil Status: {EnumDisplayFormatter.Format(data.civilStatus.ToString())}");
         if (data.civilStatus == CivilStatus.Married)
         {
             p2.AppendLine($"Spouse Name: {data.spouseName}");
             p2.AppendLine($"Spouse TIN: {data.spouseTin}");
         }
         p2.AppendLine($"Citizenship: {data.citizenship}");
-        p2.AppendLine($"Residency Status: {(data.residencyStatus.HasValue ? data.residencyStatus.ToString() : "?")}");
-        p2.Append($"Taxpayer Type: {(data.taxpayerType.HasValue ? data.taxpayerType.ToString() : "?")}");
+        p2.AppendLine($"Residency Status: {EnumDisplayFormatter.Format(data.residencyStatus)}");
+        p2.Append($"Taxpayer Type: {EnumDisplayFormatter.Format(data.taxpayerType)}");
         list.Add(new CaseFolderPageContent("Taxpayer Information", p2.ToString()));
 
         // Page 3 - Income Information
         StringBuilder p3 = new StringBuilder();
-        p3.AppendLine($"Income Sources: {(data.incomeSource.HasValue ? data.incomeSource.ToString() : "?")}");
-        p3.AppendLine($"Number of Employers: {(data.numberOfEmployers.HasValue ? data.numberOfEmployers.ToString() : "?")}");
-        p3.AppendLine($"Business Registration: {(data.businessRegistration.HasValue ? data.businessRegistration.ToString() : "?")}");
-        p3.Append($"Tax Option: {(data.taxOption.HasValue ? data.taxOption.ToString() : "?")}");
+        p3.AppendLine($"Income Sources: {EnumDisplayFormatter.Format(data.incomeSource)}");
+        p3.AppendLine($"Number of Employers: {EnumDisplayFormatter.Format(data.numberOfEmployers)}");
+        p3.AppendLine($"Business Registration: {EnumDisplayFormatter.Format(data.businessRegistration)}");
+        p3.Append($"Tax Option: {EnumDisplayFormatter.Format(data.taxOption)}");
         list.Add(new CaseFolderPageContent("Income Information", p3.ToString()));
 
         // Page 4 - Tax Computation Information
@@ -212,13 +219,13 @@ public class CaseFolderUI : MonoBehaviour
         p4.AppendLine($"Tax Due: \u20b1{data.taxDue:N0}");
         p4.AppendLine($"Tax Withheld / Credits: \u20b1{data.taxWithheldOrCredits:N0}");
         p4.AppendLine($"Final Tax Payable: \u20b1{data.finalTaxPayable:N0}");
-        p4.Append($"Status: {FormatEnum(data.computationStatus.ToString())}");
+        p4.Append($"Status: {EnumDisplayFormatter.Format(data.computationStatus.ToString())}");
         list.Add(new CaseFolderPageContent("Tax Computation Information", p4.ToString()));
 
         // Page 5 - Filing Information
         StringBuilder p5 = new StringBuilder();
         p5.AppendLine($"Required Form: {(data.requiredForm.HasValue ? data.requiredForm.ToString() : "?")}");
-        p5.AppendLine($"Filing Status: {FormatEnum(data.filingStatus.ToString())}");
+        p5.AppendLine($"Filing Status: {EnumDisplayFormatter.Format(data.filingStatus.ToString())}");
         p5.AppendLine($"Submission Date: {(string.IsNullOrEmpty(data.submissionDate) ? "-" : data.submissionDate)}");
         p5.AppendLine($"Remarks: {(string.IsNullOrEmpty(data.remarks) ? "-" : data.remarks)}");
         if (data.encodedForm != null)
@@ -228,21 +235,13 @@ public class CaseFolderUI : MonoBehaviour
         list.Add(new CaseFolderPageContent("Filing Information", p5.ToString()));
 
         // Page 6 - Supporting Documents
-        StringBuilder p6 = new StringBuilder();
-        foreach (var doc in data.supportingDocuments)
-        {
-            p6.AppendLine($"{(doc.isReviewed ? "[x]" : "[ ]")} {doc.documentName}");
-        }
-        list.Add(new CaseFolderPageContent(
-            "Supporting Documents",
-            "" // left blank — SupportingDocumentsPageLink displays the clickable list instead
-        ));
-
+        // Left blank — SupportingDocumentsPageLink displays the clickable list instead.
+        list.Add(new CaseFolderPageContent("Supporting Documents", ""));
 
         // Page 7 - Consultant Findings
         StringBuilder p7 = new StringBuilder();
-        p7.AppendLine($"Residency Status: {(data.residencyStatus.HasValue ? data.residencyStatus.ToString() : "?")}");
-        p7.AppendLine($"Taxpayer Type: {(data.taxpayerType.HasValue ? data.taxpayerType.ToString() : "?")}");
+        p7.AppendLine($"Residency Status: {EnumDisplayFormatter.Format(data.residencyStatus)}");
+        p7.AppendLine($"Taxpayer Type: {EnumDisplayFormatter.Format(data.taxpayerType)}");
         p7.AppendLine();
         p7.AppendLine("Potential Issues Identified:");
         foreach (var issue in data.potentialIssuesIdentified)
@@ -254,10 +253,7 @@ public class CaseFolderUI : MonoBehaviour
         return list;
     }
 
-    private string FormatEnum(string enumName)
-    {
-        return System.Text.RegularExpressions.Regex.Replace(enumName, "(\\B[A-Z])", " $1");
-    }
+
 
     /// <summary>
     /// Paper click only does something meaningful while stamping is active;

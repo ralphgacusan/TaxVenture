@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System.Text.RegularExpressions;
 
 public static class ComplianceChecker
 {
@@ -79,14 +80,24 @@ public static class ComplianceChecker
             CheckTextField("An issue was found with the address entered.", encoded.address, data.address, issues);
 
         if (!string.IsNullOrEmpty(encoded.residencyStatus) && data.residencyStatus.HasValue)
-            CheckTextField("An issue was found with the residency status entered.", encoded.residencyStatus, data.residencyStatus.ToString(), issues);
-
+            CheckTextField(
+                "An issue was found with the residency status entered.",
+                encoded.residencyStatus,
+                EnumDisplayFormatter.Format(data.residencyStatus),
+                issues);
         if (!string.IsNullOrEmpty(encoded.taxpayerType) && data.taxpayerType.HasValue)
-            CheckTextField("An issue was found with the taxpayer type entered.", encoded.taxpayerType, data.taxpayerType.ToString(), issues);
+            CheckTextField(
+                "An issue was found with the taxpayer type entered.",
+                encoded.taxpayerType,
+                EnumDisplayFormatter.Format(data.taxpayerType),
+                issues);
 
         if (!string.IsNullOrEmpty(encoded.incomeSource) && data.incomeSource.HasValue)
-            CheckTextField("An issue was found with the income source entered.", encoded.incomeSource, data.incomeSource.ToString(), issues);
-
+            CheckTextField(
+                "An issue was found with the income source entered.",
+                encoded.incomeSource,
+                EnumDisplayFormatter.Format(data.incomeSource),
+                issues);
         CheckNumericField("The declared income does not match the supporting records.", encoded.grossIncome, data.grossIncome, issues);
 
         if (!string.IsNullOrEmpty(encoded.allowableExpenses))
@@ -99,12 +110,31 @@ public static class ComplianceChecker
         CheckNumericField("An issue was found with the tax credits entered.", encoded.taxCredits, data.taxWithheldOrCredits, issues);
         CheckNumericField("An issue was found with the final tax payable.", encoded.finalTaxPayable, data.finalTaxPayable, issues);
     }
+    private static string NormalizeText(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return "";
+
+        text = text.Trim();
+
+        // Replace multiple spaces with a single space
+        text = Regex.Replace(text, @"\s+", " ");
+
+        return text.ToLowerInvariant();
+    }
+
+    // Not so strict: if the player typed a name or TIN that is slightly off (typo, extra space, etc.), we don't want to mark it as a compliance issue. Instead, we normalize both the typed and actual values and compare them.
+    // private static void CheckTextField(string vagueLabel, string typed, string actual, List<ComplianceIssue> issues)
+    // {
+    //     if (NormalizeText(typed) != NormalizeText(actual))
+    //     {
+    //         issues.Add(new ComplianceIssue(vagueLabel));
+    //     }
+    // }
 
     private static void CheckTextField(string vagueLabel, string typed, string actual, List<ComplianceIssue> issues)
     {
-        string typedTrimmed = (typed ?? "").Trim();
-        string actualTrimmed = (actual ?? "").Trim();
-        if (!typedTrimmed.Equals(actualTrimmed, System.StringComparison.OrdinalIgnoreCase))
+        if ((typed ?? "").Trim() != (actual ?? "").Trim())
         {
             issues.Add(new ComplianceIssue(vagueLabel));
         }

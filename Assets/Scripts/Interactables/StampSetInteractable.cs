@@ -35,6 +35,15 @@ public class StampSetInteractable : MonoBehaviour, IInteractable
     public void OnInteract()
     {
         caseFolderUI.ShowForStamping();
+
+        // NEW: entering the stamping UI is now what advances into StampAssessmentState.
+        if (GameStateMachine.Instance.CurrentState is AnalyzeEvidenceState
+            || GameStateMachine.Instance.CurrentState is ComputeTaxesState
+            || GameStateMachine.Instance.CurrentState is ResearchTaxState
+            || GameStateMachine.Instance.CurrentState is InterviewClientState)
+        {
+            GameStateMachine.Instance.ChangeState(new StampAssessmentState());
+        }
     }
 
     public string GetPromptText() => "Click to stamp the Case Folder";

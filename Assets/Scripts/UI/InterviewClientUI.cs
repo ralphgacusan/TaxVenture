@@ -35,6 +35,7 @@ public class InterviewClientUI : MonoBehaviour
     private int presentationLineIndex;
     private bool isPresentationMode = false;
     private System.Action onPresentationConcluded;
+    private bool restoreCarriedDocumentOnClose = false;
 
     private void Awake()
     {
@@ -53,8 +54,16 @@ public class InterviewClientUI : MonoBehaviour
 
     public void Hide()
     {
-        Debug.Log("Interview UI HIDE");
         interviewPanelRoot.SetActive(false);
+
+        Debug.Log("Restore document? " + restoreCarriedDocumentOnClose);
+
+        if (restoreCarriedDocumentOnClose)
+        {
+            Debug.Log("Showing carried document");
+            FirstPersonHands.Instance.ShowCarriedDocument();
+            restoreCarriedDocumentOnClose = false;
+        }
     }
 
     private InterviewSection CurrentSection =>
@@ -146,8 +155,13 @@ public class InterviewClientUI : MonoBehaviour
     /// linear pattern as AuditorDialogueUI. Used for "Present Findings to
     /// Client" (Milestone 14) instead of the branching interview questions.
     /// </summary>
-    public void ShowPresentation(List<string> lines, System.Action onConcluded)
+    public void ShowPresentation(
+        List<string> lines,
+        System.Action onConcluded,
+        bool restoreCarriedDocument = false)
     {
+        restoreCarriedDocumentOnClose = restoreCarriedDocument;
+
         isPresentationMode = true;
         presentationLines = lines;
         presentationLineIndex = 0;
