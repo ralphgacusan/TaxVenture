@@ -30,8 +30,8 @@ public class DeskInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract()
     {
-        CameraController.Instance.EnterFirstPerson(deskViewpoint);
+        CameraController.Instance.EnterFirstPerson(deskViewpoint, "Exit Desk");
     }
 
-    public string GetPromptText() => "Click to sit at Desk";
+    public string GetPromptText() => "Click to sit at desk";
 }

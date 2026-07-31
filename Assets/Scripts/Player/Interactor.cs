@@ -49,6 +49,12 @@ public class Interactor : MonoBehaviour
 
     private void Update()
     {
+        if (CameraController.Instance != null &&
+            CameraController.Instance.CurrentMode != CameraController.CameraMode.ThirdPerson)
+        {
+            return;
+        }
+
         HandleRaycastDetection();
         HandleInteractInput();
     }
@@ -89,10 +95,17 @@ public class Interactor : MonoBehaviour
             currentFocus = hitInteractable;
             currentFocus?.OnFocus();
 
-            // Update the prompt UI to match the new focus state.
             if (currentFocus != null && promptUI != null)
             {
-                promptUI.ShowPrompt(currentFocus.GetPromptText());
+                string prompt = currentFocus.GetPromptText();
+                if (string.IsNullOrEmpty(prompt))
+                {
+                    promptUI.HidePrompt(); // NEW: empty prompt = no UI shown at all, still highlights via HighlightEffect
+                }
+                else
+                {
+                    promptUI.ShowPrompt(prompt);
+                }
             }
             else
             {
@@ -140,5 +153,7 @@ public class Interactor : MonoBehaviour
     {
         currentFocus?.OnUnfocus();
         currentFocus = null;
+
+        promptUI?.HidePrompt();
     }
 }

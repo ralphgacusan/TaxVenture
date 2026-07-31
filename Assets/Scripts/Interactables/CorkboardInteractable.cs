@@ -30,7 +30,7 @@ public class CorkboardInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract()
     {
-        CameraController.Instance.EnterFirstPerson(corkboardViewpoint, false);
+        CameraController.Instance.EnterFirstPerson(corkboardViewpoint, "Exit Corkboard");
         documentSpawner.SpawnDocuments();
 
         if (GameStateMachine.Instance.CurrentState is ComputeTaxesState
@@ -41,5 +41,5 @@ public class CorkboardInteractable : MonoBehaviour, IInteractable
         }
     }
 
-    public string GetPromptText() => "Click to review evidence at Corkboard";
+    public string GetPromptText() => "Click to view Corkboard";
 }

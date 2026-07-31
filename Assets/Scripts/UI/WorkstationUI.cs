@@ -1,37 +1,36 @@
 using UnityEngine;
+using TMPro;
 
 /// <summary>
 /// PURPOSE:
-/// Controls the generic "you are at a workstation" UI panel — currently just
-/// the Close button, shown whenever the player is in first-person interaction
-/// mode (desk, computer, folder, book, corkboard, cabinet).
-///
-/// RESPONSIBILITIES:
-/// - Show/hide the workstation panel
-/// - Forward the Close button's click to CameraController.ExitFirstPerson()
-///
-/// DOES NOT:
-/// - Contain any workstation-specific UI (folder pages, computer fields, etc.)
-///   Those will be their own separate UI panels layered on top in later
-///   milestones (Milestone 5+). This script only owns the Close button.
+/// Controls the workstation exit control — now a single bottom-center
+/// placeholder button reading "Exit Desk" / "Exit Corkboard" (dynamic per
+/// workstation), replacing the old top-right "Close" button entirely, per
+/// R2 redesign. Still purely a "show/hide + forward click to
+/// CameraController.ExitFirstPerson()" responsibility — no gameplay logic.
 ///
 /// CONNECTS WITH:
-/// - CameraController: calls ExitFirstPerson() when Close is clicked
-/// - Hooked up via the Close Button's OnClick() event in the Inspector
+/// - CameraController: calls Show(label) on EnterFirstPerson, Hide() on exit;
+///   ExitFirstPerson() is called when the exit button is clicked
 /// </summary>
 public class WorkstationUI : MonoBehaviour
 {
-    [Tooltip("The panel GameObject to show/hide (contains the Close button).")]
     [SerializeField] private GameObject panelRoot;
+    [SerializeField] private TextMeshProUGUI exitButtonLabel;
 
     private void Awake()
     {
         Hide();
     }
 
-    public void Show()
+    /// <summary>
+    /// Shows the bottom-center exit control with workstation-specific text,
+    /// e.g. "Exit Desk" or "Exit Corkboard".
+    /// </summary>
+    public void Show(string exitLabel)
     {
         if (panelRoot != null) panelRoot.SetActive(true);
+        if (exitButtonLabel != null) exitButtonLabel.text = exitLabel;
     }
 
     public void Hide()
@@ -39,12 +38,9 @@ public class WorkstationUI : MonoBehaviour
         if (panelRoot != null) panelRoot.SetActive(false);
     }
 
-    /// <summary>
-    /// Wired to the Close Button's OnClick() event in the Inspector.
-    /// </summary>
-    public void OnCloseButtonPressed()
+    /// <summary>Wired to the bottom-center Exit button's OnClick().</summary>
+    public void OnExitButtonPressed()
     {
-        Debug.Log("Close pressed");
         CameraController.Instance.ExitFirstPerson();
     }
 }
