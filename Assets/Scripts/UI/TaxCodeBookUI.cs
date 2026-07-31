@@ -49,7 +49,6 @@ public class TaxCodeBookUI : MonoBehaviour
 
     private void Awake()
     {
-        Hide();
         leftEdgeZone.OnTapped += PreviousPage;
         rightEdgeZone.OnTapped += NextPage;
         swipeToClose.OnSwipeClosed += Hide;
@@ -57,13 +56,13 @@ public class TaxCodeBookUI : MonoBehaviour
 
     public void Show()
     {
-        bookPanelRoot.SetActive(true);
+        Debug.Log("Tax Book Show");
+        WorkspaceLayoutManager.Instance.LeftZone.ShowPanel(bookPanelRoot); // CHANGED
         RenderSection(currentSectionIndex);
     }
-
     public void Hide()
     {
-        bookPanelRoot.SetActive(false);
+        WorkspaceLayoutManager.Instance.LeftZone.HidePanel(bookPanelRoot); // CHANGED
     }
 
     public void NextPage()

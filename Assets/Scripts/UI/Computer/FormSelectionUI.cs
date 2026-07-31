@@ -24,7 +24,6 @@ public class FormSelectionUI : MonoBehaviour
 
     private void Awake()
     {
-        Hide();
         form1700Button.onClick.AddListener(() => SelectForm(RequiredForm.BIR1700));
         form1701Button.onClick.AddListener(() => SelectForm(RequiredForm.BIR1701));
         form1701AButton.onClick.AddListener(() => SelectForm(RequiredForm.BIR1701A));

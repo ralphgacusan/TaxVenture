@@ -40,17 +40,17 @@ public class ComputerHomeUI : MonoBehaviour
 
     private void Awake()
     {
-        Hide();
         calculateTaxesButton.onClick.AddListener(LaunchCalculateTaxes);
         prepareTaxReturnButton.onClick.AddListener(LaunchPrepareTaxReturn);
     }
 
     public void Show()
     {
-        homePanelRoot.SetActive(true);
+        Debug.Log("Computer Show");
+        WorkspaceLayoutManager.Instance.LeftZone.ShowPanel(homePanelRoot); // CHANGED
 
         CaseData data = CaseManager.Instance.CurrentCase;
-        bool readyForFiling = data.filingStatus == FilingStatus.ReadyForFiling; // strict: only Stamp sets this
+        bool readyForFiling = data.filingStatus == FilingStatus.ReadyForFiling;
 
         prepareTaxReturnButton.interactable = readyForFiling;
         prepareButtonTooltip.text = readyForFiling ? "" : "Case is not ready for filing.";
@@ -58,27 +58,19 @@ public class ComputerHomeUI : MonoBehaviour
 
     public void Hide()
     {
-        homePanelRoot.SetActive(false);
+        WorkspaceLayoutManager.Instance.LeftZone.HidePanel(homePanelRoot); // CHANGED
     }
-
     private void LaunchCalculateTaxes()
     {
-        homePanelRoot.SetActive(false);
-
-        if (GameStateMachine.Instance.CurrentState is ResearchTaxState
-            || GameStateMachine.Instance.CurrentState is InterviewClientState
-            || GameStateMachine.Instance.CurrentState is ReviewDocumentsState)
-        {
-            GameStateMachine.Instance.ChangeState(new ComputeTaxesState());
-        }
-
-
-        computerUI.Show();
+        // Same zone — ShowPanel on computerUI's own root handles the swap correctly.
+        WorkspaceLayoutManager.Instance.LeftZone.ShowPanel(computerUI.gameObject);
+        computerUI.Show(); // still call its own Show() for its internal setup logic
     }
+
 
     private void LaunchPrepareTaxReturn()
     {
-        homePanelRoot.SetActive(false);
+        WorkspaceLayoutManager.Instance.LeftZone.ShowPanel(formSelectionUI.gameObject);
         formSelectionUI.Show();
     }
 }

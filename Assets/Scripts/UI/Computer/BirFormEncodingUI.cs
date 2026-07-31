@@ -47,7 +47,6 @@ public class BirFormEncodingUI : MonoBehaviour
 
     private void Awake()
     {
-        Hide();
         actionButton.onClick.AddListener(OnActionButtonPressed);
     }
 

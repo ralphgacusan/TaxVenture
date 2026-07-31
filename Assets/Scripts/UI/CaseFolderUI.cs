@@ -62,8 +62,6 @@ public class CaseFolderUI : MonoBehaviour
 
     private void Awake()
     {
-        Hide();
-
         leftEdgeZone.OnTapped += PreviousPage;
         rightEdgeZone.OnTapped += NextPage;
         swipeToClose.OnSwipeClosed += Hide;
@@ -82,8 +80,9 @@ public class CaseFolderUI : MonoBehaviour
     /// </summary>
     public void Show()
     {
+        Debug.Log("Case Folder Show");
         pages = BuildPages(CaseManager.Instance.CurrentCase);
-        folderPanelRoot.SetActive(true);
+        WorkspaceLayoutManager.Instance.RightZone.ShowPanel(folderPanelRoot); // CHANGED: was folderPanelRoot.SetActive(true)
         RenderPage(currentPageIndex);
 
         if (!hasOpenedBefore)
@@ -103,25 +102,24 @@ public class CaseFolderUI : MonoBehaviour
     public void ShowForStamping()
     {
         pages = BuildPages(CaseManager.Instance.CurrentCase);
-        isStampingMode = true;
-
-        folderPanelRoot.SetActive(true);
+        WorkspaceLayoutManager.Instance.RightZone.ShowPanel(folderPanelRoot); // CHANGED
         currentPageIndex = 0;
-
         RenderPage(currentPageIndex);
 
+        isStampingMode = true;
         stampPanel.SetActive(true);
         stampUI.ResetSelection();
     }
 
+
     // In Hide(), also close stamping mode:
+
     public void Hide()
     {
-        folderPanelRoot.SetActive(false);
+        WorkspaceLayoutManager.Instance.RightZone.HidePanel(folderPanelRoot); // CHANGED: was folderPanelRoot.SetActive(false)
         isStampingMode = false;
         stampPanel?.SetActive(false);
     }
-
     public void NextPage()
     {
         if (currentPageIndex < pages.Count - 1)
