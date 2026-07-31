@@ -36,9 +36,6 @@ public class CaseFolderUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI bodyText;
     [SerializeField] private TextMeshProUGUI pageIndicatorText; // e.g. "Page 2 / 7"
 
-    [Header("Nav Buttons (sit left/right of the paper)")]
-    [SerializeField] private GameObject previousButton;
-    [SerializeField] private GameObject nextButton;
 
     [Header("Page 6 Document Links")]
     [SerializeField] private SupportingDocumentsPageLink supportingDocumentsPageLink;
@@ -47,6 +44,15 @@ public class CaseFolderUI : MonoBehaviour
     [SerializeField] private StampUI stampUI;
     [SerializeField] private GameObject stampPanel; // holds the 2 stamp buttons, right side of folder
     [SerializeField] private Button paperClickTarget; // Button component on the Paper background
+
+    [Header("Page Edge Navigation (replaces Prev/Next buttons)")]
+    [SerializeField] private PageEdgeTapZone leftEdgeZone;
+    [SerializeField] private PageEdgeTapZone rightEdgeZone;
+    [SerializeField] private GameObject leftEdgeIndicator; // "<" visual
+    [SerializeField] private GameObject rightEdgeIndicator; // ">" visual
+
+    [Header("Swipe to Close (replaces Close button)")]
+    [SerializeField] private SwipeDownToClose swipeToClose;
 
     private List<CaseFolderPageContent> pages;
     private int currentPageIndex = 0;
@@ -57,6 +63,11 @@ public class CaseFolderUI : MonoBehaviour
     private void Awake()
     {
         Hide();
+
+        leftEdgeZone.OnTapped += PreviousPage;
+        rightEdgeZone.OnTapped += NextPage;
+        swipeToClose.OnSwipeClosed += Hide;
+
         if (paperClickTarget != null)
         {
             paperClickTarget.onClick.AddListener(OnPaperClicked);
@@ -141,22 +152,20 @@ public class CaseFolderUI : MonoBehaviour
         bodyText.text = page.Body;
         pageIndicatorText.text = $"Page {index + 1} / {pages.Count}";
 
-        if (isStampingMode)
-        {
-            previousButton.SetActive(false);
-            nextButton.SetActive(false);
+        leftEdgeIndicator.SetActive(index > 0);
+        rightEdgeIndicator.SetActive(index < pages.Count - 1);
 
-            stampPanel.SetActive(index == 0);
-        }
-        else
-        {
-            previousButton.SetActive(index > 0);
-            nextButton.SetActive(index < pages.Count - 1);
-
-            stampPanel.SetActive(false);
-        }
+        // Edge zones themselves can remain always-active colliders; only the
+        // visual "<"/">" indicator hints are toggled, since tapping past the
+        // first/last page should simply do nothing (NextPage/PreviousPage
+        // already guard against out-of-range index internally).
 
         supportingDocumentsPageLink?.OnFolderPageChanged(index);
+
+        if (isStampingMode)
+        {
+            stampPanel.SetActive(index == 0);
+        }
     }
 
     /// <summary>

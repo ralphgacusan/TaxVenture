@@ -23,12 +23,17 @@ public class NotesPanelUI : MonoBehaviour
     [SerializeField] private GameObject panelRoot;
     [SerializeField] private TextMeshProUGUI objectivesText;
 
+    [Header("Swipe to Close")]
+    [SerializeField] private SwipeDownToClose swipeToClose;
+
     private List<TaskDefinition> tasks;
 
     private void Awake()
     {
         tasks = TaskListProvider.GetTasks();
         Hide();
+
+        swipeToClose.OnSwipeClosed += Hide;
     }
 
     private void OnEnable()

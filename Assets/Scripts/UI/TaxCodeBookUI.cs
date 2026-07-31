@@ -36,15 +36,23 @@ public class TaxCodeBookUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI bodyText;
     [SerializeField] private TextMeshProUGUI pageIndicatorText;
 
-    [Header("Nav Buttons")]
-    [SerializeField] private GameObject previousButton;
-    [SerializeField] private GameObject nextButton;
+    [Header("Page Edge Navigation (replaces Prev/Next buttons)")]
+    [SerializeField] private PageEdgeTapZone leftEdgeZone;
+    [SerializeField] private PageEdgeTapZone rightEdgeZone;
+    [SerializeField] private GameObject leftEdgeIndicator;
+    [SerializeField] private GameObject rightEdgeIndicator;
+
+    [Header("Swipe to Close (replaces Close button)")]
+    [SerializeField] private SwipeDownToClose swipeToClose;
 
     private int currentSectionIndex = 0;
 
     private void Awake()
     {
         Hide();
+        leftEdgeZone.OnTapped += PreviousPage;
+        rightEdgeZone.OnTapped += NextPage;
+        swipeToClose.OnSwipeClosed += Hide;
     }
 
     public void Show()
@@ -82,6 +90,8 @@ public class TaxCodeBookUI : MonoBehaviour
         {
             headingText.text = "No Tax Code Data Assigned";
             bodyText.text = "Assign a TaxCodeBookData asset in the Inspector.";
+            leftEdgeIndicator.SetActive(false);
+            rightEdgeIndicator.SetActive(false);
             return;
         }
 
@@ -90,7 +100,7 @@ public class TaxCodeBookUI : MonoBehaviour
         bodyText.text = section.body;
         pageIndicatorText.text = $"Section {index + 1} / {bookData.sections.Count}";
 
-        previousButton.SetActive(index > 0);
-        nextButton.SetActive(index < bookData.sections.Count - 1);
+        leftEdgeIndicator.SetActive(index > 0);
+        rightEdgeIndicator.SetActive(index < bookData.sections.Count - 1);
     }
 }
