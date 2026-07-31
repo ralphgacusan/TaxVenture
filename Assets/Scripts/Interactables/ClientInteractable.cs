@@ -1,37 +1,15 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>
-/// PURPOSE:
-/// The Client NPC placeholder (capsule) in the conference room. Interacting
-/// with it opens the interview dialogue and, if the game is currently in
-/// ReviewDocumentsState, advances the FSM to InterviewClientState.
-///
-/// PER DESIGN DOC:
-/// "The player approaches the client... clicks the client... interview
-/// scene begins." We simplify the sitting animation and camera panel setup
-/// described in the doc into an instant dialogue panel appearing, consistent
-/// with the no-animation greybox scope of this phase.
-///
-/// FUTURE (Milestone 8):
-/// This script's responsibilities will likely be absorbed into a proper NPC
-/// FSM (Idle -> Waiting -> Interact -> Dialogue -> Completed). For now, it's
-/// a simple, testable IInteractable exactly like Desk/CaseFolder.
-///
-/// CONNECTS WITH:
-/// - HighlightEffect (same GameObject)
-/// - InterviewClientUI: calls Show() on interact
-/// - GameStateMachine: requests ReviewDocuments -> InterviewClient transition
-/// </summary>
 [RequireComponent(typeof(HighlightEffect))]
 [RequireComponent(typeof(NpcStateMachine))]
 public class ClientInteractable : MonoBehaviour, IInteractable
 {
-    [SerializeField] private InterviewClientUI interviewClientUI;
-    [SerializeField] private Transform interviewViewpoint; // camera position/rotation for "sitting across the table"
+    [SerializeField] private DialogueUI dialogueUI; // CHANGED: was InterviewClientUI
 
     private HighlightEffect highlight;
     private NpcStateMachine npcState;
+    private bool hasInterviewed = false;
 
     private void Awake()
     {
@@ -42,48 +20,92 @@ public class ClientInteractable : MonoBehaviour, IInteractable
     public void OnFocus()
     {
         highlight.Highlight();
-        if (npcState.CurrentState is NpcIdleState)
-        {
-            npcState.ChangeState(new NpcWaitingState());
-        }
+        if (npcState.CurrentState is NpcIdleState) npcState.ChangeState(new NpcWaitingState());
     }
+
     public void OnUnfocus()
     {
         highlight.Unhighlight();
-        // Only fall back to Idle if we were merely Waiting (looked at but
-        // not clicked). Do NOT interrupt an active Dialogue just because
-        // the player's cursor drifted off the NPC mid-conversation.
-        if (npcState.CurrentState is NpcWaitingState)
-        {
-            npcState.ChangeState(new NpcIdleState());
-        }
+        if (npcState.CurrentState is NpcWaitingState) npcState.ChangeState(new NpcIdleState());
     }
 
     public void OnInteract()
     {
-        // NEW: if we're at the Case Outcome phase, this click means
-        // "present findings," not "interview again."
         if (GameStateMachine.Instance.CurrentState is CaseOutcomeState)
         {
-            FirstPersonHands.Instance.HideCarriedDocument();
-
             PresentFindings();
             return;
         }
 
+        if (hasInterviewed) return; // interview only happens once, matching the scripted-conversation model
+
         npcState.ChangeState(new NpcInteractState());
         npcState.ChangeState(new NpcDialogueState());
 
-        CameraController.Instance.LockPlayerControls();
+        RunInterview();
+    }
 
-        interviewClientUI.Show();
+    /// <summary>
+    /// Fixed sequential interview, per R4's "no dialogue choices" rule.
+    /// Each exchange still writes into CaseData exactly like the old
+    /// question-button system did — just without the player picking order.
+    /// </summary>
+    private void RunInterview()
+    {
+        CaseData data = CaseManager.Instance.CurrentCase;
 
+        var lines = new DialogueBuilder()
+            .Npc("Good morning! Thank you for taking my case.")
+            .Player("Of course. Let's start with a few questions.")
+            .Npc("Sure, go ahead.")
+
+            .Player("Where do you currently reside and work?")
+            .Npc("I live and work here in the Philippines full-time.")
+
+            .Player("How would you describe how you earn your income?")
+            .Npc("I have a regular job, but I also run a small online business on the side.")
+
+            .Player("Can you walk me through all your sources of income this year?")
+            .Npc("I earn a salary from my employer, and additional income from my online business.")
+
+            .Player("How many employers did you have this year?")
+            .Npc("Just the one — I've been with the same company all year.")
+
+            .Player("Is your business formally registered with the BIR?")
+            .Npc("Yes, I registered it last year — I have the Certificate of Registration.")
+
+            .Player("For your business income, are you using the graduated rates or the 8% option?")
+            .Npc("I opted for the 8% flat rate — it was simpler for my situation.")
+
+            .Player("I noticed your bank deposits seem higher than your declared sales. Can you clarify?")
+            .Npc("Some of those deposits were personal transfers from my spouse, not business income.")
+
+            .Player("Thank you, that's everything I need for now.")
+            .Npc("Happy to help.")
+            .Build();
+
+        // Apply the same CaseData writes the old InterviewQuestion system
+        // performed — done immediately, matching a scripted conversation
+        // where the "answers" are fixed and always given in full.
+        data.residencyStatus = ResidencyStatus.ResidentCitizen;
+        data.taxpayerType = TaxpayerType.MixedIncomeEarner;
+        data.incomeSource = IncomeSource.MixedIncome;
+        data.numberOfEmployers = EmployerCount.OneEmployer;
+        data.businessRegistration = BusinessRegistration.Registered;
+        data.taxOption = TaxOption.EightPercentTaxRate;
+
+        dialogueUI.StartDialogue(lines, OnInterviewConcluded);
 
         if (GameStateMachine.Instance.CurrentState is ReviewDocumentsState)
         {
             GameStateMachine.Instance.ChangeState(new InterviewClientState());
         }
+    }
 
+    private void OnInterviewConcluded()
+    {
+        hasInterviewed = true;
+        npcState.ChangeState(new NpcCompletedState());
     }
 
     private void PresentFindings()
@@ -91,24 +113,17 @@ public class ClientInteractable : MonoBehaviour, IInteractable
         npcState.ChangeState(new NpcInteractState());
         npcState.ChangeState(new NpcDialogueState());
 
-        CameraController.Instance.LockPlayerControls();
+        var lines = new DialogueBuilder()
+            .Npc("I've completed the review of your tax documents.")
+            .Player("Your tax return has been prepared and reviewed.")
+            .Player("The compliance audit has also been completed.")
+            .Player("Everything is now ready for filing.")
+            .Npc("Thank you for handling my case.")
+            .Npc("I appreciate your assistance.")
+            .Player("This concludes your consultation.")
+            .Build();
 
-        var lines = new List<string>
-        {
-            "I've completed the review of your tax documents.",
-            "Your tax return has been prepared and reviewed.",
-            "The compliance audit has also been completed.",
-            "Everything is now ready for filing.",
-            "Thank you for handling my case.",
-            "I appreciate your assistance.",
-            "This concludes your consultation."
-        };
-
-        interviewClientUI.ShowPresentation(
-            lines,
-            OnPresentationConcluded,
-            true
-        );
+        dialogueUI.StartDialogue(lines, OnPresentationConcluded);
     }
 
     private void OnPresentationConcluded()
@@ -122,7 +137,10 @@ public class ClientInteractable : MonoBehaviour, IInteractable
         }
     }
 
-    public string GetPromptText() => "Click to talk to Client";
-
-
+    public string GetPromptText()
+    {
+        if (GameStateMachine.Instance.CurrentState is CaseOutcomeState) return "Click to present findings to Client";
+        if (hasInterviewed) return "Client";
+        return "Click to talk to Client";
+    }
 }

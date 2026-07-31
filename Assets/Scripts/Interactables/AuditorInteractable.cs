@@ -1,27 +1,12 @@
 using UnityEngine;
+using System.Collections.Generic;
 
-/// <summary>
-/// PURPOSE:
-/// The Auditor NPC. Mirrors ClientInteractable's structure exactly (Milestone
-/// 8's NpcStateMachine pattern applied to a second NPC), proving the FSM
-/// template is reusable without modification.
-///
-/// PER DESIGN DOC:
-/// "The player clicks the auditor... consultant hands over the Case
-/// Folder... auditor reviews... results."
-///
-/// CONNECTS WITH:
-/// - HighlightEffect, NpcStateMachine (same GameObject)
-/// - AuditorDialogueUI: opened on interact
-/// - GameStateMachine: requests transition into ComplianceAuditState if not
-///   already there (e.g. arriving here straight from PrepareReturnState)
-/// </summary>
 [RequireComponent(typeof(HighlightEffect))]
 [RequireComponent(typeof(NpcStateMachine))]
 public class AuditorInteractable : MonoBehaviour, IInteractable
 {
-    [SerializeField] private AuditorDialogueUI auditorDialogueUI;
-    [SerializeField] private Transform interviewViewpoint;
+    [SerializeField] private DialogueUI dialogueUI;
+    [SerializeField] private AuditSummaryPopupUI summaryPopupUI; // kept as its own script
 
     private HighlightEffect highlight;
     private NpcStateMachine npcState;
@@ -35,19 +20,13 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
     public void OnFocus()
     {
         highlight.Highlight();
-        if (npcState.CurrentState is NpcIdleState)
-        {
-            npcState.ChangeState(new NpcWaitingState());
-        }
+        if (npcState.CurrentState is NpcIdleState) npcState.ChangeState(new NpcWaitingState());
     }
 
     public void OnUnfocus()
     {
         highlight.Unhighlight();
-        if (npcState.CurrentState is NpcWaitingState)
-        {
-            npcState.ChangeState(new NpcIdleState());
-        }
+        if (npcState.CurrentState is NpcWaitingState) npcState.ChangeState(new NpcIdleState());
     }
 
     public void OnInteract()
@@ -56,17 +35,12 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
 
         if (data.filingStatus == FilingStatus.ReadyForFiling && !data.isCarryingPrintedReturn)
         {
-            auditorDialogueUI.ShowMissingFormWarning();
+            // TODO: small floating warning text, unchanged from before
             return;
         }
 
-        FirstPersonHands.Instance.HideCarriedDocument();
-
-
         npcState.ChangeState(new NpcInteractState());
         npcState.ChangeState(new NpcDialogueState());
-
-        CameraController.Instance.LockPlayerControls(); // NEW
 
         if (GameStateMachine.Instance.CurrentState is PrepareReturnState
             || GameStateMachine.Instance.CurrentState is StampAssessmentState)
@@ -74,7 +48,57 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
             GameStateMachine.Instance.ChangeState(new ComplianceAuditState());
         }
 
-        auditorDialogueUI.Show(npcState);
+        RunAudit(data);
     }
+
+    private void RunAudit(CaseData data)
+    {
+        List<ComplianceIssue> issues = ComplianceChecker.RunCheck(data);
+        data.auditMistakeCount = issues.Count;
+        data.auditPassed = issues.Count == 0;
+
+        var builder = new DialogueBuilder();
+
+        if (issues.Count == 0)
+        {
+            builder.Npc("I've reviewed everything, and I found no issues. Well done.");
+        }
+        else
+        {
+            foreach (var issue in issues)
+            {
+                builder.Npc(issue.ShortLabel);
+            }
+        }
+        builder.Npc("That concludes my review. Please check the audit summary before making your corrections.");
+
+        dialogueUI.StartDialogue(builder.Build(), () => OnDialogueConcluded(issues));
+    }
+
+    private void OnDialogueConcluded(List<ComplianceIssue> issues)
+    {
+        summaryPopupUI.Show(issues, OnSummaryClosed);
+    }
+
+    private void OnSummaryClosed()
+    {
+        // Player controls already unlocked by DialogueUI.ConcludeDialogue();
+        // the summary popup is a separate, non-locking popup layered after.
+        CaseData data = CaseManager.Instance.CurrentCase;
+
+        if (data.auditPassed)
+        {
+            npcState.ChangeState(new NpcCompletedState());
+            if (GameStateMachine.Instance.CurrentState is ComplianceAuditState)
+            {
+                GameStateMachine.Instance.ChangeState(new CaseOutcomeState());
+            }
+        }
+        else
+        {
+            npcState.ChangeState(new NpcIdleState());
+        }
+    }
+
     public string GetPromptText() => "Click to hand over case to Auditor";
 }
