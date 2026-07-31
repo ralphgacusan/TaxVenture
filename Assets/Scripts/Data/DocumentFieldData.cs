@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 
 /// <summary>
 /// PURPOSE:
@@ -16,7 +17,7 @@ using System.Collections.Generic;
 public class DocumentFieldData
 {
     public string DocumentName;
-    /// <summary>Ordered list of (label, value) pairs to display, e.g. ("Employer Name", "ABC Corporation").</summary>
+
     public List<(string label, string value)> Fields = new List<(string, string)>();
 
     public DocumentFieldData(string documentName)
@@ -27,6 +28,7 @@ public class DocumentFieldData
     public DocumentFieldData AddField(string label, string value)
     {
         Fields.Add((label, value));
-        return this; // allows chaining: new DocumentFieldData("X").AddField(...).AddField(...)
+        return this;
     }
+
 }

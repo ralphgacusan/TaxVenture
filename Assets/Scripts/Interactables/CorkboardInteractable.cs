@@ -31,7 +31,7 @@ public class CorkboardInteractable : MonoBehaviour, IInteractable
     public void OnInteract()
     {
         CameraController.Instance.EnterFirstPerson(corkboardViewpoint, "Exit Corkboard");
-        documentSpawner.SpawnDocuments();
+        documentSpawner.SpawnDocumentsIfNeeded(); // CHANGED: was SpawnDocuments()
 
         if (GameStateMachine.Instance.CurrentState is ComputeTaxesState
             || GameStateMachine.Instance.CurrentState is ResearchTaxState

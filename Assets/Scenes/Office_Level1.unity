@@ -5514,7 +5514,7 @@ GameObject:
   - component: {fileID: 426891722}
   - component: {fileID: 426891721}
   m_Layer: 5
-  m_Name: IssuesText
+  m_Name: HintText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -12783,8 +12783,9 @@ GameObject:
   - component: {fileID: 838530914}
   - component: {fileID: 838530913}
   - component: {fileID: 838530912}
+  - component: {fileID: 838530915}
   m_Layer: 6
-  m_Name: FindingsPaper
+  m_Name: HintNotes
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -12853,6 +12854,20 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &838530915
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 838530910}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d522413f68030e44b00e30d02cc83e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CorkboardHintInteractable
+  hintPopupPanel: {fileID: 940895914}
+  hintText: {fileID: 426891721}
 --- !u!1 &858156462
 GameObject:
   m_ObjectHideFlags: 0
@@ -13818,7 +13833,7 @@ GameObject:
   - component: {fileID: 940895917}
   - component: {fileID: 940895916}
   m_Layer: 5
-  m_Name: FindingsPopupPanel
+  m_Name: HintPopupPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -20670,10 +20685,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CorkboardDocumentSpawner
   pinnedDocumentPrefab: {fileID: 3302526510813717079, guid: be2108089733da64c98fc548f7869911, type: 3}
-  documentViewerUI: {fileID: 60328096}
-  positionJitter: 0.08
-  maxRotationAngle: 12
-  depthJitter: 0.02
+  columnSpacing: 0.2
+  rowSpacing: 0.4
+  maxRotationJitter: 4
+  maxPositionJitter: 0.02
 --- !u!4 &1494988762
 Transform:
   m_ObjectHideFlags: 0
@@ -20683,7 +20698,7 @@ Transform:
   m_GameObject: {fileID: 1494988760}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0.116, z: -1.6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
