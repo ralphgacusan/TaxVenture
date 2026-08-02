@@ -52,47 +52,27 @@ public class ClientInteractable : MonoBehaviour, IInteractable
     /// </summary>
     private void RunInterview()
     {
-        CaseData data = CaseManager.Instance.CurrentCase;
-
         var lines = new DialogueBuilder()
             .Npc("Good morning! Thank you for taking my case.")
             .Player("Of course. Let's start with a few questions.")
             .Npc("Sure, go ahead.")
-
             .Player("Where do you currently reside and work?")
             .Npc("I live and work here in the Philippines full-time.")
-
             .Player("How would you describe how you earn your income?")
             .Npc("I have a regular job, but I also run a small online business on the side.")
-
             .Player("Can you walk me through all your sources of income this year?")
             .Npc("I earn a salary from my employer, and additional income from my online business.")
-
             .Player("How many employers did you have this year?")
             .Npc("Just the one — I've been with the same company all year.")
-
             .Player("Is your business formally registered with the BIR?")
             .Npc("Yes, I registered it last year — I have the Certificate of Registration.")
-
             .Player("For your business income, are you using the graduated rates or the 8% option?")
             .Npc("I opted for the 8% flat rate — it was simpler for my situation.")
-
             .Player("I noticed your bank deposits seem higher than your declared sales. Can you clarify?")
             .Npc("Some of those deposits were personal transfers from my spouse, not business income.")
-
             .Player("Thank you, that's everything I need for now.")
             .Npc("Happy to help.")
             .Build();
-
-        // Apply the same CaseData writes the old InterviewQuestion system
-        // performed — done immediately, matching a scripted conversation
-        // where the "answers" are fixed and always given in full.
-        data.residencyStatus = ResidencyStatus.ResidentCitizen;
-        data.taxpayerType = TaxpayerType.MixedIncomeEarner;
-        data.incomeSource = IncomeSource.MixedIncome;
-        data.numberOfEmployers = EmployerCount.OneEmployer;
-        data.businessRegistration = BusinessRegistration.Registered;
-        data.taxOption = TaxOption.EightPercentTaxRate;
 
         dialogueUI.StartDialogue(lines, OnInterviewConcluded);
 
@@ -101,7 +81,6 @@ public class ClientInteractable : MonoBehaviour, IInteractable
             GameStateMachine.Instance.ChangeState(new InterviewClientState());
         }
     }
-
     private void OnInterviewConcluded()
     {
         hasInterviewed = true;

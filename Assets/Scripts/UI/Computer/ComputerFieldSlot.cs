@@ -1,72 +1,56 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using System.Collections;
 
-public class ComputerFieldSlot : MonoBehaviour
+/// <summary>
+/// PURPOSE:
+/// A Tax Calculator input slot. Pure destination — receives Gross Income /
+/// Allowable Expenses / Tax Credits via the value transfer system.
+/// </summary>
+public class ComputerFieldSlot : MonoBehaviour, IDataValueDestination
 {
     [SerializeField] private TextMeshProUGUI valueText;
     [SerializeField] private Image borderImage;
-    [SerializeField] private Button slotButton;
+    [SerializeField] private string expectedSemanticKey;
+    [SerializeField] private ValueClickDestination clickDestination;
 
     public float CurrentValue { get; private set; }
     public bool IsFilled { get; private set; }
 
-    private ComputerUI owner;
-    private string slotId;
-
-    public void Initialize(ComputerUI owningUI, string id)
+    private void Awake()
     {
-        owner = owningUI;
-        slotId = id;
-        slotButton.onClick.RemoveAllListeners();
-        slotButton.onClick.AddListener(() => owner.OnSlotClicked(slotId));
+        clickDestination.Initialize(this);
         Clear();
     }
 
-    /// <summary>
-    /// Attempts to assign the given source value. Returns true/false so
-    /// ComputerUI can decide what happens next (e.g. whether to clear the
-    /// player's selection or let them try a different slot).
-    /// </summary>
-    public bool TryAssign(ComputerSourceValue source)
+    public bool CanAccept(DataValue value)
     {
-        bool isCorrect = source.CorrectSlotId == slotId;
+        Debug.Log(
+            $"ComputerFieldSlot Check:\n" +
+            $"Incoming Type = {value.Type}\n" +
+            $"Incoming Key = '{value.SemanticKey}'\n" +
+            $"Expected Key = '{expectedSemanticKey}'"
+        );
 
-        if (isCorrect)
-        {
-            CurrentValue = source.Value;
-            IsFilled = true;
-            valueText.text = $"\u20b1{source.Value:N0}";
-            SetBorder(Color.green);
-        }
-        else
-        {
-            StopAllCoroutines();
-            StartCoroutine(FlashRedThenReset());
-        }
+        return value.Type == DataValueType.Number
+            && value.SemanticKey == expectedSemanticKey;
+    }
 
-        return isCorrect;
+    public bool TryReceiveValue(DataValue value)
+    {
+        if (!CanAccept(value)) return false;
+        CurrentValue = value.AsFloat();
+        IsFilled = true;
+        valueText.text = $"\u20b1{CurrentValue:N0}";
+        borderImage.color = Color.green;
+        return true;
     }
 
     public void Clear()
     {
         CurrentValue = 0f;
         IsFilled = false;
-        valueText.text = "Click a source, then click here";
-        SetBorder(Color.white);
-    }
-
-    private IEnumerator FlashRedThenReset()
-    {
-        SetBorder(Color.red);
-        yield return new WaitForSeconds(0.6f);
-        // Only reset to white if this slot wasn't correctly filled in the meantime.
-        if (!IsFilled) SetBorder(Color.white);
-    }
-
-    private void SetBorder(Color color)
-    {
-        if (borderImage != null) borderImage.color = color;
+        valueText.text = "Click a value, then click here";
+        borderImage.color = Color.white;
     }
 }

@@ -5,24 +5,9 @@ using TMPro;
 
 /// <summary>
 /// PURPOSE:
-/// The manual encoding screen itself. Builds input rows dynamically from
-/// BirFormFieldDefinition (never hardcodes fields per form type). Writes
-/// everything typed into CaseData.encodedForm — deliberately NEVER reads
-/// from CaseData's authoritative fields to pre-fill anything, per the
-/// explicit "nothing auto-fills" requirement. The player must look at the
-/// Case Folder / Computation results themselves and type.
-///
-/// RESPONSIBILITIES:
-/// - Spawn one EncodedFieldInputRow per field for the chosen form
-/// - Track completion (all rows non-empty) to reveal Confirm
-/// - On Confirm: lock all rows read-only, swap button to Print
-/// - On Print: hand off to PrintJobController
-///
-/// CONNECTS WITH:
-/// - FormSelectionUI: launches this with a chosen RequiredForm
-/// - BirFormFieldDefinition: field list source
-/// - CaseManager.Instance.CurrentCase.encodedForm: write target
-/// - PrintJobController: triggered on Print
+/// The Tax Return encoding screen. Field definitions come from
+/// BirFormFieldDefinition (which form has which fields); each field is
+/// filled via the click-select/click-place system rather than typing.
 /// </summary>
 public class BirFormEncodingUI : MonoBehaviour
 {
@@ -30,23 +15,24 @@ public class BirFormEncodingUI : MonoBehaviour
     [SerializeField] private GameObject panelRoot;
     [SerializeField] private TextMeshProUGUI formTitleText;
 
-    [Header("Field Rows")]
+    [Header("Field Slots")]
     [SerializeField] private Transform fieldListRoot;
-    [SerializeField] private GameObject fieldRowPrefab;
+    [SerializeField] private TaxReturnFieldSlot fieldSlotPrefab;
 
     [Header("Confirm / Print")]
-    [SerializeField] private Button actionButton; // becomes Confirm, then Print
+    [SerializeField] private Button actionButton;
     [SerializeField] private TextMeshProUGUI actionButtonLabel;
 
     [SerializeField] private PrintJobController printJobController;
     [SerializeField] private ComputerHomeUI computerHomeUI;
 
-    private List<EncodedFieldInputRow> spawnedRows = new List<EncodedFieldInputRow>();
+    private List<TaxReturnFieldSlot> spawnedSlots = new List<TaxReturnFieldSlot>();
     private EncodedFormData formData;
     private bool isConfirmed = false;
 
     private void Awake()
     {
+        Hide();
         actionButton.onClick.AddListener(OnActionButtonPressed);
     }
 
@@ -59,7 +45,7 @@ public class BirFormEncodingUI : MonoBehaviour
         CaseManager.Instance.CurrentCase.encodedForm = formData;
         isConfirmed = false;
 
-        BuildRows(form);
+        BuildSlots(form);
         UpdateActionButton();
     }
 
@@ -68,24 +54,22 @@ public class BirFormEncodingUI : MonoBehaviour
         panelRoot.SetActive(false);
     }
 
-    private void BuildRows(RequiredForm form)
+    private void BuildSlots(RequiredForm form)
     {
-        foreach (var row in spawnedRows) Destroy(row.gameObject);
-        spawnedRows.Clear();
+        foreach (var slot in spawnedSlots) Destroy(slot.gameObject);
+        spawnedSlots.Clear();
 
         var fields = BirFormFieldDefinition.GetFieldsFor(form);
         foreach (var field in fields)
         {
-            GameObject rowObj = Instantiate(fieldRowPrefab, fieldListRoot);
-            EncodedFieldInputRow row = rowObj.GetComponent<EncodedFieldInputRow>();
-            row.Initialize(field, "", OnFieldValueChanged);
-            spawnedRows.Add(row);
+            var slotObj = Instantiate(fieldSlotPrefab, fieldListRoot);
+            slotObj.Initialize(field, OnFieldValueSet);
+            spawnedSlots.Add(slotObj);
         }
     }
 
-    private void OnFieldValueChanged(EncodedFieldId id, string value)
+    private void OnFieldValueSet(EncodedFieldId id, string value)
     {
-        // Deliberately NO validation here — "Do NOT validate during typing."
         SetFieldValue(id, value);
         UpdateActionButton();
     }
@@ -109,39 +93,13 @@ public class BirFormEncodingUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Only checks whether fields have SOMETHING typed (not whether it's
-    /// correct — "Do NOT validate during Confirm. The Auditor is the ONLY
-    /// validation system.").
-    /// </summary>
-    private bool AllFieldsFilled()
+    private bool AllSlotsFilled()
     {
-        foreach (var row in spawnedRows)
+        foreach (var slot in spawnedSlots)
         {
-            var field = GetFieldValue(row.FieldId);
-            if (string.IsNullOrWhiteSpace(field)) return false;
+            if (!slot.IsFilled) return false;
         }
         return true;
-    }
-
-    private string GetFieldValue(EncodedFieldId id)
-    {
-        switch (id)
-        {
-            case EncodedFieldId.FullName: return formData.fullName;
-            case EncodedFieldId.Tin: return formData.tin;
-            case EncodedFieldId.Address: return formData.address;
-            case EncodedFieldId.ResidencyStatus: return formData.residencyStatus;
-            case EncodedFieldId.TaxpayerType: return formData.taxpayerType;
-            case EncodedFieldId.IncomeSource: return formData.incomeSource;
-            case EncodedFieldId.GrossIncome: return formData.grossIncome;
-            case EncodedFieldId.AllowableExpenses: return formData.allowableExpenses;
-            case EncodedFieldId.TaxableIncome: return formData.taxableIncome;
-            case EncodedFieldId.TaxDue: return formData.taxDue;
-            case EncodedFieldId.TaxCredits: return formData.taxCredits;
-            case EncodedFieldId.FinalTaxPayable: return formData.finalTaxPayable;
-            default: return "";
-        }
     }
 
     private void UpdateActionButton()
@@ -153,50 +111,27 @@ public class BirFormEncodingUI : MonoBehaviour
             return;
         }
 
-        bool ready = AllFieldsFilled();
         actionButtonLabel.text = "Confirm Form";
-        actionButton.interactable = ready;
+        actionButton.interactable = AllSlotsFilled();
     }
 
     private void OnActionButtonPressed()
     {
         if (!isConfirmed)
         {
-            ConfirmForm();
+            isConfirmed = true;
+            formData.isConfirmed = true;
+            UpdateActionButton();
         }
         else
         {
-            StartPrint();
+            Hide();
+            printJobController.BeginPrint(formData);
         }
-    }
-
-    private void ConfirmForm()
-    {
-        isConfirmed = true;
-        formData.isConfirmed = true;
-
-        foreach (var row in spawnedRows)
-        {
-            row.SetReadOnly(true);
-        }
-
-        UpdateActionButton();
-    }
-
-    private void StartPrint()
-    {
-        Hide();
-        printJobController.BeginPrint(formData);
-        CameraController.Instance.ExitFirstPerson();
     }
 
     public void OnBackPressed()
     {
-        // Back is only meaningful before confirming — once confirmed, the
-        // form is locked and the player should proceed to Print rather
-        // than escape. We still allow leaving (e.g. to re-check the Case
-        // Folder) without losing progress, since formData is stored on
-        // CaseData.encodedForm, not local state.
         Hide();
         computerHomeUI.Show();
     }

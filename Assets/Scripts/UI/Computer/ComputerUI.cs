@@ -1,17 +1,17 @@
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.EventSystems;
 using TMPro;
 
-public class ComputerUI : MonoBehaviour, IPointerClickHandler
+/// <summary>
+/// PURPOSE:
+/// Tax Calculator UI. Field slots are filled entirely via the click-select
+/// -> click-place value transfer system (ComputerFieldSlot handles its own
+/// destination logic). This script owns Calculate + exposing outputs as
+/// selectable sources.
+/// </summary>
+public class ComputerUI : MonoBehaviour
 {
     [Header("Panel")]
     [SerializeField] private GameObject computerPanelRoot;
-
-    [Header("Source Value Buttons (built at runtime)")]
-    [SerializeField] private GameObject sourceButtonListRoot;
-    [SerializeField] private GameObject sourceButtonPrefab;
 
     [Header("Destination Field Slots")]
     [SerializeField] private ComputerFieldSlot grossIncomeSlot;
@@ -20,11 +20,11 @@ public class ComputerUI : MonoBehaviour, IPointerClickHandler
 
     [Header("Calculate")]
     [SerializeField] private GameObject calculateButton;
-    [SerializeField] private TextMeshProUGUI resultSummaryText;
 
-    private ComputerSourceValue selectedSource = null;
-    private GameObject selectedSourceButtonObj = null;
-    private List<(GameObject obj, ComputerSourceValue data)> spawnedSourceButtons = new List<(GameObject, ComputerSourceValue)>();
+    [Header("Output Sources")]
+    [SerializeField] private ComputedResultSource taxableIncomeSource;
+    [SerializeField] private ComputedResultSource taxDueSource;
+    [SerializeField] private ComputedResultSource finalPayableSource;
 
     [Header("Return to Home")]
     [SerializeField] private ComputerHomeUI computerHomeUI;
@@ -36,116 +36,25 @@ public class ComputerUI : MonoBehaviour, IPointerClickHandler
 
     public void Show()
     {
+        Debug.Log($"computerPanelRoot: {computerPanelRoot}");
+        Debug.Log($"grossIncomeSlot: {grossIncomeSlot}");
+        Debug.Log($"allowableExpensesSlot: {allowableExpensesSlot}");
+        Debug.Log($"taxCreditsSlot: {taxCreditsSlot}");
+        Debug.Log($"calculateButton: {calculateButton}");
+
         computerPanelRoot.SetActive(true);
-        BuildSourceButtons();
-
-        grossIncomeSlot.Initialize(this, "GrossIncome");
-        allowableExpensesSlot.Initialize(this, "AllowableExpenses");
-        taxCreditsSlot.Initialize(this, "TaxCredits");
-
-        selectedSource = null;
-        selectedSourceButtonObj = null;
+        grossIncomeSlot.Clear();
+        allowableExpensesSlot.Clear();
+        taxCreditsSlot.Clear();
         calculateButton.SetActive(false);
-        resultSummaryText.text = "";
+
+        InvokeRepeating(nameof(CheckIfReadyToCalculate), 0f, 0.25f);
     }
 
     public void Hide()
     {
         computerPanelRoot.SetActive(false);
-    }
-
-    private void BuildSourceButtons()
-    {
-        foreach (var (obj, _) in spawnedSourceButtons) Destroy(obj);
-        spawnedSourceButtons.Clear();
-
-        AddSourceButton("BIR 2316 - Compensation", 500000f, "GrossIncome");
-        AddSourceButton("Financial Statements - Gross Sales", 350000f, "GrossIncome"); // deliberately also valid-looking, but only ONE slot ("GrossIncome") — both route to the same correct slot to reflect "Gross Income = combination of sources" per design doc
-        AddSourceButton("Sales Records - Amount", 25000f, "GrossIncome");
-        AddSourceButton("Financial Statements - Expenses", 150000f, "AllowableExpenses");
-        AddSourceButton("BIR 2316 - Tax Withheld", 45000f, "TaxCredits");
-    }
-
-    private void AddSourceButton(string label, float value, string correctSlotId)
-    {
-        GameObject buttonObj = Instantiate(sourceButtonPrefab, sourceButtonListRoot.transform);
-        TextMeshProUGUI text = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
-        text.text = $"{label}: \u20b1{value:N0}";
-
-        var data = new ComputerSourceValue(label, value, correctSlotId);
-
-        Button button = buttonObj.GetComponent<Button>();
-        button.onClick.AddListener(() => OnSourceValueSelected(data, buttonObj));
-
-        spawnedSourceButtons.Add((buttonObj, data));
-    }
-
-    private void OnSourceValueSelected(ComputerSourceValue source, GameObject buttonObj)
-    {
-        // Deselect previous button's highlight, if any.
-        ClearSelectionHighlight();
-
-        selectedSource = source;
-        selectedSourceButtonObj = buttonObj;
-
-        // Visual "selected" feedback per design doc's "Object becomes selected."
-        Image img = buttonObj.GetComponent<Image>();
-        if (img != null) img.color = new Color(1f, 0.85f, 0.3f); // highlighted yellow
-    }
-
-    private void ClearSelectionHighlight()
-    {
-        if (selectedSourceButtonObj != null)
-        {
-            Image img = selectedSourceButtonObj.GetComponent<Image>();
-            if (img != null) img.color = Color.white;
-        }
-        selectedSourceButtonObj = null;
-    }
-
-    /// <summary>
-    /// Called by a ComputerFieldSlot when clicked. Now performs real
-    /// validation via ComputerFieldSlot.TryAssign, and clears selection
-    /// regardless of correctness (matching "you tried to place it,
-    /// right or wrong, you're no longer holding it" — a simple, forgiving
-    /// rule appropriate for a prototype; the player just re-selects a
-    /// source and tries again).
-    /// </summary>
-    public void OnSlotClicked(string slotId)
-    {
-        if (selectedSource == null) return;
-
-        ComputerFieldSlot targetSlot = GetSlot(slotId);
-        if (targetSlot == null) return;
-
-        targetSlot.TryAssign(selectedSource);
-
-        selectedSource = null;
-        ClearSelectionHighlight();
-
-        CheckIfReadyToCalculate();
-    }
-
-    /// <summary>
-    /// IPointerClickHandler on the panel's own background — clicking any
-    /// empty area of the Computer panel cancels the current selection,
-    /// matching a natural "click away to deselect" expectation.
-    /// </summary>
-    public void OnPointerClick(PointerEventData eventData)
-    {
-        selectedSource = null;
-        ClearSelectionHighlight();
-    }
-
-    private ComputerFieldSlot GetSlot(string slotId)
-    {
-        return slotId switch
-        {
-            "GrossIncome" => grossIncomeSlot,
-            "AllowableExpenses" => allowableExpensesSlot,
-            "TaxCredits" => taxCreditsSlot,
-            _ => null
-        };
+        CancelInvoke(nameof(CheckIfReadyToCalculate));
     }
 
     private void CheckIfReadyToCalculate()
@@ -158,55 +67,30 @@ public class ComputerUI : MonoBehaviour, IPointerClickHandler
     {
         CaseData data = CaseManager.Instance.CurrentCase;
 
+        // These three are INPUT fields the player already transferred in —
+        // fine to write directly, they're not part of the "must be
+        // transferred to Page 4" set.
         data.grossIncome = grossIncomeSlot.CurrentValue;
         data.allowableExpenses = allowableExpensesSlot.CurrentValue;
         data.taxWithheldOrCredits = taxCreditsSlot.CurrentValue;
 
-        data.taxableIncome = TaxComputationCalculator.ComputeTaxableIncome(data.grossIncome, data.allowableExpenses);
-
+        // Compute results LOCALLY — do not write into CaseData yet.
+        float taxableIncome = TaxComputationCalculator.ComputeTaxableIncome(data.grossIncome, data.allowableExpenses);
         TaxOption optionToUse = data.taxOption ?? TaxOption.EightPercentTaxRate;
-        data.taxDue = TaxComputationCalculator.ComputeTaxDue(data.taxableIncome, optionToUse);
-
-        data.finalTaxPayable = TaxComputationCalculator.ComputeFinalTaxPayable(data.taxDue, data.taxWithheldOrCredits);
+        float taxDue = TaxComputationCalculator.ComputeTaxDue(taxableIncome, optionToUse);
+        float finalTaxPayable = TaxComputationCalculator.ComputeFinalTaxPayable(taxDue, data.taxWithheldOrCredits);
 
         data.computationStatus = ComputationStatus.Computed;
 
-        resultSummaryText.text =
-            $"Taxable Income: \u20b1{data.taxableIncome:N0}\n" +
-            $"Tax Due: \u20b1{data.taxDue:N0}\n" +
-            $"Final Tax Payable: \u20b1{data.finalTaxPayable:N0}\n" +
-            $"Status: Computed";
 
+        // Expose as sources only — Page 4 will NOT show these until the
+        // player actually clicks + places them.
+        taxableIncomeSource.SetValue(taxableIncome, "TaxableIncome");
+        taxDueSource.SetValue(taxDue, "TaxDue");
+        finalPayableSource.SetValue(finalTaxPayable, "FinalTaxPayable");
+        Debug.Log($"[Calculate DONE] taxableIncomeSource instance ID = {taxableIncomeSource.GetInstanceID()}");
     }
 
-    /// <summary>
-    /// Per design doc Section 8:
-    /// - BIR 1700: Compensation Earner
-    /// - BIR 1701: Self-Employed / Professional / Mixed Income using Graduated Rate
-    /// - BIR 1701A: Qualified Self-Employed/Professional using 8% Rate
-    /// </summary>
-    private RequiredForm DetermineRequiredForm(TaxpayerType? taxpayerType, TaxOption? taxOption)
-    {
-        if (taxpayerType == TaxpayerType.CompensationEarner)
-        {
-            return RequiredForm.BIR1700;
-        }
-
-        if (taxOption == TaxOption.EightPercentTaxRate)
-        {
-            return RequiredForm.BIR1701A;
-        }
-
-        // Mixed Income Earner, Self-Employed, or Professional using Graduated Rate
-        return RequiredForm.BIR1701;
-    }
-
-    /// <summary>
-    /// Wired to what was previously the "Close" button — now acts as "Back",
-    /// returning to the Computer's desktop instead of exiting first-person
-    /// entirely. The Workstation Close button (unchanged) still exits
-    /// first-person fully.
-    /// </summary>
     public void OnBackToHomePressed()
     {
         Hide();

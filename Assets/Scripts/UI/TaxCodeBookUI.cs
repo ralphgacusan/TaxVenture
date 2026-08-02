@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using System.Collections.Generic;
 
 /// <summary>
 /// PURPOSE:
@@ -45,7 +46,13 @@ public class TaxCodeBookUI : MonoBehaviour
     [Header("Swipe to Close (replaces Close button)")]
     [SerializeField] private SwipeDownToClose swipeToClose;
 
+    [Header("Clickable Values")]
+    [SerializeField] private Transform clickableValueListRoot;
+    [SerializeField] private TaxCodeValueChip valueChipPrefab;
+
     private int currentSectionIndex = 0;
+
+    private List<TaxCodeValueChip> spawnedChips = new List<TaxCodeValueChip>();
 
     private void Awake()
     {
@@ -101,5 +108,21 @@ public class TaxCodeBookUI : MonoBehaviour
 
         leftEdgeIndicator.SetActive(index > 0);
         rightEdgeIndicator.SetActive(index < bookData.sections.Count - 1);
+
+        RenderClickableValues(section);
+    }
+
+    // Call this from inside your existing RenderSection(index) method:
+    private void RenderClickableValues(TaxCodeSection section)
+    {
+        foreach (var chip in spawnedChips) Destroy(chip.gameObject);
+        spawnedChips.Clear();
+
+        foreach (var clickable in section.clickableValues)
+        {
+            var chipObj = Instantiate(valueChipPrefab, clickableValueListRoot);
+            chipObj.Initialize(clickable);
+            spawnedChips.Add(chipObj);
+        }
     }
 }

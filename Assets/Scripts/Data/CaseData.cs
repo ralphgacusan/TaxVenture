@@ -68,11 +68,13 @@ public class CaseData
     public float finalTaxPayable = 0f;
     public ComputationStatus computationStatus = ComputationStatus.NotComputed;
 
+    public HashSet<string> folderTransferredFields = new HashSet<string>();
+
     // ---------- Page 5: Filing Information ----------
     public RequiredForm? requiredForm = null;
     public FilingStatus filingStatus = FilingStatus.NotReady;
-    public string submissionDate = "";
-    public string remarks = "";
+    public string submissionDate = "Date";
+    public string remarks = "Remarks";
 
     // ---------- Page 6: Supporting Documents ----------
     public List<SupportingDocument> supportingDocuments = new List<SupportingDocument>();
@@ -105,6 +107,7 @@ public class CaseData
     // data ever overwriting real CaseData fields (per "the player must type
     // EVERYTHING manually, nothing auto-fills").
     public EncodedFormData encodedForm = null;
+
 }
 
 public enum CaseAssessment { UnderReview, ReadyForComputation, ReadyForFiling, NotReadyForFiling, Filed }

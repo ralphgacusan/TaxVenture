@@ -1,34 +1,53 @@
 using System.Collections.Generic;
-using System.Text;
 
 /// <summary>
 /// PURPOSE:
-/// Holds the specific field data for one supporting document (per the design
-/// doc's Page 6 tables — e.g. BIR Form 2316 has Employer Name, Total
-/// Compensation, Tax Withheld). Separate from CaseFolderPageContent because
-/// each document type has different, named fields rather than one big body
-/// of text — this keeps data structured for future use (e.g. Evidence Board
-/// clue matching in Milestone 11).
-///
-/// CONNECTS WITH:
-/// - DocumentViewerUI: displays a document's Fields as a simple label/value list
-/// - CaseData / CaseManager: the source document list this data is generated from
+/// One field within a supporting document, now carrying DataValueType and
+/// SemanticKey so it can produce a real DataValue for the transfer system,
+/// in addition to its display label/value.
 /// </summary>
+public class DocumentField
+{
+    public string Label;
+    public string DisplayValue;
+    public DataValueType Type;
+    public string SemanticKey;
+
+    public DocumentField(string label, string displayValue, DataValueType type, string semanticKey)
+    {
+        Label = label;
+        DisplayValue = displayValue;
+        Type = type;
+        SemanticKey = semanticKey;
+    }
+
+    public DataValue ToDataValue()
+    {
+        object rawValue = Type == DataValueType.Number ? (object)ParseNumeric(DisplayValue) : DisplayValue;
+        return new DataValue(rawValue, $"{Label}: {DisplayValue}", Type, SemanticKey);
+    }
+
+    private float ParseNumeric(string display)
+    {
+        string cleaned = display.Replace("\u20b1", "").Replace(",", "").Trim();
+        float.TryParse(cleaned, out float result);
+        return result;
+    }
+}
+
 public class DocumentFieldData
 {
     public string DocumentName;
-
-    public List<(string label, string value)> Fields = new List<(string, string)>();
+    public List<DocumentField> Fields = new List<DocumentField>();
 
     public DocumentFieldData(string documentName)
     {
         DocumentName = documentName;
     }
 
-    public DocumentFieldData AddField(string label, string value)
+    public DocumentFieldData AddField(string label, string displayValue, DataValueType type, string semanticKey)
     {
-        Fields.Add((label, value));
+        Fields.Add(new DocumentField(label, displayValue, type, semanticKey));
         return this;
     }
-
 }
