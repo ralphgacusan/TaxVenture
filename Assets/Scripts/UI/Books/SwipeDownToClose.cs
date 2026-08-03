@@ -1,24 +1,11 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using System.Collections;
 
-/// <summary>
-/// PURPOSE:
-/// Detects a downward drag gesture on the book/folder panel and triggers a
-/// close callback once the drag exceeds a distance threshold, playing a
-/// simple slide-down animation first. Built entirely on Unity's
-/// IPointerDownHandler/IDragHandler/IPointerUpHandler interfaces, which
-/// already abstract over mouse vs. touch pointer data — per current-phase
-/// direction, mouse-drag IS the swipe gesture for now, and this script
-/// requires zero changes when real touch arrives later.
-///
-/// RESPONSIBILITIES:
-/// - Track drag start position and current delta
-/// - If released past the downward distance threshold, play a slide-down
-///   animation then invoke OnSwipeClosed
-/// - If released before the threshold, snap back to original position
-///   (treated as "not a real close gesture")
-/// </summary>
-public class SwipeDownToClose : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
+public class SwipeDownToClose : MonoBehaviour,
+    IPointerDownHandler,
+    IDragHandler,
+    IPointerUpHandler
 {
     [Header("Target to Animate")]
     [SerializeField] private RectTransform panelToAnimate;
@@ -32,15 +19,19 @@ public class SwipeDownToClose : MonoBehaviour, IPointerDownHandler, IDragHandler
 
     private Vector2 dragStartPos;
     private Vector2 panelOriginalPos;
-    private bool isDragging = false;
+    private bool isDragging;
 
     private void OnEnable()
     {
-        if (panelToAnimate != null) panelOriginalPos = panelToAnimate.anchoredPosition;
+        if (panelToAnimate != null)
+            panelOriginalPos = panelToAnimate.anchoredPosition;
     }
 
     public void OnPointerDown(PointerEventData eventData)
     {
+        if (panelToAnimate == null)
+            return;
+
         dragStartPos = eventData.position;
         panelOriginalPos = panelToAnimate.anchoredPosition;
         isDragging = true;
@@ -48,62 +39,82 @@ public class SwipeDownToClose : MonoBehaviour, IPointerDownHandler, IDragHandler
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (!isDragging) return;
+        if (!isDragging || panelToAnimate == null)
+            return;
 
-        float deltaY = eventData.position.y - dragStartPos.y;
-        // Only allow dragging downward (negative screen delta moves panel down);
-        // clamp so dragging upward does nothing.
-        float clampedDeltaY = Mathf.Min(0f, deltaY);
+        Vector2 delta = eventData.position - dragStartPos;
 
-        panelToAnimate.anchoredPosition = panelOriginalPos + new Vector2(0f, clampedDeltaY);
+        // Ignore mostly-horizontal drags.
+        if (Mathf.Abs(delta.x) > Mathf.Abs(delta.y))
+            return;
+
+        // Only move downward.
+        float offsetY = Mathf.Min(0f, delta.y);
+
+        panelToAnimate.anchoredPosition =
+            panelOriginalPos + new Vector2(0f, offsetY);
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        if (!isDragging) return;
+        if (!isDragging || panelToAnimate == null)
+            return;
+
         isDragging = false;
 
-        float deltaY = dragStartPos.y - eventData.position.y; // positive = dragged down
+        Vector2 delta = eventData.position - dragStartPos;
 
-        if (deltaY >= closeDistanceThreshold)
-        {
-            StartCoroutine(SlideOutAndClose());
-        }
-        else
+        // If this wasn't mostly vertical, let the drag script handle it.
+        if (Mathf.Abs(delta.x) > Mathf.Abs(delta.y))
         {
             StartCoroutine(SnapBack());
+            return;
         }
+
+        float downwardDistance = -delta.y;
+
+        if (downwardDistance >= closeDistanceThreshold)
+            StartCoroutine(SlideOutAndClose());
+        else
+            StartCoroutine(SnapBack());
     }
 
-    private System.Collections.IEnumerator SlideOutAndClose()
+    private IEnumerator SlideOutAndClose()
     {
         Vector2 start = panelToAnimate.anchoredPosition;
-        Vector2 end = panelOriginalPos + new Vector2(0f, -slideOutDistance);
+        Vector2 end = panelOriginalPos + Vector2.down * slideOutDistance;
+
         float elapsed = 0f;
 
         while (elapsed < slideAnimationDuration)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / slideAnimationDuration;
-            panelToAnimate.anchoredPosition = Vector2.Lerp(start, end, t);
+
+            panelToAnimate.anchoredPosition =
+                Vector2.Lerp(start, end, elapsed / slideAnimationDuration);
+
             yield return null;
         }
 
-        panelToAnimate.anchoredPosition = panelOriginalPos; // reset for next open
+        panelToAnimate.anchoredPosition = panelOriginalPos;
+
         OnSwipeClosed?.Invoke();
     }
 
-    private System.Collections.IEnumerator SnapBack()
+    private IEnumerator SnapBack()
     {
         Vector2 start = panelToAnimate.anchoredPosition;
-        float elapsed = 0f;
+
         float duration = 0.15f;
+        float elapsed = 0f;
 
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / duration;
-            panelToAnimate.anchoredPosition = Vector2.Lerp(start, panelOriginalPos, t);
+
+            panelToAnimate.anchoredPosition =
+                Vector2.Lerp(start, panelOriginalPos, elapsed / duration);
+
             yield return null;
         }
 

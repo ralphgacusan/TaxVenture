@@ -35,7 +35,7 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
         npcState.ChangeState(new NpcInteractState());
         npcState.ChangeState(new NpcDialogueState());
 
-        var lines = new DialogueBuilder()
+        var lines = new DialogueBuilder("Receptionist")
             .Npc("Good day!")
             .Npc("Welcome back.")
             .Npc("Today you have two scheduled client consultations.")

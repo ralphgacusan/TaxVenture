@@ -81,8 +81,9 @@ public class DialogueUI : MonoBehaviour
 
         DialogueLine line = currentLines[lineIndex];
 
-        speakerNameText.text = line.Speaker == DialogueSpeaker.Npc ? "" : "You"; // NPC name filled per-call if desired via a future field; "You" for player lines
-        dialogueText.text = line.Text;
+        speakerNameText.text = line.Speaker == DialogueSpeaker.Player
+            ? "You"
+            : line.SpeakerName; dialogueText.text = line.Text;
 
         // Placeholder portrait swap hook — currently always the same sprite,
         // but reads PortraitId so future art only requires a lookup here.

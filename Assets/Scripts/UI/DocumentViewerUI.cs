@@ -16,7 +16,10 @@ public class DocumentViewerUI : MonoBehaviour
     [SerializeField] private SupportingDocumentsPageLink folderPageLink;
     [SerializeField] private CorkboardDocumentSpawner corkboardSpawner;
 
-    private List<DocumentFieldRow> spawnedRows = new List<DocumentFieldRow>();
+    [Header("Drag")]
+    [SerializeField] private DocumentWindowDrag windowDrag;
+
+    private readonly List<DocumentFieldRow> spawnedRows = new();
 
     private void Awake()
     {
@@ -25,33 +28,54 @@ public class DocumentViewerUI : MonoBehaviour
 
     public void Show(string documentName)
     {
+        // Reset the window to the center every time it opens.
+        windowDrag?.ResetWindowPosition();
+
         DocumentFieldData data = DocumentDataProvider.GetFieldsFor(documentName);
         documentNameText.text = data.DocumentName;
 
-        foreach (var row in spawnedRows) Destroy(row.gameObject);
-        spawnedRows.Clear();
+        ClearRows();
 
         foreach (var field in data.Fields)
         {
-            var rowObj = Instantiate(fieldRowPrefab, fieldRowListRoot);
-            rowObj.Initialize(field);
-            spawnedRows.Add(rowObj);
+            var row = Instantiate(fieldRowPrefab, fieldRowListRoot);
+            row.Initialize(field);
+            spawnedRows.Add(row);
         }
 
         MarkAsReviewed(documentName);
+
         viewerPanelRoot.SetActive(true);
+
+        // Bring the document window to the front.
+        transform.SetAsLastSibling();
     }
 
     public void Hide()
     {
         viewerPanelRoot.SetActive(false);
+
         folderPageLink?.RefreshButtons();
         corkboardSpawner?.RefreshAllDocumentVisuals();
     }
 
+    private void ClearRows()
+    {
+        foreach (var row in spawnedRows)
+        {
+            if (row != null)
+                Destroy(row.gameObject);
+        }
+
+        spawnedRows.Clear();
+    }
+
     private void MarkAsReviewed(string documentName)
     {
-        var doc = CaseManager.Instance.CurrentCase.supportingDocuments.Find(d => d.documentName == documentName);
-        if (doc != null) doc.isReviewed = true;
+        var doc = CaseManager.Instance.CurrentCase.supportingDocuments
+            .Find(d => d.documentName == documentName);
+
+        if (doc != null)
+            doc.isReviewed = true;
     }
 }

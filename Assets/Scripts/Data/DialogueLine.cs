@@ -13,12 +13,18 @@ public class DialogueLine
 {
     public DialogueSpeaker Speaker;
     public string Text;
-    public string PortraitId; // placeholder hook — e.g. "client_neutral", "client_happy" later
+    public string PortraitId;
+    public string SpeakerName;
 
-    public DialogueLine(DialogueSpeaker speaker, string text, string portraitId = "default")
+    public DialogueLine(
+        DialogueSpeaker speaker,
+        string text,
+        string portraitId = "default",
+        string speakerName = "NPC")
     {
         Speaker = speaker;
         Text = text;
         PortraitId = portraitId;
+        SpeakerName = speakerName;
     }
 }

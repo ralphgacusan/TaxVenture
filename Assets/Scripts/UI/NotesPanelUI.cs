@@ -5,18 +5,12 @@ using TMPro;
 /// <summary>
 /// PURPOSE:
 /// Dynamic Notes/task panel. Shows task DESCRIPTIONS (from
-/// TaskListProvider), not raw FSM state names, with each task marked as
-/// Done / In Progress / Pending based on how far GameStateMachine has
-/// actually progressed. Reuses the existing GameStateMachine.OnStateChanged
-/// event — same subscription pattern as HudStateLabel/DebugStateLabel.
+/// TaskListProvider), not raw FSM state names.
 ///
 /// COMPLETION LOGIC:
-/// Tasks are ordered (per TaskListProvider). Any task whose state appears
-/// BEFORE the current state in that order is marked Done. The task matching
-/// the CURRENT state is marked In Progress. Everything after is Pending.
-/// This means completion is derived purely from FSM position, never
-/// tracked/duplicated separately — consistent with the project's existing
-/// "CaseData/FSM is the single source of truth" principle.
+/// A task is marked DONE once the player reaches its corresponding FSM
+/// state. Completed tasks are permanently remembered even if the player
+/// revisits previous states.
 /// </summary>
 public class NotesPanelUI : MonoBehaviour
 {
@@ -26,7 +20,14 @@ public class NotesPanelUI : MonoBehaviour
     [Header("Swipe to Close")]
     [SerializeField] private SwipeDownToClose swipeToClose;
 
+
     private List<TaskDefinition> tasks;
+
+
+    // Permanently stores completed tasks during gameplay
+    private static HashSet<System.Type> completedStates =
+        new HashSet<System.Type>();
+
 
     private void Awake()
     {
@@ -34,8 +35,10 @@ public class NotesPanelUI : MonoBehaviour
 
         panelRoot.SetActive(false);
 
-        swipeToClose.OnSwipeClosed += Hide;
+        if (swipeToClose != null)
+            swipeToClose.OnSwipeClosed += Hide;
     }
+
 
     private void OnEnable()
     {
@@ -45,6 +48,7 @@ public class NotesPanelUI : MonoBehaviour
         }
     }
 
+
     private void OnDisable()
     {
         if (GameStateMachine.Instance != null)
@@ -53,20 +57,50 @@ public class NotesPanelUI : MonoBehaviour
         }
     }
 
+
     private void HandleStateChanged(IGameState newState)
     {
-        // Refresh text live even while the panel might be closed, so it's
-        // correct the instant it's opened next.
+        MarkCurrentTaskDone();
         RenderTasks();
     }
+
+
+    private void MarkCurrentTaskDone()
+    {
+        if (GameStateMachine.Instance == null ||
+            GameStateMachine.Instance.CurrentState == null)
+            return;
+
+
+        System.Type currentType =
+            GameStateMachine.Instance.CurrentState.GetType();
+
+
+        foreach (TaskDefinition task in tasks)
+        {
+            if (task.StateType == currentType)
+            {
+                completedStates.Add(task.StateType);
+                break;
+            }
+        }
+    }
+
 
     public void Show()
     {
-        CameraController.Instance.LockPlayerControls();
+        if (CameraController.Instance != null)
+            CameraController.Instance.LockPlayerControls();
+
+
+        // Update in case the panel opens after a state change
+        MarkCurrentTaskDone();
 
         RenderTasks();
+
         panelRoot.SetActive(true);
     }
+
 
     public void Hide()
     {
@@ -75,39 +109,34 @@ public class NotesPanelUI : MonoBehaviour
         if (CameraController.Instance != null)
             CameraController.Instance.UnlockPlayerControls();
     }
+
+
     private void RenderTasks()
     {
-        if (GameStateMachine.Instance == null || GameStateMachine.Instance.CurrentState == null) return;
-
-        System.Type currentType = GameStateMachine.Instance.CurrentState.GetType();
-        int currentIndex = tasks.FindIndex(t => t.StateType == currentType);
-
         var sb = new System.Text.StringBuilder();
+
         sb.AppendLine("Today's Tasks");
         sb.AppendLine();
 
-        for (int i = 0; i < tasks.Count; i++)
+
+        foreach (TaskDefinition task in tasks)
         {
             string marker;
-            if (currentIndex < 0)
-            {
-                marker = "[ ]";
-            }
-            else if (i < currentIndex)
+
+
+            if (completedStates.Contains(task.StateType))
             {
                 marker = "[DONE]";
-            }
-            else if (i == currentIndex)
-            {
-                marker = "[NOW]";
             }
             else
             {
                 marker = "[ ]";
             }
 
-            sb.AppendLine($"{marker} {tasks[i].TaskDescription}");
+
+            sb.AppendLine($"{marker} {task.TaskDescription}");
         }
+
 
         objectivesText.text = sb.ToString();
     }

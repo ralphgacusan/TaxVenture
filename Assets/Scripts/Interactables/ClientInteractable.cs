@@ -52,7 +52,9 @@ public class ClientInteractable : MonoBehaviour, IInteractable
     /// </summary>
     private void RunInterview()
     {
-        var lines = new DialogueBuilder()
+        CaseData data = CaseManager.Instance.CurrentCase;
+
+        var lines = new DialogueBuilder(data.fullName)
             .Npc("Good morning! Thank you for taking my case.")
             .Player("Of course. Let's start with a few questions.")
             .Npc("Sure, go ahead.")
@@ -101,7 +103,8 @@ public class ClientInteractable : MonoBehaviour, IInteractable
 
     private List<DialogueLine> BuildOutcomeDialogue(ClientOutcomeBranch branch)
     {
-        var builder = new DialogueBuilder();
+        CaseData data = CaseManager.Instance.CurrentCase;
+        var builder = new DialogueBuilder(data.fullName);
 
         switch (branch)
         {

@@ -60,7 +60,7 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
             ? "Please submit both the Case Folder and the Tax Return when you're ready."
             : "Please submit the Case Folder when you're ready.";
 
-        var builder = new DialogueBuilder().Npc(reminder).Build();
+        var builder = new DialogueBuilder("Auditor").Npc(reminder).Build();
         dialogueUI.StartDialogue(builder, () => npcState.ChangeState(new NpcIdleState()));
     }
 
@@ -111,7 +111,7 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
 
     private void RunAuditDialogue(SubmissionResult result)
     {
-        var builder = new DialogueBuilder();
+        var builder = new DialogueBuilder("Auditor");
 
         if (result.VerdictWasCorrect && result.MissedIssues.Count == 0)
         {
