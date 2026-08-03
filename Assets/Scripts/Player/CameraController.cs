@@ -86,6 +86,10 @@ public class CameraController : MonoBehaviour
     private Coroutine activeTransition;
     private Transform currentViewpoint;
 
+    private bool controlsLocked;
+
+    public bool ControlsLocked => controlsLocked;
+
     private void Awake()
     {
         Instance = this;
@@ -256,6 +260,12 @@ public class CameraController : MonoBehaviour
     /// </summary>
     public void LockPlayerControls()
     {
+
+        if (controlsLocked)
+            return;
+
+        controlsLocked = true;
+
         if (CurrentMode != CameraMode.ThirdPerson) return; // NPC conversations only happen during exploration
 
         thirdPersonFollow.enabled = false;
@@ -267,6 +277,7 @@ public class CameraController : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+        controlsLocked = true;
     }
 
     /// <summary>
@@ -275,6 +286,11 @@ public class CameraController : MonoBehaviour
     /// </summary>
     public void UnlockPlayerControls()
     {
+
+        if (!controlsLocked)
+            return;
+
+        controlsLocked = false;
         if (CurrentMode != CameraMode.ThirdPerson) return;
 
         thirdPersonFollow.enabled = true;
@@ -285,6 +301,7 @@ public class CameraController : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+        controlsLocked = false;
     }
 
 }

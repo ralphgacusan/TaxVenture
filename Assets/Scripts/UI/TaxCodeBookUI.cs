@@ -59,19 +59,26 @@ public class TaxCodeBookUI : MonoBehaviour
         leftEdgeZone.OnTapped += PreviousPage;
         rightEdgeZone.OnTapped += NextPage;
         swipeToClose.OnSwipeClosed += Hide;
+
+        // Hide without calling UnlockPlayerControls during startup.
+        bookPanelRoot.SetActive(false);
     }
 
     public void Show()
     {
+        CameraController.Instance?.LockPlayerControls();
+
         Debug.Log("Tax Book Show");
-        WorkspaceLayoutManager.Instance.LeftZone.ShowPanel(bookPanelRoot); // CHANGED
+
+        WorkspaceLayoutManager.Instance.LeftZone.ShowPanel(bookPanelRoot);
         RenderSection(currentSectionIndex);
     }
     public void Hide()
     {
-        WorkspaceLayoutManager.Instance.LeftZone.HidePanel(bookPanelRoot); // CHANGED
-    }
+        WorkspaceLayoutManager.Instance.LeftZone.HidePanel(bookPanelRoot);
 
+        CameraController.Instance?.UnlockPlayerControls();
+    }
     public void NextPage()
     {
         if (currentSectionIndex < bookData.sections.Count - 1)

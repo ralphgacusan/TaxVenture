@@ -69,11 +69,11 @@ public class PrinterInteractable : MonoBehaviour, IInteractable
 
         firstPersonHands.ShowCarriedDocument();
 
+        GameplayEvents.RaiseTaxReturnCollected();
+
         GameStateMachine.Instance.ChangeState(new ComplianceAuditState());
 
-
-        SetPrintReady(false); // paper collected, printer resets visually
+        SetPrintReady(false);
     }
-
     public string GetPromptText() => isReady ? "Click to collect the printed Tax Return" : "Printer";
 }

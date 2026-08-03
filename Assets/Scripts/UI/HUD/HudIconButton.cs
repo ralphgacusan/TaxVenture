@@ -20,8 +20,13 @@ using UnityEngine.UI;
 /// </summary>
 public class HudIconButton : MonoBehaviour
 {
-    public enum UnlockTrigger { CaseFolderFirstOpened, TaxCodeBookFirstOpened, NotesUnlockRequested }
-
+    public enum UnlockTrigger
+    {
+        CaseFolderFirstOpened,
+        TaxCodeBookFirstOpened,
+        NotesUnlockRequested,
+        TaxReturnCollected
+    }
     [SerializeField] private UnlockTrigger unlockTrigger;
     [SerializeField] private Button button;
     [SerializeField] private CanvasGroup canvasGroup; // controls opacity via alpha
@@ -48,6 +53,9 @@ public class HudIconButton : MonoBehaviour
             case UnlockTrigger.NotesUnlockRequested:
                 GameplayEvents.OnNotesUnlockRequested += Unlock;
                 break;
+            case UnlockTrigger.TaxReturnCollected:
+                GameplayEvents.OnTaxReturnCollected += Unlock;
+                break;
         }
     }
 
@@ -63,6 +71,9 @@ public class HudIconButton : MonoBehaviour
                 break;
             case UnlockTrigger.NotesUnlockRequested:
                 GameplayEvents.OnNotesUnlockRequested -= Unlock;
+                break;
+            case UnlockTrigger.TaxReturnCollected:
+                GameplayEvents.OnTaxReturnCollected -= Unlock;
                 break;
         }
     }

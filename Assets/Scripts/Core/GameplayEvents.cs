@@ -29,4 +29,9 @@ public static class GameplayEvents
     public static void RaiseCaseFolderFirstOpened() => OnCaseFolderFirstOpened?.Invoke();
     public static void RaiseTaxCodeBookFirstOpened() => OnTaxCodeBookFirstOpened?.Invoke();
     public static void RaiseNotesUnlockRequested() => OnNotesUnlockRequested?.Invoke();
+
+    public static event Action OnTaxReturnCollected;
+
+    public static void RaiseTaxReturnCollected() => OnTaxReturnCollected?.Invoke();
+
 }

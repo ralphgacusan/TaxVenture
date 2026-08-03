@@ -63,7 +63,9 @@ public class CaseFolderFieldRow : MonoBehaviour, IDataValueSource, IDataValueDes
         }
         else
         {
-            displayValue = currentValue?.ToString() ?? "?";
+            displayValue = currentValue == null
+                ? "?"
+                : EnumDisplayFormatter.Format(currentValue.ToString());
         }
 
         labelText.text = $"{label}: {displayValue}";

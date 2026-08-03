@@ -50,6 +50,7 @@ public class InterviewClientUI : MonoBehaviour
         clientLineText.text = "Good morning! Thank you for taking my case. What would you like to know?";
         RebuildForCurrentSection();
         interviewPanelRoot.SetActive(true);
+        CameraController.Instance.LockPlayerControls();
     }
 
     public void Hide()

@@ -111,8 +111,9 @@ public class CaseFolderUI : MonoBehaviour
         {
             paperClickTarget.onClick.AddListener(OnPaperClicked);
         }
-    }
 
+        Hide();
+    }
     /// <summary>
     /// Called by CaseFolderInteractable.OnInteract(). Builds fresh page
     /// content from the current CaseData every time it's opened, so any
@@ -121,15 +122,20 @@ public class CaseFolderUI : MonoBehaviour
     /// </summary>
     public void Show()
     {
+        CameraController.Instance?.LockPlayerControls();
+
         Debug.Log("Case Folder Show");
         pages = BuildPages(CaseManager.Instance.CurrentCase);
-        WorkspaceLayoutManager.Instance.RightZone.ShowPanel(folderPanelRoot); // CHANGED: was folderPanelRoot.SetActive(true)
+
+        WorkspaceLayoutManager.Instance.RightZone.ShowPanel(folderPanelRoot);
+
         currentPageIndex = 0;
         RenderPage(currentPageIndex);
 
         if (!hasOpenedBefore)
         {
             hasOpenedBefore = true;
+
             if (GameStateMachine.Instance.CurrentState is ReceiveCaseState)
             {
                 GameStateMachine.Instance.ChangeState(new ReviewDocumentsState());
@@ -137,6 +143,22 @@ public class CaseFolderUI : MonoBehaviour
         }
     }
 
+    public void Hide()
+    {
+        CameraController.Instance?.UnlockPlayerControls();
+
+        if (WorkspaceLayoutManager.Instance != null)
+        {
+            WorkspaceLayoutManager.Instance.RightZone.HidePanel(folderPanelRoot);
+        }
+        else
+        {
+            folderPanelRoot.SetActive(false);
+        }
+
+        isStampingMode = false;
+        stampPanel?.SetActive(false);
+    }
     /// <summary>
     /// Opens the folder forced to Page 1, with the stamp panel visible on the
     /// right side. Called by StampSetInteractable instead of the normal Show().
@@ -159,12 +181,7 @@ public class CaseFolderUI : MonoBehaviour
 
     // In Hide(), also close stamping mode:
 
-    public void Hide()
-    {
-        WorkspaceLayoutManager.Instance.RightZone.HidePanel(folderPanelRoot); // CHANGED: was folderPanelRoot.SetActive(false)
-        isStampingMode = false;
-        stampPanel?.SetActive(false);
-    }
+
     public void NextPage()
     {
         if (currentPageIndex < pages.Count - 1)

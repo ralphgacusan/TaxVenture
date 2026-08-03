@@ -32,6 +32,9 @@ using UnityEngine;
 /// </summary>
 public class GameStateMachine : MonoBehaviour
 {
+
+    [Header("Progression Lock (R11)")]
+    private bool progressionLocked = false;
     public static GameStateMachine Instance { get; private set; }
 
     /// <summary>
@@ -69,6 +72,12 @@ public class GameStateMachine : MonoBehaviour
             return;
         }
 
+        if (progressionLocked && !IsForwardLockedState(newState))
+        {
+            Debug.LogWarning($"[GameStateMachine] Ignored ChangeState({newState?.StateName}) — progression is locked.");
+            return;
+        }
+
         if (newState == null)
         {
             Debug.LogWarning("[GameStateMachine] Attempted to change to a null state.");
@@ -83,7 +92,6 @@ public class GameStateMachine : MonoBehaviour
 
         OnStateChanged?.Invoke(CurrentState);
     }
-
     /// <summary>
     /// True while the machine is paused (CurrentState is retained but not ticked,
     /// and ChangeState calls are ignored). Used when a modal UI, cutscene, or
@@ -117,5 +125,31 @@ public class GameStateMachine : MonoBehaviour
         if (!IsPaused) return;
         IsPaused = false;
         Debug.Log($"[GameStateMachine] Resumed '{CurrentState?.StateName}'.");
+    }
+
+    /// <summary>
+    /// Once true, ChangeState silently refuses any further transitions except
+    /// the ones explicitly allowed to proceed forward (AuditSubmittedState and
+    /// beyond). Used once the case is submitted for final audit — per R11,
+    /// the player can no longer return to Interview/Documents/Computer/
+    /// Corkboard/Stamp/PrepareReturn.
+    /// </summary>
+    public void LockProgression()
+    {
+        progressionLocked = true;
+        Debug.Log("[GameStateMachine] Progression LOCKED — no further backward transitions allowed.");
+    }
+
+    /// <summary>
+    /// States still reachable AFTER progression lock — everything from
+    /// AuditSubmittedState onward in the final sequence.
+    /// </summary>
+    private bool IsForwardLockedState(IGameState state)
+    {
+        return state is AuditSubmittedState
+            || state is CaseOutcomeState
+            || state is ArchiveCaseState
+            || state is RewardsState
+            || state is CaseCompleteState;
     }
 }

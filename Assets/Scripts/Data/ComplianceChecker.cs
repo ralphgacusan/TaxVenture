@@ -80,23 +80,23 @@ public static class ComplianceChecker
             CheckTextField("An issue was found with the address entered.", encoded.address, data.address, issues);
 
         if (!string.IsNullOrEmpty(encoded.residencyStatus) && data.residencyStatus.HasValue)
-            CheckTextField(
+            CheckEnumField(
                 "An issue was found with the residency status entered.",
                 encoded.residencyStatus,
-                EnumDisplayFormatter.Format(data.residencyStatus),
+                data.residencyStatus,
                 issues);
         if (!string.IsNullOrEmpty(encoded.taxpayerType) && data.taxpayerType.HasValue)
-            CheckTextField(
+            CheckEnumField(
                 "An issue was found with the taxpayer type entered.",
                 encoded.taxpayerType,
-                EnumDisplayFormatter.Format(data.taxpayerType),
+                data.taxpayerType,
                 issues);
 
         if (!string.IsNullOrEmpty(encoded.incomeSource) && data.incomeSource.HasValue)
-            CheckTextField(
+            CheckEnumField(
                 "An issue was found with the income source entered.",
                 encoded.incomeSource,
-                EnumDisplayFormatter.Format(data.incomeSource),
+                data.incomeSource,
                 issues);
         CheckNumericField("The declared income does not match the supporting records.", encoded.grossIncome, data.grossIncome, issues);
 
@@ -159,5 +159,30 @@ public static class ComplianceChecker
         if (taxpayerType == TaxpayerType.CompensationEarner) return RequiredForm.BIR1700;
         if (taxOption == TaxOption.EightPercentTaxRate) return RequiredForm.BIR1701A;
         return RequiredForm.BIR1701;
+    }
+
+    private static void CheckEnumField<T>(
+        string vagueLabel,
+        string typed,
+        T? actual,
+        List<ComplianceIssue> issues)
+        where T : struct, System.Enum
+    {
+        if (!actual.HasValue)
+        {
+            issues.Add(new ComplianceIssue(vagueLabel));
+            return;
+        }
+
+        if (!System.Enum.TryParse<T>(typed, out var typedEnum))
+        {
+            issues.Add(new ComplianceIssue(vagueLabel));
+            return;
+        }
+
+        if (!typedEnum.Equals(actual.Value))
+        {
+            issues.Add(new ComplianceIssue(vagueLabel));
+        }
     }
 }

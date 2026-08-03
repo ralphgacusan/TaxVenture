@@ -22,6 +22,7 @@ public class AuditSummaryPopupUI : MonoBehaviour
 
     public void Show(List<ComplianceIssue> issues, System.Action onClosedCallback)
     {
+        CameraController.Instance.LockPlayerControls();
         onClosed = onClosedCallback;
 
         var sb = new System.Text.StringBuilder();
@@ -49,7 +50,10 @@ public class AuditSummaryPopupUI : MonoBehaviour
 
     public void OnCloseButtonPressed()
     {
+
         popupPanelRoot.SetActive(false);
+        CameraController.Instance.UnlockPlayerControls();
+
         onClosed?.Invoke();
         FirstPersonHands.Instance.ShowCarriedDocument();
     }

@@ -31,7 +31,8 @@ public class NotesPanelUI : MonoBehaviour
     private void Awake()
     {
         tasks = TaskListProvider.GetTasks();
-        Hide();
+
+        panelRoot.SetActive(false);
 
         swipeToClose.OnSwipeClosed += Hide;
     }
@@ -61,6 +62,8 @@ public class NotesPanelUI : MonoBehaviour
 
     public void Show()
     {
+        CameraController.Instance.LockPlayerControls();
+
         RenderTasks();
         panelRoot.SetActive(true);
     }
@@ -68,8 +71,10 @@ public class NotesPanelUI : MonoBehaviour
     public void Hide()
     {
         panelRoot.SetActive(false);
-    }
 
+        if (CameraController.Instance != null)
+            CameraController.Instance.UnlockPlayerControls();
+    }
     private void RenderTasks()
     {
         if (GameStateMachine.Instance == null || GameStateMachine.Instance.CurrentState == null) return;

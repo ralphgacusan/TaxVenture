@@ -108,6 +108,10 @@ public class CaseData
     // EVERYTHING manually, nothing auto-fills").
     public EncodedFormData encodedForm = null;
 
+    // ---------- Final Audit Result (R11/R12) ----------
+    public bool finalVerdictWasCorrect = false;
+    public int finalMissedIssueCount = 0;
+
 }
 
 public enum CaseAssessment { UnderReview, ReadyForComputation, ReadyForFiling, NotReadyForFiling, Filed }

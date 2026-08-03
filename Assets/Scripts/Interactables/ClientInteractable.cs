@@ -92,17 +92,71 @@ public class ClientInteractable : MonoBehaviour, IInteractable
         npcState.ChangeState(new NpcInteractState());
         npcState.ChangeState(new NpcDialogueState());
 
-        var lines = new DialogueBuilder()
-            .Npc("I've completed the review of your tax documents.")
-            .Player("Your tax return has been prepared and reviewed.")
-            .Player("The compliance audit has also been completed.")
-            .Player("Everything is now ready for filing.")
-            .Npc("Thank you for handling my case.")
-            .Npc("I appreciate your assistance.")
-            .Player("This concludes your consultation.")
-            .Build();
+        CaseData data = CaseManager.Instance.CurrentCase;
+        ClientOutcomeBranch branch = ClientOutcomeEvaluator.Determine(data);
 
-        dialogueUI.StartDialogue(lines, OnPresentationConcluded);
+        var lines = BuildOutcomeDialogue(branch);
+        dialogueUI.StartDialogue(lines, () => OnPresentationConcluded(branch));
+    }
+
+    private List<DialogueLine> BuildOutcomeDialogue(ClientOutcomeBranch branch)
+    {
+        var builder = new DialogueBuilder();
+
+        switch (branch)
+        {
+            case ClientOutcomeBranch.CorrectNoIssues:
+                builder.Npc("I've completed the review of your tax documents.")
+                       .Player("Everything checked out cleanly. Your case is fully compliant.")
+                       .Npc("That's wonderful news. Thank you for handling this so carefully.")
+                       .Player("Your return has been filed and the case is now closed.")
+                       .Npc("I really appreciate your thoroughness.");
+                break;
+
+            case ClientOutcomeBranch.CorrectWithIssues:
+                builder.Npc("I've completed the review of your tax documents.")
+                       .Player("Your overall filing assessment was correct, but a few details need your attention.")
+                       .Npc("Oh — what kind of details?")
+                       .Player("A few figures and entries weren't fully accurate, but nothing that changes your filing status.")
+                       .Npc("I see. I'll be more careful with my records next time.")
+                       .Player("Your return has still been filed successfully.");
+                break;
+
+            case ClientOutcomeBranch.WrongVerdict:
+                builder.Npc("I've completed the review of your tax documents.")
+                       .Player("Unfortunately, the case assessment I gave you was incorrect.")
+                       .Npc("What does that mean for me?")
+                       .Player("It means this case could not be properly finalized as filed.")
+                       .Npc("That's disappointing to hear.");
+                break;
+
+            case ClientOutcomeBranch.WrongVerdictWithIssues:
+                builder.Npc("I've completed the review of your tax documents.")
+                       .Player("I have to be honest — the assessment was incorrect, and several details in the filing were wrong as well.")
+                       .Npc("That's... not what I was hoping to hear.")
+                       .Player("I understand. I take full responsibility for these errors.")
+                       .Npc("I'll need to find someone else to help me sort this out.");
+                break;
+        }
+
+        builder.Player("This concludes your consultation.");
+        return builder.Build();
+    }
+
+    private void OnPresentationConcluded(ClientOutcomeBranch branch)
+    {
+        CaseManager.Instance.CurrentCase.clientPresentationCompleted = true;
+        npcState.ChangeState(new NpcCompletedState());
+
+        if (GameStateMachine.Instance.CurrentState is CaseOutcomeState)
+        {
+            LevelResultPopupUI.Instance.Show(branch, OnLevelResultClosed);
+        }
+    }
+
+    private void OnLevelResultClosed()
+    {
+        GameStateMachine.Instance.ChangeState(new ArchiveCaseState());
     }
 
     private void OnPresentationConcluded()
