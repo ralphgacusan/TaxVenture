@@ -153,7 +153,7 @@ public class ClientInteractable : MonoBehaviour, IInteractable
 
         if (GameStateMachine.Instance.CurrentState is CaseOutcomeState)
         {
-            LevelResultPopupUI.Instance.Show(branch, OnLevelResultClosed);
+            LevelResultPopupUI.Instance.Show(CaseManager.Instance.CurrentCase, OnLevelResultClosed);
         }
     }
 

@@ -3,17 +3,23 @@ using TMPro;
 
 /// <summary>
 /// PURPOSE:
-/// Level Result popup shown after the Client outcome conversation
-/// concludes. Stub version for R12 — shows which of the four outcome
-/// branches occurred. R13 will expand this with full EXP/Reputation
-/// scoring per its redesigned reward rules.
+/// Level Result popup — full version per R13. Displays Completion Time,
+/// Verdict, Issues Found, EXP, Reputation, and a Summary, all sourced from
+/// a single LevelResultData built by RewardsCalculator.
 /// </summary>
 public class LevelResultPopupUI : MonoBehaviour
 {
     public static LevelResultPopupUI Instance { get; private set; }
 
     [SerializeField] private GameObject popupRoot;
-    [SerializeField] private TextMeshProUGUI resultText;
+
+    [Header("Result Fields")]
+    [SerializeField] private TextMeshProUGUI completionTimeText;
+    [SerializeField] private TextMeshProUGUI verdictText;
+    [SerializeField] private TextMeshProUGUI issuesFoundText;
+    [SerializeField] private TextMeshProUGUI expText;
+    [SerializeField] private TextMeshProUGUI reputationText;
+    [SerializeField] private TextMeshProUGUI summaryText;
 
     private System.Action onClosed;
 
@@ -23,20 +29,24 @@ public class LevelResultPopupUI : MonoBehaviour
         Hide();
     }
 
-    public void Show(ClientOutcomeBranch branch, System.Action onClosedCallback)
+    /// <summary>
+    /// Now takes CaseData directly (rather than just a branch enum) so it
+    /// can build the full LevelResultData itself via RewardsCalculator.
+    /// </summary>
+    public void Show(CaseData data, System.Action onClosedCallback)
     {
-        CameraController.Instance?.LockPlayerControls();
-
         onClosed = onClosedCallback;
 
-        resultText.text = branch switch
-        {
-            ClientOutcomeBranch.CorrectNoIssues => "Case Closed: Correct Verdict, No Issues",
-            ClientOutcomeBranch.CorrectWithIssues => "Case Closed: Correct Verdict, Minor Issues Found",
-            ClientOutcomeBranch.WrongVerdict => "Case Closed: Incorrect Verdict",
-            ClientOutcomeBranch.WrongVerdictWithIssues => "Case Closed: Incorrect Verdict, Multiple Issues Found",
-            _ => "Case Closed"
-        };
+        LevelResultData result = RewardsCalculator.BuildResult(data);
+
+        completionTimeText.text = $"Completion Time: {result.FormattedCompletionTime}";
+        verdictText.text = result.VerdictWasCorrect
+            ? $"Verdict: Correct ({EnumDisplayFormatter.Format(result.PlayerVerdict.ToString())})"
+            : $"Verdict: Incorrect (You said {EnumDisplayFormatter.Format(result.PlayerVerdict.ToString())})";
+        issuesFoundText.text = $"Issues Found: {result.IssuesFound}";
+        expText.text = $"EXP Earned: {result.ExpEarned}";
+        reputationText.text = $"Reputation Earned: {result.ReputationEarned}";
+        summaryText.text = result.SummaryText;
 
         popupRoot.SetActive(true);
     }
@@ -44,15 +54,8 @@ public class LevelResultPopupUI : MonoBehaviour
     public void OnClosePressed()
     {
         popupRoot.SetActive(false);
-
-        CameraController.Instance?.UnlockPlayerControls();
-
         onClosed?.Invoke();
     }
 
-    private void Hide()
-    {
-        popupRoot.SetActive(false);
-        CameraController.Instance?.UnlockPlayerControls();
-    }
+    private void Hide() => popupRoot.SetActive(false);
 }

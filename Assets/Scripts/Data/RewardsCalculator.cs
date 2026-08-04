@@ -2,43 +2,72 @@ using UnityEngine;
 
 /// <summary>
 /// PURPOSE:
-/// Pure logic determining final EXP and Reputation Hearts earned for
-/// completing a case, based on CaseData.auditMistakeCount. Zero Unity/UI
-/// dependency beyond Mathf, same pattern as TaxComputationCalculator and
-/// ComplianceChecker.
+/// Pure logic computing final EXP/Reputation per R13's four-tier rules,
+/// and assembling the complete LevelResultData record. Zero Unity/UI
+/// dependency beyond Mathf, same pattern as every other Calculator/
+/// Checker/Evaluator in this project.
 ///
-/// FORMULA (simplified for Phase 1 greybox):
-/// EXP = baseExp - (mistakeCount * expPenaltyPerMistake), floored at minExp
-/// Reputation = baseReputationHearts - mistakeCount, floored at 0
-///
-/// CONNECTS WITH:
-/// - RewardsUI: calls Calculate() to populate the reward screen
+/// SCORING RULES (per R13 spec):
+/// Correct + No Issues   -> Max EXP, Max Reputation
+/// Correct + Issues      -> EXP/Reputation reduced per issue
+/// Wrong + No Issues     -> Small EXP, No Reputation
+/// Wrong + Issues        -> No Rewards
 /// </summary>
 public static class RewardsCalculator
 {
-    private const int BaseExp = 100;
-    private const int ExpPenaltyPerMistake = 10;
-    private const int MinExp = 10;
+    private const int MaxExp = 100;
+    private const int MaxReputation = 5;
+    private const int ExpPenaltyPerIssue = 15;
+    private const int ReputationPenaltyPerIssue = 1;
+    private const int WrongVerdictSmallExp = 20;
 
-    private const int BaseReputationHearts = 5;
-
-    public static RewardResult Calculate(int mistakeCount)
+    public static LevelResultData BuildResult(CaseData data)
     {
-        int exp = Mathf.Max(MinExp, BaseExp - (mistakeCount * ExpPenaltyPerMistake));
-        int reputation = Mathf.Max(0, BaseReputationHearts - mistakeCount);
+        ClientOutcomeBranch branch = ClientOutcomeEvaluator.Determine(data);
 
-        return new RewardResult
+        int exp;
+        int reputation;
+        string summary;
+
+        switch (branch)
         {
+            case ClientOutcomeBranch.CorrectNoIssues:
+                exp = MaxExp;
+                reputation = MaxReputation;
+                summary = "Flawless work. The case was correctly assessed with no errors found.";
+                break;
+
+            case ClientOutcomeBranch.CorrectWithIssues:
+                exp = Mathf.Max(0, MaxExp - (data.finalMissedIssueCount * ExpPenaltyPerIssue));
+                reputation = Mathf.Max(0, MaxReputation - (data.finalMissedIssueCount * ReputationPenaltyPerIssue));
+                summary = $"The case assessment was correct, but {data.finalMissedIssueCount} issue(s) reduced your final score.";
+                break;
+
+            case ClientOutcomeBranch.WrongVerdict:
+                exp = WrongVerdictSmallExp;
+                reputation = 0;
+                summary = "The case was completed, but the final assessment was incorrect.";
+                break;
+
+            case ClientOutcomeBranch.WrongVerdictWithIssues:
+            default:
+                exp = 0;
+                reputation = 0;
+                summary = "The case assessment was incorrect and multiple issues were found. No rewards earned.";
+                break;
+        }
+
+        return new LevelResultData
+        {
+            Branch = branch,
+            FormattedCompletionTime = LevelTimer.Instance != null ? LevelTimer.Instance.GetFormattedTime() : "00:00:00",
+            PlayerVerdict = data.caseAssessment,
+            CorrectVerdict = CaseVerdictEvaluator.DetermineCorrectVerdict(data),
+            VerdictWasCorrect = data.finalVerdictWasCorrect,
+            IssuesFound = data.finalMissedIssueCount,
             ExpEarned = exp,
-            ReputationHeartsEarned = reputation,
-            MistakeCount = mistakeCount
+            ReputationEarned = reputation,
+            SummaryText = summary
         };
     }
-}
-
-public class RewardResult
-{
-    public int ExpEarned;
-    public int ReputationHeartsEarned;
-    public int MistakeCount;
 }

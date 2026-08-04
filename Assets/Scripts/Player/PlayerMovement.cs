@@ -79,6 +79,7 @@ public class PlayerMovement : MonoBehaviour
         Vector3 targetVelocity = moveDirection * moveSpeed;
         // Preserve existing vertical velocity (gravity) while overriding horizontal movement.
         rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+        Debug.Log($"Pos: {transform.position}  Vel: {rb.linearVelocity}");
 
         // --- ROTATION ---
         // Rotate the player capsule to face the direction it's moving.

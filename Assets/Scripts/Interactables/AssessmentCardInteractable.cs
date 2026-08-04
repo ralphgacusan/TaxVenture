@@ -8,7 +8,6 @@ using UnityEngine;
 /// (see StampUI). This exists purely so the board visually reflects
 /// whatever was stamped, without letting the player change it here.
 /// </summary>
-[RequireComponent(typeof(HighlightEffect))]
 public class AssessmentCardInteractable : MonoBehaviour, IInteractable
 {
     [SerializeField] private CaseAssessment representedAssessment;
@@ -16,13 +15,11 @@ public class AssessmentCardInteractable : MonoBehaviour, IInteractable
     [SerializeField] private Color unselectedColor = Color.white;
     [SerializeField] private Color selectedColor = Color.green;
 
-    private HighlightEffect highlight;
 
     public static System.Action OnAnyCardSelected;
 
     private void Awake()
     {
-        highlight = GetComponent<HighlightEffect>();
     }
 
     private void OnEnable()
@@ -40,8 +37,14 @@ public class AssessmentCardInteractable : MonoBehaviour, IInteractable
         OnAnyCardSelected -= RefreshVisual;
     }
 
-    public void OnFocus() => highlight.Highlight();
-    public void OnUnfocus() => highlight.Unhighlight();
+    public void OnFocus()
+    {
+
+    }
+    public void OnUnfocus()
+    {
+
+    }
 
     // No longer writes anything — purely informational now.
     public void OnInteract() { }

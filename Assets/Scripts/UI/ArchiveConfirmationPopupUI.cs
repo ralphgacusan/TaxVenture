@@ -9,7 +9,6 @@ using UnityEngine;
 public class ArchiveConfirmationPopupUI : MonoBehaviour
 {
     [SerializeField] private GameObject popupPanelRoot;
-    [SerializeField] private CaseCompleteRewardsUI rewardsUI;
     private System.Action onClosed;
 
     private void Awake()
@@ -29,7 +28,6 @@ public class ArchiveConfirmationPopupUI : MonoBehaviour
     {
         popupPanelRoot.SetActive(false);
         onClosed?.Invoke();
-        rewardsUI.Show();
     }
 
     private void Hide()
