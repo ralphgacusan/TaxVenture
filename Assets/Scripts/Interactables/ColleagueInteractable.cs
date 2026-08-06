@@ -34,15 +34,23 @@ public class ColleagueInteractable : MonoBehaviour, IInteractable
     public void OnInteract()
     {
         if (hasSpoken) return;
-
         var lines = new DialogueBuilder("Colleague")
-            .Npc("Hey! How's your workload today?")
-            .Player("Pretty busy. I'm reviewing client cases and preparing tax returns.")
-            .Npc("Sounds like a lot of work. Make sure you double-check the details.")
-            .Player("Thanks for the reminder. I'll keep that in mind.")
-            .Npc("Good luck with your cases!")
+            .Npc(
+                "Hey! How's your workload today?",
+                "Tutorial_NPC_Default")
+            .Player(
+                "Pretty busy. I'm reviewing client cases and preparing tax returns.",
+                "Auditor_Happy")
+            .Npc(
+                "Sounds like a lot of work. Make sure you double-check the details.",
+                "Tutorial_NPC_Default")
+            .Player(
+                "Thanks for the reminder. I'll keep that in mind.",
+                "Auditor_Happy")
+            .Npc(
+                "Good luck with your cases!",
+                "Tutorial_NPC_Wow")
             .Build();
-
         dialogueUI.StartDialogue(lines, OnDialogueFinished);
     }
 

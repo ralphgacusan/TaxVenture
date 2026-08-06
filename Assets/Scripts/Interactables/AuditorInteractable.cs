@@ -60,7 +60,10 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
             ? "Please submit both the Case Folder and the Tax Return when you're ready."
             : "Please submit the Case Folder when you're ready.";
 
-        var builder = new DialogueBuilder("Auditor").Npc(reminder).Build();
+        var builder = new DialogueBuilder("Auditor")
+            .Npc(reminder, "Auditor_Default")
+            .Build();
+
         dialogueUI.StartDialogue(builder, () => npcState.ChangeState(new NpcIdleState()));
     }
 
@@ -115,26 +118,33 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
 
         if (result.VerdictWasCorrect && result.MissedIssues.Count == 0)
         {
-            builder.Npc("I've reviewed everything, and I found no issues. Well done.");
+            builder.Npc(
+                "I've reviewed everything, and I found no issues. Well done.",
+                "Auditor_Happy");
         }
         else
         {
             if (!result.VerdictWasCorrect)
             {
-                builder.Npc("Your verdict on this case does not match my findings.");
+                builder.Npc(
+                    "Your verdict on this case does not match my findings.",
+                    "Auditor_Disappointed");
             }
 
             foreach (var issue in result.MissedIssues)
             {
-                builder.Npc(issue.ShortLabel);
+                builder.Npc(
+                    issue.ShortLabel,
+                    "Auditor_Disappointed");
             }
         }
 
-        builder.Npc("This concludes the final review. No further changes can be made to this case.");
+        builder.Npc(
+            "This concludes the final review. No further changes can be made to this case.",
+            "Auditor_Default");
 
         dialogueUI.StartDialogue(builder.Build(), () => OnDialogueConcluded(result));
     }
-
     private void OnDialogueConcluded(SubmissionResult result)
     {
         summaryPopupUI.Show(result.MissedIssues, () => OnSummaryClosed(result));

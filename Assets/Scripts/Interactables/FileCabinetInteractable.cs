@@ -78,14 +78,35 @@ public class FilingCabinetInteractable : MonoBehaviour, IInteractable
     private void ArchiveCase(CaseData data)
     {
         data.isArchived = true;
-        data.isCarryingCaseFolder = false; // "placed" into storage — simulated, no animation
+        data.isCarryingCaseFolder = false;
         alreadyArchivedThisSession = true;
 
         archiveConfirmationPopupUI.Show(OnArchiveConfirmed);
-
     }
 
     private void OnArchiveConfirmed()
+    {
+        CaseData data = CaseManager.Instance.CurrentCase;
+        ClientOutcomeBranch branch = ClientOutcomeEvaluator.Determine(data);
+
+        if (branch == ClientOutcomeBranch.CorrectNoIssues)
+        {
+            // The Level Result was deliberately deferred until now for the
+            // perfect-case path — show it here, right after archive confirmation.
+            LevelResultPopupUI.Instance.Show(data, OnLevelResultClosedAfterArchive);
+        }
+        else
+        {
+            // Other branches already showed Level Result earlier (before
+            // archiving) — just proceed straight to Rewards.
+            if (GameStateMachine.Instance.CurrentState is ArchiveCaseState)
+            {
+                GameStateMachine.Instance.ChangeState(new RewardsState());
+            }
+        }
+    }
+
+    private void OnLevelResultClosedAfterArchive()
     {
         if (GameStateMachine.Instance.CurrentState is ArchiveCaseState)
         {

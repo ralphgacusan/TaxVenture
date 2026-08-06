@@ -48,14 +48,20 @@ public class LevelResultPopupUI : MonoBehaviour
         reputationText.text = $"Reputation Earned: {result.ReputationEarned}";
         summaryText.text = result.SummaryText;
 
+        // Lock player movement and camera.
+        CameraController.Instance?.LockPlayerControls();
+
         popupRoot.SetActive(true);
     }
 
     public void OnClosePressed()
     {
         popupRoot.SetActive(false);
+
+        // Restore movement and camera.
+        CameraController.Instance?.UnlockPlayerControls();
+
         onClosed?.Invoke();
     }
-
     private void Hide() => popupRoot.SetActive(false);
 }

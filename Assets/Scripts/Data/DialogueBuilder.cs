@@ -25,11 +25,15 @@ public class DialogueBuilder
         return this;
     }
 
-    public DialogueBuilder Player(string text)
+    public DialogueBuilder Player(
+        string text,
+        string portraitId = "Auditor_Happy")
     {
         lines.Add(new DialogueLine(
             DialogueSpeaker.Player,
-            text
+            text,
+            portraitId,
+            "You"
         ));
 
         return this;

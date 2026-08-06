@@ -87,7 +87,12 @@ public class DialogueUI : MonoBehaviour
 
         // Placeholder portrait swap hook — currently always the same sprite,
         // but reads PortraitId so future art only requires a lookup here.
-        portraitImage.sprite = defaultPortraitPlaceholder;
+        Sprite portrait =
+            DialoguePortraitDatabase.Instance.GetPortrait(line.PortraitId);
+
+        portraitImage.sprite = portrait != null
+            ? portrait
+            : defaultPortraitPlaceholder;
     }
 
     private void OnContinuePressed()

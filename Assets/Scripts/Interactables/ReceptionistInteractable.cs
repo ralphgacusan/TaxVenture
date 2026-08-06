@@ -36,12 +36,12 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
         npcState.ChangeState(new NpcDialogueState());
 
         var lines = new DialogueBuilder("Receptionist")
-            .Npc("Good day!")
-            .Npc("Welcome back.")
-            .Npc("Today you have two scheduled client consultations.")
-            .Npc("I already prepared the case folders and placed them on your desk.")
-            .Npc("You may review them whenever you're ready.")
-            .Npc("Good luck!")
+            .Npc("Good day!", "Client1_Marie_Happy")
+            .Npc("Welcome back.", "Client1_Marie_Happy")
+            .Npc("Today you have two scheduled client consultations.", "Client1_Marie_Default")
+            .Npc("I already prepared the case folders and placed them on your desk.", "Client1_Marie_Default")
+            .Npc("You may review them whenever you're ready.", "Client1_Marie_Default")
+            .Npc("Good luck!", "Client1_Marie_Happy")
             .Build();
 
         dialogueUI.StartDialogue(lines, OnConversationConcluded);
