@@ -1,23 +1,21 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 
 /// <summary>
-/// PURPOSE:
-/// Provides a simple third-person orbit camera that follows the player and
-/// can be rotated with the mouse. This is the "exploration" camera mode.
+/// Third-person orbit camera supporting both:
+/// - Mouse look in the Unity Editor / desktop
+/// - Touch swipe look on Android/mobile
 ///
-/// RESPONSIBILITIES:
-/// - Follow the player's position with an offset
-/// - Orbit around the player based on mouse X movement
-/// - Adjust pitch (up/down) based on mouse Y movement, clamped to avoid flipping
+/// Mobile touch behavior:
+/// - Touching empty gameplay space rotates the camera.
+/// - Touching UI does NOT rotate the camera.
+/// - Joystick touches do NOT rotate the camera.
+/// - HUD buttons remain clickable.
+/// - Dialogue buttons remain clickable.
 ///
-/// DOES NOT:
-/// - Handle first-person camera switching (that arrives in Milestone 3, via a
-///   CameraController that toggles between this script and a first-person rig)
-///
-/// CONNECTS WITH:
-/// - Target: assign the Player transform in the Inspector
-/// - Milestone 3 will introduce a CameraController that enables/disables this
-///   script when switching between third-person and first-person modes.
+/// The camera follows the player and supports temporary
+/// first-person mode for debugging.
 /// </summary>
 public class ThirdPersonCameraFollow : MonoBehaviour
 {
@@ -28,15 +26,28 @@ public class ThirdPersonCameraFollow : MonoBehaviour
     [Header("Follow Settings")]
     [Tooltip("Distance from the target.")]
     [SerializeField] private float distance = 3.8f;
+
     [Tooltip("Height offset above the target.")]
     [SerializeField] private float height = 1.6f;
+
     [Tooltip("How quickly the camera catches up to the desired position.")]
     [SerializeField] private float followSmoothness = 10f;
-    [Tooltip("Look Height offset above the target's position for the camera to look at.")]
+
+    [Tooltip("Look height offset above the target.")]
     [SerializeField] private float lookHeight = 1.2f;
 
-    [Header("Mouse Look Settings")]
+    [Header("Mouse Look")]
+    [Tooltip("Mouse look sensitivity for Editor/Desktop testing.")]
     [SerializeField] private float mouseSensitivity = 3f;
+
+    [Header("Touch Look")]
+    [Tooltip("Touch swipe sensitivity for mobile.")]
+    [SerializeField] private float touchSensitivity = 0.15f;
+
+    [Tooltip("If enabled, touch look will be disabled.")]
+    [SerializeField] private bool disableTouchLook = false;
+
+    [Header("Pitch Limits")]
     [SerializeField] private float minPitch = -15f;
     [SerializeField] private float maxPitch = 60f;
 
@@ -49,7 +60,7 @@ public class ThirdPersonCameraFollow : MonoBehaviour
 
     [SerializeField] private FirstPersonHands firstPersonHands;
 
-    [Header("Cursor Toggle (for HUD interaction)")]
+    [Header("Cursor Toggle (Editor)")]
     [SerializeField] private KeyCode freeCursorKey = KeyCode.Tab;
 
     private float yaw;
@@ -57,9 +68,13 @@ public class ThirdPersonCameraFollow : MonoBehaviour
 
     private bool isCursorFreed = false;
 
+    // Used so one finger can remain on the joystick
+    // while another finger controls the camera.
+    private int activeLookFingerId = -1;
+
     private void Start()
     {
-
+        // Cursor behavior is only relevant for desktop/editor testing.
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
@@ -69,58 +84,47 @@ public class ThirdPersonCameraFollow : MonoBehaviour
         }
     }
 
-    // Test: Third Person
-    // private void LateUpdate()
-    // {
-    //     if (target == null) return;
-
-    //     // --- MOUSE INPUT ---
-    //     yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
-    //     pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
-    //     pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
-
-    //     // --- CALCULATE DESIRED POSITION ---
-    //     Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
-    //     Vector3 desiredPosition = target.position - (rotation * Vector3.forward * distance) + Vector3.up * height;
-
-    //     // --- SMOOTH FOLLOW ---
-    //     transform.position = Vector3.Lerp(transform.position, desiredPosition, followSmoothness * Time.deltaTime);
-    //     transform.LookAt(target.position + Vector3.up * (height * 0.5f));
-    // }
-
-
-
-    /// <summary>
-    /// Allows other scripts (like a future CameraController) to assign the target
-    /// dynamically if needed, rather than only via Inspector.
-    /// </summary>
-    public void SetTarget(Transform newTarget)
-    {
-        target = newTarget;
-    }
-
-
-    // Test: Third and First Person Toggle
     private void LateUpdate()
     {
-        if (target == null) return;
+        if (target == null)
+            return;
 
-        // Mouse look
-        yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
-        pitch -= Input.GetAxis("Mouse Y") * mouseSensitivity;
-        pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
+        // =========================================================
+        // LOOK INPUT
+        // =========================================================
+
+        HandleMouseLook();
+        HandleTouchLook();
+
+        // =========================================================
+        // CAMERA ROTATION
+        // =========================================================
 
         Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
 
+        // =========================================================
+        // CAMERA MODE
+        // =========================================================
+
         if (firstPersonMode)
         {
+            // -----------------------------------------------------
             // FIRST PERSON
-            transform.position = target.position + Vector3.up * firstPersonHeight;
-            transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
+            // -----------------------------------------------------
+
+            transform.position =
+                target.position +
+                Vector3.up * firstPersonHeight;
+
+            transform.rotation =
+                Quaternion.Euler(pitch, yaw, 0f);
         }
         else
         {
+            // -----------------------------------------------------
             // THIRD PERSON
+            // -----------------------------------------------------
+
             if (firstPersonHands != null)
                 firstPersonHands.Hide();
 
@@ -132,11 +136,179 @@ public class ThirdPersonCameraFollow : MonoBehaviour
             transform.position = Vector3.Lerp(
                 transform.position,
                 desiredPosition,
-                followSmoothness * Time.deltaTime);
+                followSmoothness * Time.deltaTime
+            );
 
-            transform.LookAt(target.position + Vector3.up * lookHeight);
+            transform.LookAt(
+                target.position +
+                Vector3.up * lookHeight
+            );
         }
     }
+
+    // =============================================================
+    // MOUSE LOOK
+    // =============================================================
+
+    private void HandleMouseLook()
+    {
+        // Only process mouse input when a mouse exists.
+        if (Mouse.current == null)
+            return;
+
+        // Read mouse movement using the NEW Input System.
+        Vector2 mouseDelta = Mouse.current.delta.ReadValue();
+
+        // Apply sensitivity.
+        yaw += mouseDelta.x * mouseSensitivity;
+
+        pitch -= mouseDelta.y * mouseSensitivity;
+
+        // Prevent camera from flipping upside down.
+        pitch = Mathf.Clamp(
+            pitch,
+            minPitch,
+            maxPitch
+        );
+    }
+
+    // =============================================================
+    // TOUCH LOOK
+    // =============================================================
+
+    private void HandleTouchLook()
+    {
+        if (disableTouchLook)
+            return;
+
+        if (Touchscreen.current == null)
+            return;
+
+        var touches = Touchscreen.current.touches;
+
+        // =========================================================
+        // FIND A NEW LOOK FINGER
+        // =========================================================
+
+        if (activeLookFingerId == -1)
+        {
+            for (int i = 0; i < touches.Count; i++)
+            {
+                var touch = touches[i];
+
+                // Only consider newly pressed fingers.
+                if (!touch.press.wasPressedThisFrame)
+                    continue;
+
+                int fingerId = touch.touchId.ReadValue();
+
+                // IMPORTANT:
+                // If this finger started on ANY UI element
+                // (joystick, HUD button, dialogue button, etc.),
+                // it belongs to the UI and must NOT control the camera.
+                if (IsTouchOverUI(fingerId))
+                    continue;
+
+                // This finger started on empty gameplay space.
+                // It becomes our camera-look finger.
+                activeLookFingerId = fingerId;
+
+                break;
+            }
+        }
+
+        // =========================================================
+        // PROCESS ACTIVE LOOK FINGER
+        // =========================================================
+
+        if (activeLookFingerId == -1)
+            return;
+
+        for (int i = 0; i < touches.Count; i++)
+        {
+            var touch = touches[i];
+
+            int fingerId = touch.touchId.ReadValue();
+
+            if (fingerId != activeLookFingerId)
+                continue;
+
+            // Finger released.
+            if (!touch.press.isPressed)
+            {
+                activeLookFingerId = -1;
+                return;
+            }
+
+            // Get movement of THIS finger only.
+            Vector2 touchDelta = touch.delta.ReadValue();
+
+            yaw += touchDelta.x * touchSensitivity;
+
+            pitch -= touchDelta.y * touchSensitivity;
+
+            pitch = Mathf.Clamp(
+                pitch,
+                minPitch,
+                maxPitch
+            );
+
+            return;
+        }
+
+        // Finger no longer exists.
+        activeLookFingerId = -1;
+    }
+
+    // =============================================================
+    // UI DETECTION
+    // =============================================================
+
+    private bool IsTouchOverUI(int fingerId)
+    {
+        if (EventSystem.current == null)
+            return false;
+
+        return EventSystem.current.IsPointerOverGameObject(fingerId);
+    }
+
+    // =============================================================
+    // TARGET
+    // =============================================================
+
+    /// <summary>
+    /// Allows other scripts to assign the player target.
+    /// </summary>
+    public void SetTarget(Transform newTarget)
+    {
+        target = newTarget;
+
+        if (target != null)
+        {
+            yaw = target.eulerAngles.y;
+        }
+    }
+
+    // =============================================================
+    // FIRST PERSON TOGGLE
+    // =============================================================
+
+    private void ToggleFirstPerson()
+    {
+        firstPersonMode = !firstPersonMode;
+
+        if (firstPersonHands != null)
+        {
+            if (firstPersonMode)
+                firstPersonHands.Show();
+            else
+                firstPersonHands.Hide();
+        }
+    }
+
+    // =============================================================
+    // CURSOR
+    // =============================================================
 
     private void ToggleCursorFree()
     {
@@ -153,23 +325,63 @@ public class ThirdPersonCameraFollow : MonoBehaviour
             Cursor.visible = false;
         }
     }
+
+    // =============================================================
+    // KEYBOARD DEBUG INPUT
+    // =============================================================
+
     private void Update()
     {
-        if (Input.GetKeyDown(toggleKey))
+        // ---------------------------------------------------------
+        // FIRST PERSON TOGGLE
+        // ---------------------------------------------------------
+        //
+        // This is desktop/editor testing only.
+        // Your mobile version can later have a UI button if needed.
+        //
+
+        if (Keyboard.current != null &&
+            Keyboard.current[GetKeyControl(toggleKey)].wasPressedThisFrame)
         {
-            firstPersonMode = !firstPersonMode;
-            if (firstPersonHands != null)
-            {
-                if (firstPersonMode)
-                    firstPersonHands.Show();
-                else
-                    firstPersonHands.Hide();
-            }
+            ToggleFirstPerson();
         }
 
-        if (Input.GetKeyDown(freeCursorKey))
+        // ---------------------------------------------------------
+        // FREE CURSOR
+        // ---------------------------------------------------------
+
+        if (Keyboard.current != null &&
+            Keyboard.current[GetKeyControl(freeCursorKey)].wasPressedThisFrame)
         {
             ToggleCursorFree();
+        }
+    }
+
+    // =============================================================
+    // KEYCODE → INPUT SYSTEM KEY
+    // =============================================================
+
+    private Key GetKeyControl(KeyCode keyCode)
+    {
+        switch (keyCode)
+        {
+            case KeyCode.Q:
+                return Key.Q;
+
+            case KeyCode.Tab:
+                return Key.Tab;
+
+            case KeyCode.E:
+                return Key.E;
+
+            case KeyCode.Escape:
+                return Key.Escape;
+
+            case KeyCode.Space:
+                return Key.Space;
+
+            default:
+                return Key.None;
         }
     }
 }
