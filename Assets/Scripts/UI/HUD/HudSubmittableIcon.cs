@@ -51,16 +51,17 @@ public class HudSubmittableIcon : MonoBehaviour, IDataValueSource, IPointerDownH
 
     [Header("Availability")]
     [Tooltip("Icon is only interactable once this is true (e.g. Tax Return only after printing).")]
-    [SerializeField] private bool isAvailable = true;
-
+    [SerializeField] private bool isAvailable = false;
     private Vector2 pointerDownScreenPos;
     private bool isDragging = false;
     private DragGhostIcon activeGhost;
 
     public void SetAvailable(bool available)
     {
+        Debug.Log($"{name}: SetAvailable({available})");
+
         isAvailable = available;
-        GetComponent<Image>().raycastTarget = available; // fully disables interaction when unavailable
+        GetComponent<Image>().raycastTarget = available;
     }
 
     public void OnPointerDown(PointerEventData eventData)

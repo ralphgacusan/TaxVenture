@@ -35,6 +35,7 @@ public class HudIconButton : MonoBehaviour
     [SerializeField] private float lockedAlpha = 0.4f;
     [SerializeField] private float unlockedAlpha = 1f;
 
+    [SerializeField] private HudSubmittableIcon submittableIcon;
     private void Awake()
     {
         SetLocked();
@@ -80,13 +81,21 @@ public class HudIconButton : MonoBehaviour
 
     private void SetLocked()
     {
+        Debug.Log($"{name}: Locked");
+
         button.interactable = false;
         canvasGroup.alpha = lockedAlpha;
+
+        submittableIcon?.SetAvailable(false);
     }
 
     private void Unlock()
     {
+        Debug.Log($"{name}: Unlocked");
+
         button.interactable = true;
         canvasGroup.alpha = unlockedAlpha;
+
+        submittableIcon?.SetAvailable(true);
     }
 }
