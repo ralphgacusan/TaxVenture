@@ -1,5 +1,5 @@
 {
   "levelId": "Level_01",
   "levelName": "Test Level",
-  "caseIds": ["case_001"]
+  "caseIds": ["case_001", "case_002"]
 }

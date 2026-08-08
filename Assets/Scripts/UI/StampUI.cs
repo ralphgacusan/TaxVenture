@@ -72,6 +72,7 @@ public class StampUI : MonoBehaviour
         ApplyStamp(selectedStampType.Value, data);
 
         ResetSelection();
+
     }
 
     private void ApplyStamp(StampType stamp, CaseData data)
@@ -101,6 +102,9 @@ public class StampUI : MonoBehaviour
         // Instantly refresh the Case Folder's Page 1 so the new assessment
         // text shows immediately, matching the old behavior.
         FindFirstObjectByType<CaseFolderUI>()?.Refresh();
+
+        if (TutorialController.Instance != null)
+            TutorialController.Instance.ReportInteraction("stamp_applied");
     }
 
     private void ShowFeedback(string message, bool isWarning)

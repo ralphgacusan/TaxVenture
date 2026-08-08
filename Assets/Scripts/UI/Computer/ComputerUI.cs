@@ -89,6 +89,9 @@ public class ComputerUI : MonoBehaviour
         taxDueSource.SetValue(taxDue, "TaxDue");
         finalPayableSource.SetValue(finalTaxPayable, "FinalTaxPayable");
         Debug.Log($"[Calculate DONE] taxableIncomeSource instance ID = {taxableIncomeSource.GetInstanceID()}");
+
+        if (TutorialController.Instance != null)
+            TutorialController.Instance.ReportInteraction("computation_done");
     }
 
     public void OnBackToHomePressed()

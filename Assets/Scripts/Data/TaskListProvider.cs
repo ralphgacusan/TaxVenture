@@ -17,6 +17,8 @@ public static class TaskListProvider
     {
         return new List<TaskDefinition>
         {
+            new TaskDefinition(typeof(CaseOutcomeState), "Main Objective: Finish Tutorial and Unguided Case"),
+
             new TaskDefinition(typeof(ReceiveCaseState), "Meet with the receptionist and receive today's case."),
             new TaskDefinition(typeof(ReviewDocumentsState), "Review the case folder and supporting documents."),
             new TaskDefinition(typeof(InterviewClientState), "Interview the client to verify missing information."),

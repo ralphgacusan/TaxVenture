@@ -54,6 +54,9 @@ public class ComputerHomeUI : MonoBehaviour
 
         prepareTaxReturnButton.interactable = readyForFiling;
         prepareButtonTooltip.text = readyForFiling ? "" : "Case is not ready for filing.";
+
+        if (TutorialController.Instance != null)
+            TutorialController.Instance.ReportInteraction("computer_opened");
     }
 
     public void Hide()

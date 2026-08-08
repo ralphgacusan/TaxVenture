@@ -327,155 +327,154 @@
 
 
 ],
+ "potentialIssues": [
+    "Bank deposits exceed reported sales by ₱50,000.",
+    "One sales invoice was not included in declared revenue.",
+    "Business income was initially omitted from the case summary."
+  ],
 
-"potentialIssues": [
-"Bank deposits exceed reported sales by ₱50,000.",
-"One sales invoice was not included in declared revenue.",
-"Business income was initially omitted from the case summary."
-],
+  "clientPortraitDefault": "Client1_Marie_Default",
+  "clientPortraitHappy": "Client1_Marie_Happy",
+  "clientPortraitSad": "Client1_Marie_Sad",
 
-"clientPortraitDefault": "",
-"clientPortraitHappy": "",
-"clientPortraitSad": "",
+  "receptionistGreeting": [
+    {
+      "speaker": "Npc",
+      "text": "Good morning! Welcome to the tax office.",
+      "portraitId": "Client1_Marie_Happy"
+    },
+    {
+      "speaker": "Npc",
+      "text": "I have a client case ready for you. Please review the documents carefully before making your assessment.",
+      "portraitId": "Client1_Marie_Happy"
+    },
+    {
+      "speaker": "Player",
+      "text": "Understood. I'll review the client's records and determine what needs to be addressed.",
+      "portraitId": "Auditor_Default"
+    }
+  ],
 
-"receptionistGreeting": [
-{
-"speaker": "Npc",
-"text": "Good morning! Welcome to the tax office.",
-"portraitId": ""
-},
-{
-"speaker": "Npc",
-"text": "I have a client case ready for you. Please review the documents carefully before making your assessment.",
-"portraitId": ""
-},
-{
-"speaker": "Player",
-"text": "Understood. I'll review the client's records and determine what needs to be addressed.",
-"portraitId": ""
-}
-],
+  "clientFirstMeeting": [
+    {
+      "speaker": "Npc",
+      "text": "Hello. I'm here because I need help preparing my annual income tax return.",
+      "portraitId": "Client1_Marie_Default"
+    },
+    {
+      "speaker": "Player",
+      "text": "I'll review your employment and business records first so we can determine the correct tax treatment.",
+      "portraitId": "Auditor_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Sure. I brought the documents I have with me.",
+      "portraitId": "Client1_Marie_Default"
+    }
+  ],
 
-"clientFirstMeeting": [
-{
-"speaker": "Npc",
-"text": "Hello. I'm here because I need help preparing my annual income tax return.",
-"portraitId": ""
-},
-{
-"speaker": "Player",
-"text": "I'll review your employment and business records first so we can determine the correct tax treatment.",
-"portraitId": ""
-},
-{
-"speaker": "Npc",
-"text": "Sure. I brought the documents I have with me.",
-"portraitId": ""
-}
-],
+  "interviewLines": [
+    {
+      "speaker": "Player",
+      "text": "I see that you have both employment and business income. Can you confirm that you had one employer during the tax year?",
+      "portraitId": "Auditor_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Yes. I worked for ABC Corporation while also operating JD Online Services.",
+      "portraitId": "Client1_Marie_Default"
+    },
+    {
+      "speaker": "Player",
+      "text": "Your records also indicate that the business is registered. Did you choose the eight percent income tax option?",
+      "portraitId": "Auditor_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Yes, I registered the business and selected the eight percent tax rate.",
+      "portraitId": "Client1_Marie_Default"
+    },
+    {
+      "speaker": "Player",
+      "text": "Thank you. I'll compare your declarations against the supporting records before making the final assessment.",
+      "portraitId": "Auditor_Default"
+    }
+  ],
 
-"interviewLines": [
-{
-"speaker": "Player",
-"text": "I see that you have both employment and business income. Can you confirm that you had one employer during the tax year?",
-"portraitId": ""
-},
-{
-"speaker": "Npc",
-"text": "Yes. I worked for ABC Corporation while also operating JD Online Services.",
-"portraitId": ""
-},
-{
-"speaker": "Player",
-"text": "Your records also indicate that the business is registered. Did you choose the eight percent income tax option?",
-"portraitId": ""
-},
-{
-"speaker": "Npc",
-"text": "Yes, I registered the business and selected the eight percent tax rate.",
-"portraitId": ""
-},
-{
-"speaker": "Player",
-"text": "Thank you. I'll compare your declarations against the supporting records before making the final assessment.",
-"portraitId": ""
-}
-],
+  "outcomeCorrectNoIssues": [
+    {
+      "speaker": "Player",
+      "text": "After reviewing the records, the assessment is correct and there are no unresolved issues.",
+      "portraitId": "Auditor_Happy"
+    },
+    {
+      "speaker": "Npc",
+      "text": "That's good to hear. Thank you for checking everything carefully.",
+      "portraitId": "Client1_Marie_Happy"
+    }
+  ],
 
-"outcomeCorrectNoIssues": [
-{
-"speaker": "Player",
-"text": "After reviewing the records, the assessment is correct and there are no unresolved issues.",
-"portraitId": ""
-},
-{
-"speaker": "Npc",
-"text": "That's good to hear. Thank you for checking everything carefully.",
-"portraitId": ""
-}
-],
+  "outcomeCorrectWithIssues": [
+    {
+      "speaker": "Player",
+      "text": "Your tax classification is correct, but I found issues that need to be addressed before the return can be filed.",
+      "portraitId": "Auditor_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "What kind of issues did you find?",
+      "portraitId": "Client1_Marie_Default"
+    },
+    {
+      "speaker": "Player",
+      "text": "The bank records show deposits that are not fully reflected in the reported sales, so the records need further verification.",
+      "portraitId": "Auditor_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "I understand. I'll provide whatever additional records are needed.",
+      "portraitId": "Client1_Marie_Default"
+    }
+  ],
 
-"outcomeCorrectWithIssues": [
-{
-"speaker": "Player",
-"text": "Your tax classification is correct, but I found issues that need to be addressed before the return can be filed.",
-"portraitId": ""
-},
-{
-"speaker": "Npc",
-"text": "What kind of issues did you find?",
-"portraitId": ""
-},
-{
-"speaker": "Player",
-"text": "The bank records show deposits that are not fully reflected in the reported sales, so the records need further verification.",
-"portraitId": ""
-},
-{
-"speaker": "Npc",
-"text": "I understand. I'll provide whatever additional records are needed.",
-"portraitId": ""
-}
-],
+  "outcomeWrongVerdict": [
+    {
+      "speaker": "Player",
+      "text": "The assessment does not match the information found in the case records.",
+      "portraitId": "Auditor_Disappointed"
+    },
+    {
+      "speaker": "Npc",
+      "text": "I thought the information I provided was enough. What did I miss?",
+      "portraitId": "Client1_Marie_Sad"
+    },
+    {
+      "speaker": "Player",
+      "text": "Some of the taxpayer classification and income information needs to be reviewed before a final filing decision can be made.",
+      "portraitId": "Auditor_Disappointed"
+    }
+  ],
 
-"outcomeWrongVerdict": [
-{
-"speaker": "Player",
-"text": "The assessment does not match the information found in the case records.",
-"portraitId": ""
-},
-{
-"speaker": "Npc",
-"text": "I thought the information I provided was enough. What did I miss?",
-"portraitId": ""
-},
-{
-"speaker": "Player",
-"text": "Some of the taxpayer classification and income information needs to be reviewed before a final filing decision can be made.",
-"portraitId": ""
-}
-],
-
-"outcomeWrongVerdictWithIssues": [
-{
-"speaker": "Player",
-"text": "The assessment is incorrect, and the supporting records also contain unresolved discrepancies.",
-"portraitId": ""
-},
-{
-"speaker": "Npc",
-"text": "So the return cannot be filed yet?",
-"portraitId": ""
-},
-{
-"speaker": "Player",
-"text": "Correct. The taxpayer classification must be corrected and the discrepancies between the reported income and supporting documents must be investigated.",
-"portraitId": ""
-},
-{
-"speaker": "Npc",
-"text": "I'll work on getting the missing information and correcting the records.",
-"portraitId": ""
-}
-]
+  "outcomeWrongVerdictWithIssues": [
+    {
+      "speaker": "Player",
+      "text": "The assessment is incorrect, and the supporting records also contain unresolved discrepancies.",
+      "portraitId": "Auditor_Disappointed"
+    },
+    {
+      "speaker": "Npc",
+      "text": "So the return cannot be filed yet?",
+      "portraitId": "Client1_Marie_Sad"
+    },
+    {
+      "speaker": "Player",
+      "text": "Correct. The taxpayer classification must be corrected and the discrepancies between the reported income and supporting documents must be investigated.",
+      "portraitId": "Auditor_Disappointed"
+    },
+    {
+      "speaker": "Npc",
+      "text": "I'll work on getting the missing information and correcting the records.",
+      "portraitId": "Client1_Marie_Sad"
+    }
+  ]
 }

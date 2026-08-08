@@ -56,7 +56,10 @@ public class CaseFolderInteractable : MonoBehaviour, IInteractable
         caseFolderUI.Show();
         GameStateMachine.Instance.ChangeState(new ReviewDocumentsState());
 
-
+        if (TutorialController.Instance != null)
+        {
+            TutorialController.Instance.ReportInteraction("case_folder");
+        }
 
     }
 

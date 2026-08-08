@@ -49,6 +49,9 @@ public class DocumentViewerUI : MonoBehaviour
 
         // Bring the document window to the front.
         transform.SetAsLastSibling();
+
+        if (TutorialController.Instance != null)
+            TutorialController.Instance.ReportInteraction("open_document");
     }
 
     public void Hide()

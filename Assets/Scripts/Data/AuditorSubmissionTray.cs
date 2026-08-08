@@ -84,6 +84,9 @@ public class AuditorSubmissionTray : MonoBehaviour, IDataValueDestination
         if (requiredComplete)
         {
             auditor.BeginFinalAudit();
+
+            if (TutorialController.Instance != null)
+                TutorialController.Instance.ReportInteraction("submitted_to_auditor");
         }
     }
 }

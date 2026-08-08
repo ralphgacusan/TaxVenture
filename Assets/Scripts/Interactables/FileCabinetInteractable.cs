@@ -112,6 +112,9 @@ public class FilingCabinetInteractable : MonoBehaviour, IInteractable
         );
 
         archiveConfirmationPopupUI.Show(OnArchiveConfirmed);
+
+        if (TutorialController.Instance != null)
+            TutorialController.Instance.ReportInteraction("case_archived");
     }
 
     private void OnArchiveConfirmed()

@@ -1,4 +1,3 @@
-
 using UnityEngine;
 
 [RequireComponent(typeof(HighlightEffect))]
@@ -176,6 +175,13 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
         );
 
         GameplayEvents.RaiseNotesUnlockRequested();
+
+        // Tutorial hook: no-op if no tutorial is running or no step is
+        // waiting on "receptionist". Safe to leave in permanently.
+        if (TutorialController.Instance != null)
+        {
+            TutorialController.Instance.ReportInteraction("receptionist");
+        }
     }
 
     public string GetPromptText()

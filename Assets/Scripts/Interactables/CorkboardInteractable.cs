@@ -39,6 +39,9 @@ public class CorkboardInteractable : MonoBehaviour, IInteractable
         {
             GameStateMachine.Instance.ChangeState(new AnalyzeEvidenceState());
         }
+
+        if (TutorialController.Instance != null)
+            TutorialController.Instance.ReportInteraction("corkboard");
     }
 
     public string GetPromptText() => "Click to view Corkboard";

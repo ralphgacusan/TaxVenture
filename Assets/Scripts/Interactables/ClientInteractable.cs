@@ -66,6 +66,9 @@ public class ClientInteractable : MonoBehaviour, IInteractable
     {
         hasInterviewed = true;
         npcState.ChangeState(new NpcCompletedState());
+
+        if (TutorialController.Instance != null)
+            TutorialController.Instance.ReportInteraction("interview_client");
     }
 
     private void PresentFindings()
@@ -100,6 +103,9 @@ public class ClientInteractable : MonoBehaviour, IInteractable
     {
         CaseManager.Instance.CurrentCase.clientPresentationCompleted = true;
         npcState.ChangeState(new NpcCompletedState());
+
+        if (TutorialController.Instance != null)
+            TutorialController.Instance.ReportInteraction("outcome_presented");
 
         if (!(GameStateMachine.Instance.CurrentState is CaseOutcomeState)) return;
 

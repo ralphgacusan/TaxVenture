@@ -99,6 +99,9 @@ public class NotesPanelUI : MonoBehaviour
         RenderTasks();
 
         panelRoot.SetActive(true);
+
+        if (TutorialController.Instance != null)
+            TutorialController.Instance.ReportInteraction("notes_opened");
     }
 
 

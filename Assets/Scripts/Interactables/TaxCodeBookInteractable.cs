@@ -38,6 +38,9 @@ public class TaxCodeBookInteractable : MonoBehaviour, IInteractable
         {
             hasBeenOpenedOnce = true;
             GameplayEvents.RaiseTaxCodeBookFirstOpened();
+
+            if (TutorialController.Instance != null)
+                TutorialController.Instance.ReportInteraction("tax_code_book");
         }
 
         if (GameStateMachine.Instance.CurrentState is InterviewClientState
