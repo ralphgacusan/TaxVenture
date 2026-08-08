@@ -31,6 +31,7 @@ MonoBehaviour:
 
 
 
+
       A
       foreign national residing in the Philippines.
 
@@ -79,6 +80,7 @@ MonoBehaviour:
 
 
 
+
       Earns income from providing professional services independently.
 
 
@@ -115,31 +117,21 @@ MonoBehaviour:
 
 
 
-      Taxpayer has only
-      one employer during the taxable year.
-
-
-
-      Taxpayer has two or more employers
-      during the taxable year.
-
-
-
-
-      Income earned from business activities.
+      Income earned from
+      business activities.
 
 
 
 
 
-      Income
-      earned from professional services.
+      Income earned from professional services.
 
 
 
 
-      Combination of multiple income
-      sources.
+
+      Combination
+      of multiple income sources.
 
 
 '
@@ -148,14 +140,6 @@ MonoBehaviour:
       enumValue: EmploymentIncome
       type: 2
       semanticKey: IncomeSource
-    - displayText: One Employer
-      enumValue: OneEmployer
-      type: 2
-      semanticKey: EmployerCount
-    - displayText: Multiple Employers
-      enumValue: MultipleEmployers
-      type: 2
-      semanticKey: EmployerCount
     - displayText: Business Income
       enumValue: BusinessIncome
       type: 2
@@ -168,6 +152,27 @@ MonoBehaviour:
       enumValue: MixedIncome
       type: 2
       semanticKey: IncomeSource
+  - heading: Section 4.1 - Employer Count
+    body: '
+
+      Taxpayer has only one employer during the taxable year.
+
+
+
+
+      Taxpayer
+      has two or more employers during the taxable year.
+
+'
+    clickableValues:
+    - displayText: One Employer
+      enumValue: OneEmployer
+      type: 2
+      semanticKey: EmployerCount
+    - displayText: Multiple Employers
+      enumValue: MultipleEmployers
+      type: 2
+      semanticKey: EmployerCount
   - heading: "Section 4 \u2013 Business Registration"
     body: '
 
@@ -222,7 +227,7 @@ MonoBehaviour:
       enumValue: EightPercentTaxRate
       type: 2
       semanticKey: TaxOption
-  - heading: "Section 6 \u2013 Required Supporting Documents"
+  - heading: "Section 6 \u2013 Supporting Documents"
     body: 'BIR Form 2316
 
       Verifies employment income and tax withheld.
@@ -284,6 +289,7 @@ MonoBehaviour:
 
       Used by Self-Employed,
       Professionals, and Mixed Income Earners using Graduated Tax Rates.
+
 
 
 

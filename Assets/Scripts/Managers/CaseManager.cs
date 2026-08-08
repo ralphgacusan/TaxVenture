@@ -1,59 +1,75 @@
 using UnityEngine;
-using System.Collections.Generic;
 
 /// <summary>
 /// PURPOSE:
-/// Holds the currently active CaseData instance and provides a single access
-/// point for any script that needs to read or write case information.
+/// Holds the currently active CaseData instance — UNCHANGED public shape
+/// from before (Instance.CurrentCase is still exactly how every other
+/// script accesses case data). The only change: CurrentCase is now
+/// populated from a JSON-loaded CaseDefinition via CaseFactory instead of
+/// a hardcoded placeholder.
 ///
-/// RESPONSIBILITIES:
-/// - Own the "current case" data for the session
-/// - Create a fresh CaseData with placeholder values on scene start
-///   (Phase 1 scope: only one hardcoded case, per your brief)
-///
-/// DOES NOT:
-/// - Contain any UI logic — CaseFolderUI reads FROM this manager but this
-///   manager knows nothing about how data is displayed.
-///
-/// CONNECTS WITH:
-/// - CaseFolderUI: reads CurrentCase to populate folder pages
-/// - Future: InterviewClientState, ComputeTaxesState, StampAssessmentState,
-///   Save System — all read/write through CaseManager.Instance.CurrentCase
+/// PHASE 2 SCOPE: still loads a single fixed level/case
+/// ("Level_01"/"case_001") at startup — multi-case progression (loading
+/// case 2, 3, etc. and the Continue/Level Complete flow) arrives in
+/// Phase 3. This phase's job is ONLY to prove JSON correctly replaces the
+/// hardcoded case, nothing about progression yet.
 /// </summary>
 public class CaseManager : MonoBehaviour
 {
     public static CaseManager Instance { get; private set; }
 
+    [Header("Phase 2: Fixed Level/Case (multi-case progression in Phase 3)")]
+    [SerializeField] private string levelId = "Level_01";
+    [SerializeField] private string caseId = "case_001";
+
     public CaseData CurrentCase { get; private set; }
+    public CaseDefinition CurrentDefinition { get; private set; }
 
     private void Awake()
     {
         Instance = this;
-        CurrentCase = CreatePlaceholderCase();
+        // NOTE: LoadCase() is no longer called here — CaseProgressionManager.StartLevel()
+        // now owns the first case-load, so it can correctly initialize
+        // currentLevel/currentCaseIndex before anything requests CurrentCase.
+    }
+
+    public void LoadCase(string levelToLoad, string caseToLoad)
+    {
+        var caseResult = JsonCaseLoader.LoadCase(levelToLoad, caseToLoad);
+
+        if (!caseResult.IsSuccess)
+        {
+            Debug.LogError($"[CaseManager] Failed to load case '{caseToLoad}' from level '{levelToLoad}': {caseResult.ErrorMessage}");
+            Debug.LogError("[CaseManager] Falling back to an empty placeholder case so the game does not crash.");
+            CurrentDefinition = CreateFallbackDefinition();
+        }
+        else
+        {
+            CurrentDefinition = caseResult.Data;
+        }
+
+        CurrentCase = CaseFactory.CreateCaseData(CurrentDefinition);
+        Debug.Log($"[CaseManager] Loaded case '{CurrentDefinition.caseId}' — client: {CurrentCase.fullName}");
     }
 
     /// <summary>
-    /// Builds the single hardcoded case for this Phase 1 prototype, using the
-    /// example values from the design document's folder pages. In a later
-    /// milestone (multi-case support), this would instead load case data
-    /// from a case database or save file.
+    /// Safety net so a missing/broken JSON file never crashes the game —
+    /// it degrades to a clearly-labeled placeholder instead, matching the
+    /// "no broken intermediate states" requirement.
     /// </summary>
-    private CaseData CreatePlaceholderCase()
+    private CaseDefinition CreateFallbackDefinition()
     {
-        CaseData data = new CaseData();
-
-        // Populate supporting documents list (Page 6), matching the design doc.
-        data.supportingDocuments = new List<SupportingDocument>
+        return new CaseDefinition
         {
-            new SupportingDocument("BIR Form 2316"),
-            new SupportingDocument("BIR Form 2303"),
-            new SupportingDocument("Financial Statements"),
-            new SupportingDocument("Sales Records"),
-            new SupportingDocument("Bank Statements"),
-            new SupportingDocument("Property Documents"),
-            new SupportingDocument("Previous Year's ITR"),
+            caseId = "fallback_case",
+            caseNumber = "ERROR-0000",
+            taxYear = "----",
+            fullName = "MISSING CASE DATA",
+            caseTitle = "Case Failed To Load",
+            caseSummary = "This case could not be loaded. Check the Console for the JSON error.",
+            answerKey = new AnswerKeyDefinition(),
+            documents = new System.Collections.Generic.List<DocumentDefinition>(),
+            potentialIssues = new System.Collections.Generic.List<string>()
         };
-
-        return data;
     }
 }

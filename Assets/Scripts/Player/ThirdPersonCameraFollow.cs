@@ -332,16 +332,16 @@ public class ThirdPersonCameraFollow : MonoBehaviour
 
     private void Update()
     {
+#if UNITY_EDITOR || UNITY_STANDALONE
+        if (Keyboard.current == null)
+            return;
+
         // ---------------------------------------------------------
         // FIRST PERSON TOGGLE
         // ---------------------------------------------------------
-        //
-        // This is desktop/editor testing only.
-        // Your mobile version can later have a UI button if needed.
-        //
 
-        if (Keyboard.current != null &&
-            Keyboard.current[GetKeyControl(toggleKey)].wasPressedThisFrame)
+        if (toggleKey == KeyCode.Q &&
+            Keyboard.current.qKey.wasPressedThisFrame)
         {
             ToggleFirstPerson();
         }
@@ -350,11 +350,12 @@ public class ThirdPersonCameraFollow : MonoBehaviour
         // FREE CURSOR
         // ---------------------------------------------------------
 
-        if (Keyboard.current != null &&
-            Keyboard.current[GetKeyControl(freeCursorKey)].wasPressedThisFrame)
+        if (freeCursorKey == KeyCode.Tab &&
+            Keyboard.current.tabKey.wasPressedThisFrame)
         {
             ToggleCursorFree();
         }
+#endif
     }
 
     // =============================================================

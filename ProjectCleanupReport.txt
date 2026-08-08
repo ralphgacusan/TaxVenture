@@ -1,0 +1,562 @@
+=================================
+ UNITY PROJECT CLEANUP REPORT 
+=================================
+
+
+========== TOP 30 LARGEST FILES ==========
+
+3.4 MB   Assets\AssetIntegration\Marie (Client 1)\Marie-Default.png
+3.4 MB   Assets\AssetIntegration\Marie (Client 1)\Marie-Sad.png
+3.4 MB   Assets\AssetIntegration\Marie (Client 1)\Marie-Happy.png
+2.76 MB   Assets\Scenes\Office_Level1.unity
+2.42 MB   Assets\AssetIntegration\Auditor\Auditor-Disappointed.png
+2.42 MB   Assets\AssetIntegration\Auditor\Auditor-Happy.png
+2.42 MB   Assets\AssetIntegration\Auditor\Auditor-Default.png
+2.15 MB   Assets\TextMesh Pro\Resources\Fonts & Materials\LiberationSans SDF.asset
+2.09 MB   Assets\AssetIntegration\Arthur (Tutorial NPC)\Arthur-Wow.png
+2.09 MB   Assets\AssetIntegration\Arthur (Tutorial NPC)\Arthur-Angry.png
+2.09 MB   Assets\AssetIntegration\Arthur (Tutorial NPC)\Arthur-Default.png
+2.09 MB   Assets\AssetIntegration\Arthur (Tutorial NPC)\Arthur-Sad.png
+2.09 MB   Assets\AssetIntegration\Arthur (Tutorial NPC)\Arthur-Confused.png
+1.09 MB   Assets\Synty\PolygonOffice\Textures\PolygonOffice_03_A.png
+1.09 MB   Assets\Synty\PolygonOffice\Textures\PolygonOffice_03_C.png
+1017.06 KB   Assets\Synty\PolygonOffice\Textures\PolygonOffice_01_A.png
+985.08 KB   Assets\Synty\PolygonOffice\Textures\PolygonOffice_04_A.png
+985.02 KB   Assets\Synty\PolygonOffice\Textures\PolygonOffice_04_C.png
+981.2 KB   Assets\Images\menu_background_blurred.png
+945.86 KB   Assets\3D Models\npc_tutorial_static\npc_tutorial_static1.fbx
+848.94 KB   Assets\Synty\PolygonOffice\Textures\PolygonOffice_02_B.png
+848.93 KB   Assets\Synty\PolygonOffice\Textures\PolygonOffice_02_A.png
+848.87 KB   Assets\Synty\PolygonOffice\Textures\PolygonOffice_02_C.png
+570.08 KB   Assets\fonts\GloriaHallelujah-Regular SDF.asset
+564.14 KB   Assets\fonts\Minnie SDF.asset
+341.99 KB   Assets\TextMesh Pro\Fonts\LiberationSans.ttf
+313.74 KB   Assets\AssetIntegration\InGameUIs\Tax Code Book.png
+293.33 KB   Assets\3D Models\npc_jhun_static\jhun_texture.png
+284.82 KB   Assets\3D Models\npc_receptionist_static\receptionist_texture.png
+281.73 KB   Assets\3D Models\npc_cora_static\cora_texture.png
+
+========== FILE TYPE TOTALS ==========
+
+.png : 41.09 MB
+.fbx : 8.33 MB
+.asset : 3.98 MB
+.unity : 2.99 MB
+.shadergraph : 1.3 MB
+.prefab : 766.7 KB
+.cs : 393.61 KB
+.ttf : 341.99 KB
+.mat : 101.88 KB
+.shader : 94.6 KB
+.inputactions : 40.04 KB
+.cginc : 13.63 KB
+.hlsl : 5.88 KB
+.txt : 4.72 KB
+.json : 2.87 KB
+.tss : 37 B
+
+========== TEXTURE REPORT ==========
+
+4K Textures : 0
+2K Textures : 950
+1K Textures : 18
+
+========== POSSIBLE UNUSED ASSETS ==========
+
+Assets\PortraitImagePlaceholder.mat
+Assets\Readme.asset
+Assets\AssetIntegration\npc_arm_static(1).fbx
+Assets\Images\Back.png
+Assets\Images\corkboard.png
+Assets\Images\menu_background_blurred.png
+Assets\Images\notepad_white.png
+Assets\Images\notepad_yellow.png
+Assets\Images\play.png
+Assets\Images\PortraitImagePlaceholder.png
+Assets\Images\Settings 1.png
+Assets\Images\settings.png
+Assets\Images\TaxVenture Logo3 blue.png
+Assets\Images\tutorial.png
+Assets\Materials\Mat_Auditor.mat
+Assets\Materials\Mat_Client.mat
+Assets\Materials\Mat_Colleague.mat
+Assets\Materials\Mat_Computer.mat
+Assets\Materials\Mat_Desk.mat
+Assets\Materials\Mat_Floor.mat
+Assets\Materials\Mat_Highlight.mat
+Assets\Materials\Mat_Player.mat
+Assets\Materials\Mat_Receptionist.mat
+Assets\Materials\Mat_Stamps.mat
+Assets\Materials\Mat_TaxCodeBook.mat
+Assets\Materials\Mat_Wall.mat
+Assets\Resources\PerformanceTestRunInfo.json
+Assets\Resources\PerformanceTestRunSettings.json
+Assets\3D Models\npc_auditor_static\npc_auditor_torso_texure.png
+Assets\3D Models\npc_auditor_static\npc_auditor_tux_texture.png
+Assets\3D Models\npc_client_static\female_texture_backup.png
+Assets\3D Models\npc_cora_static\cora_texture.png
+Assets\3D Models\npc_jhun_static\jhun_texture.png
+Assets\3D Models\npc_receptionist_static\receptionist_texture.png
+Assets\3D Models\npc_tutorial_static\npc_turorial_torso_texture.png
+Assets\3D Models\npc_tutorial_static\npc_tutorial_hair_texture.png
+Assets\3D Models\npc_tutorial_static\npc_tutorial_legs_texture.png
+Assets\3D Models\npc_tutorial_static\npc_tutorial_vest_texture.png
+Assets\AssetIntegration\Arthur (Tutorial NPC)\Arthur-Angry.png
+Assets\AssetIntegration\Arthur (Tutorial NPC)\Arthur-Confused.png
+Assets\AssetIntegration\Arthur (Tutorial NPC)\Arthur-Default.png
+Assets\AssetIntegration\Arthur (Tutorial NPC)\Arthur-Sad.png
+Assets\AssetIntegration\Arthur (Tutorial NPC)\Arthur-Wow.png
+Assets\AssetIntegration\Auditor\Auditor-Default.png
+Assets\AssetIntegration\Auditor\Auditor-Disappointed.png
+Assets\AssetIntegration\Auditor\Auditor-Happy.png
+Assets\AssetIntegration\InGameUIs\Case File.png
+Assets\AssetIntegration\InGameUIs\Case Folder.png
+Assets\AssetIntegration\InGameUIs\Close Button.png
+Assets\AssetIntegration\InGameUIs\Exit Desk.png
+Assets\AssetIntegration\InGameUIs\Monitor.png
+Assets\AssetIntegration\InGameUIs\Pause.png
+Assets\AssetIntegration\InGameUIs\Settings.png
+Assets\AssetIntegration\InGameUIs\Sticky Note.png
+Assets\AssetIntegration\InGameUIs\Tax Code Book.png
+Assets\AssetIntegration\InGameUIs\Tax Code.png
+Assets\AssetIntegration\InGameUIs\Tax Return Form.png
+Assets\AssetIntegration\Marie (Client 1)\Marie-Default.png
+Assets\AssetIntegration\Marie (Client 1)\Marie-Happy.png
+Assets\AssetIntegration\Marie (Client 1)\Marie-Sad.png
+Assets\Scenes\Menu_Profiles\Background Profile 1.asset
+Assets\Scenes\Menu_Profiles\Background Profile.asset
+Assets\TextMesh Pro\Fonts\LiberationSans - OFL.txt
+Assets\TextMesh Pro\Fonts\LiberationSans.ttf
+Assets\TextMesh Pro\Resources\LineBreaking Following Characters.txt
+Assets\TextMesh Pro\Resources\LineBreaking Leading Characters.txt
+Assets\TextMesh Pro\Shaders\SDFFunctions.hlsl
+Assets\TextMesh Pro\Shaders\TMPro.cginc
+Assets\TextMesh Pro\Shaders\TMPro_Mobile.cginc
+Assets\TextMesh Pro\Shaders\TMPro_Properties.cginc
+Assets\TextMesh Pro\Shaders\TMPro_Surface.cginc
+Assets\TextMesh Pro\Shaders\TMP_Bitmap-Custom-Atlas.shader
+Assets\TextMesh Pro\Shaders\TMP_Bitmap-Mobile.shader
+Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader
+Assets\TextMesh Pro\Shaders\TMP_SDF Overlay.shader
+Assets\TextMesh Pro\Shaders\TMP_SDF SSD.shader
+Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Masking.shader
+Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader
+Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile SSD.shader
+Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile-2-Pass.shader
+Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile.shader
+Assets\TextMesh Pro\Shaders\TMP_SDF-Surface-Mobile.shader
+Assets\TextMesh Pro\Shaders\TMP_SDF-Surface.shader
+Assets\TextMesh Pro\Shaders\TMP_SDF.shader
+Assets\TextMesh Pro\Shaders\TMP_Sprite.shader
+Assets\UI Toolkit\UnityThemes\UnityDefaultRuntimeTheme.tss
+Assets\Synty\PolygonGeneric\Models\SM_Gen_Prop_Cardboard_Box_04.fbx
+Assets\Synty\PolygonGeneric\Models\SM_Gen_Prop_Cardboard_Box_Preset_01.fbx
+Assets\Synty\PolygonGeneric\Models\SM_Gen_Prop_Clock_01.fbx
+Assets\Synty\PolygonGeneric\Models\SM_Gen_Prop_Papers_01.fbx
+Assets\Synty\PolygonGeneric\Models\SM_Gen_Prop_Papers_02.fbx
+Assets\Synty\PolygonGeneric\Models\SM_Gen_Prop_Papers_03.fbx
+Assets\Synty\PolygonGeneric\Models\SM_Gen_Prop_Papers_06.fbx
+Assets\Synty\PolygonGeneric\Models\SM_Gen_Prop_Plate_01.fbx
+Assets\Synty\PolygonGeneric\Models\SM_Gen_Prop_Shelf_01.fbx
+Assets\Synty\PolygonGeneric\Textures\Generic_Normals_01.png
+Assets\Synty\PolygonGeneric\Textures\HairMask.png
+Assets\Synty\PolygonGeneric\Textures\SkinMask.png
+Assets\Synty\PolygonOffice\Models\SM_Bld_Door_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Door_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Door_Large_01_L.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Door_Large_01_R.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Floor_Carpet_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Floor_Concrete_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Floor_Tiles_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Floor_Wood_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Pillar_Exterior_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Baseboard_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Baseboard_Door_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Baseboard_Door_Large_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Baseboard_Window_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Baseboard_Window_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Baseboard_Window_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Brick_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Brick_Door_Large_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Brick_Window_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Brick_Window_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Glass_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Glass_Door_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Glass_Large_Window_Blinds_Up_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Window_Blinds_Closed_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Window_Blinds_Open_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Window_Blinds_Up_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Window_Blinds_Up_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Bld_Wall_Window_Blinds_Up_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Aircon_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_AirVent_Wall_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Alcohol_Bottle_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Bin_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Bin_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Bin_Rubbish_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Book_Group_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Book_Group_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Book_Group_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Book_Group_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Book_Group_06.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Book_Group_07.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Book_Group_08.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Book_Magazine_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Book_Magazine_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Bottle_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Box_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Briefcase_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Cabinets_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Cabinets_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Cabinets_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Calculator_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Cellphone_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Certificate_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Chair_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Chair_05.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Chair_06.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Chair_07.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Chair_08.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Clock_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_CoatRack_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_CoffeeMachine_Dripper_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_CoffeeMachine_Dripper_01_Pot_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_CoffeeMachine_Small_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_CoffeeTable_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Computer_Monitor_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Computer_Setup_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Computer_Setup_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Cord_Wall_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_CorkBoard_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Couch_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Couch_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Couch_05.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Cup_Boss_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Cup_Coffee_Disposable_Cap_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Cup_Coffee_Disposable_Closed_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Cup_Coffee_Disposable_Open_Full_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Cup_Pens_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Desklamp_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Desklamp_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_DeskLamp_06.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_DeskLamp_08.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_DeskToy_NewtownsCradle_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_DeskToy_Orbiter_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Desk_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Desk_06.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Donut_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Donut_Box_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Donut_Choc_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Donut_Cream_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Donut_Pink_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Fan_Pedistal_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Figure_Cowgirl_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Figure_Knight_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Figure_Viking_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Fire_Detector_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Fire_Extinguisher_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_FolderTray_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_FolderTray_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_FolderTray_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_FolderTray_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Folder_Holder_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Folder_Holder_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Folder_Holder_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Folder_Manila_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Folder_Manila_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Folder_Manila_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Folder_PVC_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_FootRest_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Globe_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_HolePunch_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Janitor_Cart_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_LampPost_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Laptop_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Laptop_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Light_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Mints_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_NamePlate_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Neon_Cactus_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_NotePad_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Note_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Note_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Note_05.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_PaperShredder_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Papers_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_PaperTray_01_Full_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Paper_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Paper_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Paper_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Paper_Pile_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Paper_Pile_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Paper_Pile_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_PencilCup_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Pencil_Sharpener_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Pen_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Phone_Desk_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Photo_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Photo_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Photo_05.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Plant_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Plant_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Plant_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Plant_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Plant_06.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Plant_08.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Plant_10.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Plant_11.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Plant_Flowers_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Poster_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Poster_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Poster_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Poster_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Poster_Stocks_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Powerbox_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_PowerBox_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Presentation_Chart_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Printer_Mini_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_ProjectorScreen_02_Down.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Projector_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_PuzzleCube_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Radio_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Rug_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Rug_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Security_Camera_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Shelf_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Shelf_04.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Shelf_05.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Shelf_06.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Shelf_Wall_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Sign_Exit_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Sign_OutofOrder_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Sign_Receptionist_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Sign_Wetfloor_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Socket_Switch_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Socket_Wall_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Spaceship_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Stapler_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_TableFootball_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Table_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Table_Conference_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Trashbin_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_Trophy_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_VCR_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_VHS_Tape_01.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_WallDressing_02.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_WallDressing_03.fbx
+Assets\Synty\PolygonOffice\Models\SM_Prop_WallDressing_04.fbx
+Assets\Synty\PolygonOffice\Textures\Emissive_01.png
+Assets\Synty\PolygonOffice\Textures\PolygonOffice_01_A.png
+Assets\Synty\PolygonOffice\Textures\PolygonOffice_02_A.png
+Assets\Synty\PolygonOffice\Textures\PolygonOffice_02_B.png
+Assets\Synty\PolygonOffice\Textures\PolygonOffice_02_C.png
+Assets\Synty\PolygonOffice\Textures\PolygonOffice_03_A.png
+Assets\Synty\PolygonOffice\Textures\PolygonOffice_03_C.png
+Assets\Synty\PolygonOffice\Textures\PolygonOffice_04_A.png
+Assets\Synty\PolygonOffice\Textures\PolygonOffice_04_C.png
+Assets\Synty\PolygonOffice\Textures\Sceen_01.png
+Assets\Synty\PolygonOffice\Textures\Sceen_02.png
+Assets\Synty\PolygonOffice\Textures\Sceen_03.png
+Assets\Synty\PolygonOffice\Textures\Sceen_04.png
+Assets\Synty\PolygonGeneric\Models\Collision\SM_Gen_Prop_Clock_01_Convex.asset
+Assets\Synty\PolygonGeneric\Textures\Alts\Generic_01_A.png
+Assets\Synty\PolygonGeneric\Textures\Emissive\Generic_Emissive_01_A.png
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Aircon_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_AirVent_Wall_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Alcohol_Bottle_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Bin_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Bin_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Bin_Rubbish_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Book_Group_01_Convex 1.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Book_Group_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Book_Group_03_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Book_Group_04_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Book_Group_06_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Book_Group_07_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Book_Group_08_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Book_Magazine_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Book_Magazine_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Bottle_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Box_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Briefcase_03_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Calculator_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Cellphone_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Certificate_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Chair_02_Convex 2.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Chair_06_Convex 1.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Chair_07_Convex 1.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Chair_08_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Clock_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_CoatRack_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_CoffeeMachine_Dripper_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_CoffeeMachine_Dripper_01_Pot_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_CoffeeMachine_Small_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Computer_Monitor_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Computer_Setup_01_Convex 1.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Computer_Setup_02_Convex 1.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Cord_Wall_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_CorkBoard_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Cup_Boss_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Cup_Coffee_Disposable_Cap_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Cup_Coffee_Disposable_Closed_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Cup_Coffee_Disposable_Open_Full_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Cup_Pens_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Desklamp_01_Convex 1.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Desklamp_03_Convex 2.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_DeskLamp_06_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_DeskLamp_08_Convex 1.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_DeskToy_NewtownsCradle_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Desk_03_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Desk_06_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Donut_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Donut_Box_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Donut_Choc_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Donut_Cream_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Donut_Pink_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Fan_Pedistal_01_Convex 1.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Fan_Pedistal_01_Convex 2.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Figure_Cowgirl_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Figure_Knight_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Figure_Viking_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Fire_Detector_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Fire_Extinguisher_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_FolderTray_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_FolderTray_03_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_FolderTray_04_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Folder_Holder_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Folder_Holder_03_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Folder_Holder_04_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Folder_Manila_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Folder_Manila_03_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Folder_Manila_04_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Folder_PVC_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_FootRest_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Globe_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_HolePunch_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Janitor_Cart_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_LampPost_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Laptop_01_Convex 1.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Laptop_02_Convex 1.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Light_03_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Mints_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_NamePlate_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Neon_Cactus_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_NotePad_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Note_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Note_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Note_05_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_PaperShredder_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_PaperTray_01_Full_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Paper_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Paper_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Paper_04_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Paper_Pile_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Paper_Pile_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Paper_Pile_03_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_PencilCup_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Pencil_Sharpener_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Pen_03_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Phone_Desk_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Photo_03_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Photo_04_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Photo_05_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Plant_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Plant_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Plant_03_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Plant_04_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Plant_06_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Plant_08_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Plant_10_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Plant_11_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Plant_Flowers_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Poster_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Poster_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Poster_03_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Poster_04_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Poster_Stocks_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Powerbox_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_PowerBox_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Presentation_Chart_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Printer_Mini_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_ProjectorScreen_02_Down_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Projector_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_PuzzleCube_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Radio_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Rug_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Rug_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Security_Camera_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Shelf_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Shelf_04_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Shelf_05_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Shelf_06_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Sign_Exit_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Sign_OutofOrder_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Sign_Receptionist_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Sign_Wetfloor_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Socket_Switch_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Socket_Wall_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Spaceship_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Stapler_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_TableFootball_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Table_02_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Table_Conference_03_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Trashbin_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_Trophy_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_VCR_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_VHS_Tape_01_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_WallDressing_03_Convex.asset
+Assets\Synty\PolygonOffice\Models\Convex\SM_Prop_WallDressing_04_Convex.asset
+
+========== UNITY PACKAGES ==========
+
+{
+  "dependencies": {
+    "com.unity.ai.navigation": "2.0.12",
+    "com.unity.collab-proxy": "2.12.4",
+    "com.unity.ide.rider": "3.0.39",
+    "com.unity.ide.visualstudio": "2.0.27",
+    "com.unity.inputsystem": "1.19.0",
+    "com.unity.multiplayer.center": "1.0.1",
+    "com.unity.render-pipelines.universal": "17.4.0",
+    "com.unity.test-framework": "1.6.0",
+    "com.unity.timeline": "1.8.12",
+    "com.unity.ugui": "2.0.0",
+    "com.unity.visualscripting": "1.9.11",
+    "com.unity.modules.accessibility": "1.0.0",
+    "com.unity.modules.adaptiveperformance": "1.0.0",
+    "com.unity.modules.ai": "1.0.0",
+    "com.unity.modules.androidjni": "1.0.0",
+    "com.unity.modules.animation": "1.0.0",
+    "com.unity.modules.assetbundle": "1.0.0",
+    "com.unity.modules.audio": "1.0.0",
+    "com.unity.modules.cloth": "1.0.0",
+    "com.unity.modules.director": "1.0.0",
+    "com.unity.modules.imageconversion": "1.0.0",
+    "com.unity.modules.imgui": "1.0.0",
+    "com.unity.modules.jsonserialize": "1.0.0",
+    "com.unity.modules.particlesystem": "1.0.0",
+    "com.unity.modules.physics": "1.0.0",
+    "com.unity.modules.physics2d": "1.0.0",
+    "com.unity.modules.screencapture": "1.0.0",
+    "com.unity.modules.terrain": "1.0.0",
+    "com.unity.modules.terrainphysics": "1.0.0",
+    "com.unity.modules.tilemap": "1.0.0",
+    "com.unity.modules.ui": "1.0.0",
+    "com.unity.modules.uielements": "1.0.0",
+    "com.unity.modules.uielementsnative": "1.0.0",
+    "com.unity.modules.umbra": "1.0.0",
+    "com.unity.modules.unityanalytics": "1.0.0",
+    "com.unity.modules.unitywebrequest": "1.0.0",
+    "com.unity.modules.unitywebrequestassetbundle": "1.0.0",
+    "com.unity.modules.unitywebrequestaudio": "1.0.0",
+    "com.unity.modules.unitywebrequesttexture": "1.0.0",
+    "com.unity.modules.unitywebrequestwww": "1.0.0",
+    "com.unity.modules.vectorgraphics": "1.0.0",
+    "com.unity.modules.vehicles": "1.0.0",
+    "com.unity.modules.video": "1.0.0",
+    "com.unity.modules.vr": "1.0.0",
+    "com.unity.modules.wind": "1.0.0",
+    "com.unity.modules.xr": "1.0.0"
+  }
+}
+

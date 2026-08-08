@@ -141,6 +141,17 @@ public class GameStateMachine : MonoBehaviour
     }
 
     /// <summary>
+    /// Unlocks progression when a new case begins.
+    /// This allows the FSM to restart from ReceiveCaseState after
+    /// the previous case had progression locked.
+    /// </summary>
+    public void UnlockProgression()
+    {
+        progressionLocked = false;
+        Debug.Log("[GameStateMachine] Progression unlocked for new case.");
+    }
+
+    /// <summary>
     /// States still reachable AFTER progression lock — everything from
     /// AuditSubmittedState onward in the final sequence.
     /// </summary>
@@ -150,6 +161,8 @@ public class GameStateMachine : MonoBehaviour
             || state is CaseOutcomeState
             || state is ArchiveCaseState
             || state is RewardsState
-            || state is CaseCompleteState;
+            || state is CaseCompleteState
+            || state is LevelCompleteState
+            || state is ReceiveCaseState;
     }
 }

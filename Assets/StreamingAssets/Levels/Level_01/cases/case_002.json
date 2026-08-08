@@ -1,0 +1,458 @@
+{
+  "caseId": "case_002",
+
+  "caseNumber": "ITR-2026-0002",
+  "taxYear": "2026",
+  "dateReceived": "July 8, 2026",
+  "assignedConsultant": "Player",
+  "caseTitle": "MARCO SANTOS - FREELANCE DESIGNER",
+  "caseSummary": "Client is a freelance graphic designer earning professional income from multiple clients. Records must be reviewed to determine the appropriate income tax treatment and required filing form.",
+
+  "fullName": "Marco Antonio Santos",
+  "tin": "456-789-123-000",
+  "birthdate": "September 22, 1992",
+  "address": "Makati City, Metro Manila",
+  "contactNumber": "0920-987-6543",
+  "civilStatus": "Single",
+  "spouseName": "",
+  "spouseTin": "",
+  "citizenship": "Filipino",
+
+  "answerKey": {
+    "residencyStatus": "ResidentCitizen",
+    "taxpayerType": "SelfEmployed",
+    "incomeSource": "ProfessionalIncome",
+    "numberOfEmployers": "OneEmployer",
+    "businessRegistration": "Registered",
+    "taxOption": "EightPercentTaxRate",
+    "requiredForm": "BIR1701A",
+    "correctAssessment": "ReadyForFiling",
+
+    "grossIncome": 720000,
+    "allowableExpenses": 150000,
+    "taxableIncome": 570000,
+    "taxDue": 45600,
+    "taxWithheldOrCredits": 30000,
+    "finalTaxPayable": 15600,
+
+    "employerTin": "",
+    "businessAddress": "Makati City, Metro Manila",
+    "dependentCount": 0
+  },
+
+  "missingFieldKeys": [
+    "ResidencyStatus",
+    "TaxpayerType",
+    "IncomeSource",
+    "NumberOfEmployers",
+    "BusinessRegistration",
+    "TaxOption",
+    "RequiredForm"
+  ],
+
+  "documents": [
+    {
+      "documentName": "Professional Registration Certificate",
+      "fields": [
+        {
+          "label": "Professional Name",
+          "displayValue": "Marco Antonio Santos",
+          "correctValue": "Marco Antonio Santos",
+          "type": "Text",
+          "semanticKey": "FullName",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Professional TIN",
+          "displayValue": "456-789-123-000",
+          "correctValue": "456-789-123-000",
+          "type": "Text",
+          "semanticKey": "TIN",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Registration Status",
+          "displayValue": "Registered Professional",
+          "correctValue": "Registered Professional",
+          "type": "Text",
+          "semanticKey": "BusinessRegistration",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        }
+      ]
+    },
+
+    {
+      "documentName": "Client Invoices",
+      "fields": [
+        {
+          "label": "Client",
+          "displayValue": "BrightPixel Media",
+          "correctValue": "BrightPixel Media",
+          "type": "Text",
+          "semanticKey": "ClientName",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Project Fee",
+          "displayValue": "₱180,000",
+          "correctValue": "₱180,000",
+          "type": "Number",
+          "semanticKey": "ProfessionalIncome",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Invoice Date",
+          "displayValue": "February 20, 2026",
+          "correctValue": "February 20, 2026",
+          "type": "Text",
+          "semanticKey": "InvoiceDate",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        }
+      ]
+    },
+
+    {
+      "documentName": "Client Payment Records",
+      "fields": [
+        {
+          "label": "Client",
+          "displayValue": "Northstar Publishing",
+          "correctValue": "Northstar Publishing",
+          "type": "Text",
+          "semanticKey": "ClientName",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Payment Received",
+          "displayValue": "₱240,000",
+          "correctValue": "₱240,000",
+          "type": "Number",
+          "semanticKey": "ProfessionalIncome",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Payment Date",
+          "displayValue": "May 10, 2026",
+          "correctValue": "May 10, 2026",
+          "type": "Text",
+          "semanticKey": "PaymentDate",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        }
+      ]
+    },
+
+    {
+      "documentName": "Bank Statement",
+      "fields": [
+        {
+          "label": "Total Professional Deposits",
+          "displayValue": "₱720,000",
+          "correctValue": "₱720,000",
+          "type": "Number",
+          "semanticKey": "GrossIncome",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Personal Withdrawals",
+          "displayValue": "₱120,000",
+          "correctValue": "₱120,000",
+          "type": "Number",
+          "semanticKey": "PersonalWithdrawals",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Ending Balance",
+          "displayValue": "₱350,000",
+          "correctValue": "₱350,000",
+          "type": "Number",
+          "semanticKey": "Balance",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        }
+      ]
+    },
+
+    {
+      "documentName": "Tax Withholding Certificates",
+      "fields": [
+        {
+          "label": "Client Name",
+          "displayValue": "DigitalWave Solutions",
+          "correctValue": "DigitalWave Solutions",
+          "type": "Text",
+          "semanticKey": "ClientName",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Income Payment",
+          "displayValue": "₱300,000",
+          "correctValue": "₱300,000",
+          "type": "Number",
+          "semanticKey": "ProfessionalIncome",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Tax Withheld",
+          "displayValue": "₱30,000",
+          "correctValue": "₱30,000",
+          "type": "Number",
+          "semanticKey": "TaxCredits",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        }
+      ]
+    },
+
+    {
+      "documentName": "Previous Year's ITR",
+      "fields": [
+        {
+          "label": "Declared Income",
+          "displayValue": "₱650,000",
+          "correctValue": "₱650,000",
+          "type": "Number",
+          "semanticKey": "PriorDeclaredIncome",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Previous Tax Due",
+          "displayValue": "₱52,000",
+          "correctValue": "₱52,000",
+          "type": "Number",
+          "semanticKey": "PriorTaxDue",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Filing Date",
+          "displayValue": "April 15, 2026",
+          "correctValue": "April 15, 2026",
+          "type": "Text",
+          "semanticKey": "PriorFilingDate",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        }
+      ]
+    },
+    {
+  "documentName": "Financial Statements",
+  "fields": [
+    {
+      "label": "Gross Sales",
+      "displayValue": "₱350,000",
+      "correctValue": "₱350,000",
+      "type": "Number",
+      "semanticKey": "GrossIncome",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    },
+    {
+      "label": "Total Expenses",
+      "displayValue": "₱150,000",
+      "correctValue": "₱150,000",
+      "type": "Number",
+      "semanticKey": "AllowableExpenses",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    },
+    {
+      "label": "Net Income",
+      "displayValue": "₱200,000",
+      "correctValue": "₱200,000",
+      "type": "Number",
+      "semanticKey": "NetIncome",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    }
+  ]
+}
+
+  ],
+
+  "potentialIssues": [
+    "Client receives professional income from multiple clients rather than employment income.",
+    "Previous year's declared income was lower than the current year's reported professional income.",
+    "All current-year professional receipts appear to be supported by available payment records."
+  ],
+
+  "clientPortraitDefault": "",
+  "clientPortraitHappy": "",
+  "clientPortraitSad": "",
+
+  "receptionistGreeting": [
+    {
+      "speaker": "Npc",
+      "text": "Good morning! I have a different case prepared for you today.",
+      "portraitId": "Client1_Marie_Happy"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Your next client is Marco Antonio Santos, a freelance graphic designer.",
+      "portraitId": "Client1_Marie_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "His records contain several professional income documents for you to review.",
+      "portraitId": "Client1_Marie_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "The case folder is ready on your desk.",
+      "portraitId": "Client1_Marie_Happy"
+    }
+  ],
+
+  "clientFirstMeeting": [
+    {
+      "speaker": "Npc",
+      "text": "Good morning. I'm Marco Santos.",
+      "portraitId": "Client1_Marie_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "I work independently as a freelance graphic designer.",
+      "portraitId": "Client1_Marie_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Most of my income comes from project-based clients.",
+      "portraitId": "Client1_Marie_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "I've brought my invoices, payment records, and tax certificates.",
+      "portraitId": "Client1_Marie_Happy"
+    }
+  ],
+
+  "interviewLines": [
+    {
+      "speaker": "Npc",
+      "text": "I don't have an employer. I work directly with different clients.",
+      "portraitId": "Client1_Marie_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "My total professional income for the year is around ₱720,000.",
+      "portraitId": "Client1_Marie_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Some of my clients withheld taxes from my payments.",
+      "portraitId": "Client1_Marie_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "I registered my professional activity with the tax authorities.",
+      "portraitId": "Client1_Marie_Happy"
+    }
+  ],
+
+  "outcomeCorrectNoIssues": [
+    {
+      "speaker": "Npc",
+      "text": "That sounds good. Your assessment matches the information in my records.",
+      "portraitId": "Client1_Marie_Happy"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Thank you for helping me organize everything correctly.",
+      "portraitId": "Client1_Marie_Happy"
+    }
+  ],
+
+  "outcomeCorrectWithIssues": [
+    {
+      "speaker": "Npc",
+      "text": "I understand. I didn't realize there were still issues that needed attention.",
+      "portraitId": "Client1_Marie_Sad"
+    },
+    {
+      "speaker": "Npc",
+      "text": "I'll make sure those records are corrected before filing.",
+      "portraitId": "Client1_Marie_Default"
+    }
+  ],
+
+  "outcomeWrongVerdict": [
+    {
+      "speaker": "Npc",
+      "text": "I'm not sure that assessment matches the records I provided.",
+      "portraitId": "Client1_Marie_Sad"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Could you review my professional income documents again?",
+      "portraitId": "Client1_Marie_Default"
+    }
+  ],
+
+  "outcomeWrongVerdictWithIssues": [
+    {
+      "speaker": "Npc",
+      "text": "I think there are still some problems with the assessment.",
+      "portraitId": "Client1_Marie_Sad"
+    },
+    {
+      "speaker": "Npc",
+      "text": "There may also be issues in my records that were not identified.",
+      "portraitId": "Client1_Marie_Sad"
+    }
+  ]
+}

@@ -17,5 +17,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Progress.unity
     guid: ea104fc394336784490deefe02d72023
+  - enabled: 1
+    path: Assets/Scenes/Level1_Character_Intro_Cutscene.unity
+    guid: 110fdeb50a5fad544b89eaff6ac09e16
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
