@@ -1,0 +1,10 @@
+# ninja log v5
+203	34703	8104526288313111	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	3b7bab49e24eda6f
+137	34757	8104526288640609	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	ef98228f992be9ae
+61	34788	8104526288832016	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	7aafc78b530e153
+235	34892	8104526289844656	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	a63cd5034175598a
+41	34973	8104526291037129	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	e6f23fad95a24b84
+102	35443	8104526295697703	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	bce05180e241cf3e
+3	35699	8104526298201050	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	cfd7e9f3ebe47911
+272	36035	8104526301618939	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	78b92984634d9f4f
+36037	36600	8104526307226768	C:/Learn/Projects/TaxVenture/TaxVenture/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/Debug/704w583w/obj/arm64-v8a/libgame.so	a85f09d5bbeca1f9

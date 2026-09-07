@@ -1,0 +1,470 @@
+{
+  "caseId": "case_002",
+  "caseNumber": "ITR-2026-0002",
+  "taxYear": "2026",
+  "dateReceived": "June 20, 2026",
+  "assignedConsultant": "Player",
+  "caseTitle": "Mang Teody Ramos - Lotto Winnings Tax Assessment",
+  "caseSummary": "Client seeks assistance in determining the proper tax treatment of a significant PCSO lotto jackpot while continuing to earn regular income as a tricycle driver. The lotto winnings and ordinary driving income must be classified and treated separately.",
+
+  "fullName": "Mang Teody Ramos",
+  "tin": "456-789-012-000",
+  "birthdate": "March 10, 1965",
+  "address": "Bulacan, Philippines",
+  "contactNumber": "0918-456-7890",
+  "civilStatus": "Married",
+  "spouseName": "Rosa Ramos",
+  "spouseTin": "",
+  "citizenship": "Filipino",
+
+  "answerKey": {
+    "residencyStatus": "ResidentCitizen",
+    "taxpayerType": "MixedIncomeEarner",
+    "incomeSource": "MixedIncome",
+    "numberOfEmployers": "NoEmployer",
+    "businessRegistration": "InformalEarner",
+    "taxOption": "RegularIncomeTax",
+    "requiredForm": "BIR1701",
+    "correctAssessment": "NotReadyForFiling"
+  },
+
+  "grossIncome": 10000000,
+  "allowableExpenses": 0,
+  "taxableIncome": 10000000,
+  "taxDue": 1998000,
+  "taxWithheldOrCredits": 1998000,
+  "finalTaxPayable": 0,
+
+  "employerTin": "",
+  "businessAddress": "Bulacan, Philippines",
+  "dependentCount": 0,
+
+  "missingFieldKeys": [
+    "ResidencyStatus",
+    "TaxpayerType",
+    "IncomeSource",
+    "NumberOfEmployers",
+    "BusinessRegistration",
+    "TaxOption",
+    "RequiredForm"
+  ],
+
+  "documents": [
+    {
+      "documentName": "PCSO Winning Ticket",
+      "fields": [
+        {
+          "label": "Prize Type",
+          "displayValue": "PCSO Lotto Jackpot",
+          "correctValue": "PCSO Lotto Jackpot",
+          "type": "Text",
+          "semanticKey": "PrizeType",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Winning Amount",
+          "displayValue": "₱10,000,000",
+          "correctValue": "₱10,000,000",
+          "type": "Number",
+          "semanticKey": "LottoWinnings",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Winner Name",
+          "displayValue": "Mang Teody Ramos",
+          "correctValue": "Mang Teody Ramos",
+          "type": "Text",
+          "semanticKey": "WinnerName",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        }
+      ]
+    },
+
+    {
+      "documentName": "PCSO Claim Voucher",
+      "fields": [
+        {
+          "label": "Claimant",
+          "displayValue": "Mang Teody Ramos",
+          "correctValue": "Mang Teody Ramos",
+          "type": "Text",
+          "semanticKey": "ClaimantName",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Gross Prize",
+          "displayValue": "₱10,000,000",
+          "correctValue": "₱10,000,000",
+          "type": "Number",
+          "semanticKey": "LottoWinnings",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Tax Withheld",
+          "displayValue": "₱1,998,000",
+          "correctValue": "₱1,998,000",
+          "type": "Number",
+          "semanticKey": "LottoTaxWithheld",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Net Prize Released",
+          "displayValue": "₱8,002,000",
+          "correctValue": "₱8,002,000",
+          "type": "Number",
+          "semanticKey": "NetLottoWinnings",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        }
+      ]
+    },
+
+    {
+      "documentName": "Tricycle Driving Income Record",
+      "fields": [
+        {
+          "label": "Occupation",
+          "displayValue": "Tricycle Driver",
+          "correctValue": "Tricycle Driver",
+          "type": "Text",
+          "semanticKey": "Occupation",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Annual Driving Income",
+          "displayValue": "₱180,000",
+          "correctValue": "₱180,000",
+          "type": "Number",
+          "semanticKey": "DrivingIncome",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Income Type",
+          "displayValue": "Regular Livelihood Income",
+          "correctValue": "Regular Livelihood Income",
+          "type": "Text",
+          "semanticKey": "IncomeType",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        }
+      ]
+    },
+
+    {
+      "documentName": "Driving Income Log",
+      "fields": [
+        {
+          "label": "Average Daily Earnings",
+          "displayValue": "₱750",
+          "correctValue": "₱750",
+          "type": "Number",
+          "semanticKey": "DailyDrivingIncome",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Estimated Annual Earnings",
+          "displayValue": "₱180,000",
+          "correctValue": "₱180,000",
+          "type": "Number",
+          "semanticKey": "DrivingIncome",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        }
+      ]
+    },
+
+    {
+      "documentName": "Taxpayer Information Sheet",
+      "fields": [
+        {
+          "label": "Full Name",
+          "displayValue": "Mang Teody Ramos",
+          "correctValue": "Mang Teody Ramos",
+          "type": "Text",
+          "semanticKey": "FullName",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Citizenship",
+          "displayValue": "Filipino",
+          "correctValue": "Filipino",
+          "type": "Text",
+          "semanticKey": "Citizenship",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Residency",
+          "displayValue": "Resident Citizen",
+          "correctValue": "Resident Citizen",
+          "type": "Text",
+          "semanticKey": "ResidencyStatus",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+        {
+          "label": "Civil Status",
+          "displayValue": "Married",
+          "correctValue": "Married",
+          "type": "Text",
+          "semanticKey": "CivilStatus",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        }
+      ]
+    },
+
+    {
+      "documentName": "Client Statement",
+      "fields": [
+        {
+          "label": "Client's Claim",
+          "displayValue": "The entire lotto prize should be received without tax deductions.",
+          "correctValue": "The entire lotto prize should be received without tax deductions.",
+          "type": "Text",
+          "semanticKey": "ClientTaxBelief",
+          "isIncorrect": true,
+          "incorrectReason": "Client believes the lotto winnings should not be subject to tax because the money was received through luck.",
+          "issueType": "Misunderstanding",
+          "severity": "Medium"
+        },
+        {
+          "label": "Regular Work After Winning",
+          "displayValue": "Continues driving his tricycle for regular income.",
+          "correctValue": "Continues driving his tricycle for regular income.",
+          "type": "Text",
+          "semanticKey": "ContinuedOccupation",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        }
+      ]
+    }
+  ],
+
+  "potentialIssues": [
+    "Client believes the entire lotto prize should be received without tax deductions.",
+    "Lotto winnings and regular tricycle-driving income must be classified separately.",
+    "The PCSO claim voucher shows that final withholding tax was already deducted from the jackpot.",
+    "The regular tricycle-driving income remains separate from the lotto winnings and must not be included in the final-tax computation for the prize.",
+    "The taxpayer's ordinary driving income requires separate evaluation for regular income tax reporting."
+  ],
+
+  "clientPortraitDefault": "Client2_Teody_Default",
+  "clientPortraitHappy": "Client2_Teody_Happy",
+  "clientPortraitSad": "Client2_Teody_Sad",
+
+  "receptionistGreeting": [
+    {
+      "speaker": "Npc",
+      "text": "Good morning! Welcome to the tax office.",
+      "portraitId": "Client2_Teody_Happy"
+    },
+    {
+      "speaker": "Npc",
+      "text": "I have a client case ready for you. Please review the lotto documents and the client's regular income records carefully.",
+      "portraitId": "Client2_Teody_Happy"
+    },
+    {
+      "speaker": "Player",
+      "text": "Understood. I'll review the documents and determine the proper tax treatment for each source of income.",
+      "portraitId": "Auditor_Default"
+    }
+  ],
+
+  "clientFirstMeeting": [
+    {
+      "speaker": "Npc",
+      "text": "Ay, magandang araw. Ako si Teody Ramos. Nanalo po ako sa lotto at sabi nila may tax daw. Hindi ko po maintindihan kung bakit may bawas pa.",
+      "portraitId": "Client2_Teody_Default"
+    },
+    {
+      "speaker": "Player",
+      "text": "I'll review your winning ticket, claim voucher, and your regular driving income so we can determine the correct treatment for each.",
+      "portraitId": "Auditor_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Panalong-panalo na nga ako, bakit may bawas pa? Akala ko po buong jackpot ang makukuha ko.",
+      "portraitId": "Client2_Teody_Sad"
+    },
+    {
+      "speaker": "Player",
+      "text": "I understand your concern. Let's go through the documents carefully and separate the lotto winnings from your regular driving income.",
+      "portraitId": "Auditor_Default"
+    }
+  ],
+
+  "interviewLines": [
+    {
+      "speaker": "Player",
+      "text": "Mang Teody, can you confirm that the ₱10,000,000 prize shown on the PCSO documents is your lotto jackpot?",
+      "portraitId": "Auditor_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Opo. Ako po talaga ang nanalo. Malaking halaga po iyon para sa amin.",
+      "portraitId": "Client2_Teody_Default"
+    },
+    {
+      "speaker": "Player",
+      "text": "The claim voucher shows that tax was already withheld before the net prize was released. Were you informed about this deduction when you claimed the prize?",
+      "portraitId": "Auditor_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Opo, pero hindi ko talaga maintindihan. Sabi ko nga, panalong-panalo na nga ako, bakit may bawas pa?",
+      "portraitId": "Client2_Teody_Sad"
+    },
+    {
+      "speaker": "Player",
+      "text": "I also see that you continued driving your tricycle after receiving the prize. Do you still earn regular income from driving?",
+      "portraitId": "Auditor_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Opo. Hindi ko naman kayang basta tumigil. Sanay na akong magmaneho at kahit may napanalunan ako, may regular pa rin akong kinikita.",
+      "portraitId": "Client2_Teody_Default"
+    },
+    {
+      "speaker": "Player",
+      "text": "Thank you. Your lotto winnings and your regular driving income are separate sources of income and must be treated separately.",
+      "portraitId": "Auditor_Default"
+    }
+  ],
+
+  "outcomeCorrectNoIssues": [
+    {
+      "speaker": "Player",
+      "text": "The lotto winnings were correctly identified as a separately taxed prize, and the documents confirm that the applicable tax was already withheld before the net prize was released.",
+      "portraitId": "Auditor_Happy"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Ah, ganoon pala. Ibig sabihin hindi ninyo basta binawas sa akin nang walang dahilan?",
+      "portraitId": "Client2_Teody_Happy"
+    },
+    {
+      "speaker": "Player",
+      "text": "Correct. The tax was applied to the lotto winnings separately from your regular tricycle-driving income.",
+      "portraitId": "Auditor_Happy"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Salamat. Mas naiintindihan ko na ngayon kung bakit may tax sa panalo.",
+      "portraitId": "Client2_Teody_Happy"
+    }
+  ],
+
+  "outcomeCorrectWithIssues": [
+    {
+      "speaker": "Player",
+      "text": "The lotto winnings were correctly identified as a separately taxed prize, but the client's regular driving income still requires separate evaluation before the overall tax records can be finalized.",
+      "portraitId": "Auditor_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "So may kailangan pa pala akong ayusin tungkol sa kinikita ko sa pamamasada?",
+      "portraitId": "Client2_Teody_Default"
+    },
+    {
+      "speaker": "Player",
+      "text": "Yes. The lotto winnings should not be combined with your ordinary driving income. Your regular income needs to be evaluated under its own tax treatment.",
+      "portraitId": "Auditor_Default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Sige po. Magbibigay ako ng iba ko pang records kung kailangan.",
+      "portraitId": "Client2_Teody_Default"
+    }
+  ],
+
+  "outcomeWrongVerdict": [
+    {
+      "speaker": "Player",
+      "text": "The assessment does not correctly distinguish the lotto winnings from the client's regular driving income.",
+      "portraitId": "Auditor_Disappointed"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Akala ko po kailangan pagsamahin lahat ng kinita ko ngayong taon.",
+      "portraitId": "Client2_Teody_Sad"
+    },
+    {
+      "speaker": "Player",
+      "text": "The lotto winnings have separate tax treatment and should not simply be consolidated with the client's ordinary income.",
+      "portraitId": "Auditor_Disappointed"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Ah, kaya pala importante na magkahiwalay ang mga records.",
+      "portraitId": "Client2_Teody_Sad"
+    }
+  ],
+
+  "outcomeWrongVerdictWithIssues": [
+    {
+      "speaker": "Player",
+      "text": "The assessment is incorrect, and the records do not properly distinguish the client's lotto winnings from his regular driving income.",
+      "portraitId": "Auditor_Disappointed"
+    },
+    {
+      "speaker": "Npc",
+      "text": "So mali pala ang pagkakaintindi ko sa tax ng lotto winnings?",
+      "portraitId": "Client2_Teody_Sad"
+    },
+    {
+      "speaker": "Player",
+      "text": "Yes. The prize must be treated separately, while your regular tricycle-driving income must be evaluated independently.",
+      "portraitId": "Auditor_Disappointed"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Sige po. Aayusin ko ang records at susundin ko na lang ang tamang proseso.",
+      "portraitId": "Client2_Teody_Sad"
+    }
+  ]
+}

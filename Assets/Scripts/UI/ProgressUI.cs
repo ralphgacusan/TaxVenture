@@ -13,6 +13,7 @@ using UnityEngine.SceneManagement;
 public class ProgressUI : MonoBehaviour
 {
     [SerializeField] private string levelOneCutscene = "Level1_Character_Intro_Cutscene";
+    [SerializeField] private string levelTwoCutscene = "Office_Level2";
     [SerializeField] private string mainMenuSceneName = "MainMenu";
 
 
@@ -20,6 +21,11 @@ public class ProgressUI : MonoBehaviour
     public void OnLevelOneGameplayButtonPressed()
     {
         SceneManager.LoadScene(levelOneCutscene);
+    }
+
+    public void OnLevelTwoGameplayButtonPressed()
+    {
+        SceneManager.LoadScene(levelTwoCutscene);
     }
 
     /// <summary>Wired to the Main Menu button.</summary>

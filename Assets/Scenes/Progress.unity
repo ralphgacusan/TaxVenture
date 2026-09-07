@@ -3527,6 +3527,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProgressUI
   levelOneCutscene: Level1_Character_Intro_Cutscene
+  levelTwoCutscene: Level2_Character_Intro_Cutscene
   mainMenuSceneName: MainMenu
 --- !u!1 &1495431294
 GameObject:
@@ -4060,7 +4061,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 2dc810de88e816c43bb15f53887ebe33, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 43a34b4bb971bfe44bdbe08138fc3e4c, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
