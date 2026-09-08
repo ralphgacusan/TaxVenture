@@ -168,6 +168,7 @@ GameObject:
   - component: {fileID: -8573808263234848557}
   - component: {fileID: 4610908320237257778}
   - component: {fileID: 2267653199981675145}
+  - component: {fileID: 6218518213601575115}
   m_Layer: 5
   m_Name: CaseFolderFieldRow
   m_TagString: Untagged
@@ -322,3 +323,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ContentSizeFitter
   m_HorizontalFit: 0
   m_VerticalFit: 2
+--- !u!114 &6218518213601575115
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7133072859999204807}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec843aefc9375b1438a1cb5d982b30b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ValueDragSource

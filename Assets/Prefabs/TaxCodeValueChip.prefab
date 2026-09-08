@@ -152,6 +152,7 @@ GameObject:
   - component: {fileID: 4445744995315139106}
   - component: {fileID: 914165778884931269}
   - component: {fileID: -9197014908390126202}
+  - component: {fileID: 8694686117134633964}
   m_Layer: 5
   m_Name: TaxCodeValueChip
   m_TagString: Untagged
@@ -231,6 +232,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TaxCodeValueChip
   chipText: {fileID: 8536520387629389824}
   clickSource: {fileID: 4445744995315139106}
+  dragSource: {fileID: 8694686117134633964}
 --- !u!114 &4445744995315139106
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -278,3 +280,15 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &8694686117134633964
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4971024778170469819}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec843aefc9375b1438a1cb5d982b30b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ValueDragSource

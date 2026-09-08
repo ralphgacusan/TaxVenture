@@ -152,6 +152,7 @@ GameObject:
   - component: {fileID: 3344122794058025106}
   - component: {fileID: 2537184309547967460}
   - component: {fileID: -3758386265158372163}
+  - component: {fileID: 6218983573630667147}
   m_Layer: 5
   m_Name: DocumentFieldRow
   m_TagString: Untagged
@@ -231,6 +232,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DocumentFieldRow
   fieldText: {fileID: 7698155437184980806}
   clickSource: {fileID: 3344122794058025106}
+  dragSource: {fileID: 6218983573630667147}
 --- !u!114 &3344122794058025106
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -278,3 +280,15 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &6218983573630667147
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8452394657904343388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec843aefc9375b1438a1cb5d982b30b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ValueDragSource

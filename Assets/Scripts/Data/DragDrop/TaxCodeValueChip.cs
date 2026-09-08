@@ -10,7 +10,7 @@ public class TaxCodeValueChip : MonoBehaviour, IDataValueSource
 {
     [SerializeField] private TextMeshProUGUI chipText;
     [SerializeField] private ValueClickSource clickSource;
-
+    [SerializeField] private ValueDragSource dragSource;
     private TaxCodeClickableValue clickableValue;
 
     public void Initialize(TaxCodeClickableValue value)
@@ -18,6 +18,7 @@ public class TaxCodeValueChip : MonoBehaviour, IDataValueSource
         clickableValue = value;
         chipText.text = value.displayText;
         clickSource.Initialize(this, this);
+        dragSource.Initialize(this, this);
     }
 
     public DataValue GetDataValue()
