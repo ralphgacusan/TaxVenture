@@ -1,0 +1,381 @@
+﻿#include "pch-c.h"
+
+
+#include "codegen/il2cpp-codegen-metadata.h"
+
+
+
+
+
+#if IL2CPP_MONO_DEBUGGER
+static const Il2CppMethodExecutionContextInfo g_methodExecutionContextInfos[4] = 
+{
+	{ 637, 0,  2 },
+	{ 1469, 1,  3 },
+	{ 14146, 0,  5 },
+	{ 14081, 2,  8 },
+};
+#else
+static const Il2CppMethodExecutionContextInfo g_methodExecutionContextInfos[1] = { { 0, 0, 0 } };
+#endif
+#if IL2CPP_MONO_DEBUGGER
+static const char* g_methodExecutionContextInfoStrings[3] = 
+{
+	"subsystem",
+	"concreteSubsystem",
+	"finderIndex",
+};
+#else
+static const char* g_methodExecutionContextInfoStrings[1] = { NULL };
+#endif
+#if IL2CPP_MONO_DEBUGGER
+static const Il2CppMethodExecutionContextInfoIndex g_methodExecutionContextInfoIndexes[38] = 
+{
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 2 },
+	{ 2, 1 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 3, 1 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+};
+#else
+static const Il2CppMethodExecutionContextInfoIndex g_methodExecutionContextInfoIndexes[1] = { { 0, 0} };
+#endif
+#if IL2CPP_MONO_DEBUGGER
+IL2CPP_EXTERN_C Il2CppSequencePoint g_sequencePointsUnityEngine_SubsystemsModule[];
+Il2CppSequencePoint g_sequencePointsUnityEngine_SubsystemsModule[181] = 
+{
+	{ 44628, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 0 },
+	{ 44628, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 1 },
+	{ 44628, 1, 29, 29, 32, 52, 0, kSequencePointKind_Normal, 0, 2 },
+	{ 44628, 1, 29, 29, 32, 52, 1, kSequencePointKind_StepOut, 0, 3 },
+	{ 44628, 1, 29, 29, 32, 52, 9, kSequencePointKind_StepOut, 0, 4 },
+	{ 44629, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 5 },
+	{ 44629, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 6 },
+	{ 44629, 1, 31, 31, 32, 52, 0, kSequencePointKind_Normal, 0, 7 },
+	{ 44629, 1, 31, 31, 32, 52, 11, kSequencePointKind_StepOut, 0, 8 },
+	{ 44634, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 9 },
+	{ 44634, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 10 },
+	{ 44634, 1, 37, 37, 94, 119, 0, kSequencePointKind_Normal, 0, 11 },
+	{ 44636, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 12 },
+	{ 44636, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 13 },
+	{ 44636, 2, 20, 20, 29, 69, 0, kSequencePointKind_Normal, 0, 14 },
+	{ 44636, 2, 20, 20, 29, 69, 6, kSequencePointKind_StepOut, 0, 15 },
+	{ 44642, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 16 },
+	{ 44642, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 17 },
+	{ 44642, 3, 10, 10, 28, 32, 0, kSequencePointKind_Normal, 0, 18 },
+	{ 44644, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 19 },
+	{ 44644, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 20 },
+	{ 44644, 3, 44, 44, 88, 153, 0, kSequencePointKind_Normal, 0, 21 },
+	{ 44644, 3, 44, 44, 88, 153, 1, kSequencePointKind_StepOut, 0, 22 },
+	{ 44645, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 23 },
+	{ 44645, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 24 },
+	{ 44645, 4, 14, 14, 13, 48, 0, kSequencePointKind_Normal, 0, 25 },
+	{ 44645, 4, 15, 15, 17, 42, 7, kSequencePointKind_Normal, 0, 26 },
+	{ 44645, 4, 15, 15, 17, 42, 12, kSequencePointKind_StepOut, 0, 27 },
+	{ 44645, 4, 17, 17, 13, 48, 17, kSequencePointKind_Normal, 0, 28 },
+	{ 44645, 4, 18, 18, 17, 42, 24, kSequencePointKind_Normal, 0, 29 },
+	{ 44645, 4, 18, 18, 17, 42, 29, kSequencePointKind_StepOut, 0, 30 },
+	{ 44645, 4, 19, 19, 9, 10, 34, kSequencePointKind_Normal, 0, 31 },
+	{ 44646, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 32 },
+	{ 44646, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 33 },
+	{ 44646, 4, 25, 25, 13, 50, 0, kSequencePointKind_Normal, 0, 34 },
+	{ 44646, 4, 26, 26, 17, 44, 7, kSequencePointKind_Normal, 0, 35 },
+	{ 44646, 4, 26, 26, 17, 44, 12, kSequencePointKind_StepOut, 0, 36 },
+	{ 44646, 4, 28, 28, 13, 47, 17, kSequencePointKind_Normal, 0, 37 },
+	{ 44646, 4, 29, 29, 17, 41, 24, kSequencePointKind_Normal, 0, 38 },
+	{ 44646, 4, 29, 29, 17, 41, 29, kSequencePointKind_StepOut, 0, 39 },
+	{ 44646, 4, 30, 30, 9, 10, 34, kSequencePointKind_Normal, 0, 40 },
+	{ 44647, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 41 },
+	{ 44647, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 42 },
+	{ 44647, 4, 36, 36, 13, 35, 0, kSequencePointKind_Normal, 0, 43 },
+	{ 44647, 4, 37, 37, 13, 44, 7, kSequencePointKind_Normal, 0, 44 },
+	{ 44647, 4, 37, 37, 13, 44, 9, kSequencePointKind_StepOut, 0, 45 },
+	{ 44647, 4, 38, 38, 13, 51, 14, kSequencePointKind_Normal, 0, 46 },
+	{ 44647, 4, 38, 38, 13, 51, 20, kSequencePointKind_StepOut, 0, 47 },
+	{ 44647, 4, 39, 39, 9, 10, 25, kSequencePointKind_Normal, 0, 48 },
+	{ 44648, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 49 },
+	{ 44648, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 50 },
+	{ 44648, 4, 45, 45, 39, 61, 0, kSequencePointKind_Normal, 0, 51 },
+	{ 44648, 4, 45, 45, 39, 61, 5, kSequencePointKind_StepOut, 0, 52 },
+	{ 44648, 4, 45, 45, 0, 0, 11, kSequencePointKind_Normal, 0, 53 },
+	{ 44648, 4, 45, 45, 22, 35, 13, kSequencePointKind_Normal, 0, 54 },
+	{ 44648, 4, 45, 45, 22, 35, 15, kSequencePointKind_StepOut, 0, 55 },
+	{ 44648, 4, 46, 46, 17, 47, 20, kSequencePointKind_Normal, 0, 56 },
+	{ 44648, 4, 45, 45, 36, 38, 30, kSequencePointKind_Normal, 0, 57 },
+	{ 44648, 4, 45, 45, 36, 38, 32, kSequencePointKind_StepOut, 0, 58 },
+	{ 44648, 4, 45, 45, 0, 0, 41, kSequencePointKind_Normal, 0, 59 },
+	{ 44648, 4, 45, 45, 0, 0, 49, kSequencePointKind_StepOut, 0, 60 },
+	{ 44648, 4, 48, 48, 13, 44, 55, kSequencePointKind_Normal, 0, 61 },
+	{ 44648, 4, 48, 48, 13, 44, 60, kSequencePointKind_StepOut, 0, 62 },
+	{ 44648, 4, 49, 49, 13, 44, 65, kSequencePointKind_Normal, 0, 63 },
+	{ 44648, 4, 49, 49, 13, 44, 70, kSequencePointKind_StepOut, 0, 64 },
+	{ 44648, 4, 50, 50, 13, 44, 75, kSequencePointKind_Normal, 0, 65 },
+	{ 44648, 4, 50, 50, 13, 44, 80, kSequencePointKind_StepOut, 0, 66 },
+	{ 44648, 4, 51, 51, 9, 10, 85, kSequencePointKind_Normal, 0, 67 },
+	{ 44650, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 68 },
+	{ 44650, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 69 },
+	{ 44650, 5, 95, 95, 9, 99, 0, kSequencePointKind_Normal, 0, 70 },
+	{ 44650, 5, 95, 95, 9, 99, 0, kSequencePointKind_StepOut, 0, 71 },
+	{ 44650, 5, 96, 96, 9, 103, 10, kSequencePointKind_Normal, 0, 72 },
+	{ 44650, 5, 96, 96, 9, 103, 10, kSequencePointKind_StepOut, 0, 73 },
+	{ 44650, 5, 98, 98, 9, 79, 20, kSequencePointKind_Normal, 0, 74 },
+	{ 44650, 5, 98, 98, 9, 79, 20, kSequencePointKind_StepOut, 0, 75 },
+	{ 44650, 5, 10, 10, 38, 72, 30, kSequencePointKind_Normal, 0, 76 },
+	{ 44650, 5, 10, 10, 38, 72, 30, kSequencePointKind_StepOut, 0, 77 },
+	{ 44651, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 78 },
+	{ 44651, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 79 },
+	{ 44651, 5, 26, 26, 13, 32, 0, kSequencePointKind_Normal, 0, 80 },
+	{ 44651, 5, 26, 26, 13, 32, 1, kSequencePointKind_StepOut, 0, 81 },
+	{ 44651, 5, 27, 27, 13, 68, 6, kSequencePointKind_Normal, 0, 82 },
+	{ 44651, 5, 27, 27, 13, 68, 12, kSequencePointKind_StepOut, 0, 83 },
+	{ 44651, 5, 28, 28, 13, 68, 17, kSequencePointKind_Normal, 0, 84 },
+	{ 44651, 5, 28, 28, 13, 68, 23, kSequencePointKind_StepOut, 0, 85 },
+	{ 44651, 5, 29, 29, 13, 68, 28, kSequencePointKind_Normal, 0, 86 },
+	{ 44651, 5, 29, 29, 13, 68, 34, kSequencePointKind_StepOut, 0, 87 },
+	{ 44651, 5, 30, 30, 9, 10, 39, kSequencePointKind_Normal, 0, 88 },
+	{ 44652, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 89 },
+	{ 44652, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 90 },
+	{ 44652, 5, 36, 36, 39, 47, 0, kSequencePointKind_Normal, 0, 91 },
+	{ 44652, 5, 36, 36, 39, 47, 1, kSequencePointKind_StepOut, 0, 92 },
+	{ 44652, 5, 36, 36, 0, 0, 7, kSequencePointKind_Normal, 0, 93 },
+	{ 44652, 5, 36, 36, 22, 35, 9, kSequencePointKind_Normal, 0, 94 },
+	{ 44652, 5, 36, 36, 22, 35, 11, kSequencePointKind_StepOut, 0, 95 },
+	{ 44652, 5, 38, 38, 17, 63, 17, kSequencePointKind_Normal, 0, 96 },
+	{ 44652, 5, 39, 39, 21, 51, 47, kSequencePointKind_Normal, 0, 97 },
+	{ 44652, 5, 39, 39, 21, 51, 49, kSequencePointKind_StepOut, 0, 98 },
+	{ 44652, 5, 36, 36, 36, 38, 54, kSequencePointKind_Normal, 0, 99 },
+	{ 44652, 5, 36, 36, 36, 38, 56, kSequencePointKind_StepOut, 0, 100 },
+	{ 44652, 5, 36, 36, 0, 0, 65, kSequencePointKind_Normal, 0, 101 },
+	{ 44652, 5, 36, 36, 0, 0, 73, kSequencePointKind_StepOut, 0, 102 },
+	{ 44652, 5, 41, 41, 9, 10, 79, kSequencePointKind_Normal, 0, 103 },
+	{ 44653, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 104 },
+	{ 44653, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 105 },
+	{ 44653, 5, 52, 52, 39, 61, 0, kSequencePointKind_Normal, 0, 106 },
+	{ 44653, 5, 52, 52, 39, 61, 5, kSequencePointKind_StepOut, 0, 107 },
+	{ 44653, 5, 52, 52, 0, 0, 11, kSequencePointKind_Normal, 0, 108 },
+	{ 44653, 5, 52, 52, 22, 35, 13, kSequencePointKind_Normal, 0, 109 },
+	{ 44653, 5, 52, 52, 22, 35, 15, kSequencePointKind_StepOut, 0, 110 },
+	{ 44653, 5, 54, 54, 17, 44, 21, kSequencePointKind_Normal, 0, 111 },
+	{ 44653, 5, 54, 54, 17, 44, 28, kSequencePointKind_StepOut, 0, 112 },
+	{ 44653, 5, 55, 55, 21, 38, 35, kSequencePointKind_Normal, 0, 113 },
+	{ 44653, 5, 52, 52, 36, 38, 39, kSequencePointKind_Normal, 0, 114 },
+	{ 44653, 5, 52, 52, 36, 38, 41, kSequencePointKind_StepOut, 0, 115 },
+	{ 44653, 5, 52, 52, 0, 0, 50, kSequencePointKind_Normal, 0, 116 },
+	{ 44653, 5, 52, 52, 0, 0, 58, kSequencePointKind_StepOut, 0, 117 },
+	{ 44653, 5, 58, 58, 13, 25, 64, kSequencePointKind_Normal, 0, 118 },
+	{ 44653, 5, 59, 59, 9, 10, 66, kSequencePointKind_Normal, 0, 119 },
+	{ 44654, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 120 },
+	{ 44654, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 121 },
+	{ 44654, 6, 13, 13, 13, 30, 0, kSequencePointKind_Normal, 0, 122 },
+	{ 44654, 6, 14, 14, 13, 47, 7, kSequencePointKind_Normal, 0, 123 },
+	{ 44654, 6, 14, 14, 13, 47, 13, kSequencePointKind_StepOut, 0, 124 },
+	{ 44654, 6, 15, 15, 9, 10, 18, kSequencePointKind_Normal, 0, 125 },
+	{ 44655, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 126 },
+	{ 44655, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 127 },
+	{ 44655, 6, 20, 20, 40, 63, 0, kSequencePointKind_Normal, 0, 128 },
+	{ 44655, 6, 20, 20, 40, 63, 5, kSequencePointKind_StepOut, 0, 129 },
+	{ 44655, 6, 20, 20, 0, 0, 11, kSequencePointKind_Normal, 0, 130 },
+	{ 44655, 6, 20, 20, 22, 36, 13, kSequencePointKind_Normal, 0, 131 },
+	{ 44655, 6, 20, 20, 22, 36, 15, kSequencePointKind_StepOut, 0, 132 },
+	{ 44655, 6, 21, 21, 17, 48, 20, kSequencePointKind_Normal, 0, 133 },
+	{ 44655, 6, 20, 20, 37, 39, 30, kSequencePointKind_Normal, 0, 134 },
+	{ 44655, 6, 20, 20, 37, 39, 32, kSequencePointKind_StepOut, 0, 135 },
+	{ 44655, 6, 20, 20, 0, 0, 41, kSequencePointKind_Normal, 0, 136 },
+	{ 44655, 6, 20, 20, 0, 0, 49, kSequencePointKind_StepOut, 0, 137 },
+	{ 44655, 6, 23, 23, 13, 45, 55, kSequencePointKind_Normal, 0, 138 },
+	{ 44655, 6, 23, 23, 13, 45, 60, kSequencePointKind_StepOut, 0, 139 },
+	{ 44655, 6, 24, 24, 9, 10, 65, kSequencePointKind_Normal, 0, 140 },
+	{ 44657, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 141 },
+	{ 44657, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 142 },
+	{ 44657, 7, 56, 56, 18, 37, 0, kSequencePointKind_Normal, 0, 143 },
+	{ 44657, 7, 56, 56, 0, 0, 2, kSequencePointKind_Normal, 0, 144 },
+	{ 44657, 7, 58, 58, 17, 66, 4, kSequencePointKind_Normal, 0, 145 },
+	{ 44657, 7, 58, 58, 17, 66, 6, kSequencePointKind_StepOut, 0, 146 },
+	{ 44657, 7, 58, 58, 17, 66, 20, kSequencePointKind_StepOut, 0, 147 },
+	{ 44657, 7, 58, 58, 17, 66, 33, kSequencePointKind_StepOut, 0, 148 },
+	{ 44657, 7, 58, 58, 17, 66, 38, kSequencePointKind_StepOut, 0, 149 },
+	{ 44657, 7, 61, 61, 17, 137, 45, kSequencePointKind_Normal, 0, 150 },
+	{ 44657, 7, 61, 61, 17, 137, 58, kSequencePointKind_StepOut, 0, 151 },
+	{ 44657, 7, 61, 61, 17, 137, 68, kSequencePointKind_StepOut, 0, 152 },
+	{ 44657, 7, 61, 61, 17, 137, 73, kSequencePointKind_StepOut, 0, 153 },
+	{ 44657, 7, 62, 62, 17, 55, 78, kSequencePointKind_Normal, 0, 154 },
+	{ 44657, 7, 62, 62, 17, 55, 91, kSequencePointKind_StepOut, 0, 155 },
+	{ 44657, 7, 63, 63, 17, 24, 96, kSequencePointKind_Normal, 0, 156 },
+	{ 44657, 7, 56, 56, 72, 85, 97, kSequencePointKind_Normal, 0, 157 },
+	{ 44657, 7, 56, 56, 39, 70, 101, kSequencePointKind_Normal, 0, 158 },
+	{ 44657, 7, 56, 56, 39, 70, 103, kSequencePointKind_StepOut, 0, 159 },
+	{ 44657, 7, 66, 66, 13, 59, 110, kSequencePointKind_Normal, 0, 160 },
+	{ 44657, 7, 66, 66, 13, 59, 118, kSequencePointKind_StepOut, 0, 161 },
+	{ 44657, 7, 66, 66, 13, 59, 123, kSequencePointKind_StepOut, 0, 162 },
+	{ 44657, 7, 67, 67, 13, 41, 128, kSequencePointKind_Normal, 0, 163 },
+	{ 44657, 7, 67, 67, 13, 41, 140, kSequencePointKind_StepOut, 0, 164 },
+	{ 44657, 7, 68, 68, 9, 10, 145, kSequencePointKind_Normal, 0, 165 },
+	{ 44658, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 166 },
+	{ 44658, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 167 },
+	{ 44658, 8, 6, 6, 94, 149, 0, kSequencePointKind_Normal, 0, 168 },
+	{ 44658, 8, 6, 6, 94, 149, 6, kSequencePointKind_StepOut, 0, 169 },
+	{ 44659, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 170 },
+	{ 44659, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 171 },
+	{ 44659, 7, 70, 70, 9, 120, 0, kSequencePointKind_Normal, 0, 172 },
+	{ 44659, 7, 70, 70, 9, 120, 0, kSequencePointKind_StepOut, 0, 173 },
+	{ 44659, 7, 71, 71, 9, 124, 10, kSequencePointKind_Normal, 0, 174 },
+	{ 44659, 7, 71, 71, 9, 124, 10, kSequencePointKind_StepOut, 0, 175 },
+	{ 44659, 7, 73, 73, 9, 100, 20, kSequencePointKind_Normal, 0, 176 },
+	{ 44659, 7, 73, 73, 9, 100, 20, kSequencePointKind_StepOut, 0, 177 },
+	{ 44661, 0, 0, 0, 0, 0, -1, kSequencePointKind_Normal, 0, 178 },
+	{ 44661, 0, 0, 0, 0, 0, 16777215, kSequencePointKind_Normal, 0, 179 },
+	{ 44661, 9, 7, 7, 28, 32, 0, kSequencePointKind_Normal, 0, 180 },
+};
+#else
+extern Il2CppSequencePoint g_sequencePointsUnityEngine_SubsystemsModule[];
+Il2CppSequencePoint g_sequencePointsUnityEngine_SubsystemsModule[1] = { { 0, 0, 0, 0, 0, 0, 0, kSequencePointKind_Normal, 0, 0, } };
+#endif
+#if IL2CPP_MONO_DEBUGGER
+static const Il2CppCatchPoint g_catchPoints[1] = { { 0, 0, 0, 0, } };
+#else
+static const Il2CppCatchPoint g_catchPoints[1] = { { 0, 0, 0, 0, } };
+#endif
+#if IL2CPP_MONO_DEBUGGER
+static const Il2CppSequencePointSourceFile g_sequencePointSourceFiles[] = {
+{ "", { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} },
+{ "\\home\\bokken\\build\\output\\unity\\unity\\Modules\\Subsystems\\IntegratedSubsystem.bindings.cs", { 117, 146, 4, 188, 100, 91, 7, 29, 232, 164, 97, 34, 105, 246, 77, 165} },
+{ "\\home\\bokken\\build\\output\\unity\\unity\\Modules\\Subsystems\\IntegratedSubsystemDescriptor.bindings.cs", { 36, 115, 61, 243, 100, 125, 72, 232, 220, 138, 194, 177, 150, 22, 94, 39} },
+{ "\\home\\bokken\\build\\output\\unity\\unity\\Modules\\Subsystems\\SubsystemDescriptor.deprecated.cs", { 211, 157, 112, 24, 193, 6, 2, 28, 72, 141, 134, 55, 76, 218, 115, 171} },
+{ "\\home\\bokken\\build\\output\\unity\\unity\\Modules\\Subsystems\\SubsystemManager.bindings.cs", { 178, 72, 99, 86, 65, 27, 7, 107, 125, 37, 126, 152, 147, 145, 172, 117} },
+{ "\\home\\bokken\\build\\output\\unity\\unity\\Modules\\Subsystems\\SubsystemManager.cs", { 234, 55, 243, 32, 26, 124, 238, 240, 115, 20, 10, 27, 92, 17, 134, 43} },
+{ "\\home\\bokken\\build\\output\\unity\\unity\\Modules\\Subsystems\\SubsystemDescriptorStore.bindings.cs", { 114, 118, 45, 171, 142, 184, 148, 25, 148, 233, 185, 147, 225, 37, 84, 65} },
+{ "\\home\\bokken\\build\\output\\unity\\unity\\Modules\\Subsystems\\SubsystemDescriptorStore.cs", { 218, 40, 18, 140, 144, 240, 124, 165, 106, 63, 13, 133, 81, 37, 7, 2} },
+{ "\\home\\bokken\\build\\output\\unity\\unity\\Modules\\Subsystems\\SubsystemDescriptorStore.deprecated.cs", { 236, 180, 240, 70, 171, 242, 124, 21, 177, 4, 107, 90, 232, 143, 15, 87} },
+{ "\\home\\bokken\\build\\output\\unity\\unity\\Modules\\Subsystems\\SubsystemDescriptorWithProvider.cs", { 37, 61, 134, 118, 119, 252, 245, 6, 150, 233, 250, 237, 101, 49, 232, 244} },
+};
+#else
+static const Il2CppSequencePointSourceFile g_sequencePointSourceFiles[1] = { NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+#endif
+#if IL2CPP_MONO_DEBUGGER
+static const Il2CppTypeSourceFilePair g_typeSourceFiles[11] = 
+{
+	{ 6973, 1 },
+	{ 6972, 1 },
+	{ 6975, 2 },
+	{ 6979, 3 },
+	{ 6980, 3 },
+	{ 6981, 4 },
+	{ 6981, 5 },
+	{ 6982, 6 },
+	{ 6982, 7 },
+	{ 6982, 8 },
+	{ 6983, 9 },
+};
+#else
+static const Il2CppTypeSourceFilePair g_typeSourceFiles[1] = { { 0, 0 } };
+#endif
+#if IL2CPP_MONO_DEBUGGER
+static const Il2CppMethodScope g_methodScopes[9] = 
+{
+	{ 0, 86 },
+	{ 0, 80 },
+	{ 9, 54 },
+	{ 17, 54 },
+	{ 0, 68 },
+	{ 13, 39 },
+	{ 0, 66 },
+	{ 0, 146 },
+	{ 0, 110 },
+};
+#else
+static const Il2CppMethodScope g_methodScopes[1] = { { 0, 0 } };
+#endif
+#if IL2CPP_MONO_DEBUGGER
+static const Il2CppMethodHeaderInfo g_methodHeaderInfos[38] = 
+{
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 86, 0, 1 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 80, 1, 3 },
+	{ 68, 4, 2 },
+	{ 0, 0, 0 },
+	{ 66, 6, 1 },
+	{ 0, 0, 0 },
+	{ 146, 7, 2 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+	{ 0, 0, 0 },
+};
+#else
+static const Il2CppMethodHeaderInfo g_methodHeaderInfos[1] = { { 0, 0, 0 } };
+#endif
+IL2CPP_EXTERN_C const Il2CppDebuggerMetadataRegistration g_DebuggerMetadataRegistrationUnityEngine_SubsystemsModule;
+const Il2CppDebuggerMetadataRegistration g_DebuggerMetadataRegistrationUnityEngine_SubsystemsModule = 
+{
+	(Il2CppMethodExecutionContextInfo*)g_methodExecutionContextInfos,
+	(Il2CppMethodExecutionContextInfoIndex*)g_methodExecutionContextInfoIndexes,
+	(Il2CppMethodScope*)g_methodScopes,
+	(Il2CppMethodHeaderInfo*)g_methodHeaderInfos,
+	(Il2CppSequencePointSourceFile*)g_sequencePointSourceFiles,
+	181,
+	(Il2CppSequencePoint*)g_sequencePointsUnityEngine_SubsystemsModule,
+	0,
+	(Il2CppCatchPoint*)g_catchPoints,
+	11,
+	(Il2CppTypeSourceFilePair*)g_typeSourceFiles,
+	(const char**)g_methodExecutionContextInfoStrings,
+};
