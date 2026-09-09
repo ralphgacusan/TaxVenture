@@ -131,7 +131,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void TilemapBuffer_Dispose_mB03811D59A6F26BE5
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 44797
+// Method Definition Index: 44869
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void TilemapBuffer_Dispose_mB03811D59A6F26BE5368C04F59237F90BD486621 (TilemapBuffer_t4A8A7E7C56F1129D6E11C87A2DB28D9F780BCF6D* __this, const RuntimeMethod* method) 
 {
 	{

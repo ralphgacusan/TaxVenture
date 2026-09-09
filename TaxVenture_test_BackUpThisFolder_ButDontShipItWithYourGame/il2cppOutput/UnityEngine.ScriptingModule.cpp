@@ -66,7 +66,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Attribute__ctor_m79ED1BF1EE36D1E417BA89A
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 44801
+// Method Definition Index: 44873
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Il2CppEagerStaticClassConstructionAttribute__ctor_mA7E4EB4327642FEC15C5409B08BDCDFE269F359A (Il2CppEagerStaticClassConstructionAttribute_t3D7D82DC5526590106245EEAFBBCDEF108E58986* __this, const RuntimeMethod* method) 
 {
 	{

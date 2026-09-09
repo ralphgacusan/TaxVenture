@@ -697,7 +697,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Toggle__ctor_mA84E212B567F21B617B480F90B
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 26252
+// Method Definition Index: 26230
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_SetWidget_m0ACF9FA8301635E697FAD1F98F39B3430ADF2F30 (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, Widget_tE8D6AF1D7525CC84E8F2C3B73162016736A6A2FF* ___0_widget, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -841,7 +841,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_SetWidget_m0ACF9FA
 		return;
 	}
 }
-// Method Definition Index: 26253
+// Method Definition Index: 26231
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_SetValue_mDDE5A79FCB5E7FC86F7F59BFF4ED7D08B419A1ED (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, float ___0_v, bool ___1_x, bool ___2_y, bool ___3_z, bool ___4_w, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -940,7 +940,7 @@ IL_0045:
 		return;
 	}
 }
-// Method Definition Index: 26254
+// Method Definition Index: 26232
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_SetupSettings_m6E1D7C8A778144AEC0FED0B4B5F65834B03CFABF (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, DebugUIHandlerIndirectFloatField_tDAC2E6339808111FDCBBBB87E11412F525C4087E* ___0_field, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -986,7 +986,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_SetupSettings_m6E1
 		return;
 	}
 }
-// Method Definition Index: 26255
+// Method Definition Index: 26233
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR bool DebugUIHandlerVector4_OnSelection_m13FAB6F972E9526565914FC704E535C45A1D58C1 (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, bool ___0_fromNext, DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* ___1_previous, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -1113,7 +1113,7 @@ IL_0086:
 		return L_19;
 	}
 }
-// Method Definition Index: 26256
+// Method Definition Index: 26234
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_OnDeselection_m848522A1837716ACEDBA77E7C40F965E7A69717C (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, const RuntimeMethod* method) 
 {
 	{
@@ -1126,7 +1126,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_OnDeselection_m848
 		return;
 	}
 }
-// Method Definition Index: 26257
+// Method Definition Index: 26235
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_OnIncrement_m7C040482A50C8BA301CF8AECE0B380DC01AA36A4 (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, bool ___0_fast, const RuntimeMethod* method) 
 {
 	{
@@ -1138,7 +1138,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_OnIncrement_m7C040
 		return;
 	}
 }
-// Method Definition Index: 26258
+// Method Definition Index: 26236
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_OnDecrement_mD7C8F3016A697A94C281400CC3B98A06F6E2FF69 (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, bool ___0_fast, const RuntimeMethod* method) 
 {
 	{
@@ -1150,7 +1150,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_OnDecrement_mD7C8F
 		return;
 	}
 }
-// Method Definition Index: 26259
+// Method Definition Index: 26237
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_OnAction_m0189C1E29F75BC018C2D5BF6732F1EB3ABB35BD3 (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, const RuntimeMethod* method) 
 {
 	{
@@ -1166,7 +1166,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_OnAction_m0189C1E2
 		return;
 	}
 }
-// Method Definition Index: 26260
+// Method Definition Index: 26238
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* DebugUIHandlerVector4_Next_m27898CC501B5F74A1FFF47D030B187FEB2956DFF (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -1265,7 +1265,7 @@ IL_004e:
 		return L_13;
 	}
 }
-// Method Definition Index: 26261
+// Method Definition Index: 26239
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4__ctor_m45C4574D831F218759A99BF64E570281E91BCABC (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, const RuntimeMethod* method) 
 {
 	{
@@ -1273,7 +1273,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4__ctor_m45C4574D831
 		return;
 	}
 }
-// Method Definition Index: 26262
+// Method Definition Index: 26240
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR float DebugUIHandlerVector4_U3CSetWidgetU3Eb__8_0_m08BEFA85D371D04F0B038DF845898F2B2E1361CC (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -1292,7 +1292,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR float DebugUIHandlerVector4_U3CSetWidgetU3Eb_
 		return L_2;
 	}
 }
-// Method Definition Index: 26263
+// Method Definition Index: 26241
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_U3CSetWidgetU3Eb__8_1_mB0D840131A3B9F0174D378AAB9C31B2D46EFCBA8 (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, float ___0_x, const RuntimeMethod* method) 
 {
 	{
@@ -1302,7 +1302,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_U3CSetWidgetU3Eb__
 		return;
 	}
 }
-// Method Definition Index: 26264
+// Method Definition Index: 26242
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR float DebugUIHandlerVector4_U3CSetWidgetU3Eb__8_2_m259CA925AB02780A7FC19E6E00ECD27A8D9492EB (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -1321,7 +1321,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR float DebugUIHandlerVector4_U3CSetWidgetU3Eb_
 		return L_2;
 	}
 }
-// Method Definition Index: 26265
+// Method Definition Index: 26243
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_U3CSetWidgetU3Eb__8_3_m43586D00F180DB14B0A50C3470181CE50013D28C (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, float ___0_x, const RuntimeMethod* method) 
 {
 	{
@@ -1331,7 +1331,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_U3CSetWidgetU3Eb__
 		return;
 	}
 }
-// Method Definition Index: 26266
+// Method Definition Index: 26244
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR float DebugUIHandlerVector4_U3CSetWidgetU3Eb__8_4_mEE993AC3EDBF96F1A45843A1AAC8CD4600128D19 (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -1350,7 +1350,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR float DebugUIHandlerVector4_U3CSetWidgetU3Eb_
 		return L_2;
 	}
 }
-// Method Definition Index: 26267
+// Method Definition Index: 26245
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_U3CSetWidgetU3Eb__8_5_m2380D05D15DD6A2D525A4465ADFF4D1C8F0C21E7 (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, float ___0_x, const RuntimeMethod* method) 
 {
 	{
@@ -1360,7 +1360,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_U3CSetWidgetU3Eb__
 		return;
 	}
 }
-// Method Definition Index: 26268
+// Method Definition Index: 26246
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR float DebugUIHandlerVector4_U3CSetWidgetU3Eb__8_6_mB5AE87731664D5FF4407F389918BCAE29C29E66F (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -1379,7 +1379,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR float DebugUIHandlerVector4_U3CSetWidgetU3Eb_
 		return L_2;
 	}
 }
-// Method Definition Index: 26269
+// Method Definition Index: 26247
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_U3CSetWidgetU3Eb__8_7_mFC96D46A98F25512F5BE486E12F504F4ACC1D592 (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, float ___0_x, const RuntimeMethod* method) 
 {
 	{
@@ -1389,7 +1389,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerVector4_U3CSetWidgetU3Eb__
 		return;
 	}
 }
-// Method Definition Index: 26270
+// Method Definition Index: 26248
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR float DebugUIHandlerVector4_U3CSetupSettingsU3Eb__10_0_m2294F14B1936842ABAD989616BD8FFFB9D19960C (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, const RuntimeMethod* method) 
 {
 	{
@@ -1400,7 +1400,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR float DebugUIHandlerVector4_U3CSetupSettingsU
 		return L_1;
 	}
 }
-// Method Definition Index: 26271
+// Method Definition Index: 26249
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR float DebugUIHandlerVector4_U3CSetupSettingsU3Eb__10_1_m87F6A7549919BF2D29BED6A03DCFB2F5A5CE30D3 (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, const RuntimeMethod* method) 
 {
 	{
@@ -1411,7 +1411,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR float DebugUIHandlerVector4_U3CSetupSettingsU
 		return L_1;
 	}
 }
-// Method Definition Index: 26272
+// Method Definition Index: 26250
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR float DebugUIHandlerVector4_U3CSetupSettingsU3Eb__10_2_m33E9FAAEBEE26FA4A43E670F562C48F3169CFEFF (DebugUIHandlerVector4_t259AFB4DC18993BD5EE021CC45EF3CCB58F9EFFF* __this, const RuntimeMethod* method) 
 {
 	{
@@ -1430,7 +1430,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR float DebugUIHandlerVector4_U3CSetupSettingsU
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 26273
+// Method Definition Index: 26251
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* DebugUIHandlerWidget_get_parentUIHandler_m2F40C42629AB71EDAEE402C22FE160B76D78D8AE (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, const RuntimeMethod* method) 
 {
 	{
@@ -1439,7 +1439,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F
 		return L_0;
 	}
 }
-// Method Definition Index: 26274
+// Method Definition Index: 26252
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_set_parentUIHandler_mF23913A3178CA556A5709A8E5782585240A4E784 (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* ___0_value, const RuntimeMethod* method) 
 {
 	{
@@ -1450,7 +1450,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_set_parentUIHandler
 		return;
 	}
 }
-// Method Definition Index: 26275
+// Method Definition Index: 26253
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* DebugUIHandlerWidget_get_previousUIHandler_m618D35DF8E71F7E7EEAD6ED05F77EA51A5214C34 (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, const RuntimeMethod* method) 
 {
 	{
@@ -1459,7 +1459,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F
 		return L_0;
 	}
 }
-// Method Definition Index: 26276
+// Method Definition Index: 26254
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_set_previousUIHandler_m7F60E1430A65740C8EFCCD87F1724CB08BE2F422 (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* ___0_value, const RuntimeMethod* method) 
 {
 	{
@@ -1470,7 +1470,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_set_previousUIHandl
 		return;
 	}
 }
-// Method Definition Index: 26277
+// Method Definition Index: 26255
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* DebugUIHandlerWidget_get_nextUIHandler_m2DFDEE3BE43A204B29BC39087AF60AA86D09BE90 (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, const RuntimeMethod* method) 
 {
 	{
@@ -1479,7 +1479,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F
 		return L_0;
 	}
 }
-// Method Definition Index: 26278
+// Method Definition Index: 26256
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_set_nextUIHandler_m84F82CC75B6BCF91986150F4DE1D96D963E78CC8 (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* ___0_value, const RuntimeMethod* method) 
 {
 	{
@@ -1490,7 +1490,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_set_nextUIHandler_m
 		return;
 	}
 }
-// Method Definition Index: 26279
+// Method Definition Index: 26257
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_OnEnable_m97D5414C310F4E3DB00053EEE5DADBFED53C960C (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, const RuntimeMethod* method) 
 {
 	{
@@ -1498,7 +1498,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_OnEnable_m97D5414C3
 		return;
 	}
 }
-// Method Definition Index: 26280
+// Method Definition Index: 26258
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_SetWidget_mEE5CAA4C4DCDD02ACBF70B35B23F81CF8DE60F5A (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, Widget_tE8D6AF1D7525CC84E8F2C3B73162016736A6A2FF* ___0_widget, const RuntimeMethod* method) 
 {
 	{
@@ -1510,7 +1510,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_SetWidget_mEE5CAA4C
 		return;
 	}
 }
-// Method Definition Index: 26281
+// Method Definition Index: 26259
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR Widget_tE8D6AF1D7525CC84E8F2C3B73162016736A6A2FF* DebugUIHandlerWidget_GetWidget_m2B98AD3E32CE71B3F39C93BD7E7C0BEA5897033C (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, const RuntimeMethod* method) 
 {
 	Widget_tE8D6AF1D7525CC84E8F2C3B73162016736A6A2FF* V_0 = NULL;
@@ -1528,7 +1528,7 @@ IL_000a:
 		return L_1;
 	}
 }
-// Method Definition Index: 26283
+// Method Definition Index: 26261
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR bool DebugUIHandlerWidget_OnSelection_m378D3DE45EB78D9C684239E3D9B53DF27D257F27 (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, bool ___0_fromNext, DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* ___1_previous, const RuntimeMethod* method) 
 {
 	bool V_0 = false;
@@ -1545,7 +1545,7 @@ IL_0005:
 		return L_0;
 	}
 }
-// Method Definition Index: 26284
+// Method Definition Index: 26262
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_OnDeselection_mBF3AF27B21F180E69D3A57D44CB26F7CB20ECCD9 (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, const RuntimeMethod* method) 
 {
 	{
@@ -1553,7 +1553,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_OnDeselection_mBF3A
 		return;
 	}
 }
-// Method Definition Index: 26285
+// Method Definition Index: 26263
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_OnAction_m5561D81BF72FC055972C2D14BC92E221EA9294EC (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, const RuntimeMethod* method) 
 {
 	{
@@ -1561,7 +1561,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_OnAction_m5561D81BF
 		return;
 	}
 }
-// Method Definition Index: 26286
+// Method Definition Index: 26264
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_OnIncrement_m4128084E64169D31815E5C0BF79DB25A08A75F22 (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, bool ___0_fast, const RuntimeMethod* method) 
 {
 	{
@@ -1569,7 +1569,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_OnIncrement_m412808
 		return;
 	}
 }
-// Method Definition Index: 26287
+// Method Definition Index: 26265
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_OnDecrement_mEFF4903ADBBEE2E4C99AE09FFD83718DBBA12894 (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, bool ___0_fast, const RuntimeMethod* method) 
 {
 	{
@@ -1577,7 +1577,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_OnDecrement_mEFF490
 		return;
 	}
 }
-// Method Definition Index: 26288
+// Method Definition Index: 26266
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* DebugUIHandlerWidget_Previous_mE43110A6F1E2AABBCE916D5CDE8523E7C543E4E3 (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -1627,7 +1627,7 @@ IL_0020:
 		return L_4;
 	}
 }
-// Method Definition Index: 26289
+// Method Definition Index: 26267
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* DebugUIHandlerWidget_Next_mCCCE23E0DBA851BCF1D6169678B52037FE5D9DC3 (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -1756,7 +1756,7 @@ IL_006a:
 		return L_19;
 	}
 }
-// Method Definition Index: 26290
+// Method Definition Index: 26268
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget__ctor_m2105E00AE3370003AE9303EDDA5ABB544CE420E5 (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, const RuntimeMethod* method) 
 {
 	{
@@ -1782,7 +1782,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void DebugUIHandlerWidget__ctor_m2105E00AE337
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 26291
+// Method Definition Index: 26269
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UIFoldout_Start_m031F3AF5DA5840E25AB29B054311BABBC425FA7D (UIFoldout_tEE4060406AECDD237DAA6D45B8776FAE8A636ADC* __this, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -1810,7 +1810,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UIFoldout_Start_m031F3AF5DA5840E25AB29B0
 		return;
 	}
 }
-// Method Definition Index: 26292
+// Method Definition Index: 26270
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UIFoldout_OnValidate_mE61A4777FD785B1EC726B57B32C96C2E88767E4C (UIFoldout_tEE4060406AECDD237DAA6D45B8776FAE8A636ADC* __this, const RuntimeMethod* method) 
 {
 	{
@@ -1822,7 +1822,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UIFoldout_OnValidate_mE61A4777FD785B1EC7
 		return;
 	}
 }
-// Method Definition Index: 26293
+// Method Definition Index: 26271
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UIFoldout_SetState_m041BAB7EB961B7D84E99C388E6405D4B62FEFC32 (UIFoldout_tEE4060406AECDD237DAA6D45B8776FAE8A636ADC* __this, bool ___0_state, const RuntimeMethod* method) 
 {
 	{
@@ -1833,7 +1833,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UIFoldout_SetState_m041BAB7EB961B7D84E99
 		return;
 	}
 }
-// Method Definition Index: 26294
+// Method Definition Index: 26272
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UIFoldout_SetState_m169A04E74F6DFC0F376CD2D233CA5111E6F165B8 (UIFoldout_tEE4060406AECDD237DAA6D45B8776FAE8A636ADC* __this, bool ___0_state, bool ___1_rebuildLayout, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;
@@ -1996,7 +1996,7 @@ IL_00b8:
 		return;
 	}
 }
-// Method Definition Index: 26295
+// Method Definition Index: 26273
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UIFoldout__ctor_mD1494EF8AB928679E6683D9C1C58B6953EB2D1E8 (UIFoldout_tEE4060406AECDD237DAA6D45B8776FAE8A636ADC* __this, const RuntimeMethod* method) 
 {
 	{
@@ -2031,7 +2031,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UIFoldout__ctor_mD1494EF8AB928679E6683D9
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-// Method Definition Index: 23852
+// Method Definition Index: 23830
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR String_t* Widget_get_displayName_m1E7836A53BF88619C4815EA70F9243319567F0F4_inline (Widget_tE8D6AF1D7525CC84E8F2C3B73162016736A6A2FF* __this, const RuntimeMethod* method) 
 {
 	{
@@ -2040,7 +2040,7 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR String_t* Widget_get_displayName_
 		return L_0;
 	}
 }
-// Method Definition Index: 26278
+// Method Definition Index: 26256
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_set_nextUIHandler_m84F82CC75B6BCF91986150F4DE1D96D963E78CC8_inline (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* ___0_value, const RuntimeMethod* method) 
 {
 	{
@@ -2051,7 +2051,7 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_set_nex
 		return;
 	}
 }
-// Method Definition Index: 26276
+// Method Definition Index: 26254
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_set_previousUIHandler_m7F60E1430A65740C8EFCCD87F1724CB08BE2F422_inline (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* ___0_value, const RuntimeMethod* method) 
 {
 	{
@@ -2062,7 +2062,7 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_set_pre
 		return;
 	}
 }
-// Method Definition Index: 26274
+// Method Definition Index: 26252
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_set_parentUIHandler_mF23913A3178CA556A5709A8E5782585240A4E784_inline (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* ___0_value, const RuntimeMethod* method) 
 {
 	{
@@ -2073,7 +2073,7 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void DebugUIHandlerWidget_set_par
 		return;
 	}
 }
-// Method Definition Index: 26275
+// Method Definition Index: 26253
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* DebugUIHandlerWidget_get_previousUIHandler_m618D35DF8E71F7E7EEAD6ED05F77EA51A5214C34_inline (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, const RuntimeMethod* method) 
 {
 	{
@@ -2082,7 +2082,7 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA
 		return L_0;
 	}
 }
-// Method Definition Index: 26273
+// Method Definition Index: 26251
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* DebugUIHandlerWidget_get_parentUIHandler_m2F40C42629AB71EDAEE402C22FE160B76D78D8AE_inline (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, const RuntimeMethod* method) 
 {
 	{
@@ -2091,7 +2091,7 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA
 		return L_0;
 	}
 }
-// Method Definition Index: 26277
+// Method Definition Index: 26255
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* DebugUIHandlerWidget_get_nextUIHandler_m2DFDEE3BE43A204B29BC39087AF60AA86D09BE90_inline (DebugUIHandlerWidget_tE597C749DDA3EBA7627F38F8A77EB5A171B9E6D1* __this, const RuntimeMethod* method) 
 {
 	{
@@ -2100,7 +2100,7 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR DebugUIHandlerWidget_tE597C749DDA
 		return L_0;
 	}
 }
-// Method Definition Index: 30404
+// Method Definition Index: 30382
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void Color__ctor_m3786F0D6E510D9CFA544523A955870BD2A514C8C_inline (Color_tD001788D726C3A7F1379BEED0260B9591F440C1F* __this, float ___0_r, float ___1_g, float ___2_b, float ___3_a, const RuntimeMethod* method) 
 {
 	{

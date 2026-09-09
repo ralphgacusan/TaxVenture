@@ -98,7 +98,7 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void RequiredByNativeCodeAttribut
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 44789
+// Method Definition Index: 44861
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UnityEngineModuleAssembly__ctor_m3F8B023CF6E911C448EF9284C72F7BE92C6E72E3 (UnityEngineModuleAssembly_tB6587DA5BA2569921894019758C4D69095012710* __this, const RuntimeMethod* method) 
 {
 	{
@@ -114,7 +114,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UnityEngineModuleAssembly__ctor_m3F8B023
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 44790
+// Method Definition Index: 44862
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UsedByNativeCodeAttribute__ctor_m7C07CF71798D5A94EB849622EA3883E547927D88 (UsedByNativeCodeAttribute_t3FE9A7CDCC6A3A4122D8BF44F1D0A37BB38894C1* __this, const RuntimeMethod* method) 
 {
 	{
@@ -122,7 +122,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UsedByNativeCodeAttribute__ctor_m7C07CF7
 		return;
 	}
 }
-// Method Definition Index: 44791
+// Method Definition Index: 44863
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UsedByNativeCodeAttribute__ctor_m3C75236A1A2C7E364179A7DEDE9E53E7C3CE334D (UsedByNativeCodeAttribute_t3FE9A7CDCC6A3A4122D8BF44F1D0A37BB38894C1* __this, String_t* ___0_name, const RuntimeMethod* method) 
 {
 	{
@@ -132,7 +132,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UsedByNativeCodeAttribute__ctor_m3C75236
 		return;
 	}
 }
-// Method Definition Index: 44792
+// Method Definition Index: 44864
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UsedByNativeCodeAttribute_set_Name_mF39ED6FE6040AF11CDCAE417EE6FE7DD6BD67E99 (UsedByNativeCodeAttribute_t3FE9A7CDCC6A3A4122D8BF44F1D0A37BB38894C1* __this, String_t* ___0_value, const RuntimeMethod* method) 
 {
 	{
@@ -150,7 +150,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void UsedByNativeCodeAttribute_set_Name_mF39E
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-// Method Definition Index: 44793
+// Method Definition Index: 44865
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void RequiredByNativeCodeAttribute__ctor_mBCF284DE0C8F84F211ACE616928BE47E29055920 (RequiredByNativeCodeAttribute_t86B11F2BA12BB463CE3258E64E16B43484014FCA* __this, const RuntimeMethod* method) 
 {
 	{
@@ -158,7 +158,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void RequiredByNativeCodeAttribute__ctor_mBCF
 		return;
 	}
 }
-// Method Definition Index: 44794
+// Method Definition Index: 44866
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void RequiredByNativeCodeAttribute__ctor_m6FB8966FBCB6CC8B3989B0846EE7ED1DBFF60C87 (RequiredByNativeCodeAttribute_t86B11F2BA12BB463CE3258E64E16B43484014FCA* __this, bool ___0_optional, const RuntimeMethod* method) 
 {
 	{
@@ -168,7 +168,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void RequiredByNativeCodeAttribute__ctor_m6FB
 		return;
 	}
 }
-// Method Definition Index: 44795
+// Method Definition Index: 44867
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void RequiredByNativeCodeAttribute_set_Optional_m009CBA1D24E7F6EDAE1411CB6A7A01CB2A13B541 (RequiredByNativeCodeAttribute_t86B11F2BA12BB463CE3258E64E16B43484014FCA* __this, bool ___0_value, const RuntimeMethod* method) 
 {
 	{
@@ -177,7 +177,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void RequiredByNativeCodeAttribute_set_Option
 		return;
 	}
 }
-// Method Definition Index: 44796
+// Method Definition Index: 44868
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void RequiredByNativeCodeAttribute_set_GenerateProxy_m63E4D29F468D0F254136F1596AEA106BD9EDC89B (RequiredByNativeCodeAttribute_t86B11F2BA12BB463CE3258E64E16B43484014FCA* __this, bool ___0_value, const RuntimeMethod* method) 
 {
 	{
@@ -189,7 +189,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void RequiredByNativeCodeAttribute_set_Genera
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-// Method Definition Index: 44792
+// Method Definition Index: 44864
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void UsedByNativeCodeAttribute_set_Name_mF39ED6FE6040AF11CDCAE417EE6FE7DD6BD67E99_inline (UsedByNativeCodeAttribute_t3FE9A7CDCC6A3A4122D8BF44F1D0A37BB38894C1* __this, String_t* ___0_value, const RuntimeMethod* method) 
 {
 	{
@@ -199,7 +199,7 @@ IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void UsedByNativeCodeAttribute_se
 		return;
 	}
 }
-// Method Definition Index: 44795
+// Method Definition Index: 44867
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void RequiredByNativeCodeAttribute_set_Optional_m009CBA1D24E7F6EDAE1411CB6A7A01CB2A13B541_inline (RequiredByNativeCodeAttribute_t86B11F2BA12BB463CE3258E64E16B43484014FCA* __this, bool ___0_value, const RuntimeMethod* method) 
 {
 	{

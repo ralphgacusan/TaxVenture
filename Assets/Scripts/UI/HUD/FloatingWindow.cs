@@ -2,30 +2,39 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using System.Collections;
 
-
-// TO DO : fix the layering of the document viewer as it appears in the back
-// fix the issue where only one document can be open at a time
-
 /// <summary>
 /// Reusable floating window/panel controller.
 ///
 /// FEATURES:
-/// - Freely drag the window around the screen
-/// - Whichever window is touched becomes the topmost window
-/// - Works with multiple FloatingWindow objects
-/// - Works even when windows have different parents
-/// - Uses Canvas sorting order for reliable layering
-/// - HUD icon remains above floating windows
-/// - Drag window onto HUD icon to close
-/// - Normal click opens centered
-/// - Dragging a HUD icon opens the window near the icon
-/// - Adjustable opening offset
+/// - Multiple floating windows can exist simultaneously
+/// - Each window can be dragged independently
+/// - The window being interacted with becomes the TOPMOST window
+/// - Opening a window makes it the active/topmost document
+/// - Windows can exist under different parents
+/// - Uses an independent Canvas for reliable UI layering
+/// - HUD / Case Folder icon stays below document windows
+/// - Dragging a document onto its HUD icon closes that document
 /// - Supports mouse and touch
 ///
-/// OPENING BEHAVIOR:
-/// - Every window starts at its configured baseSortingOrder.
-/// - Opening a window places it at the first/default layer.
-/// - Clicking/touching a window can still bring it to the front.
+/// LAYERING:
+///
+///     Drag Visual / Ghost
+///             ↑
+///     Active Document
+///             ↑
+///     Other Documents
+///             ↑
+///     HUD / Case Folder
+///
+/// IMPORTANT:
+/// This script does NOT close other FloatingWindows when
+/// another window is opened.
+///
+/// IMPORTANT INSPECTOR SETUP:
+/// You can drag the Case Folder Icon from the Hierarchy
+/// directly into the "Return Icon" field below.
+///
+/// The Case Folder Icon should have a RectTransform.
 /// </summary>
 public class FloatingWindow :
     MonoBehaviour,
@@ -45,24 +54,27 @@ public class FloatingWindow :
     [SerializeField] private RectTransform window;
 
     [Tooltip(
-        "Canvas containing the window."
+        "Canvas containing this window. " +
+        "Leave empty to automatically find the parent Canvas."
     )]
     [SerializeField] private Canvas canvas;
 
 
     // =========================================================
-    // HUD ICON
+    // HUD / CASE FOLDER ICON
     // =========================================================
 
-    [Header("HUD Icon")]
+    [Header("HUD / Case Folder Icon")]
 
     [Tooltip(
-        "HUD icon associated with this window."
+        "Drag the Case Folder Icon from the Hierarchy here. " +
+        "The icon must have a RectTransform. " +
+        "Dragging this document onto the icon closes the document."
     )]
     [SerializeField] private RectTransform returnIcon;
 
     [Tooltip(
-        "Distance from the HUD icon required to close the window."
+        "Distance from the Case Folder icon required to close the window."
     )]
     [SerializeField] private float returnIconDistance = 120f;
 
@@ -74,14 +86,12 @@ public class FloatingWindow :
     [Header("Opening Position")]
 
     [Tooltip(
-        "Horizontal offset applied when opening from the HUD icon. " +
-        "Positive = RIGHT, Negative = LEFT."
+        "Horizontal offset applied when opening from a HUD icon."
     )]
     [SerializeField] private float openingOffsetX = 450f;
 
     [Tooltip(
-        "Vertical offset applied when opening from the HUD icon. " +
-        "Positive = UP, Negative = DOWN."
+        "Vertical offset applied when opening from a HUD icon."
     )]
     [SerializeField] private float openingOffsetY = 0f;
 
@@ -94,6 +104,10 @@ public class FloatingWindow :
 
     [SerializeField] private bool allowDragging = true;
 
+    [Tooltip(
+        "When enabled, touching/clicking the window brings it "
+        + "to the front."
+    )]
     [SerializeField] private bool bringToFront = true;
 
 
@@ -104,7 +118,7 @@ public class FloatingWindow :
     [Header("Open / Close")]
 
     [Tooltip(
-        "Kept for compatibility."
+        "Kept for compatibility with previous versions."
     )]
     [SerializeField] private bool resetPositionOnOpen = false;
 
@@ -121,13 +135,20 @@ public class FloatingWindow :
     [Header("Layering")]
 
     [Tooltip(
-        "Default sorting order used when the window opens."
+        "Starting sorting order for document windows. " +
+        "Must be higher than the Case Folder HUD."
     )]
-    [SerializeField] private int baseSortingOrder = 100;
+    [SerializeField] private int baseSortingOrder = 1100;
 
     [Tooltip(
-        "Sorting order used by the HUD icon. " +
-        "Floating windows will always stay below this."
+        "Maximum sorting order available to document windows. " +
+        "Keep this below the drag visual / ghost canvas."
+    )]
+    [SerializeField] private int maximumWindowSortingOrder = 1900;
+
+    [Tooltip(
+        "Sorting order used by the Case Folder HUD. " +
+        "Documents will always be above this value."
     )]
     [SerializeField] private int iconSortingOrder = 1000;
 
@@ -151,29 +172,42 @@ public class FloatingWindow :
     private Canvas windowCanvas;
 
 
+
+    public void SetReturnIcon(RectTransform icon)
+    {
+        returnIcon = icon;
+    }
+
+    public RectTransform GetReturnIcon()
+    {
+        return returnIcon;
+    }
     // =========================================================
-    // GLOBAL SORTING ORDER
+    // GLOBAL DOCUMENT LAYER
     // =========================================================
 
     /*
-     * Used only when a window is explicitly brought
-     * to the front by touching/clicking it.
+     * Shared by ALL FloatingWindow instances.
      *
-     * Opening a window does NOT increment this value.
+     * Example:
+     *
+     * Document A = 1101
+     * Document B = 1102
+     * Document C = 1103
+     *
+     * User touches Document A:
+     *
+     * Document A = 1104
+     *
+     * Therefore A becomes the topmost document.
      *
      * This means:
      *
-     * Open document:
-     *     Document = baseSortingOrder
-     *
-     * Touch document:
-     *     Document = higher layer
-     *
-     * Open document again:
-     *     Document = baseSortingOrder
+     * "Whatever document I interact with
+     * becomes the first/top layer."
      */
 
-    private static int currentSortingOrder = 100;
+    private static int currentSortingOrder = 1100;
 
 
     // =========================================================
@@ -205,7 +239,7 @@ public class FloatingWindow :
 
 
         // -----------------------------------------------------
-        // Find canvas
+        // Find parent Canvas
         // -----------------------------------------------------
 
         if (canvas == null)
@@ -227,7 +261,7 @@ public class FloatingWindow :
 
 
         // -----------------------------------------------------
-        // Find parent
+        // Find parent RectTransform
         // -----------------------------------------------------
 
         parentRect =
@@ -254,7 +288,7 @@ public class FloatingWindow :
 
 
         // -----------------------------------------------------
-        // Find Canvas directly attached to the window.
+        // Get Canvas directly attached to this window
         // -----------------------------------------------------
 
         windowCanvas =
@@ -262,7 +296,7 @@ public class FloatingWindow :
 
 
         // -----------------------------------------------------
-        // Create Canvas if necessary.
+        // Create independent Canvas if needed
         // -----------------------------------------------------
 
         if (windowCanvas == null)
@@ -273,33 +307,29 @@ public class FloatingWindow :
 
 
         // -----------------------------------------------------
-        // Enable independent sorting.
+        // Enable independent sorting
         // -----------------------------------------------------
 
         windowCanvas.overrideSorting = true;
 
 
         // -----------------------------------------------------
-        // IMPORTANT:
-        //
-        // Always start at the configured base layer.
-        //
-        // We do NOT increment currentSortingOrder here.
+        // Make sure the global counter is above the HUD
         // -----------------------------------------------------
-
-        windowCanvas.sortingOrder =
-            baseSortingOrder;
-
-
-        // Keep the global counter at least above
-        // the base layer so BringWindowToFront()
-        // can move windows above it.
 
         currentSortingOrder =
             Mathf.Max(
                 currentSortingOrder,
                 baseSortingOrder
             );
+
+
+        // -----------------------------------------------------
+        // Initial layer
+        // -----------------------------------------------------
+
+        windowCanvas.sortingOrder =
+            baseSortingOrder;
 
 
         Debug.Log(
@@ -357,7 +387,7 @@ public class FloatingWindow :
 
 
         // -----------------------------------------------------
-        // Touching the window brings it to front.
+        // Bring THIS document to front
         // -----------------------------------------------------
 
         if (bringToFront)
@@ -390,36 +420,63 @@ public class FloatingWindow :
 
 
         // -----------------------------------------------------
-        // Increase global layer.
-        //
-        // This only happens when the user actually
-        // touches/clicks the window.
+        // Make sure current layer is valid
+        // -----------------------------------------------------
+
+        if (currentSortingOrder <
+            iconSortingOrder)
+        {
+            currentSortingOrder =
+                iconSortingOrder;
+        }
+
+
+        // -----------------------------------------------------
+        // Increase global document layer
         // -----------------------------------------------------
 
         currentSortingOrder++;
 
 
         // -----------------------------------------------------
-        // Prevent window from reaching HUD icon layer.
+        // Prevent exceeding the maximum layer
         // -----------------------------------------------------
 
-        if (currentSortingOrder >= iconSortingOrder)
+        if (currentSortingOrder >=
+            maximumWindowSortingOrder)
         {
-            currentSortingOrder =
-                iconSortingOrder - 1;
+            RebuildSortingOrders();
+
+            return;
         }
 
 
         // -----------------------------------------------------
-        // Assign new sorting order.
+        // Make absolutely sure the document remains
+        // above the Case Folder HUD.
         // -----------------------------------------------------
+
+        currentSortingOrder =
+            Mathf.Max(
+                currentSortingOrder,
+                iconSortingOrder + 1
+            );
+
+
+        // -----------------------------------------------------
+        // Assign sorting order
+        // -----------------------------------------------------
+
+        windowCanvas.overrideSorting = true;
 
         windowCanvas.sortingOrder =
             currentSortingOrder;
 
 
         // -----------------------------------------------------
-        // Also move this GameObject to the end of its
+        // Also move this object to the end of its hierarchy.
+        //
+        // This is useful when multiple windows share a
         // hierarchy.
         // -----------------------------------------------------
 
@@ -432,6 +489,29 @@ public class FloatingWindow :
             $"NOW FRONT | Sorting Order = " +
             $"{windowCanvas.sortingOrder}"
         );
+    }
+
+
+    // =========================================================
+    // REBUILD SORTING ORDERS
+    // =========================================================
+
+    private static void RebuildSortingOrders()
+    {
+        /*
+         * We intentionally do not try to search the entire
+         * scene here.
+         *
+         * Instead, reset the global counter to just above
+         * the HUD layer.
+         *
+         * The next interaction will assign a fresh top layer.
+         *
+         * Existing windows keep their current layers until
+         * they are interacted with again.
+         */
+
+        currentSortingOrder = 1101;
     }
 
 
@@ -463,6 +543,10 @@ public class FloatingWindow :
         }
 
 
+        // -----------------------------------------------------
+        // Move window with pointer
+        // -----------------------------------------------------
+
         window.anchoredPosition =
             localPointer +
             dragOffset;
@@ -488,7 +572,7 @@ public class FloatingWindow :
 
 
         // -----------------------------------------------------
-        // Check HUD icon.
+        // Check Case Folder icon
         // -----------------------------------------------------
 
         if (returnIcon != null &&
@@ -499,7 +583,7 @@ public class FloatingWindow :
             Debug.Log(
                 $"[FloatingWindow] " +
                 $"{gameObject.name}: " +
-                "DROPPED ON HUD ICON"
+                "DROPPED ON CASE FOLDER ICON"
             );
 
 
@@ -521,7 +605,7 @@ public class FloatingWindow :
 
 
     // =========================================================
-    // CHECK HUD ICON
+    // CHECK RETURN ICON
     // =========================================================
 
     private bool IsOverReturnIcon(
@@ -529,7 +613,9 @@ public class FloatingWindow :
     )
     {
         if (returnIcon == null)
+        {
             return false;
+        }
 
 
         Vector3[] corners =
@@ -669,7 +755,7 @@ public class FloatingWindow :
 
 
         // -----------------------------------------------------
-        // ALWAYS RESET TO CENTER.
+        // Reset position to center
         // -----------------------------------------------------
 
         window.anchoredPosition =
@@ -677,31 +763,19 @@ public class FloatingWindow :
 
 
         // -----------------------------------------------------
-        // ALWAYS START AT BASE LAYER.
+        // IMPORTANT:
         //
-        // This is the important change.
-        // Opening does NOT make it topmost.
+        // Opening a document makes THAT document topmost.
         // -----------------------------------------------------
 
-        if (windowCanvas != null)
-        {
-            windowCanvas.sortingOrder =
-                baseSortingOrder;
-        }
-
-
-        // -----------------------------------------------------
-        // Put this window at the end of its hierarchy.
-        // -----------------------------------------------------
-
-        window.SetAsLastSibling();
+        BringWindowToFront();
 
 
         Debug.Log(
             $"[FloatingWindow] " +
             $"{gameObject.name}: " +
             $"OPENED | Sorting Order = " +
-            $"{baseSortingOrder}"
+            $"{windowCanvas.sortingOrder}"
         );
     }
 
@@ -757,7 +831,7 @@ public class FloatingWindow :
             ))
         {
             // -------------------------------------------------
-            // Apply opening offset.
+            // Apply opening offset
             // -------------------------------------------------
 
             localPosition +=
@@ -768,7 +842,7 @@ public class FloatingWindow :
 
 
             // -------------------------------------------------
-            // Put visual center at desired position.
+            // Put visual center at desired position
             // -------------------------------------------------
 
             window.anchoredPosition =
@@ -779,7 +853,7 @@ public class FloatingWindow :
         else
         {
             // -------------------------------------------------
-            // Fallback.
+            // Fallback to center
             // -------------------------------------------------
 
             window.anchoredPosition =
@@ -788,28 +862,19 @@ public class FloatingWindow :
 
 
         // -----------------------------------------------------
-        // ALWAYS START AT BASE LAYER.
+        // Opening from a position also makes this document
+        // the active/topmost document.
         // -----------------------------------------------------
 
-        if (windowCanvas != null)
-        {
-            windowCanvas.sortingOrder =
-                baseSortingOrder;
-        }
-
-
-        // -----------------------------------------------------
-        // Put this window at the end of its hierarchy.
-        // -----------------------------------------------------
-
-        window.SetAsLastSibling();
+        BringWindowToFront();
 
 
         Debug.Log(
             $"[FloatingWindow] " +
             $"{gameObject.name}: " +
             $"OPENED AT POSITION | " +
-            $"Sorting Order = {baseSortingOrder}"
+            $"Sorting Order = " +
+            $"{windowCanvas.sortingOrder}"
         );
     }
 
@@ -821,7 +886,9 @@ public class FloatingWindow :
     private Vector2 GetParentCenterPosition()
     {
         if (parentRect == null)
+        {
             return Vector2.zero;
+        }
 
 
         Vector3 parentCenterWorld =
@@ -851,7 +918,9 @@ public class FloatingWindow :
     )
     {
         if (window == null)
+        {
             return desiredCenter;
+        }
 
 
         Rect rect =
@@ -880,11 +949,13 @@ public class FloatingWindow :
     private Camera GetCanvasEventCamera()
     {
         if (canvas == null)
+        {
             return null;
+        }
 
 
         // -----------------------------------------------------
-        // Screen Space Overlay.
+        // Screen Space Overlay
         // -----------------------------------------------------
 
         if (canvas.renderMode ==
@@ -895,7 +966,7 @@ public class FloatingWindow :
 
 
         // -----------------------------------------------------
-        // Camera / World Space.
+        // Camera / World Space
         // -----------------------------------------------------
 
         if (canvas.worldCamera != null)
@@ -915,7 +986,9 @@ public class FloatingWindow :
     public void CloseWindow()
     {
         if (window == null)
+        {
             return;
+        }
 
 
         StopAllCoroutines();
@@ -925,6 +998,12 @@ public class FloatingWindow :
 
         isDragging = false;
 
+
+        // -----------------------------------------------------
+        // Hide ONLY this document.
+        //
+        // Other documents remain open.
+        // -----------------------------------------------------
 
         gameObject.SetActive(false);
 
@@ -974,7 +1053,9 @@ public class FloatingWindow :
     public void ResetWindowPosition()
     {
         if (window == null)
+        {
             return;
+        }
 
 
         window.anchoredPosition =

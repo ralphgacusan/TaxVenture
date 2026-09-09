@@ -28596,7 +28596,7 @@ IL_004d:
 		return;
 	}
 }
-// Method Definition Index: 18664
+// Method Definition Index: 18660
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t FormattingHelpers_CountDigits_mE01337E47EFAB38CB85A419CECA05B3535330A30_inline (uint32_t ___0_value, const RuntimeMethod* method) 
 {
 	int32_t V_0 = 0;
@@ -28676,7 +28676,7 @@ IL_0047:
 		return L_11;
 	}
 }
-// Method Definition Index: 18665
+// Method Definition Index: 18661
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t FormattingHelpers_CountHexDigits_m2A0168ACE924C7DFBCFFD60AF8FEA1C6CC0420B7_inline (uint64_t ___0_value, const RuntimeMethod* method) 
 {
 	int32_t V_0 = 0;
@@ -28744,7 +28744,7 @@ IL_0040:
 		return L_11;
 	}
 }
-// Method Definition Index: 18663
+// Method Definition Index: 18659
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR int32_t FormattingHelpers_CountDigits_mC01C8C5301C555C927118C5FAA3DCFC7D542487F_inline (uint64_t ___0_value, const RuntimeMethod* method) 
 {
 	int32_t V_0 = 0;
@@ -28876,7 +28876,7 @@ IL_008a:
 		return L_19;
 	}
 }
-// Method Definition Index: 16186
+// Method Definition Index: 16182
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void ValueStringBuilder_Append_mBD940436708E41E74C77B42C7235DD0576194CCD_inline (ValueStringBuilder_tC142140E6C0B9CD2BA423636F1BB5822672673E9* __this, String_t* ___0_s, const RuntimeMethod* method) 
 {
 	int32_t V_0 = 0;
@@ -28922,7 +28922,7 @@ IL_003c:
 		return;
 	}
 }
-// Method Definition Index: 16185
+// Method Definition Index: 16181
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void ValueStringBuilder_Append_mFC50E2CFA629E374233C7690908B66CFFDAAA466_inline (ValueStringBuilder_tC142140E6C0B9CD2BA423636F1BB5822672673E9* __this, Il2CppChar ___0_c, const RuntimeMethod* method) 
 {
 	int32_t V_0 = 0;
@@ -28956,7 +28956,7 @@ IL_002d:
 		return;
 	}
 }
-// Method Definition Index: 16190
+// Method Definition Index: 16186
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR Span_1_tEDDF15FCF9EC6DEBA0F696BAACDDBAB9D92C252D ValueStringBuilder_AppendSpan_m5AE2796FDF736F9C32D705FFB841C68D2C7FC382_inline (ValueStringBuilder_tC142140E6C0B9CD2BA423636F1BB5822672673E9* __this, int32_t ___0_length, const RuntimeMethod* method) 
 {
 	static bool s_Il2CppMethodInitialized;

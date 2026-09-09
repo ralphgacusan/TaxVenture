@@ -5,75 +5,243 @@ using System.Collections.Generic;
 
 public class SupportingDocumentsPageLink : MonoBehaviour
 {
+    // =========================================================
+    // UI
+    // =========================================================
+
     [Header("UI")]
+
     [SerializeField] private GameObject documentButtonListRoot;
+
     [SerializeField] private GameObject documentButtonPrefab;
-    [SerializeField] private DocumentViewerUI documentViewerUI;
+
+
+    // =========================================================
+    // DOCUMENT VIEWER
+    // =========================================================
+
+    [Header("Document Viewer")]
+
+    [SerializeField] private DocumentViewerManager documentViewerManager;
+
+
+    // =========================================================
+    // PAGE
+    // =========================================================
 
     private const int SUPPORTING_DOCUMENTS_PAGE_INDEX = 5;
 
+
+    // =========================================================
+    // BUTTONS
+    // =========================================================
+
     private readonly List<GameObject> spawnedButtons = new();
 
-    public void OnFolderPageChanged(int pageIndex)
+
+    // =========================================================
+    // FOLDER PAGE CHANGED
+    // =========================================================
+
+    public void OnFolderPageChanged(
+        int pageIndex
+    )
     {
-        bool isDocumentsPage = pageIndex == SUPPORTING_DOCUMENTS_PAGE_INDEX;
+        bool isDocumentsPage =
+            pageIndex ==
+            SUPPORTING_DOCUMENTS_PAGE_INDEX;
+
 
         if (documentButtonListRoot != null)
-            documentButtonListRoot.SetActive(isDocumentsPage);
+        {
+            documentButtonListRoot.SetActive(
+                isDocumentsPage
+            );
+        }
+
 
         if (isDocumentsPage)
+        {
             RebuildButtons();
+        }
     }
+
+
+    // =========================================================
+    // REFRESH BUTTONS
+    // =========================================================
 
     public void RefreshButtons()
     {
-        if (documentButtonListRoot != null && documentButtonListRoot.activeSelf)
+        if (documentButtonListRoot != null &&
+            documentButtonListRoot.activeSelf)
         {
             RebuildButtons();
         }
     }
 
+
+    // =========================================================
+    // REBUILD BUTTONS
+    // =========================================================
+
     private void RebuildButtons()
     {
-        foreach (var button in spawnedButtons)
+        // -----------------------------------------------------
+        // Remove old buttons
+        // -----------------------------------------------------
+
+        foreach (GameObject button in spawnedButtons)
         {
             if (button != null)
+            {
                 Destroy(button);
+            }
         }
+
 
         spawnedButtons.Clear();
 
-        if (CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null)
+
+        // -----------------------------------------------------
+        // Validate CaseManager
+        // -----------------------------------------------------
+
+        if (CaseManager.Instance == null ||
+            CaseManager.Instance.CurrentCase == null)
         {
-            Debug.LogError("SupportingDocumentsPageLink: No current case found.");
+            Debug.LogError(
+                "SupportingDocumentsPageLink: " +
+                "No current case found."
+            );
+
             return;
         }
 
-        foreach (var doc in CaseManager.Instance.CurrentCase.supportingDocuments)
-        {
-            GameObject buttonObj = Instantiate(documentButtonPrefab, documentButtonListRoot.transform);
 
-            TextMeshProUGUI label = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
+        // -----------------------------------------------------
+        // Validate DocumentViewerManager
+        // -----------------------------------------------------
+
+        if (documentViewerManager == null)
+        {
+            Debug.LogError(
+                "SupportingDocumentsPageLink: " +
+                "DocumentViewerManager reference is missing."
+            );
+
+            return;
+        }
+
+
+        // -----------------------------------------------------
+        // Create document buttons
+        // -----------------------------------------------------
+
+        foreach (
+            var doc in
+            CaseManager.Instance.CurrentCase.supportingDocuments)
+        {
+            GameObject buttonObj =
+                Instantiate(
+                    documentButtonPrefab,
+                    documentButtonListRoot.transform
+                );
+
+
+            // -------------------------------------------------
+            // DOCUMENT NAME
+            // -------------------------------------------------
+
+            string capturedName =
+                doc.documentName;
+
+
+            // -------------------------------------------------
+            // BUTTON LABEL
+            // -------------------------------------------------
+
+            TextMeshProUGUI label =
+                buttonObj.GetComponentInChildren<
+                    TextMeshProUGUI
+                >();
+
+
             if (label != null)
             {
-                label.text = $"{(doc.isReviewed ? "[x]" : "[ ]")} {doc.documentName}";
+                label.text =
+                    $"{(doc.isReviewed ? "[x]" : "[ ]")} " +
+                    capturedName;
             }
 
-            Button button = buttonObj.GetComponent<Button>();
-            string capturedName = doc.documentName;
 
-            button.onClick.AddListener(() =>
+            // -------------------------------------------------
+            // GET BUTTON
+            // -------------------------------------------------
+
+            Button button =
+                buttonObj.GetComponent<Button>();
+
+
+            if (button == null)
             {
-                if (documentViewerUI == null)
+                Debug.LogError(
+                    $"SupportingDocumentsPageLink: " +
+                    $"'{buttonObj.name}' has no Button component."
+                );
+
+                continue;
+            }
+
+
+            // -------------------------------------------------
+            // BUTTON CLICK
+            // -------------------------------------------------
+
+            button.onClick.AddListener(
+                () =>
                 {
-                    Debug.LogError("SupportingDocumentsPageLink: DocumentViewerUI reference is missing.");
-                    return;
+                    if (documentViewerManager == null)
+                    {
+                        Debug.LogError(
+                            "SupportingDocumentsPageLink: " +
+                            "DocumentViewerManager reference " +
+                            "is missing."
+                        );
+
+                        return;
+                    }
+
+
+                    // -------------------------------------------------
+                    // TOGGLE
+                    //
+                    // Closed document:
+                    //     OPEN
+                    //
+                    // Already open:
+                    //     CLOSE
+                    //
+                    // Other documents remain untouched.
+                    // -------------------------------------------------
+
+                    documentViewerManager.ToggleDocument(
+                        capturedName
+                    );
+
+
+                    // -------------------------------------------------
+                    // Update button state.
+                    // -------------------------------------------------
+
+                    RefreshButtons();
                 }
+            );
 
-                documentViewerUI.Show(capturedName);
-            });
 
-            spawnedButtons.Add(buttonObj);
+            spawnedButtons.Add(
+                buttonObj
+            );
         }
     }
 }
