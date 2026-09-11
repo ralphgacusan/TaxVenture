@@ -1,3 +1,4 @@
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,83 +11,93 @@ public class AuditorSubmissionTray : MonoBehaviour, IDataValueDestination
 
     private void Awake()
     {
-        clickDestination.Initialize(this);
+        if (clickDestination != null)
+            clickDestination.Initialize(this);
     }
 
-    public void ResetSubmission() => submittedKeys.Clear();
+    public void ResetSubmission()
+    {
+        submittedKeys.Clear();
+    }
 
     public bool CanAccept(DataValue value)
     {
-        return value.SemanticKey.StartsWith("Submit_");
+        return value != null &&
+               value.SemanticKey == "Submit_CaseFolder";
     }
 
     public bool TryReceiveValue(DataValue value)
     {
-        Debug.Log($"SubmissionTray received: {value.SemanticKey}");
+        if (value == null)
+        {
+            Debug.LogWarning(
+                "[AuditorSubmissionTray] Received NULL value.");
+            return false;
+        }
+
+        Debug.Log(
+            $"[AuditorSubmissionTray] Received: {value.SemanticKey}");
 
         if (!CanAccept(value))
         {
-            Debug.Log("SubmissionTray rejected value.");
+            Debug.Log(
+                $"[AuditorSubmissionTray] Rejected: {value.SemanticKey}");
+            return false;
+        }
+
+        if (submittedKeys.Contains(value.SemanticKey))
+        {
+            Debug.Log(
+                "[AuditorSubmissionTray] Case Folder already submitted.");
             return false;
         }
 
         submittedKeys.Add(value.SemanticKey);
 
-        Debug.Log("SubmissionTray accepted value.");
+        Debug.Log(
+            "[AuditorSubmissionTray] Case Folder accepted!");
 
         CheckIfSubmissionComplete();
 
         return true;
     }
 
-    // private void CheckIfSubmissionComplete()
-    // {
-    //     CaseData data = CaseManager.Instance.CurrentCase;
-
-    //     bool folderSubmitted = submittedKeys.Contains("Submit_CaseFolder");
-    //     bool returnSubmitted = submittedKeys.Contains("Submit_TaxReturn");
-
-    //     bool requiredComplete = data.filingStatus == FilingStatus.ReadyForFiling
-    //         ? (folderSubmitted && returnSubmitted)
-    //         : folderSubmitted;
-
-    //     Debug.Log($"Folder Submitted: {folderSubmitted}");
-    //     Debug.Log($"Return Submitted: {returnSubmitted}");
-    //     Debug.Log($"Required Complete: {requiredComplete}");
-
-    //     if (requiredComplete)
-    //     {
-    //         Debug.Log("Submission complete. Starting final audit...");
-    //         auditor.BeginFinalAudit();
-    //     }
-    // }
-
     private void CheckIfSubmissionComplete()
     {
-        Debug.Log($"CaseManager.Instance == null: {CaseManager.Instance == null}");
-
-        if (CaseManager.Instance != null)
+        if (CaseManager.Instance == null)
         {
-            Debug.Log($"CurrentCase == null: {CaseManager.Instance.CurrentCase == null}");
+            Debug.LogError(
+                "[AuditorSubmissionTray] CaseManager.Instance is NULL.");
+            return;
         }
 
-        Debug.Log($"Auditor == null: {auditor == null}");
-
-        CaseData data = CaseManager.Instance.CurrentCase;
-
-        bool folderSubmitted = submittedKeys.Contains("Submit_CaseFolder");
-        bool returnSubmitted = submittedKeys.Contains("Submit_TaxReturn");
-
-        bool requiredComplete = data.filingStatus == FilingStatus.ReadyForFiling
-            ? (folderSubmitted && returnSubmitted)
-            : folderSubmitted;
-
-        if (requiredComplete)
+        if (CaseManager.Instance.CurrentCase == null)
         {
-            auditor.BeginFinalAudit();
-
-            if (TutorialController.Instance != null)
-                TutorialController.Instance.ReportInteraction("submitted_to_auditor");
+            Debug.LogError(
+                "[AuditorSubmissionTray] CurrentCase is NULL.");
+            return;
         }
+
+        if (auditor == null)
+        {
+            Debug.LogError(
+                "[AuditorSubmissionTray] AuditorInteractable is NOT assigned.");
+            return;
+        }
+
+        bool folderSubmitted =
+            submittedKeys.Contains("Submit_CaseFolder");
+
+        Debug.Log(
+            $"[AuditorSubmissionTray] Folder Submitted: {folderSubmitted}");
+
+        if (!folderSubmitted)
+            return;
+
+        Debug.Log(
+            "[AuditorSubmissionTray] Submission complete!");
+
+        auditor.BeginFinalAudit();
     }
 }
+

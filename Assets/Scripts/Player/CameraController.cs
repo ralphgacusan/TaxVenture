@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using System.Collections;
 
@@ -8,16 +7,19 @@ using System.Collections;
 /// Normal mode:
 /// - FirstPersonCameraController controls the Main Camera.
 /// - Player can move and interact normally.
+/// - Virtual joystick is visible.
 ///
 /// Workstation mode:
 /// - Player movement is disabled.
 /// - FirstPersonCameraController is disabled.
+/// - Virtual joystick is hidden.
 /// - Main Camera moves to the assigned workstation viewpoint.
 /// - Workstation interaction is enabled.
 ///
 /// Interview mode:
 /// - Player movement and normal interaction are disabled.
 /// - FirstPersonCameraController is disabled.
+/// - Virtual joystick is hidden.
 /// - Main Camera moves to the assigned interview viewpoint.
 ///
 /// There is NO third-person camera.
@@ -47,6 +49,7 @@ public class CameraController : MonoBehaviour
     [Header("Player")]
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private Interactor playerInteractor;
+    [SerializeField] private VirtualJoystick virtualJoystick;
 
     [Header("First Person Hands")]
     [SerializeField] private FirstPersonHands firstPersonHands;
@@ -92,6 +95,7 @@ public class CameraController : MonoBehaviour
     {
         CurrentMode = CameraMode.FirstPerson;
 
+        // Enable normal first-person systems.
         SetFirstPersonSystems(true);
 
         if (workstationInteractor != null)
@@ -222,6 +226,19 @@ public class CameraController : MonoBehaviour
 
         if (playerMovement != null)
             playerMovement.enabled = false;
+
+        // ---------------------------------------------------------
+        // HIDE VIRTUAL JOYSTICK
+        // ---------------------------------------------------------
+
+        if (virtualJoystick != null)
+        {
+            virtualJoystick.Hide();
+
+            Debug.Log(
+                "[CameraController] Virtual joystick hidden."
+            );
+        }
 
         // ---------------------------------------------------------
         // STOP NORMAL PLAYER INTERACTION
@@ -390,7 +407,6 @@ public class CameraController : MonoBehaviour
 
             onComplete?.Invoke();
 
-            // Check again on the next frame.
             StartCoroutine(
                 DebugCameraAfterTransition(
                     targetPosition,
@@ -725,6 +741,20 @@ public class CameraController : MonoBehaviour
             playerInteractor.ClearFocus();
             playerInteractor.enabled = false;
         }
+
+        // ---------------------------------------------------------
+        // HIDE VIRTUAL JOYSTICK
+        // ---------------------------------------------------------
+
+        if (virtualJoystick != null)
+        {
+            virtualJoystick.Hide();
+
+            Debug.Log(
+                "[CameraController] Player controls locked. " +
+                "Virtual joystick hidden."
+            );
+        }
     }
 
     // =============================================================
@@ -757,6 +787,20 @@ public class CameraController : MonoBehaviour
                 playerInteractor.ClearFocus();
 
             playerInteractor.enabled = enabled;
+        }
+
+        // ---------------------------------------------------------
+        // VIRTUAL JOYSTICK
+        // ---------------------------------------------------------
+
+        if (virtualJoystick != null)
+        {
+            virtualJoystick.SetVisible(enabled);
+
+            Debug.Log(
+                "[CameraController] Virtual joystick "
+                + (enabled ? "shown." : "hidden.")
+            );
         }
     }
 

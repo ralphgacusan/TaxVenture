@@ -71,9 +71,33 @@ public class VirtualJoystick : MonoBehaviour,
 
     public void OnPointerUp(PointerEventData eventData)
     {
+        ResetJoystick();
+    }
+
+    public void ResetJoystick()
+    {
         Input = Vector2.zero;
 
         if (handle != null)
             handle.anchoredPosition = Vector2.zero;
+    }
+
+    public void Show()
+    {
+        gameObject.SetActive(true);
+    }
+
+    public void Hide()
+    {
+        ResetJoystick();
+        gameObject.SetActive(false);
+    }
+
+    public void SetVisible(bool visible)
+    {
+        if (visible)
+            Show();
+        else
+            Hide();
     }
 }
