@@ -1,42 +1,26 @@
+
 using UnityEngine;
 using System.Collections;
 
 /// <summary>
-/// PURPOSE:
-/// Central authority for switching between Third-Person (exploration) and
-/// First-Person (workstation interaction) camera modes, as required by the
-/// design document ("The camera transitions from third-person view to
-/// first-person view" for every desk/computer/folder/book/corkboard/cabinet
-/// interaction).
+/// CAMERA CONTROLLER
 ///
-/// RESPONSIBILITIES:
-/// - Track current camera mode (ThirdPerson / FirstPerson)
-/// - On EnterFirstPerson(viewpoint): disable third-person follow, disable
-///   player movement + interactor, smoothly move camera to the given
-///   viewpoint transform, show first-person hands, show the Close/Workstation UI
-/// - On ExitFirstPerson(): reverse all of the above
+/// Normal mode:
+/// - FirstPersonCameraController controls the Main Camera.
+/// - Player can move and interact normally.
 ///
-/// DOES NOT:
-/// - Know anything about WHAT is being interacted with (desk vs computer vs
-///   corkboard). It only receives a viewpoint Transform and a callback-free
-///   request to switch modes. This keeps it reusable for every workstation.
+/// Workstation mode:
+/// - Player movement is disabled.
+/// - FirstPersonCameraController is disabled.
+/// - Main Camera moves to the assigned workstation viewpoint.
+/// - Workstation interaction is enabled.
 ///
-/// CONNECTS WITH:
-/// - ThirdPersonCameraFollow: disabled while in first-person
-/// - PlayerMovement / Interactor: disabled while in first-person (player is
-///   "seated"/focused and shouldn't be able to walk around)
-/// - FirstPersonHands: toggled visible/invisible
-/// - WorkstationUI: shown/hidden (provides the Close button)
-/// - Any *Interactable script (DeskInteractable, ComputerInteractable, etc.)
-///   calls CameraController.Instance.EnterFirstPerson(viewpoint) from its
-///   OnInteract() method.
+/// Interview mode:
+/// - Player movement and normal interaction are disabled.
+/// - FirstPersonCameraController is disabled.
+/// - Main Camera moves to the assigned interview viewpoint.
 ///
-/// PATTERN NOTE:
-/// This uses a simple static Instance reference (not a full singleton with
-/// DontDestroyOnLoad) since this is scene-scoped — one CameraController per
-/// gameplay scene. This is intentionally lightweight; if the project later
-/// needs persistence across scenes, this can be upgraded without changing
-/// how other scripts call it.
+/// There is NO third-person camera.
 /// </summary>
 public class CameraController : MonoBehaviour
 {
@@ -44,264 +28,788 @@ public class CameraController : MonoBehaviour
 
     public enum CameraMode
     {
-        ThirdPerson,
+        FirstPerson,
         Workstation,
         Interview
     }
-    public CameraMode CurrentMode { get; private set; } = CameraMode.ThirdPerson;
 
-    [Header("References")]
-    [Tooltip("The scene's single Camera transform (Main Camera).")]
-    [SerializeField] private Transform cameraTransform;
+    public CameraMode CurrentMode { get; private set; }
+        = CameraMode.FirstPerson;
 
-    [Tooltip("Third-person follow script — disabled while in first-person mode.")]
-    [SerializeField] private ThirdPersonCameraFollow thirdPersonFollow;
+    // =============================================================
+    // REFERENCES
+    // =============================================================
 
-    [Tooltip("Player movement script — disabled while interacting at a workstation.")]
+    [Header("Camera")]
+    [SerializeField] private Camera mainCamera;
+    [SerializeField] private FirstPersonCameraController firstPersonCamera;
+
+    [Header("Player")]
     [SerializeField] private PlayerMovement playerMovement;
-
-    [Tooltip("Player interactor script — disabled while interacting at a workstation (prevents re-triggering interactions mid-transition).")]
     [SerializeField] private Interactor playerInteractor;
 
-    [Tooltip("Placeholder hands shown only in first-person view.")]
+    [Header("First Person Hands")]
     [SerializeField] private FirstPersonHands firstPersonHands;
 
-    [Tooltip("UI panel with the Close button, shown while in first-person mode.")]
+    [Header("Workstation")]
     [SerializeField] private WorkstationUI workstationUI;
-
-    [Header("Transition Settings")]
-    [Tooltip("Time in seconds for the camera to move/rotate into position.")]
-    [SerializeField] private float transitionDuration = 0.5f;
-
-    [Tooltip("Cursor-based interactor used only while at a workstation (e.g. clicking the folder on the desk).")]
     [SerializeField] private WorkstationInteractor workstationInteractor;
 
-    [Header("Desk Items")]
+    [Header("Transition")]
+    [SerializeField] private float transitionDuration = 0.5f;
+
+    [Header("Desk Highlights")]
     [SerializeField] private DeskItemHighlight[] deskItemHighlights;
 
-    [Header("Player Body (hidden during first-person/interview modes)")]
-    [Tooltip("The player's visible mesh Renderer — toggling Renderer.enabled hides the mesh without disabling the GameObject (which would also disable PlayerMovement/Interactor).")]
-    [SerializeField] private Renderer playerBodyRenderer;
-
     private Coroutine activeTransition;
-    private Transform currentViewpoint;
 
-    private bool controlsLocked;
-
-    public bool ControlsLocked => controlsLocked;
+    // =============================================================
+    // INITIALIZATION
+    // =============================================================
 
     private void Awake()
     {
-        Instance = this;
-    }
-
-    /// <summary>
-    /// Called by an interactable (e.g. DeskInteractable) to switch into
-    /// first-person mode, focused on the given viewpoint transform.
-    /// </summary>
-    public void EnterFirstPerson(Transform viewpoint, string exitLabel = "Exit", bool showHands = true)
-    {
-        if (CurrentMode == CameraMode.Workstation) return;
-        currentViewpoint = viewpoint;
-        CurrentMode = CameraMode.Workstation;
-
-        thirdPersonFollow.enabled = false;
-        playerMovement.enabled = false;
-
-        playerInteractor.ClearFocus();
-        playerInteractor.enabled = false;
-        workstationInteractor.enabled = true;
-
-        if (playerBodyRenderer != null) playerBodyRenderer.enabled = false;
-
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-
-        if (activeTransition != null) StopCoroutine(activeTransition);
-        activeTransition = StartCoroutine(TransitionCamera(viewpoint.position, viewpoint.rotation, onComplete: () =>
+        if (Instance != null && Instance != this)
         {
-            workstationUI.Show(exitLabel); // CHANGED: now takes the label
-            foreach (DeskItemHighlight item in deskItemHighlights)
-            {
-                item.ShowHighlight();
-            }
-        }));
-    }
-
-    /// <summary>
-    /// Called by the WorkstationUI's Close button to return to third-person
-    /// exploration mode.
-    /// </summary>
-    public void ExitFirstPerson()
-    {
-        if (CurrentMode != CameraMode.Workstation)
+            Destroy(gameObject);
             return;
-        CurrentMode = CameraMode.ThirdPerson;
-
-        workstationUI.Hide();
-
-        foreach (DeskItemHighlight item in deskItemHighlights)
-        {
-            item.HideHighlight();
         }
 
-        if (activeTransition != null) StopCoroutine(activeTransition);
-        activeTransition = StartCoroutine(TransitionCamera(cameraTransform.position, cameraTransform.rotation, onComplete: () =>
+        Instance = this;
+
+        if (mainCamera == null)
+            mainCamera = Camera.main;
+
+        if (mainCamera == null)
         {
-            thirdPersonFollow.enabled = true;
-            playerMovement.enabled = true;
-            playerInteractor.enabled = true;
-            workstationInteractor.enabled = false;
-
-            if (playerBodyRenderer != null) playerBodyRenderer.enabled = true; // NEW
-
-            // Re-lock cursor for exploration/mouse-look.
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }));
+            Debug.LogError(
+                "[CameraController] Main Camera could not be found!"
+            );
+        }
     }
 
-    /// <summary>
-    /// Smoothly moves/rotates the camera transform to a target position/rotation
-    /// over transitionDuration seconds. Used for both entering and exiting
-    /// first-person mode so the transition always feels consistent.
-    /// </summary>
-    private IEnumerator TransitionCamera(Vector3 targetPos, Quaternion targetRot, System.Action onComplete)
+    private void Start()
     {
-        Vector3 startPos = cameraTransform.position;
-        Quaternion startRot = cameraTransform.rotation;
+        CurrentMode = CameraMode.FirstPerson;
+
+        SetFirstPersonSystems(true);
+
+        if (workstationInteractor != null)
+            workstationInteractor.enabled = false;
+
+        if (workstationUI != null)
+            workstationUI.Hide();
+
+        HideDeskHighlights();
+
+        if (firstPersonHands != null)
+            firstPersonHands.Show();
+
+        Debug.Log(
+            "[CameraController] Initialized in FirstPerson mode."
+        );
+    }
+
+    // =============================================================
+    // ENTER WORKSTATION / DESK VIEW
+    // =============================================================
+
+    public void EnterFirstPerson(
+        Transform viewpoint,
+        string exitLabel = "Exit Desk",
+        bool showHands = true)
+    {
+        Debug.Log(
+            "[CameraController] EnterFirstPerson called."
+        );
+
+        // ---------------------------------------------------------
+        // VALIDATE VIEWPOINT
+        // ---------------------------------------------------------
+
+        if (viewpoint == null)
+        {
+            Debug.LogError(
+                "[CameraController] DeskViewpoint is NULL!"
+            );
+
+            return;
+        }
+
+        // ---------------------------------------------------------
+        // VALIDATE CAMERA
+        // ---------------------------------------------------------
+
+        if (mainCamera == null)
+            mainCamera = Camera.main;
+
+        if (mainCamera == null)
+        {
+            Debug.LogError(
+                "[CameraController] Main Camera could not be found!"
+            );
+
+            return;
+        }
+
+        // ---------------------------------------------------------
+        // IF SOMEHOW STUCK IN ANOTHER MODE
+        // ---------------------------------------------------------
+
+        if (CurrentMode != CameraMode.FirstPerson)
+        {
+            Debug.LogWarning(
+                "[CameraController] Current mode is "
+                + CurrentMode
+                + ". Resetting to FirstPerson."
+            );
+
+            ForceResetToFirstPerson();
+        }
+
+        // ---------------------------------------------------------
+        // DEBUG VIEWPOINT TRANSFORM
+        // ---------------------------------------------------------
+
+        Debug.Log(
+            "[CameraController] DeskViewpoint WORLD POSITION: "
+            + viewpoint.position
+        );
+
+        Debug.Log(
+            "[CameraController] DeskViewpoint WORLD ROTATION: "
+            + viewpoint.rotation.eulerAngles
+        );
+
+        Debug.Log(
+            "[CameraController] DeskViewpoint LOCAL POSITION: "
+            + viewpoint.localPosition
+        );
+
+        Debug.Log(
+            "[CameraController] DeskViewpoint LOCAL ROTATION: "
+            + viewpoint.localRotation.eulerAngles
+        );
+
+        // ---------------------------------------------------------
+        // CHANGE MODE
+        // ---------------------------------------------------------
+
+        CurrentMode = CameraMode.Workstation;
+
+        // ---------------------------------------------------------
+        // STOP FIRST-PERSON CAMERA
+        // ---------------------------------------------------------
+
+        if (firstPersonCamera != null)
+        {
+            firstPersonCamera.enabled = false;
+
+            Debug.Log(
+                "[CameraController] FirstPersonCamera disabled."
+            );
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[CameraController] FirstPersonCamera reference is NULL!"
+            );
+        }
+
+        // ---------------------------------------------------------
+        // STOP PLAYER MOVEMENT
+        // ---------------------------------------------------------
+
+        if (playerMovement != null)
+            playerMovement.enabled = false;
+
+        // ---------------------------------------------------------
+        // STOP NORMAL PLAYER INTERACTION
+        // ---------------------------------------------------------
+
+        if (playerInteractor != null)
+        {
+            playerInteractor.ClearFocus();
+            playerInteractor.enabled = false;
+        }
+
+        // ---------------------------------------------------------
+        // ENABLE WORKSTATION INTERACTION
+        // ---------------------------------------------------------
+
+        if (workstationInteractor != null)
+            workstationInteractor.enabled = true;
+
+        // ---------------------------------------------------------
+        // HANDS
+        // ---------------------------------------------------------
+
+        if (firstPersonHands != null)
+        {
+            if (showHands)
+                firstPersonHands.Show();
+            else
+                firstPersonHands.Hide();
+        }
+
+        // ---------------------------------------------------------
+        // STOP PREVIOUS CAMERA TRANSITION
+        // ---------------------------------------------------------
+
+        StopActiveTransition();
+
+        // ---------------------------------------------------------
+        // MOVE CAMERA TO DESK VIEWPOINT
+        // ---------------------------------------------------------
+
+        Debug.Log(
+            "[CameraController] Moving camera to: "
+            + viewpoint.name
+        );
+
+        activeTransition = StartCoroutine(
+            MoveCameraToViewpoint(
+                viewpoint,
+                () =>
+                {
+                    Debug.Log(
+                        "[CameraController] Workstation view reached."
+                    );
+
+                    if (workstationUI != null)
+                        workstationUI.Show(exitLabel);
+
+                    ShowDeskHighlights();
+                }
+            )
+        );
+    }
+
+    // =============================================================
+    // FORCE RESET TO FIRST PERSON
+    // =============================================================
+
+    private void ForceResetToFirstPerson()
+    {
+        Debug.Log(
+            "[CameraController] ForceResetToFirstPerson called."
+        );
+
+        StopActiveTransition();
+
+        CurrentMode = CameraMode.FirstPerson;
+
+        if (workstationUI != null)
+            workstationUI.Hide();
+
+        HideDeskHighlights();
+
+        if (workstationInteractor != null)
+            workstationInteractor.enabled = false;
+
+        SetFirstPersonSystems(true);
+
+        if (firstPersonHands != null)
+            firstPersonHands.Show();
+    }
+
+    // =============================================================
+    // CAMERA TRANSITION
+    // =============================================================
+
+    private IEnumerator MoveCameraToViewpoint(
+        Transform viewpoint,
+        System.Action onComplete)
+    {
+        if (mainCamera == null)
+        {
+            Debug.LogError(
+                "[CameraController] Cannot move camera because Main Camera is NULL!"
+            );
+
+            yield break;
+        }
+
+        if (viewpoint == null)
+        {
+            Debug.LogError(
+                "[CameraController] Cannot move camera because viewpoint is NULL!"
+            );
+
+            yield break;
+        }
+
+        // ---------------------------------------------------------
+        // GET START TRANSFORM
+        // ---------------------------------------------------------
+
+        Vector3 startPosition =
+            mainCamera.transform.position;
+
+        Quaternion startRotation =
+            mainCamera.transform.rotation;
+
+        // ---------------------------------------------------------
+        // GET TARGET TRANSFORM
+        // ---------------------------------------------------------
+
+        Vector3 targetPosition =
+            viewpoint.position;
+
+        Quaternion targetRotation =
+            viewpoint.rotation;
+
+        // ---------------------------------------------------------
+        // DEBUG START
+        // ---------------------------------------------------------
+
+        Debug.Log(
+            "[CameraController] Camera transition START\n" +
+            "Camera Position: " + startPosition + "\n" +
+            "Target Position: " + targetPosition + "\n" +
+            "Camera Rotation: " + startRotation.eulerAngles + "\n" +
+            "Target Rotation: " + targetRotation.eulerAngles
+        );
+
+        // ---------------------------------------------------------
+        // INSTANT TRANSITION
+        // ---------------------------------------------------------
+
+        if (transitionDuration <= 0f)
+        {
+            mainCamera.transform.SetPositionAndRotation(
+                targetPosition,
+                targetRotation
+            );
+
+            Debug.Log(
+                "[CameraController] Camera transition COMPLETE."
+            );
+
+            activeTransition = null;
+
+            onComplete?.Invoke();
+
+            // Check again on the next frame.
+            StartCoroutine(
+                DebugCameraAfterTransition(
+                    targetPosition,
+                    targetRotation
+                )
+            );
+
+            yield break;
+        }
+
+        // ---------------------------------------------------------
+        // SMOOTH TRANSITION
+        // ---------------------------------------------------------
+
         float elapsed = 0f;
 
         while (elapsed < transitionDuration)
         {
             elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / transitionDuration);
-            cameraTransform.position = Vector3.Lerp(startPos, targetPos, t);
-            cameraTransform.rotation = Quaternion.Slerp(startRot, targetRot, t);
+
+            float t = Mathf.Clamp01(
+                elapsed / transitionDuration
+            );
+
+            t = Mathf.SmoothStep(
+                0f,
+                1f,
+                t
+            );
+
+            Vector3 currentPosition =
+                Vector3.Lerp(
+                    startPosition,
+                    targetPosition,
+                    t
+                );
+
+            Quaternion currentRotation =
+                Quaternion.Slerp(
+                    startRotation,
+                    targetRotation,
+                    t
+                );
+
+            mainCamera.transform.SetPositionAndRotation(
+                currentPosition,
+                currentRotation
+            );
+
             yield return null;
         }
 
-        cameraTransform.position = targetPos;
-        cameraTransform.rotation = targetRot;
+        // ---------------------------------------------------------
+        // GUARANTEE EXACT FINAL TRANSFORM
+        // ---------------------------------------------------------
+
+        mainCamera.transform.SetPositionAndRotation(
+            targetPosition,
+            targetRotation
+        );
+
+        // ---------------------------------------------------------
+        // FINAL TRANSITION DEBUG
+        // ---------------------------------------------------------
+
+        Debug.Log(
+            "[CameraController] Camera transition COMPLETE\n" +
+            "Final Position: "
+            + mainCamera.transform.position
+            + "\nFinal Rotation: "
+            + mainCamera.transform.rotation.eulerAngles
+        );
+
+        activeTransition = null;
+
         onComplete?.Invoke();
+
+        // ---------------------------------------------------------
+        // NEXT-FRAME CAMERA CHECK
+        // ---------------------------------------------------------
+
+        StartCoroutine(
+            DebugCameraAfterTransition(
+                targetPosition,
+                targetRotation
+            )
+        );
     }
 
-    /// <summary>
-    /// Switches into Interview mode. Similar to first-person mode, but intended
-    /// for NPC conversations rather than workstation interactions. The player
-    /// cannot move or look around, the camera transitions to a predefined
-    /// interview viewpoint, and the cursor is unlocked for dialogue UI.
-    /// </summary>
+    // =============================================================
+    // NEXT-FRAME CAMERA DIAGNOSTIC
+    // =============================================================
+
+    private IEnumerator DebugCameraAfterTransition(
+        Vector3 expectedPosition,
+        Quaternion expectedRotation)
+    {
+        // Wait exactly one frame.
+        yield return null;
+
+        if (mainCamera == null)
+        {
+            Debug.LogError(
+                "[CameraController] NEXT-FRAME CHECK: Main Camera is NULL!"
+            );
+
+            yield break;
+        }
+
+        Vector3 actualPosition =
+            mainCamera.transform.position;
+
+        Quaternion actualRotation =
+            mainCamera.transform.rotation;
+
+        float positionDifference =
+            Vector3.Distance(
+                expectedPosition,
+                actualPosition
+            );
+
+        float rotationDifference =
+            Quaternion.Angle(
+                expectedRotation,
+                actualRotation
+            );
+
+        Debug.Log(
+            "[CameraController] CAMERA CHECK - NEXT FRAME\n" +
+            "Expected Position: " + expectedPosition + "\n" +
+            "Actual Position: " + actualPosition + "\n" +
+            "Position Difference: " + positionDifference + "\n" +
+            "Expected Rotation: " + expectedRotation.eulerAngles + "\n" +
+            "Actual Rotation: " + actualRotation.eulerAngles + "\n" +
+            "Rotation Difference: " + rotationDifference
+        );
+
+        if (positionDifference > 0.01f ||
+            rotationDifference > 0.5f)
+        {
+            Debug.LogError(
+                "[CameraController] WARNING: " +
+                "Something changed the Main Camera after the transition!"
+            );
+        }
+        else
+        {
+            Debug.Log(
+                "[CameraController] Camera remained at the correct " +
+                "workstation viewpoint on the next frame."
+            );
+        }
+    }
+
+    // =============================================================
+    // EXIT WORKSTATION / DESK VIEW
+    // =============================================================
+
+    public void ExitFirstPerson()
+    {
+        if (CurrentMode != CameraMode.Workstation)
+            return;
+
+        Debug.Log(
+            "[CameraController] Exiting desk view."
+        );
+
+        StopActiveTransition();
+
+        CurrentMode = CameraMode.FirstPerson;
+
+        // ---------------------------------------------------------
+        // HIDE WORKSTATION UI
+        // ---------------------------------------------------------
+
+        if (workstationUI != null)
+            workstationUI.Hide();
+
+        // ---------------------------------------------------------
+        // HIDE DESK HIGHLIGHTS
+        // ---------------------------------------------------------
+
+        HideDeskHighlights();
+
+        // ---------------------------------------------------------
+        // DISABLE WORKSTATION INTERACTION
+        // ---------------------------------------------------------
+
+        if (workstationInteractor != null)
+            workstationInteractor.enabled = false;
+
+        // ---------------------------------------------------------
+        // RESTORE FIRST-PERSON SYSTEMS
+        // ---------------------------------------------------------
+
+        SetFirstPersonSystems(true);
+
+        // ---------------------------------------------------------
+        // SHOW HANDS
+        // ---------------------------------------------------------
+
+        if (firstPersonHands != null)
+            firstPersonHands.Show();
+
+        Debug.Log(
+            "[CameraController] Returned to normal first-person."
+        );
+    }
+
+    // =============================================================
+    // ENTER INTERVIEW
+    // =============================================================
+
     public void EnterInterview(Transform viewpoint)
     {
-        if (CurrentMode != CameraMode.ThirdPerson)
+        if (CurrentMode != CameraMode.FirstPerson)
+        {
+            Debug.LogWarning(
+                "[CameraController] Cannot enter interview. Current mode: "
+                + CurrentMode
+            );
+
             return;
+        }
+
+        if (viewpoint == null)
+        {
+            Debug.LogError(
+                "[CameraController] Interview viewpoint is NULL!"
+            );
+
+            return;
+        }
+
+        if (mainCamera == null)
+            mainCamera = Camera.main;
+
+        if (mainCamera == null)
+        {
+            Debug.LogError(
+                "[CameraController] Main Camera is NULL!"
+            );
+
+            return;
+        }
+
+        Debug.Log(
+            "[CameraController] Entering interview."
+        );
 
         CurrentMode = CameraMode.Interview;
 
-        thirdPersonFollow.enabled = false;
-        playerMovement.enabled = false;
+        // ---------------------------------------------------------
+        // STOP FIRST-PERSON SYSTEMS
+        // ---------------------------------------------------------
 
-        playerInteractor.ClearFocus();
-        playerInteractor.enabled = false;
+        SetFirstPersonSystems(false);
 
-        workstationInteractor.enabled = false;
+        // ---------------------------------------------------------
+        // DISABLE WORKSTATION INTERACTION
+        // ---------------------------------------------------------
 
-        if (playerBodyRenderer != null) playerBodyRenderer.enabled = false;
+        if (workstationInteractor != null)
+            workstationInteractor.enabled = false;
 
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        // ---------------------------------------------------------
+        // HIDE HANDS
+        // ---------------------------------------------------------
 
-        if (activeTransition != null)
-            StopCoroutine(activeTransition);
+        if (firstPersonHands != null)
+            firstPersonHands.Hide();
+
+        // ---------------------------------------------------------
+        // STOP PREVIOUS TRANSITION
+        // ---------------------------------------------------------
+
+        StopActiveTransition();
+
+        // ---------------------------------------------------------
+        // MOVE CAMERA TO INTERVIEW VIEWPOINT
+        // ---------------------------------------------------------
 
         activeTransition = StartCoroutine(
-            TransitionCamera(
-                viewpoint.position,
-                viewpoint.rotation,
+            MoveCameraToViewpoint(
+                viewpoint,
                 null
-            ));
+            )
+        );
     }
+
+    // =============================================================
+    // EXIT INTERVIEW
+    // =============================================================
 
     public void ExitInterview()
     {
         if (CurrentMode != CameraMode.Interview)
             return;
 
-        CurrentMode = CameraMode.ThirdPerson;
+        Debug.Log(
+            "[CameraController] Exiting interview."
+        );
 
-        if (activeTransition != null)
-            StopCoroutine(activeTransition);
+        StopActiveTransition();
 
-        activeTransition = StartCoroutine(
-            TransitionCamera(
-                cameraTransform.position,
-                cameraTransform.rotation,
-                () =>
-                {
-                    thirdPersonFollow.enabled = true;
-                    playerMovement.enabled = true;
-                    playerInteractor.enabled = true;
+        CurrentMode = CameraMode.FirstPerson;
 
-                    if (playerBodyRenderer != null) playerBodyRenderer.enabled = true;
+        SetFirstPersonSystems(true);
 
-                    Cursor.lockState = CursorLockMode.Locked;
-                    Cursor.visible = false;
-                }));
+        if (firstPersonHands != null)
+            firstPersonHands.Show();
+
+        Debug.Log(
+            "[CameraController] Returned to normal first-person."
+        );
     }
 
+    // =============================================================
+    // LOCK PLAYER CONTROLS
+    // =============================================================
 
-    /// <summary>
-    /// Freezes player movement and mouse-look WITHOUT any camera transition —
-    /// used for NPC conversations (Client Interview, Auditor) where the camera
-    /// stays exactly where it is, but the player shouldn't be able to walk
-    /// away or look around mid-conversation. Distinct from EnterFirstPerson,
-    /// which also moves the camera to a specific workstation viewpoint.
-    /// </summary>
     public void LockPlayerControls()
     {
+        if (firstPersonCamera != null)
+            firstPersonCamera.enabled = false;
 
-        if (controlsLocked)
-            return;
+        if (playerMovement != null)
+            playerMovement.enabled = false;
 
-        controlsLocked = true;
-
-        if (CurrentMode != CameraMode.ThirdPerson) return; // NPC conversations only happen during exploration
-
-        thirdPersonFollow.enabled = false;
-        playerMovement.enabled = false;
-        playerInteractor.ClearFocus();
-        playerInteractor.enabled = false;
-
-        if (playerBodyRenderer != null) playerBodyRenderer.enabled = false;
-
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-        controlsLocked = true;
+        if (playerInteractor != null)
+        {
+            playerInteractor.ClearFocus();
+            playerInteractor.enabled = false;
+        }
     }
 
-    /// <summary>
-    /// Reverses LockPlayerControls() — restores movement, mouse-look, and
-    /// re-locks the cursor for exploration.
-    /// </summary>
+    // =============================================================
+    // UNLOCK PLAYER CONTROLS
+    // =============================================================
+
     public void UnlockPlayerControls()
     {
-
-        if (!controlsLocked)
+        if (CurrentMode != CameraMode.FirstPerson)
             return;
 
-        controlsLocked = false;
-        if (CurrentMode != CameraMode.ThirdPerson) return;
-
-        thirdPersonFollow.enabled = true;
-        playerMovement.enabled = true;
-        playerInteractor.enabled = true;
-
-        if (playerBodyRenderer != null) playerBodyRenderer.enabled = true;
-
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-        controlsLocked = false;
+        SetFirstPersonSystems(true);
     }
 
+    // =============================================================
+    // FIRST-PERSON SYSTEMS
+    // =============================================================
+
+    private void SetFirstPersonSystems(bool enabled)
+    {
+        if (firstPersonCamera != null)
+            firstPersonCamera.enabled = enabled;
+
+        if (playerMovement != null)
+            playerMovement.enabled = enabled;
+
+        if (playerInteractor != null)
+        {
+            if (!enabled)
+                playerInteractor.ClearFocus();
+
+            playerInteractor.enabled = enabled;
+        }
+    }
+
+    // =============================================================
+    // STOP ACTIVE TRANSITION
+    // =============================================================
+
+    private void StopActiveTransition()
+    {
+        if (activeTransition == null)
+            return;
+
+        StopCoroutine(activeTransition);
+        activeTransition = null;
+    }
+
+    // =============================================================
+    // DESK HIGHLIGHTS
+    // =============================================================
+
+    private void ShowDeskHighlights()
+    {
+        if (deskItemHighlights == null)
+            return;
+
+        foreach (DeskItemHighlight item in deskItemHighlights)
+        {
+            if (item != null)
+                item.ShowHighlight();
+        }
+    }
+
+    private void HideDeskHighlights()
+    {
+        if (deskItemHighlights == null)
+            return;
+
+        foreach (DeskItemHighlight item in deskItemHighlights)
+        {
+            if (item != null)
+                item.HideHighlight();
+        }
+    }
+
+    // =============================================================
+    // TEMPORARY DEBUG
+    // =============================================================
+
+    private void OnGUI()
+    {
+        GUI.Label(
+            new Rect(10, 10, 300, 30),
+            $"CurrentMode: {CurrentMode}"
+        );
+    }
 }

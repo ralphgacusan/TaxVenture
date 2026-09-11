@@ -50,7 +50,7 @@ public class Interactor : MonoBehaviour
     private void Update()
     {
         if (CameraController.Instance != null &&
-            CameraController.Instance.CurrentMode != CameraController.CameraMode.ThirdPerson)
+            CameraController.Instance.CurrentMode != CameraController.CameraMode.FirstPerson)
         {
             return;
         }

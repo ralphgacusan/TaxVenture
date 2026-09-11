@@ -28,16 +28,20 @@ public class StampUI : MonoBehaviour
     [SerializeField] private Color unselectedColor = Color.white;
     [SerializeField] private Color selectedColor = new Color(1f, 0.85f, 0.3f);
 
+
     [Header("Feedback")]
     [SerializeField] private TextMeshProUGUI feedbackText;
     [SerializeField] private float feedbackDisplayDuration = 2.5f;
 
     private StampType? selectedStampType = null;
 
+    public static StampUI Instance { get; private set; } // ADD THIS
+
     public bool HasSelectedStamp => selectedStampType.HasValue;
 
     private void Awake()
     {
+        Instance = this;
         readyStampButton.onClick.AddListener(() => SelectStamp(StampType.ReadyForFiling));
         notReadyStampButton.onClick.AddListener(() => SelectStamp(StampType.NotReadyForFiling));
         ClearFeedback();
@@ -118,5 +122,15 @@ public class StampUI : MonoBehaviour
     private void ClearFeedback()
     {
         if (feedbackText != null) feedbackText.text = "";
+    }
+
+
+    /// <summary>
+    /// PUBLIC ENTRY POINT for the new 3D stamp drag system (Stamp3DDrag).
+    /// </summary>
+    public void ApplyStampType(StampType type)
+    {
+        CaseData data = CaseManager.Instance.CurrentCase;
+        ApplyStamp(type, data);
     }
 }
