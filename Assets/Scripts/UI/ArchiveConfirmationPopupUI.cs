@@ -9,6 +9,9 @@ using UnityEngine;
 ///
 /// While the popup is open, player controls are locked.
 /// Controls are restored when the popup closes.
+///
+/// After confirmation, the callback supplied by FilingCabinetInteractable
+/// continues the case flow.
 /// </summary>
 public class ArchiveConfirmationPopupUI : MonoBehaviour
 {
@@ -34,7 +37,6 @@ public class ArchiveConfirmationPopupUI : MonoBehaviour
             popupPanelRoot.SetActive(true);
         }
 
-        // Lock player while confirmation popup is open.
         if (CameraController.Instance != null)
         {
             CameraController.Instance.LockPlayerControls();
@@ -58,7 +60,19 @@ public class ArchiveConfirmationPopupUI : MonoBehaviour
         );
 
         // -----------------------------------------------------
-        // Close popup first.
+        // Save callback BEFORE disabling the popup.
+        //
+        // IMPORTANT:
+        // SetActive(false) triggers OnDisable(), so the callback
+        // must be copied first.
+        // -----------------------------------------------------
+
+        System.Action callback = onClosed;
+
+        onClosed = null;
+
+        // -----------------------------------------------------
+        // Close popup.
         // -----------------------------------------------------
 
         if (popupPanelRoot != null)
@@ -67,7 +81,6 @@ public class ArchiveConfirmationPopupUI : MonoBehaviour
         }
 
         // -----------------------------------------------------
-        // IMPORTANT:
         // Restore player controls.
         // -----------------------------------------------------
 
@@ -85,11 +98,22 @@ public class ArchiveConfirmationPopupUI : MonoBehaviour
         // Continue archive flow.
         // -----------------------------------------------------
 
-        System.Action callback = onClosed;
+        if (callback == null)
+        {
+            Debug.LogError(
+                "[ArchiveConfirmationPopupUI] " +
+                "Archive completion callback is NULL!"
+            );
 
-        onClosed = null;
+            return;
+        }
 
-        callback?.Invoke();
+        Debug.Log(
+            "[ArchiveConfirmationPopupUI] " +
+            "Invoking archive completion callback."
+        );
+
+        callback();
     }
 
     // =========================================================
@@ -111,9 +135,13 @@ public class ArchiveConfirmationPopupUI : MonoBehaviour
     private void OnDisable()
     {
         // -----------------------------------------------------
-        // Safety net:
-        // If this popup is disabled while open, make sure the
-        // player does not remain permanently locked.
+        // Do NOT clear onClosed here.
+        //
+        // OnOkPressed() already saves and clears the callback
+        // before disabling the popup.
+        //
+        // Clearing it here would destroy the callback before
+        // OnOkPressed() can invoke it.
         // -----------------------------------------------------
 
         if (CameraController.Instance != null)
@@ -125,7 +153,5 @@ public class ArchiveConfirmationPopupUI : MonoBehaviour
                 "Popup disabled → Player controls UNLOCKED."
             );
         }
-
-        onClosed = null;
     }
 }

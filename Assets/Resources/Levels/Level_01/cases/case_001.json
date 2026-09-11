@@ -1,7 +1,9 @@
 {
 "caseId": "case_001",
-
 "caseNumber": "ITR-2026-0001",
+"clientId": "client_001",
+"clientModel": "Client_001",
+
 "taxYear": "2026",
 "dateReceived": "June 15, 2026",
 "assignedConsultant": "Player",

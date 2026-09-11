@@ -1,101 +1,212 @@
+
 using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
 /// PURPOSE:
-/// One HUD icon button (Notes / Tax Code Book / Case Folder) that starts
-/// locked (disabled, low opacity) and permanently unlocks once its
-/// corresponding GameplayEvents signal fires. Once unlocked, it never
-/// re-locks for the rest of the level, per spec.
+/// Controls the locked/unlocked state of one HUD icon.
 ///
-/// RESPONSIBILITIES:
-/// - Start in a locked visual/interactable state
-/// - Subscribe to exactly one GameplayEvents signal (chosen in Inspector)
-/// - On that event: enable Button.interactable, restore full opacity
+/// Case Folder:
+/// - Starts locked
+/// - Unlocks when the current Case Folder is opened
+/// - Locks again when the current case is completed
+/// - Unlocks again when the next Case Folder is opened
+///
+/// Other icons:
+/// - Unlock once through their corresponding GameplayEvents signal
+/// - Remain unlocked for the rest of the level
+///
+/// IMPORTANT:
+/// The HUD GameObject itself stays ACTIVE throughout the level.
+/// Only the Button interaction and visual availability are changed.
 ///
 /// DOES NOT:
-/// - Know what happens when clicked (Button.onClick is wired separately in
-///   the Inspector to whatever panel this icon opens — e.g. NotesPanelUI,
-///   TaxCodeBookUI, CaseFolderUI — this script only manages lock state)
+/// - Know what happens when clicked
+/// - Open or close the associated panel
+/// - Manage gameplay progression
+///
+/// Button.onClick is wired separately in the Inspector.
 /// </summary>
 public class HudIconButton : MonoBehaviour
 {
     public enum UnlockTrigger
     {
-        CaseFolderFirstOpened,
+        CaseFolderOpened,
         TaxCodeBookFirstOpened,
         NotesUnlockRequested,
         TaxReturnCollected
     }
-    [SerializeField] private UnlockTrigger unlockTrigger;
-    [SerializeField] private Button button;
-    [SerializeField] private CanvasGroup canvasGroup; // controls opacity via alpha
+
+
+    [SerializeField]
+    private UnlockTrigger unlockTrigger;
+
+
+    [SerializeField]
+    private Button button;
+
+
+    [SerializeField]
+    private CanvasGroup canvasGroup;
+
 
     [Header("Visuals")]
-    [SerializeField] private float lockedAlpha = 0.4f;
-    [SerializeField] private float unlockedAlpha = 1f;
 
-    [SerializeField] private HudSubmittableIcon submittableIcon;
+    [SerializeField]
+    private float lockedAlpha = 0.4f;
+
+    [SerializeField]
+    private float unlockedAlpha = 1f;
+
+
+    [SerializeField]
+    private HudSubmittableIcon submittableIcon;
+
+
     private void Awake()
     {
         SetLocked();
     }
 
+
     private void OnEnable()
     {
         switch (unlockTrigger)
         {
-            case UnlockTrigger.CaseFolderFirstOpened:
-                GameplayEvents.OnCaseFolderFirstOpened += Unlock;
+            case UnlockTrigger.CaseFolderOpened:
+
+                GameplayEvents.OnCaseFolderOpened += Unlock;
+                GameplayEvents.OnCaseCompleted += RelockCaseFolder;
+
                 break;
+
+
             case UnlockTrigger.TaxCodeBookFirstOpened:
+
                 GameplayEvents.OnTaxCodeBookFirstOpened += Unlock;
+
                 break;
+
+
             case UnlockTrigger.NotesUnlockRequested:
+
                 GameplayEvents.OnNotesUnlockRequested += Unlock;
+
                 break;
+
+
             case UnlockTrigger.TaxReturnCollected:
+
                 GameplayEvents.OnTaxReturnCollected += Unlock;
+
                 break;
         }
     }
+
 
     private void OnDisable()
     {
         switch (unlockTrigger)
         {
-            case UnlockTrigger.CaseFolderFirstOpened:
-                GameplayEvents.OnCaseFolderFirstOpened -= Unlock;
+            case UnlockTrigger.CaseFolderOpened:
+
+                GameplayEvents.OnCaseFolderOpened -= Unlock;
+                GameplayEvents.OnCaseCompleted -= RelockCaseFolder;
+
                 break;
+
+
             case UnlockTrigger.TaxCodeBookFirstOpened:
+
                 GameplayEvents.OnTaxCodeBookFirstOpened -= Unlock;
+
                 break;
+
+
             case UnlockTrigger.NotesUnlockRequested:
+
                 GameplayEvents.OnNotesUnlockRequested -= Unlock;
+
                 break;
+
+
             case UnlockTrigger.TaxReturnCollected:
+
                 GameplayEvents.OnTaxReturnCollected -= Unlock;
+
                 break;
         }
     }
 
+
     private void SetLocked()
     {
-        Debug.Log($"{name}: Locked");
+        Debug.Log(
+            $"{name}: Locked"
+        );
 
-        button.interactable = false;
-        canvasGroup.alpha = lockedAlpha;
 
-        submittableIcon?.SetAvailable(false);
+        if (button != null)
+        {
+            button.interactable = false;
+        }
+
+
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = lockedAlpha;
+        }
+
+
+        if (submittableIcon != null)
+        {
+            submittableIcon.SetAvailable(false);
+        }
     }
+
 
     private void Unlock()
     {
-        Debug.Log($"{name}: Unlocked");
+        Debug.Log(
+            $"{name}: Unlocked"
+        );
 
-        button.interactable = true;
-        canvasGroup.alpha = unlockedAlpha;
 
-        submittableIcon?.SetAvailable(true);
+        if (button != null)
+        {
+            button.interactable = true;
+        }
+
+
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = unlockedAlpha;
+        }
+
+
+        if (submittableIcon != null)
+        {
+            submittableIcon.SetAvailable(true);
+        }
+    }
+
+
+    private void RelockCaseFolder()
+    {
+        if (unlockTrigger !=
+            UnlockTrigger.CaseFolderOpened)
+        {
+            return;
+        }
+
+
+        Debug.Log(
+            $"{name}: Case completed → " +
+            "locking Case Folder icon."
+        );
+
+
+        SetLocked();
     }
 }
+

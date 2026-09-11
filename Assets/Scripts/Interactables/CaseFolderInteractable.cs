@@ -1,70 +1,139 @@
+
 using UnityEngine;
 
 /// <summary>
 /// PURPOSE:
-/// The physical Case Folder object sitting on the Desk (visible only once
-/// the player is in first-person desk view). Clicking it opens CaseFolderUI.
+/// The physical Case Folder object sitting on the Desk.
 ///
-/// PER DESIGN DOC:
-/// "The Case Folder is visible on the desk... highlighted... The player
-/// clicks the Case Folder... front page displays [Case Number, Tax Year,
-/// Date Received, Assigned Consultant]... The player clicks the Case Folder
-/// again... folder opens" — for this prototype we simplify the two-click
-/// cover/open sequence into a single click that opens directly to Page 1,
-/// since the cover-only view adds no gameplay value in greybox form.
+/// Clicking it:
+/// - Raises the CaseFolderOpened gameplay event
+/// - Opens the CaseFolderUI
+/// - Moves the game into ReviewDocumentsState
 ///
-/// CONNECTS WITH:
-/// - HighlightEffect (same GameObject)
-/// - CaseFolderUI: calls Show() on interact
-/// - Should only be interactable while the player is already in first-person
-///   desk view — enforced by only being active (SetActive) once at the desk,
-///   see Editor Setup section.
+/// IMPORTANT:
+/// The CaseFolderOpened event is raised EVERY TIME the folder
+/// for the current case is opened.
+///
+/// This is intentional because the HUD Case Folder icon is
+/// locked again whenever a case is completed and must unlock
+/// again for the next case.
 /// </summary>
 [RequireComponent(typeof(HighlightEffect))]
-public class CaseFolderInteractable : MonoBehaviour, IInteractable
+public class CaseFolderInteractable :
+    MonoBehaviour,
+    IInteractable
 {
-    [SerializeField] private CaseFolderUI caseFolderUI;
-    [SerializeField] private StampUI stampUI;
+    [SerializeField]
+    private CaseFolderUI caseFolderUI;
+
+
+    [SerializeField]
+    private StampUI stampUI;
+
 
     private HighlightEffect highlight;
 
-    private bool hasBeenOpenedOnce = false;
 
     private void Awake()
     {
         highlight = GetComponent<HighlightEffect>();
     }
 
-    public void OnFocus() => highlight.Highlight();
+
+    public void OnFocus()
+    {
+        highlight.Highlight();
+    }
+
+
     public void OnUnfocus()
     {
         if (CameraController.Instance.CurrentMode ==
             CameraController.CameraMode.Workstation)
+        {
             return;
+        }
 
         highlight.Unhighlight();
     }
+
+
     public void OnInteract()
     {
+        Debug.Log(
+            "[CaseFolderInteractable] " +
+            "Case Folder opened."
+        );
 
-        if (!hasBeenOpenedOnce)
+
+        // =========================================================
+        // UNLOCK HUD CASE FOLDER ICON
+        // =========================================================
+
+        // IMPORTANT:
+        // Do NOT use a "first time only" bool here.
+        //
+        // Case 1 → event fires
+        // Case 2 → event fires again
+        // Case 3 → event fires again
+        // etc.
+        GameplayEvents.RaiseCaseFolderOpened();
+
+
+        // =========================================================
+        // OPEN CASE FOLDER
+        // =========================================================
+
+        if (caseFolderUI == null)
         {
-            hasBeenOpenedOnce = true;
-            GameplayEvents.RaiseCaseFolderFirstOpened();
+            Debug.LogError(
+                "[CaseFolderInteractable] " +
+                "CaseFolderUI is NOT assigned."
+            );
+
+            return;
         }
 
+
         caseFolderUI.Show();
-        GameStateMachine.Instance.ChangeState(new ReviewDocumentsState());
+
+
+        // =========================================================
+        // CHANGE GAMEPLAY STATE
+        // =========================================================
+
+        if (GameStateMachine.Instance == null)
+        {
+            Debug.LogError(
+                "[CaseFolderInteractable] " +
+                "GameStateMachine.Instance is NULL."
+            );
+
+            return;
+        }
+
+
+        GameStateMachine.Instance.ChangeState(
+            new ReviewDocumentsState()
+        );
+
+
+        // =========================================================
+        // TUTORIAL
+        // =========================================================
 
         if (TutorialController.Instance != null)
         {
-            TutorialController.Instance.ReportInteraction("case_folder");
+            TutorialController.Instance.ReportInteraction(
+                "case_folder"
+            );
         }
-
     }
+
 
     public string GetPromptText()
     {
         return "Click to open Case Folder";
     }
 }
+

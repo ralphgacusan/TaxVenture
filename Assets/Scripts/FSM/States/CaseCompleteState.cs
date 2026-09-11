@@ -1,11 +1,6 @@
+
 using UnityEngine;
 
-/// <summary>
-/// PURPOSE:
-/// Final phase of a SINGLE case's loop. Now the FSM integration point for
-/// multi-case progression: on entering this state, CaseProgressionManager
-/// decides whether to load the next case or transition to LevelCompleteState.
-/// </summary>
 public class CaseCompleteState : IGameState
 {
     public string StateName => "Case Complete";
@@ -18,6 +13,10 @@ public class CaseCompleteState : IGameState
         Debug.Log($"[CaseCompleteState] Current Definition: {CaseManager.Instance?.CurrentDefinition?.caseId}");
         Debug.Log($"[CaseCompleteState] Progression Manager == null: {CaseProgressionManager.Instance == null}");
 
+        // Tell HUD systems that the current case is officially complete.
+        // The Case Folder icon will immediately become locked.
+        GameplayEvents.RaiseCaseCompleted();
+
         if (CaseProgressionManager.Instance == null)
         {
             Debug.LogError("[CaseCompleteState] CaseProgressionManager INSTANCE IS NULL!");
@@ -26,6 +25,14 @@ public class CaseCompleteState : IGameState
 
         CaseProgressionManager.Instance.OnCaseFinished();
     }
-    public void Exit() => Debug.Log("[CaseCompleteState] Exited.");
-    public void Tick() { }
+
+    public void Exit()
+    {
+        Debug.Log("[CaseCompleteState] Exited.");
+    }
+
+    public void Tick()
+    {
+    }
 }
+

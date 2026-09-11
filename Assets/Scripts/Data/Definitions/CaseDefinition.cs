@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 
@@ -26,6 +27,16 @@ public class CaseDefinition
 
     // ---------- Page 1 ----------
     public string caseNumber;
+
+    // ---------- Client Model ----------
+    // Stable identifier for the client.
+    // Example: "client_001"
+    public string clientId;
+
+    // Name/key of the 3D client model.
+    // Example: "Client_001"
+    public string clientModel;
+
     public string taxYear;
     public string dateReceived;
     public string assignedConsultant;
@@ -65,13 +76,26 @@ public class CaseDefinition
     public string clientPortraitSad;
 
     // ---------- Dialogue Sections ----------
-    public List<DialogueLineDefinition> receptionistGreeting = new List<DialogueLineDefinition>();
-    public List<DialogueLineDefinition> clientFirstMeeting = new List<DialogueLineDefinition>();
-    public List<DialogueLineDefinition> interviewLines = new List<DialogueLineDefinition>();
-    public List<DialogueLineDefinition> outcomeCorrectNoIssues = new List<DialogueLineDefinition>();
-    public List<DialogueLineDefinition> outcomeCorrectWithIssues = new List<DialogueLineDefinition>();
-    public List<DialogueLineDefinition> outcomeWrongVerdict = new List<DialogueLineDefinition>();
-    public List<DialogueLineDefinition> outcomeWrongVerdictWithIssues = new List<DialogueLineDefinition>();
+    public List<DialogueLineDefinition> receptionistGreeting =
+        new List<DialogueLineDefinition>();
+
+    public List<DialogueLineDefinition> clientFirstMeeting =
+        new List<DialogueLineDefinition>();
+
+    public List<DialogueLineDefinition> interviewLines =
+        new List<DialogueLineDefinition>();
+
+    public List<DialogueLineDefinition> outcomeCorrectNoIssues =
+        new List<DialogueLineDefinition>();
+
+    public List<DialogueLineDefinition> outcomeCorrectWithIssues =
+        new List<DialogueLineDefinition>();
+
+    public List<DialogueLineDefinition> outcomeWrongVerdict =
+        new List<DialogueLineDefinition>();
+
+    public List<DialogueLineDefinition> outcomeWrongVerdictWithIssues =
+        new List<DialogueLineDefinition>();
 }
 
 /// <summary>
@@ -114,27 +138,28 @@ public class AnswerKeyDefinition
 public class DocumentFieldDefinition
 {
     public string label;
-    public string displayValue;    // shown to the player as-is
-    public string correctValue;    // ground truth, used for grading
-    public string type;            // "Number" | "Text" | "Enum" -> DataValueType
+    public string displayValue;
+    public string correctValue;
+    public string type;
     public string semanticKey;
     public bool isIncorrect;
     public string incorrectReason;
-    public string issueType;       // e.g. "Discrepancy"
-    public string severity;        // e.g. "Major", "Minor"
+    public string issueType;
+    public string severity;
 }
 
 [Serializable]
 public class DocumentDefinition
 {
     public string documentName;
-    public List<DocumentFieldDefinition> fields = new List<DocumentFieldDefinition>();
+    public List<DocumentFieldDefinition> fields =
+        new List<DocumentFieldDefinition>();
 }
 
 [Serializable]
 public class DialogueLineDefinition
 {
-    public string speaker;      // "Npc" | "Player"
+    public string speaker;
     public string text;
     public string portraitId;
 }

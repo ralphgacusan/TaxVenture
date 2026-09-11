@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using TMPro;
 
@@ -5,6 +6,23 @@ using TMPro;
 /// PURPOSE:
 /// The filing drawer/cabinet in the File Storage Room. Clicking it while
 /// carrying the Case Folder archives the current case.
+///
+/// FLOW:
+/// Auditor
+///     ↓
+/// Present Findings to Client
+///     ↓
+/// Archive Case
+///     ↓
+/// Filing Cabinet
+///     ↓
+/// Archive Confirmation
+///     ↓
+/// CaseCompleteState
+///     ↓
+/// CaseProgressionManager
+///     ↓
+/// Next Case / Level Complete
 ///
 /// IMPORTANT:
 /// The archive status is stored in CaseData.isArchived, which is
@@ -17,13 +35,7 @@ using TMPro;
 /// - Prevent archiving a case that is already archived
 /// - Mark the current case as archived
 /// - Show archive confirmation
-/// - Continue to RewardsState after confirmation/result popup
-///
-/// CONNECTS WITH:
-/// - HighlightEffect
-/// - ArchiveConfirmationPopupUI
-/// - CaseManager.Instance.CurrentCase
-/// - GameStateMachine
+/// - Continue to CaseCompleteState after confirmation
 /// </summary>
 [RequireComponent(typeof(HighlightEffect))]
 public class FilingCabinetInteractable : MonoBehaviour, IInteractable
@@ -51,7 +63,10 @@ public class FilingCabinetInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract()
     {
-        // Make sure there is a current case.
+        // ---------------------------------------------------------
+        // 1. Make sure there is a current case.
+        // ---------------------------------------------------------
+
         if (CaseManager.Instance == null ||
             CaseManager.Instance.CurrentCase == null)
         {
@@ -62,9 +77,10 @@ public class FilingCabinetInteractable : MonoBehaviour, IInteractable
         CaseData data = CaseManager.Instance.CurrentCase;
 
         // ---------------------------------------------------------
-        // 1. Prevent interacting with the cabinet outside the
+        // 2. Prevent interacting with the cabinet outside the
         //    Archive Case phase.
         // ---------------------------------------------------------
+
         if (!(GameStateMachine.Instance.CurrentState is ArchiveCaseState))
         {
             ShowWarning("There's nothing to archive right now.");
@@ -72,11 +88,9 @@ public class FilingCabinetInteractable : MonoBehaviour, IInteractable
         }
 
         // ---------------------------------------------------------
-        // 2. Use CaseData.isArchived instead of a local boolean.
-        //
-        //    This is important because CaseData changes when
-        //    CaseProgressionManager loads the next case.
+        // 3. Prevent archiving an already archived case.
         // ---------------------------------------------------------
+
         if (data.isArchived)
         {
             ShowWarning("This case has already been archived.");
@@ -84,15 +98,19 @@ public class FilingCabinetInteractable : MonoBehaviour, IInteractable
         }
 
         // ---------------------------------------------------------
-        // 3. Verify the player has the Case Folder.
+        // 4. Verify the player has the Case Folder.
         // ---------------------------------------------------------
+
         if (!data.isCarryingCaseFolder)
         {
             ShowWarning("You don't have the Case Folder with you.");
             return;
         }
 
-        // Remove the visual carried document, if present.
+        // ---------------------------------------------------------
+        // 5. Remove the visual carried document.
+        // ---------------------------------------------------------
+
         if (FirstPersonHands.Instance != null)
         {
             FirstPersonHands.Instance.HideCarriedDocument();
@@ -103,7 +121,10 @@ public class FilingCabinetInteractable : MonoBehaviour, IInteractable
 
     private void ArchiveCase(CaseData data)
     {
-        // Store archive status directly on the current case.
+        // ---------------------------------------------------------
+        // Mark the current case as archived.
+        // ---------------------------------------------------------
+
         data.isArchived = true;
         data.isCarryingCaseFolder = false;
 
@@ -111,50 +132,61 @@ public class FilingCabinetInteractable : MonoBehaviour, IInteractable
             $"[FilingCabinetInteractable] Case archived: {data.caseNumber}"
         );
 
-        archiveConfirmationPopupUI.Show(OnArchiveConfirmed);
+        // ---------------------------------------------------------
+        // Show confirmation popup.
+        // ---------------------------------------------------------
+
+        archiveConfirmationPopupUI.Show(
+            OnArchiveConfirmed
+        );
 
         if (TutorialController.Instance != null)
-            TutorialController.Instance.ReportInteraction("case_archived");
+        {
+            TutorialController.Instance.ReportInteraction(
+                "case_archived"
+            );
+        }
     }
 
     private void OnArchiveConfirmed()
     {
-        CaseData data = CaseManager.Instance.CurrentCase;
+        Debug.Log(
+            "[FilingCabinetInteractable] Archive confirmation completed."
+        );
 
-        ClientOutcomeBranch branch =
-            ClientOutcomeEvaluator.Determine(data);
+        // ---------------------------------------------------------
+        // Archive is the final action for the current case.
+        //
+        // CaseCompleteState will now hand control to
+        // CaseProgressionManager.
+        // ---------------------------------------------------------
 
-        if (branch == ClientOutcomeBranch.CorrectNoIssues)
+        if (GameStateMachine.Instance == null)
         {
-            // Perfect case:
-            // Level Result was intentionally delayed until after
-            // the archive confirmation.
-            LevelResultPopupUI.Instance.Show(
-                data,
-                OnLevelResultClosedAfterArchive
+            Debug.LogError(
+                "[FilingCabinetInteractable] GameStateMachine.Instance is NULL."
             );
-        }
-        else
-        {
-            // Other branches already showed the Level Result
-            // before the archive phase.
-            if (GameStateMachine.Instance.CurrentState is ArchiveCaseState)
-            {
-                GameStateMachine.Instance.ChangeState(
-                    new RewardsState()
-                );
-            }
-        }
-    }
 
-    private void OnLevelResultClosedAfterArchive()
-    {
-        if (GameStateMachine.Instance.CurrentState is ArchiveCaseState)
-        {
-            GameStateMachine.Instance.ChangeState(
-                new RewardsState()
-            );
+            return;
         }
+
+        if (!(GameStateMachine.Instance.CurrentState is ArchiveCaseState))
+        {
+            Debug.LogWarning(
+                "[FilingCabinetInteractable] Current state is no longer " +
+                "ArchiveCaseState. Case completion transition skipped."
+            );
+
+            return;
+        }
+
+        Debug.Log(
+            "[FilingCabinetInteractable] Archive complete → CaseCompleteState."
+        );
+
+        GameStateMachine.Instance.ChangeState(
+            new CaseCompleteState()
+        );
     }
 
     private void ShowWarning(string message)

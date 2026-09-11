@@ -1,3 +1,4 @@
+
 using UnityEngine;
 
 /// <summary>
@@ -9,9 +10,13 @@ using UnityEngine;
 ///     ↓
 /// LoadCurrentCase()
 ///     ↓
+/// Reset case-specific systems
+///     ↓
+/// Load correct Conference Room Client
+///     ↓
 /// ReceiveCaseState
 ///     ↓
-/// ... existing case gameplay ...
+/// ... case gameplay ...
 ///     ↓
 /// CaseCompleteState
 ///     ↓
@@ -21,7 +26,8 @@ using UnityEngine;
 /// │ More cases?                   │
 /// │                               │
 /// │ YES → Case Completion UI      │
-/// │       → next case             │
+/// │       → Continue              │
+/// │       → Load next case        │
 /// │                               │
 /// │ NO  → LevelCompleteState      │
 /// └───────────────────────────────┘
@@ -35,13 +41,16 @@ public class CaseProgressionManager : MonoBehaviour
     private string levelId;
 
     private bool levelStarted = false;
+    private bool waitingForNextCase = false;
+
 
     private void Awake()
     {
         if (Instance != null && Instance != this)
         {
             Debug.LogWarning(
-                "[CaseProgressionManager] Duplicate instance detected. Destroying duplicate."
+                "[CaseProgressionManager] Duplicate instance detected. " +
+                "Destroying duplicate."
             );
 
             Destroy(gameObject);
@@ -53,11 +62,14 @@ public class CaseProgressionManager : MonoBehaviour
         Debug.Log("[CaseProgressionManager] Awake.");
     }
 
+
     private void Start()
     {
         Debug.Log("[CaseProgressionManager] Start.");
+
         StartLevel("Level_01");
     }
+
 
     public void StartLevel(string levelIdToLoad)
     {
@@ -67,13 +79,16 @@ public class CaseProgressionManager : MonoBehaviour
 
         levelId = levelIdToLoad;
 
+        levelStarted = false;
+        waitingForNextCase = false;
+
         var levelResult = JsonCaseLoader.LoadLevel(levelId);
 
         if (!levelResult.IsSuccess)
         {
             Debug.LogError(
-                $"[CaseProgressionManager] Failed to load level '{levelId}': " +
-                levelResult.ErrorMessage
+                $"[CaseProgressionManager] Failed to load level " +
+                $"'{levelId}': {levelResult.ErrorMessage}"
             );
 
             return;
@@ -95,7 +110,8 @@ public class CaseProgressionManager : MonoBehaviour
             currentLevel.caseIds.Count == 0)
         {
             Debug.LogError(
-                $"[CaseProgressionManager] Level '{levelId}' contains no case IDs."
+                $"[CaseProgressionManager] Level '{levelId}' " +
+                "contains no case IDs."
             );
 
             return;
@@ -105,7 +121,8 @@ public class CaseProgressionManager : MonoBehaviour
         levelStarted = true;
 
         Debug.Log(
-            $"[CaseProgressionManager] Level '{levelId}' loaded successfully."
+            $"[CaseProgressionManager] Level '{levelId}' " +
+            "loaded successfully."
         );
 
         Debug.Log(
@@ -116,13 +133,36 @@ public class CaseProgressionManager : MonoBehaviour
         LoadCurrentCase();
     }
 
+
     private void LoadCurrentCase()
     {
         if (!levelStarted || currentLevel == null)
         {
             Debug.LogError(
-                "[CaseProgressionManager] Cannot load case because " +
-                "the level has not been initialized."
+                "[CaseProgressionManager] Cannot load case: " +
+                "level not initialized."
+            );
+
+            return;
+        }
+
+        if (currentLevel.caseIds == null ||
+            currentLevel.caseIds.Count == 0)
+        {
+            Debug.LogError(
+                "[CaseProgressionManager] Cannot load case: " +
+                "no case IDs."
+            );
+
+            return;
+        }
+
+        if (currentCaseIndex < 0 ||
+            currentCaseIndex >= currentLevel.caseIds.Count)
+        {
+            Debug.LogError(
+                $"[CaseProgressionManager] Invalid case index: " +
+                $"{currentCaseIndex}"
             );
 
             return;
@@ -146,14 +186,103 @@ public class CaseProgressionManager : MonoBehaviour
             return;
         }
 
-        string caseId = currentLevel.caseIds[currentCaseIndex];
+        string caseId =
+            currentLevel.caseIds[currentCaseIndex];
 
         Debug.Log(
             $"[CaseProgressionManager] Loading case " +
-            $"{currentCaseIndex + 1}/{currentLevel.caseIds.Count}: {caseId}"
+            $"{currentCaseIndex + 1}/" +
+            $"{currentLevel.caseIds.Count}: " +
+            $"{caseId}"
         );
 
-        CaseManager.Instance.LoadCase(levelId, caseId);
+
+        // =========================================================
+        // LOAD NEW CASE DATA
+        // =========================================================
+
+        CaseManager.Instance.LoadCase(
+            levelId,
+            caseId
+        );
+
+
+        if (CaseManager.Instance.CurrentCase == null)
+        {
+            Debug.LogError(
+                "[CaseProgressionManager] CaseManager loaded " +
+                "NULL CurrentCase."
+            );
+
+            return;
+        }
+
+
+        // =========================================================
+        // RESET CASE-SPECIFIC SYSTEMS
+        // =========================================================
+
+        if (AuditorSubmissionTray.Instance != null)
+        {
+            AuditorSubmissionTray.Instance.ResetSubmission();
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[CaseProgressionManager] " +
+                "AuditorSubmissionTray.Instance is NULL. " +
+                "Submission state could not be reset."
+            );
+        }
+
+
+        // =========================================================
+        // LOAD CONFERENCE ROOM CLIENT
+        // =========================================================
+
+        string clientId =
+            CaseManager.Instance.CurrentDefinition?.clientId;
+
+        string clientModel =
+            CaseManager.Instance.CurrentDefinition?.clientModel;
+
+        Debug.Log(
+            $"[CaseProgressionManager] Client ID: " +
+            $"{clientId}"
+        );
+
+        Debug.Log(
+            $"[CaseProgressionManager] Client Model: " +
+            $"{clientModel}"
+        );
+
+
+        if (ConferenceRoomClient.Instance != null)
+        {
+            if (!string.IsNullOrEmpty(clientId))
+            {
+                ConferenceRoomClient.Instance.ShowClient(clientId);
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[CaseProgressionManager] Current case has no clientId."
+                );
+            }
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[CaseProgressionManager] " +
+                "ConferenceRoomClient.Instance is NULL. " +
+                "Conference Room client was not changed."
+            );
+        }
+
+
+        // =========================================================
+        // LOG LOADED CASE
+        // =========================================================
 
         Debug.Log(
             $"[CaseProgressionManager] Loaded Definition: " +
@@ -162,15 +291,29 @@ public class CaseProgressionManager : MonoBehaviour
 
         Debug.Log(
             $"[CaseProgressionManager] Loaded Case: " +
-            $"{CaseManager.Instance.CurrentCase?.caseNumber}"
+            $"{CaseManager.Instance.CurrentCase.caseNumber}"
         );
+
+
+        waitingForNextCase = false;
+
+
+        // =========================================================
+        // START NEW CASE
+        // =========================================================
 
         GameStateMachine.Instance.UnlockProgression();
 
         GameStateMachine.Instance.ChangeState(
             new ReceiveCaseState()
         );
+
+        Debug.Log(
+            $"[CaseProgressionManager] Case " +
+            $"{currentCaseIndex + 1} is now active."
+        );
     }
+
 
     /// <summary>
     /// Called by CaseCompleteState.
@@ -178,118 +321,207 @@ public class CaseProgressionManager : MonoBehaviour
     /// </summary>
     public void OnCaseFinished()
     {
-        Debug.Log("========== CASE PROGRESSION ==========");
-
+        Debug.Log("========================================");
         Debug.Log(
-            $"[CaseProgressionManager] levelStarted: {levelStarted}"
+            "[CaseProgressionManager] OnCaseFinished() CALLED"
         );
+        Debug.Log("========================================");
 
-        Debug.Log(
-            $"[CaseProgressionManager] currentLevel == null: " +
-            $"{currentLevel == null}"
-        );
 
-        Debug.Log(
-            $"[CaseProgressionManager] currentCaseIndex: " +
-            $"{currentCaseIndex}"
-        );
-
-        Debug.Log(
-            $"[CaseProgressionManager] levelId: {levelId}"
-        );
-
-        if (!levelStarted || currentLevel == null)
+        if (!levelStarted)
         {
             Debug.LogError(
-                "[CaseProgressionManager] Cannot complete case because " +
-                "the current level was never initialized."
+                "[CaseProgressionManager] Level has not started."
             );
 
             return;
         }
+
+
+        if (currentLevel == null)
+        {
+            Debug.LogError(
+                "[CaseProgressionManager] currentLevel is NULL."
+            );
+
+            return;
+        }
+
 
         if (currentLevel.caseIds == null ||
             currentLevel.caseIds.Count == 0)
         {
             Debug.LogError(
-                "[CaseProgressionManager] Current level contains no cases."
+                "[CaseProgressionManager] No cases exist " +
+                "in current level."
             );
 
             return;
         }
 
+
+        if (waitingForNextCase)
+        {
+            Debug.LogWarning(
+                "[CaseProgressionManager] Already waiting for " +
+                "next case. Ignoring duplicate completion call."
+            );
+
+            return;
+        }
+
+
         bool isLastCase =
-            currentCaseIndex >= currentLevel.caseIds.Count - 1;
+            currentCaseIndex >=
+            currentLevel.caseIds.Count - 1;
+
 
         Debug.Log(
-            $"[CaseProgressionManager] Case " +
-            $"{currentCaseIndex + 1}/{currentLevel.caseIds.Count} completed."
+            $"[CaseProgressionManager] Finished case " +
+            $"{currentCaseIndex + 1}/" +
+            $"{currentLevel.caseIds.Count}"
         );
 
         Debug.Log(
-            $"[CaseProgressionManager] Is last case: {isLastCase}"
+            $"[CaseProgressionManager] Is last case: " +
+            $"{isLastCase}"
         );
+
+
+        // =========================================================
+        // LAST CASE
+        // =========================================================
 
         if (isLastCase)
         {
             Debug.Log(
-                "[CaseProgressionManager] LAST CASE → LevelCompleteState"
+                "[CaseProgressionManager] LAST CASE → " +
+                "LevelCompleteState"
             );
 
             GameStateMachine.Instance.ChangeState(
                 new LevelCompleteState()
             );
+
+            return;
         }
-        else
+
+
+        // =========================================================
+        // MORE CASES REMAIN
+        // =========================================================
+
+        waitingForNextCase = true;
+
+        Debug.Log(
+            "[CaseProgressionManager] More cases remain → " +
+            "showing CaseCompletionUI."
+        );
+
+
+        if (CaseCompletionUI.Instance == null)
         {
-            Debug.Log(
-                "[CaseProgressionManager] More cases remain → " +
-                "showing CaseCompletionUI."
+            Debug.LogError(
+                "[CaseProgressionManager] " +
+                "CaseCompletionUI.Instance is NULL."
             );
 
-            if (CaseCompletionUI.Instance == null)
-            {
-                Debug.LogError(
-                    "[CaseProgressionManager] CaseCompletionUI.Instance is NULL!"
-                );
+            waitingForNextCase = false;
 
-                return;
-            }
-
-            CaseCompletionUI.Instance.ShowContinuePrompt(
-                AdvanceToNextCase
-            );
+            return;
         }
+
+
+        CaseCompletionUI.Instance.ShowContinuePrompt(
+            AdvanceToNextCase
+        );
     }
+
 
     private void AdvanceToNextCase()
     {
         Debug.Log(
-            "[CaseProgressionManager] Continue pressed → next case."
+            "[CaseProgressionManager] AdvanceToNextCase() CALLED."
         );
+
+
+        if (!waitingForNextCase)
+        {
+            Debug.LogWarning(
+                "[CaseProgressionManager] AdvanceToNextCase called " +
+                "when not waiting for a next case."
+            );
+
+            return;
+        }
+
+
+        if (currentLevel == null ||
+            currentLevel.caseIds == null)
+        {
+            Debug.LogError(
+                "[CaseProgressionManager] Cannot advance: " +
+                "level data is NULL."
+            );
+
+            waitingForNextCase = false;
+
+            return;
+        }
+
+
+        if (currentCaseIndex >=
+            currentLevel.caseIds.Count - 1)
+        {
+            Debug.LogWarning(
+                "[CaseProgressionManager] Cannot advance past last case."
+            );
+
+            waitingForNextCase = false;
+
+            return;
+        }
+
 
         currentCaseIndex++;
 
+
         Debug.Log(
             $"[CaseProgressionManager] Advancing to case " +
-            $"{currentCaseIndex + 1}/{currentLevel.caseIds.Count}"
+            $"{currentCaseIndex + 1}/" +
+            $"{currentLevel.caseIds.Count}"
         );
+
 
         LoadCurrentCase();
     }
 
+
     public bool IsCurrentCaseLast()
     {
-        if (!levelStarted || currentLevel == null)
+        if (!levelStarted ||
+            currentLevel == null ||
+            currentLevel.caseIds == null)
+        {
             return true;
+        }
 
         return currentCaseIndex >=
                currentLevel.caseIds.Count - 1;
     }
 
+
     public int TotalCasesInLevel =>
         currentLevel?.caseIds?.Count ?? 0;
 
+
     public int CurrentCaseNumber =>
         currentCaseIndex + 1;
+
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
 }
