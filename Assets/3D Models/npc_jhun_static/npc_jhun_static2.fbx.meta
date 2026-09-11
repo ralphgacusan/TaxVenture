@@ -3,7 +3,12 @@ guid: b0a12e9fda0827e40893f722db386c6e
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: jhun_texture
+    second: {fileID: 2100000, guid: 97421395e53e3bf498c3b88575ad5cd1, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
