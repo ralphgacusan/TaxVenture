@@ -22,17 +22,85 @@ public class StampTransitionController : MonoBehaviour
     private AnimationCurve movementCurve =
         AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
+    private bool transitionRunning;
+
+    public bool IsTransitionRunning => transitionRunning;
+
+    // =========================================================
+    // ORIGINAL DESK POSITIONS
+    // =========================================================
+
+    private Vector3 readyOriginalPosition;
+    private Quaternion readyOriginalRotation;
+
+    private Vector3 notReadyOriginalPosition;
+    private Quaternion notReadyOriginalRotation;
+
+    private bool originalPositionsSaved;
+
+
+    // =========================================================
+    // UNITY
+    // =========================================================
+
+    private void Awake()
+    {
+        SaveOriginalPositions();
+    }
+
+
+    // =========================================================
+    // SAVE ORIGINAL DESK POSITIONS
+    // =========================================================
+
+    private void SaveOriginalPositions()
+    {
+        if (readyStamp == null || notReadyStamp == null)
+        {
+            Debug.LogError(
+                "[StampTransition] Cannot save original positions. " +
+                "Stamp references are missing."
+            );
+
+            return;
+        }
+
+        readyOriginalPosition =
+            readyStamp.position;
+
+        readyOriginalRotation =
+            readyStamp.rotation;
+
+        notReadyOriginalPosition =
+            notReadyStamp.position;
+
+        notReadyOriginalRotation =
+            notReadyStamp.rotation;
+
+        originalPositionsSaved = true;
+
+        Debug.Log(
+            "[StampTransition] Original stamp positions saved."
+        );
+    }
+
+
+    // =========================================================
+    // MOVE STAMPS TO WORKSPACE
+    // =========================================================
+
     public void MoveStampsToWorkspace()
     {
-        Debug.Log("[StampTransition] MoveStampsToWorkspace() called.");
-
-        // ---------------------------------------------------------
-        // VALIDATE STAMP REFERENCES
-        // ---------------------------------------------------------
+        Debug.Log(
+            "[StampTransition] MoveStampsToWorkspace() called."
+        );
 
         if (readyStamp == null)
         {
-            Debug.LogError("[StampTransition] Ready Stamp is NOT assigned!");
+            Debug.LogError(
+                "[StampTransition] Ready Stamp is NOT assigned!"
+            );
+
             return;
         }
 
@@ -41,36 +109,16 @@ public class StampTransitionController : MonoBehaviour
             Debug.LogError(
                 "[StampTransition] Not Ready Stamp is NOT assigned!"
             );
+
             return;
         }
-
-        // ---------------------------------------------------------
-        // VALIDATE HIGHLIGHT REFERENCES
-        // ---------------------------------------------------------
-
-        if (readyHighlight == null)
-        {
-            Debug.LogWarning(
-                "[StampTransition] Ready Highlight is NOT assigned."
-            );
-        }
-
-        if (notReadyHighlight == null)
-        {
-            Debug.LogWarning(
-                "[StampTransition] Not Ready Highlight is NOT assigned."
-            );
-        }
-
-        // ---------------------------------------------------------
-        // VALIDATE TARGET REFERENCES
-        // ---------------------------------------------------------
 
         if (readyTarget == null)
         {
             Debug.LogError(
                 "[StampTransition] Ready Target is NOT assigned!"
             );
+
             return;
         }
 
@@ -79,81 +127,67 @@ public class StampTransitionController : MonoBehaviour
             Debug.LogError(
                 "[StampTransition] Not Ready Target is NOT assigned!"
             );
+
             return;
         }
 
-        Debug.Log(
-            "[StampTransition] All required references are assigned."
-        );
-
-        Debug.Log(
-            $"[StampTransition] Ready Stamp: {readyStamp.name}"
-        );
-
-        Debug.Log(
-            $"[StampTransition] Not Ready Stamp: {notReadyStamp.name}"
-        );
-
-        Debug.Log(
-            $"[StampTransition] Ready Target: {readyTarget.name}"
-        );
-
-        Debug.Log(
-            $"[StampTransition] Not Ready Target: {notReadyTarget.name}"
-        );
-
-        // ---------------------------------------------------------
-        // RESTORE ORIGINAL MATERIALS
-        // ---------------------------------------------------------
-
         if (readyHighlight != null)
-        {
             readyHighlight.Unhighlight();
 
-            Debug.Log(
-                "[StampTransition] Ready Stamp original material restored."
-            );
-        }
-
         if (notReadyHighlight != null)
-        {
             notReadyHighlight.Unhighlight();
-
-            Debug.Log(
-                "[StampTransition] Not Ready Stamp original material restored."
-            );
-        }
-
-        Debug.Log(
-            "[StampTransition] Starting stamp movement..."
-        );
 
         StopAllCoroutines();
 
         StartCoroutine(MoveStamps());
     }
 
+
+    // =========================================================
+    // MOVE TO WORKSPACE ANIMATION
+    // =========================================================
+
     private IEnumerator MoveStamps()
     {
-        // ---------------------------------------------------------
-        // SAVE START POSITIONS / ROTATIONS
-        // ---------------------------------------------------------
+        transitionRunning = true;
 
-        Vector3 readyStartPosition = readyStamp.position;
-        Quaternion readyStartRotation = readyStamp.rotation;
+        // -----------------------------------------------------
+        // DISABLE DRAGGING WHILE MOVING
+        // -----------------------------------------------------
 
-        Vector3 notReadyStartPosition = notReadyStamp.position;
-        Quaternion notReadyStartRotation = notReadyStamp.rotation;
+        SetStampDragging(false);
 
-        // ---------------------------------------------------------
-        // SAVE TARGET POSITIONS / ROTATIONS
-        // ---------------------------------------------------------
+        // -----------------------------------------------------
+        // SAVE CURRENT POSITIONS
+        // -----------------------------------------------------
 
-        Vector3 readyEndPosition = readyTarget.position;
-        Quaternion readyEndRotation = readyTarget.rotation;
+        Vector3 readyStartPosition =
+            readyStamp.position;
 
-        Vector3 notReadyEndPosition = notReadyTarget.position;
-        Quaternion notReadyEndRotation = notReadyTarget.rotation;
+        Quaternion readyStartRotation =
+            readyStamp.rotation;
+
+        Vector3 notReadyStartPosition =
+            notReadyStamp.position;
+
+        Quaternion notReadyStartRotation =
+            notReadyStamp.rotation;
+
+        // -----------------------------------------------------
+        // TARGET POSITIONS
+        // -----------------------------------------------------
+
+        Vector3 readyEndPosition =
+            readyTarget.position;
+
+        Quaternion readyEndRotation =
+            readyTarget.rotation;
+
+        Vector3 notReadyEndPosition =
+            notReadyTarget.position;
+
+        Quaternion notReadyEndRotation =
+            notReadyTarget.rotation;
 
         Debug.Log(
             $"[StampTransition] Ready movement: " +
@@ -165,9 +199,9 @@ public class StampTransitionController : MonoBehaviour
             $"{notReadyStartPosition} -> {notReadyEndPosition}"
         );
 
-        // ---------------------------------------------------------
+        // -----------------------------------------------------
         // ANIMATION
-        // ---------------------------------------------------------
+        // -----------------------------------------------------
 
         float elapsed = 0f;
 
@@ -175,63 +209,65 @@ public class StampTransitionController : MonoBehaviour
         {
             elapsed += Time.deltaTime;
 
-            float t = Mathf.Clamp01(elapsed / duration);
+            float t =
+                Mathf.Clamp01(
+                    elapsed / duration
+                );
 
-            // Apply animation curve
             t = movementCurve.Evaluate(t);
 
-            // -----------------------------------------------------
-            // READY STAMP
-            // -----------------------------------------------------
+            // Ready Stamp
+            readyStamp.position =
+                Vector3.Lerp(
+                    readyStartPosition,
+                    readyEndPosition,
+                    t
+                );
 
-            readyStamp.position = Vector3.Lerp(
-                readyStartPosition,
-                readyEndPosition,
-                t
-            );
+            readyStamp.rotation =
+                Quaternion.Slerp(
+                    readyStartRotation,
+                    readyEndRotation,
+                    t
+                );
 
-            readyStamp.rotation = Quaternion.Slerp(
-                readyStartRotation,
-                readyEndRotation,
-                t
-            );
+            // Not Ready Stamp
+            notReadyStamp.position =
+                Vector3.Lerp(
+                    notReadyStartPosition,
+                    notReadyEndPosition,
+                    t
+                );
 
-            // -----------------------------------------------------
-            // NOT READY STAMP
-            // -----------------------------------------------------
-
-            notReadyStamp.position = Vector3.Lerp(
-                notReadyStartPosition,
-                notReadyEndPosition,
-                t
-            );
-
-            notReadyStamp.rotation = Quaternion.Slerp(
-                notReadyStartRotation,
-                notReadyEndRotation,
-                t
-            );
+            notReadyStamp.rotation =
+                Quaternion.Slerp(
+                    notReadyStartRotation,
+                    notReadyEndRotation,
+                    t
+                );
 
             yield return null;
         }
 
-        // ---------------------------------------------------------
-        // FORCE FINAL POSITION / ROTATION
-        // ---------------------------------------------------------
+        // -----------------------------------------------------
+        // FORCE FINAL POSITION
+        // -----------------------------------------------------
 
-        readyStamp.position = readyEndPosition;
-        readyStamp.rotation = readyEndRotation;
+        readyStamp.position =
+            readyEndPosition;
 
-        notReadyStamp.position = notReadyEndPosition;
-        notReadyStamp.rotation = notReadyEndRotation;
+        readyStamp.rotation =
+            readyEndRotation;
 
-        // ---------------------------------------------------------
+        notReadyStamp.position =
+            notReadyEndPosition;
+
+        notReadyStamp.rotation =
+            notReadyEndRotation;
+
+        // -----------------------------------------------------
         // UPDATE DRAG ORIGINS
-        // ---------------------------------------------------------
-        // The workspace positions are now the new "home" positions.
-        // If the player drags a stamp somewhere invalid, it will
-        // snap back here instead of returning to the original desk
-        // position.
+        // -----------------------------------------------------
 
         Stamp3DDrag readyDrag =
             readyStamp.GetComponent<Stamp3DDrag>();
@@ -244,13 +280,8 @@ public class StampTransitionController : MonoBehaviour
             readyDrag.SetCurrentPositionAsOrigin();
 
             Debug.Log(
-                "[StampTransition] Ready Stamp drag origin updated."
-            );
-        }
-        else
-        {
-            Debug.LogWarning(
-                "[StampTransition] Stamp3DDrag not found on Ready Stamp."
+                "[StampTransition] " +
+                "Ready Stamp drag origin updated."
             );
         }
 
@@ -259,24 +290,256 @@ public class StampTransitionController : MonoBehaviour
             notReadyDrag.SetCurrentPositionAsOrigin();
 
             Debug.Log(
-                "[StampTransition] Not Ready Stamp drag origin updated."
-            );
-        }
-        else
-        {
-            Debug.LogWarning(
-                "[StampTransition] Stamp3DDrag not found on Not Ready Stamp."
+                "[StampTransition] " +
+                "Not Ready Stamp drag origin updated."
             );
         }
 
+        // -----------------------------------------------------
+        // ENABLE DRAGGING
+        // -----------------------------------------------------
+
+        SetStampDragging(true);
+
+        transitionRunning = false;
+
         Debug.Log(
-            "[StampTransition] Stamp movement COMPLETE."
+            "[StampTransition] Stamp movement COMPLETE. " +
+            "Stamps are now draggable."
         );
     }
 
-    // -------------------------------------------------------------
+
+    // =========================================================
+    // RETURN STAMPS TO ORIGINAL DESK POSITION
+    // =========================================================
+
+    public void ReturnStampsToDesk()
+    {
+        Debug.Log(
+            "[StampTransition] ReturnStampsToDesk() called."
+        );
+
+        if (!originalPositionsSaved)
+        {
+            Debug.LogWarning(
+                "[StampTransition] Original positions were not saved."
+            );
+
+            SaveOriginalPositions();
+        }
+
+        if (readyStamp == null ||
+            notReadyStamp == null)
+        {
+            Debug.LogError(
+                "[StampTransition] Cannot return stamps. " +
+                "Stamp references are missing."
+            );
+
+            return;
+        }
+
+        StopAllCoroutines();
+
+        StartCoroutine(ReturnStamps());
+    }
+
+
+    // =========================================================
+    // RETURN ANIMATION
+    // =========================================================
+
+    private IEnumerator ReturnStamps()
+    {
+        transitionRunning = true;
+
+        // -----------------------------------------------------
+        // DISABLE DRAGGING
+        // -----------------------------------------------------
+
+        SetStampDragging(false);
+
+        // -----------------------------------------------------
+        // CURRENT POSITIONS
+        // -----------------------------------------------------
+
+        Vector3 readyStartPosition =
+            readyStamp.position;
+
+        Quaternion readyStartRotation =
+            readyStamp.rotation;
+
+        Vector3 notReadyStartPosition =
+            notReadyStamp.position;
+
+        Quaternion notReadyStartRotation =
+            notReadyStamp.rotation;
+
+        // -----------------------------------------------------
+        // ORIGINAL DESK POSITIONS
+        // -----------------------------------------------------
+
+        Vector3 readyEndPosition =
+            readyOriginalPosition;
+
+        Quaternion readyEndRotation =
+            readyOriginalRotation;
+
+        Vector3 notReadyEndPosition =
+            notReadyOriginalPosition;
+
+        Quaternion notReadyEndRotation =
+            notReadyOriginalRotation;
+
+        Debug.Log(
+            $"[StampTransition] Returning Ready Stamp: " +
+            $"{readyStartPosition} -> {readyEndPosition}"
+        );
+
+        Debug.Log(
+            $"[StampTransition] Returning Not Ready Stamp: " +
+            $"{notReadyStartPosition} -> {notReadyEndPosition}"
+        );
+
+        // -----------------------------------------------------
+        // ANIMATION
+        // -----------------------------------------------------
+
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+
+            float t =
+                Mathf.Clamp01(
+                    elapsed / duration
+                );
+
+            t = movementCurve.Evaluate(t);
+
+            // Ready Stamp
+            readyStamp.position =
+                Vector3.Lerp(
+                    readyStartPosition,
+                    readyEndPosition,
+                    t
+                );
+
+            readyStamp.rotation =
+                Quaternion.Slerp(
+                    readyStartRotation,
+                    readyEndRotation,
+                    t
+                );
+
+            // Not Ready Stamp
+            notReadyStamp.position =
+                Vector3.Lerp(
+                    notReadyStartPosition,
+                    notReadyEndPosition,
+                    t
+                );
+
+            notReadyStamp.rotation =
+                Quaternion.Slerp(
+                    notReadyStartRotation,
+                    notReadyEndRotation,
+                    t
+                );
+
+            yield return null;
+        }
+
+        // -----------------------------------------------------
+        // FORCE ORIGINAL POSITION
+        // -----------------------------------------------------
+
+        readyStamp.position =
+            readyOriginalPosition;
+
+        readyStamp.rotation =
+            readyOriginalRotation;
+
+        notReadyStamp.position =
+            notReadyOriginalPosition;
+
+        notReadyStamp.rotation =
+            notReadyOriginalRotation;
+
+        // -----------------------------------------------------
+        // RESET DRAG ORIGINS
+        // -----------------------------------------------------
+
+        Stamp3DDrag readyDrag =
+            readyStamp.GetComponent<Stamp3DDrag>();
+
+        Stamp3DDrag notReadyDrag =
+            notReadyStamp.GetComponent<Stamp3DDrag>();
+
+        if (readyDrag != null)
+        {
+            readyDrag.SetCurrentPositionAsOrigin();
+
+            Debug.Log(
+                "[StampTransition] " +
+                "Ready Stamp origin reset to desk."
+            );
+        }
+
+        if (notReadyDrag != null)
+        {
+            notReadyDrag.SetCurrentPositionAsOrigin();
+
+            Debug.Log(
+                "[StampTransition] " +
+                "Not Ready Stamp origin reset to desk."
+            );
+        }
+
+        transitionRunning = false;
+
+        Debug.Log(
+            "[StampTransition] " +
+            "Stamps returned to original desk positions."
+        );
+    }
+
+
+    // =========================================================
+    // ENABLE / DISABLE STAMP DRAGGING
+    // =========================================================
+
+    private void SetStampDragging(bool enabled)
+    {
+        if (readyStamp != null)
+        {
+            Stamp3DDrag readyDrag =
+                readyStamp.GetComponent<Stamp3DDrag>();
+
+            if (readyDrag != null)
+                readyDrag.SetDraggingEnabled(enabled);
+        }
+
+        if (notReadyStamp != null)
+        {
+            Stamp3DDrag notReadyDrag =
+                notReadyStamp.GetComponent<Stamp3DDrag>();
+
+            if (notReadyDrag != null)
+                notReadyDrag.SetDraggingEnabled(enabled);
+        }
+
+        Debug.Log(
+            $"[StampTransition] Stamp dragging: {enabled}"
+        );
+    }
+
+
+    // =========================================================
     // TEMPORARY MOBILE TEST
-    // -------------------------------------------------------------
+    // =========================================================
 
     public void TestMoveStamps()
     {
@@ -284,14 +547,24 @@ public class StampTransitionController : MonoBehaviour
             "========== STAMP TEST BUTTON PRESSED =========="
         );
 
-        Debug.Log(
-            "[StampTransition] TestMoveStamps() called."
-        );
-
         MoveStampsToWorkspace();
 
         Debug.Log(
             "========== STAMP TEST COMMAND SENT =========="
+        );
+    }
+
+
+    public void TestReturnStamps()
+    {
+        Debug.Log(
+            "========== STAMP RETURN TEST BUTTON PRESSED =========="
+        );
+
+        ReturnStampsToDesk();
+
+        Debug.Log(
+            "========== STAMP RETURN TEST COMMAND SENT =========="
         );
     }
 }

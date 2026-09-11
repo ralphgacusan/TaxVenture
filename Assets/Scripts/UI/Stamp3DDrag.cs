@@ -3,20 +3,14 @@ using UnityEngine.EventSystems;
 using System.Collections.Generic;
 
 /// <summary>
-/// 3D Ready / Not Ready stamp drag controller.
+/// Handles dragging a physical 3D Ready / Not Ready stamp.
 ///
-/// RESPONSIBILITIES:
-/// - Detect pointer down on the 3D stamp
-/// - Move the stamp with the pointer
-/// - Detect the existing 2D StampDropZone using EventSystem.RaycastAll
-/// - Apply the stamp through StampUI
-/// - Snap back when dropped elsewhere
-///
-/// DOES NOT:
-/// - Handle tax/game logic
-/// - Handle highlighting
-/// - Use Rigidbody physics
-/// - Use physics collision with the UI
+/// Flow:
+/// 1. Player touches/clicks the 3D stamp.
+/// 2. Stamp follows the pointer.
+/// 3. Pointer is checked against the Case Folder drop zone.
+/// 4. On valid drop, StampUI applies the stamp to CaseData.
+/// 5. Stamp returns to its workspace position.
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
@@ -33,22 +27,25 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
     [Header("Optional Drop Zone Highlight")]
     [SerializeField] private UnityEngine.UI.Graphic dropZoneHighlightGraphic;
 
-    [SerializeField] private Color dropZoneNormalColor = Color.white;
+    [SerializeField]
+    private Color dropZoneNormalColor = Color.white;
 
     [SerializeField]
     private Color dropZoneValidHoverColor =
         new Color(0.6f, 1f, 0.6f);
 
     [Header("After Successful Drop")]
-    [SerializeField] private bool returnAfterSuccessfulDrop = true;
+    [SerializeField]
+    private bool returnAfterSuccessfulDrop = true;
 
     private Camera mainCamera;
 
-    private Vector3 originalPosition;
-    private Quaternion originalRotation;
-
+    private bool draggingEnabled;
     private bool isDragging;
     private bool isSnappingBack;
+
+    private Vector3 originalPosition;
+    private Quaternion originalRotation;
 
     private float dragDepth;
 
@@ -59,15 +56,17 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
     {
         mainCamera = Camera.main;
 
+        originalPosition = transform.position;
+        originalRotation = transform.rotation;
+
+        draggingEnabled = false;
+
         if (mainCamera == null)
         {
             Debug.LogError(
-                $"[{nameof(Stamp3DDrag)}] Main Camera not found."
+                "[Stamp3DDrag] Main Camera not found."
             );
         }
-
-        originalPosition = transform.position;
-        originalRotation = transform.rotation;
     }
 
     // =========================================================
@@ -76,28 +75,53 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        Debug.Log("========================================");
-        Debug.Log($"[STAMP TEST] POINTER DOWN: {gameObject.name}");
-        Debug.Log($"[STAMP TEST] Stamp Type: {stampType}");
-        Debug.Log($"[STAMP TEST] Collider: {GetComponent<Collider>()}");
-        Debug.Log($"[STAMP TEST] Camera: {mainCamera}");
-        Debug.Log("========================================");
+        if (!draggingEnabled)
+            return;
+
+        if (mainCamera == null)
+            return;
+
+        Debug.Log(
+            $"[Stamp3DDrag] Drag started: {name} | Type: {stampType}"
+        );
 
         BeginDrag(eventData.position);
     }
+
+    // =========================================================
+    // ENABLE / DISABLE
+    // =========================================================
+
+    public void SetDraggingEnabled(bool enabled)
+    {
+        draggingEnabled = enabled;
+
+        if (!enabled)
+        {
+            isDragging = false;
+            isSnappingBack = false;
+        }
+
+        Debug.Log(
+            $"[Stamp3DDrag] {name} dragging enabled: {enabled}"
+        );
+    }
+
+    // =========================================================
+    // BEGIN DRAG
+    // =========================================================
+
     private void BeginDrag(Vector2 screenPosition)
     {
         isDragging = true;
         isSnappingBack = false;
 
-        // Preserve the stamp's current distance from the camera.
         dragDepth = Vector3.Dot(
             transform.position -
             mainCamera.transform.position,
             mainCamera.transform.forward
         );
 
-        // Prevent invalid/negative depth.
         if (dragDepth <= 0f)
         {
             dragDepth = 1f;
@@ -161,17 +185,16 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
     }
 
     // =========================================================
-    // STAMP MOVEMENT
+    // MOVE STAMP
     // =========================================================
 
     private void UpdateStampWorldPosition(
         Vector2 screenPosition)
     {
-        if (mainCamera == null)
-            return;
-
         Ray ray =
-            mainCamera.ScreenPointToRay(screenPosition);
+            mainCamera.ScreenPointToRay(
+                screenPosition
+            );
 
         Plane dragPlane =
             new Plane(
@@ -191,7 +214,7 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
     }
 
     // =========================================================
-    // UI DROP ZONE
+    // DROP ZONE
     // =========================================================
 
     private bool IsPointerOverDropZone(
@@ -229,7 +252,6 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
                 return true;
             }
 
-            // Supports child Graphics inside the Button.
             if (hitObject.transform.IsChildOf(
                     stampDropZoneUIObject.transform))
             {
@@ -241,7 +263,7 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
     }
 
     // =========================================================
-    // DROP ZONE FEEDBACK
+    // HIGHLIGHT
     // =========================================================
 
     private void UpdateDropZoneHighlight(
@@ -282,7 +304,7 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
             );
 
         Debug.Log(
-            $"[Stamp3DDrag] RELEASED: {name} | " +
+            $"[Stamp3DDrag] Released {name}. " +
             $"Valid Drop = {validDrop}"
         );
 
@@ -314,7 +336,7 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
         }
 
         Debug.Log(
-            $"[Stamp3DDrag] Applying stamp: {stampType}"
+            $"[Stamp3DDrag] Applying stamp type: {stampType}"
         );
 
         StampUI.Instance.ApplyStampType(
@@ -387,9 +409,7 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
             transform.rotation;
 
         Debug.Log(
-            $"[Stamp3DDrag] New drag origin saved for {name}: " +
-            $"{originalPosition}"
+            $"[Stamp3DDrag] Origin updated for {name}"
         );
     }
 }
-

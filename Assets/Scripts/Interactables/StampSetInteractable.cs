@@ -1,20 +1,15 @@
 using UnityEngine;
 
 /// <summary>
-/// PURPOSE:
-/// Replaces the old physical Stamp cylinders. Sits on the Desk (DeskItem
-/// layer). Clicking it opens the Case Folder UI forced to Page 1, with the
-/// stamp panel visible alongside it, per updated design: stamps live inside
-/// the folder view, not as separate desk objects.
-///
-/// CONNECTS WITH:
-/// - HighlightEffect (same GameObject)
-/// - CaseFolderUI: opened via ShowForStamping() (new method, see below)
+/// Clicking the physical Stamp Set on the desk opens the Case Folder
+/// for stamping and triggers the existing 3D stamp transition.
 /// </summary>
 [RequireComponent(typeof(HighlightEffect))]
 public class StampSetInteractable : MonoBehaviour, IInteractable
 {
-    [SerializeField] private CaseFolderUI caseFolderUI;
+    [Header("References")]
+    [SerializeField] private StampCaseFolderUI caseFolderUI;
+    [SerializeField] private StampTransitionController stampTransitionController;
 
     private HighlightEffect highlight;
 
@@ -23,28 +18,106 @@ public class StampSetInteractable : MonoBehaviour, IInteractable
         highlight = GetComponent<HighlightEffect>();
     }
 
-    public void OnFocus() => highlight.Highlight();
-    public void OnUnfocus()
+    public void OnFocus()
     {
-        if (CameraController.Instance.CurrentMode ==
-            CameraController.CameraMode.Workstation)
-            return;
-
-        highlight.Unhighlight();
-    }
-    public void OnInteract()
-    {
-        caseFolderUI.ShowForStamping();
-
-        // NEW: entering the stamping UI is now what advances into StampAssessmentState.
-        if (GameStateMachine.Instance.CurrentState is AnalyzeEvidenceState
-            || GameStateMachine.Instance.CurrentState is ComputeTaxesState
-            || GameStateMachine.Instance.CurrentState is ResearchTaxState
-            || GameStateMachine.Instance.CurrentState is InterviewClientState)
+        if (highlight != null)
         {
-            GameStateMachine.Instance.ChangeState(new StampAssessmentState());
+            highlight.Highlight();
         }
     }
 
-    public string GetPromptText() => "Click to stamp the Case Folder";
+    public void OnUnfocus()
+    {
+        if (CameraController.Instance != null &&
+            CameraController.Instance.CurrentMode ==
+            CameraController.CameraMode.Workstation)
+        {
+            return;
+        }
+
+        if (highlight != null)
+        {
+            highlight.Unhighlight();
+        }
+    }
+
+    public void OnInteract()
+    {
+        Debug.Log("======================================");
+        Debug.Log("[StampSetInteractable] STAMP SET CLICKED");
+
+        // =====================================================
+        // 1. OPEN STAMP CASE FOLDER
+        // =====================================================
+
+        if (caseFolderUI != null)
+        {
+            Debug.Log(
+                "[StampSetInteractable] Calling " +
+                "caseFolderUI.ShowForStamping()..."
+            );
+
+            caseFolderUI.ShowForStamping();
+
+            Debug.Log(
+                "[StampSetInteractable] ShowForStamping() returned."
+            );
+        }
+        else
+        {
+            Debug.LogError(
+                "[StampSetInteractable] " +
+                "caseFolderUI IS NULL!"
+            );
+        }
+
+        // =====================================================
+        // 2. CHANGE FSM STATE
+        // =====================================================
+
+        if (GameStateMachine.Instance != null)
+        {
+            if (GameStateMachine.Instance.CurrentState is AnalyzeEvidenceState
+                || GameStateMachine.Instance.CurrentState is ComputeTaxesState
+                || GameStateMachine.Instance.CurrentState is ResearchTaxState
+                || GameStateMachine.Instance.CurrentState is InterviewClientState)
+            {
+                Debug.Log(
+                    "[StampSetInteractable] Changing FSM to " +
+                    "StampAssessmentState."
+                );
+
+                GameStateMachine.Instance.ChangeState(
+                    new StampAssessmentState()
+                );
+            }
+        }
+
+        // =====================================================
+        // 3. MOVE 3D STAMPS INTO WORKSPACE
+        // =====================================================
+
+        if (stampTransitionController != null)
+        {
+            Debug.Log(
+                "[StampSetInteractable] Starting stamp transition..."
+            );
+
+            stampTransitionController.MoveStampsToWorkspace();
+        }
+        else
+        {
+            Debug.LogError(
+                "[StampSetInteractable] " +
+                "stampTransitionController IS NULL!"
+            );
+        }
+
+        Debug.Log("======================================");
+    }
+
+    public string GetPromptText()
+    {
+        return "Click to stamp the Case Folder";
+    }
 }

@@ -65,10 +65,6 @@ public class CaseFolderInteractable : MonoBehaviour, IInteractable
 
     public string GetPromptText()
     {
-        if (stampUI != null && stampUI.HasSelectedStamp)
-        {
-            return "Click to stamp the Case Folder";
-        }
         return "Click to open Case Folder";
     }
 }
