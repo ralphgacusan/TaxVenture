@@ -43,6 +43,13 @@ public class CaseProgressionManager : MonoBehaviour
     private bool levelStarted = false;
     private bool waitingForNextCase = false;
 
+    // Add near your other private fields:
+    private readonly LevelRewardAccumulator rewardAccumulator = new LevelRewardAccumulator();
+
+    public LevelRewardAccumulator RewardAccumulator => rewardAccumulator;
+
+    private float caseStartTime;
+
 
     private void Awake()
     {
@@ -119,6 +126,7 @@ public class CaseProgressionManager : MonoBehaviour
 
         currentCaseIndex = 0;
         levelStarted = true;
+        rewardAccumulator.Reset(); // <-- add this line
 
         Debug.Log(
             $"[CaseProgressionManager] Level '{levelId}' " +
@@ -205,6 +213,8 @@ public class CaseProgressionManager : MonoBehaviour
             levelId,
             caseId
         );
+
+        caseStartTime = Time.time;
 
 
         if (CaseManager.Instance.CurrentCase == null)
@@ -312,6 +322,22 @@ public class CaseProgressionManager : MonoBehaviour
             $"[CaseProgressionManager] Case " +
             $"{currentCaseIndex + 1} is now active."
         );
+    }
+
+    /// <summary>
+    /// Time elapsed since the current case was loaded, formatted the same
+    /// way LevelTimer formats its total (HH:MM:SS). Used for the per-case
+    /// result popup — NOT the level-wide LevelTimer value.
+    /// </summary>
+    public string GetCurrentCaseFormattedTime()
+    {
+        float elapsed = Time.time - caseStartTime;
+
+        int hours = Mathf.FloorToInt(elapsed / 3600f);
+        int minutes = Mathf.FloorToInt((elapsed % 3600f) / 60f);
+        int seconds = Mathf.FloorToInt(elapsed % 60f);
+
+        return $"{hours:00}:{minutes:00}:{seconds:00}";
     }
 
 
@@ -523,5 +549,27 @@ public class CaseProgressionManager : MonoBehaviour
     {
         if (Instance == this)
             Instance = null;
+    }
+
+    /// <summary>
+    /// Calculates a case's reward exactly once and stores it in the
+    /// accumulator. Every place that needs a case's reward (the per-case
+    /// popup, or the perfect-case silent path) must go through here —
+    /// never call RewardsCalculator.BuildResult directly anywhere else.
+    /// </summary>
+    public LevelResultData CalculateAndStoreCaseReward(CaseData data)
+    {
+        LevelResultData result = RewardsCalculator.BuildResult(data);
+
+        rewardAccumulator.AddCaseResult(result);
+
+        Debug.Log(
+            $"[CaseProgressionManager] Case reward calculated & stored. " +
+            $"EXP: {result.ExpEarned}, Reputation: {result.ReputationEarned}. " +
+            $"Running level total -> EXP: {rewardAccumulator.GetTotalExp()}, " +
+            $"Reputation: {rewardAccumulator.GetTotalReputation()}"
+        );
+
+        return result;
     }
 }

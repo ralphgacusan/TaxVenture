@@ -24,7 +24,7 @@ public class ValueTransferManager : MonoBehaviour
 {
     public static ValueTransferManager Instance { get; private set; }
 
-    public event Action<object> OnSelectionChanged; // the selected source component, or null
+    public event Action<object> OnSelectionChanged;
     public event Action<DataValue> OnTransferSucceeded;
     public event Action<DataValue, string> OnTransferFailed;
 
@@ -32,16 +32,29 @@ public class ValueTransferManager : MonoBehaviour
     public object SelectedSourceComponent { get; private set; }
     public bool HasSelection => SelectedValue != null;
 
+
+    // =========================================================
+    // UNITY
+    // =========================================================
+
     private void Awake()
     {
         Instance = this;
     }
 
+
+    // =========================================================
+    // SELECT VALUE
+    // =========================================================
+
     /// <summary>
-    /// Called by a source's UI wrapper when clicked. Clicking the SAME
-    /// already-selected source again deselects it (toggle).
+    /// Called by a source's UI wrapper when clicked.
+    /// Clicking the SAME already-selected source again deselects it.
     /// </summary>
-    public void SelectValue(IDataValueSource source, object sourceComponent)
+    public void SelectValue(
+        IDataValueSource source,
+        object sourceComponent
+    )
     {
         if (SelectedSourceComponent == sourceComponent)
         {
@@ -53,32 +66,70 @@ public class ValueTransferManager : MonoBehaviour
         SelectedSourceComponent = sourceComponent;
 
         Debug.Log(
-            $"Selected: {SelectedValue.DisplayText} | Key: {SelectedValue.SemanticKey} | Type: {SelectedValue.Type}"
+            $"Selected: {SelectedValue.DisplayText} | " +
+            $"Key: {SelectedValue.SemanticKey} | " +
+            $"Type: {SelectedValue.Type}"
         );
-        OnSelectionChanged?.Invoke(SelectedSourceComponent);
+
+
+        // -----------------------------------------------------
+        // Play selection SFX.
+        // -----------------------------------------------------
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayMouseClickSelectSFX();
+        }
+
+
+        OnSelectionChanged?.Invoke(
+            SelectedSourceComponent
+        );
     }
+
+
+    // =========================================================
+    // CLEAR SELECTION
+    // =========================================================
 
     public void ClearSelection()
     {
         SelectedValue = null;
         SelectedSourceComponent = null;
+
         OnSelectionChanged?.Invoke(null);
     }
 
-    /// <summary>Called by a destination's UI wrapper when clicked.</summary>
-    public void TryPlaceOnDestination(IDataValueDestination destination)
+
+    // =========================================================
+    // PLACE VALUE
+    // =========================================================
+
+    /// <summary>
+    /// Called by a destination's UI wrapper when clicked.
+    /// </summary>
+    public void TryPlaceOnDestination(
+        IDataValueDestination destination
+    )
     {
         if (!HasSelection)
         {
-            Debug.Log("TryPlaceOnDestination called but no value is selected.");
+            Debug.Log(
+                "TryPlaceOnDestination called but no value is selected."
+            );
+
             return;
         }
 
         if (destination == null)
         {
-            Debug.LogError("Destination is NULL!");
+            Debug.LogError(
+                "Destination is NULL!"
+            );
+
             return;
         }
+
 
         Debug.Log(
             $"Trying to place {SelectedValue.DisplayText} " +
@@ -86,7 +137,14 @@ public class ValueTransferManager : MonoBehaviour
         );
 
 
-        bool canAccept = destination.CanAccept(SelectedValue);
+        // =====================================================
+        // VALIDATE DESTINATION
+        // =====================================================
+
+        bool canAccept =
+            destination.CanAccept(
+                SelectedValue
+            );
 
         Debug.Log(
             $"CanAccept: {canAccept}"
@@ -96,51 +154,102 @@ public class ValueTransferManager : MonoBehaviour
         if (!canAccept)
         {
             Debug.Log(
-                $"Rejected: {SelectedValue.SemanticKey} ({SelectedValue.Type})"
+                $"Rejected: {SelectedValue.SemanticKey} " +
+                $"({SelectedValue.Type})"
             );
 
             OnTransferFailed?.Invoke(
                 SelectedValue,
-                BuildRejectionReason(SelectedValue)
+                BuildRejectionReason(
+                    SelectedValue
+                )
             );
 
             return;
         }
 
 
-        bool accepted = destination.TryReceiveValue(SelectedValue);
+        // =====================================================
+        // PERFORM TRANSFER
+        // =====================================================
+
+        bool accepted =
+            destination.TryReceiveValue(
+                SelectedValue
+            );
 
         Debug.Log(
             $"TryReceiveValue returned: {accepted}"
         );
 
 
+        // =====================================================
+        // SUCCESS
+        // =====================================================
+
         if (accepted)
         {
-            Debug.Log("Transfer successful!");
-
-            OnTransferSucceeded?.Invoke(SelectedValue);
-            ClearSelection();
-        }
-        else
-        {
-            Debug.Log("Destination refused value after CanAccept.");
-
-            OnTransferFailed?.Invoke(
-                SelectedValue,
-                "This value could not be placed here."
+            Debug.Log(
+                "Transfer successful!"
             );
+
+
+            // -------------------------------------------------
+            // Play successful placement SFX.
+            // -------------------------------------------------
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySelectSFX();
+            }
+
+
+            OnTransferSucceeded?.Invoke(
+                SelectedValue
+            );
+
+            ClearSelection();
+
+            return;
         }
+
+
+        // =====================================================
+        // DESTINATION REFUSED
+        // =====================================================
+
+        Debug.Log(
+            "Destination refused value after CanAccept."
+        );
+
+        OnTransferFailed?.Invoke(
+            SelectedValue,
+            "This value could not be placed here."
+        );
     }
 
-    private string BuildRejectionReason(DataValue value)
+
+    // =========================================================
+    // REJECTION REASON
+    // =========================================================
+
+    private string BuildRejectionReason(
+        DataValue value
+    )
     {
         return value.Type switch
         {
-            DataValueType.Number => "This field only accepts numeric values.",
-            DataValueType.Text => "This field only accepts text values.",
-            DataValueType.Enum => "This field only accepts a matching category.",
-            _ => "Value cannot be placed here."
+            DataValueType.Number =>
+                "This field only accepts numeric values.",
+
+            DataValueType.Text =>
+                "This field only accepts text values.",
+
+            DataValueType.Enum =>
+                "This field only accepts a matching category.",
+
+            _ =>
+                "Value cannot be placed here."
         };
     }
 }

@@ -45,7 +45,6 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
         bool alreadySubmitted = GameStateMachine.Instance.CurrentState is AuditSubmittedState
             || GameStateMachine.Instance.CurrentState is CaseOutcomeState
             || GameStateMachine.Instance.CurrentState is ArchiveCaseState
-            || GameStateMachine.Instance.CurrentState is RewardsState
             || GameStateMachine.Instance.CurrentState is CaseCompleteState;
 
         if (alreadySubmitted)

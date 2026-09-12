@@ -65,24 +65,13 @@ public class CaseFolderInteractable :
             "Case Folder opened."
         );
 
+        // Play Paper 2 SFX every time the 3D Case Folder is interacted with.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperSFX();
+        }
 
-        // =========================================================
-        // UNLOCK HUD CASE FOLDER ICON
-        // =========================================================
-
-        // IMPORTANT:
-        // Do NOT use a "first time only" bool here.
-        //
-        // Case 1 → event fires
-        // Case 2 → event fires again
-        // Case 3 → event fires again
-        // etc.
         GameplayEvents.RaiseCaseFolderOpened();
-
-
-        // =========================================================
-        // OPEN CASE FOLDER
-        // =========================================================
 
         if (caseFolderUI == null)
         {
@@ -94,13 +83,7 @@ public class CaseFolderInteractable :
             return;
         }
 
-
         caseFolderUI.Show();
-
-
-        // =========================================================
-        // CHANGE GAMEPLAY STATE
-        // =========================================================
 
         if (GameStateMachine.Instance == null)
         {
@@ -112,15 +95,9 @@ public class CaseFolderInteractable :
             return;
         }
 
-
         GameStateMachine.Instance.ChangeState(
             new ReviewDocumentsState()
         );
-
-
-        // =========================================================
-        // TUTORIAL
-        // =========================================================
 
         if (TutorialController.Instance != null)
         {

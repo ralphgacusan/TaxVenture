@@ -34,6 +34,12 @@ public class TaxCodeBookInteractable : MonoBehaviour, IInteractable
     }
     public void OnInteract()
     {
+        // Play Paper 2 SFX every time the 3D Tax Code Book is interacted with.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperSFX();
+        }
+
         if (!hasBeenOpenedOnce)
         {
             hasBeenOpenedOnce = true;
@@ -48,8 +54,8 @@ public class TaxCodeBookInteractable : MonoBehaviour, IInteractable
         {
             GameStateMachine.Instance.ChangeState(new ResearchTaxState());
         }
+
         taxCodeBookUI.Show();
     }
-
     public string GetPromptText() => "Click to open Tax Code Book";
 }

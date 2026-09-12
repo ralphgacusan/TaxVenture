@@ -107,20 +107,35 @@ public class ClientInteractable : MonoBehaviour, IInteractable
         if (TutorialController.Instance != null)
             TutorialController.Instance.ReportInteraction("outcome_presented");
 
-        if (!(GameStateMachine.Instance.CurrentState is CaseOutcomeState)) return;
+        if (!(GameStateMachine.Instance is CaseOutcomeState) &&
+            !(GameStateMachine.Instance.CurrentState is CaseOutcomeState)) return;
+
+        CaseData data = CaseManager.Instance.CurrentCase;
+
+        // Calculate and store the reward exactly ONCE, regardless of branch.
+        LevelResultData caseResult =
+            CaseProgressionManager.Instance.CalculateAndStoreCaseReward(data);
 
         if (branch == ClientOutcomeBranch.CorrectNoIssues)
         {
-            // Perfect case: skip the popup here entirely, go straight to
-            // archiving. Level Result shows AFTER the archive confirmation
-            // is closed instead — see FilingCabinetInteractable.
+            // Perfect case: reward is now stored, but we skip the popup
+            // and go straight to archiving, as before.
             GameStateMachine.Instance.ChangeState(new ArchiveCaseState());
         }
         else
         {
-            // All other branches: show Level Result immediately, as before.
-            LevelResultPopupUI.Instance.Show(CaseManager.Instance.CurrentCase, OnLevelResultClosed);
+            // All other branches: show the per-case result popup.
+            CaseResultPopupUI.Instance.Show(
+                caseResult,
+                CaseProgressionManager.Instance.GetCurrentCaseFormattedTime(),
+                OnCaseResultClosed
+            );
         }
+    }
+
+    private void OnCaseResultClosed()
+    {
+        GameStateMachine.Instance.ChangeState(new ArchiveCaseState());
     }
 
 

@@ -1,29 +1,24 @@
-
 using UnityEngine;
 
-/// <summary>
-/// PURPOSE:
-/// Terminal FSM state reached when the LAST case in the current level's
-/// caseIds list has been completed. Mirrors CaseCompleteState's structure
-/// exactly — same pattern, different destination UI.
-/// </summary>
 public class LevelCompleteState : IGameState
 {
     public string StateName => "Level Complete";
 
     public void Enter()
     {
-        Debug.Log(
-            "[LevelCompleteState] Entered — all cases in this level are finished."
-        );
+        Debug.Log("[LevelCompleteState] Entered — all cases in this level are finished.");
 
-        // Play achievement SFX when the entire level is completed.
-        if (AudioManager.Instance != null)
+        if (CaseProgressionManager.Instance == null)
         {
-            AudioManager.Instance.PlayAchievementSFX();
+            Debug.LogError("[LevelCompleteState] CaseProgressionManager.Instance is NULL.");
+            return;
         }
 
-        LevelCompleteUI.Instance.Show();
+        LevelTotalResult levelTotal = LevelTotalResult.FromAccumulator(
+            CaseProgressionManager.Instance.RewardAccumulator
+        );
+
+        LevelCompleteUI.Instance.Show(levelTotal);
     }
 
     public void Exit()
@@ -35,4 +30,3 @@ public class LevelCompleteState : IGameState
     {
     }
 }
-

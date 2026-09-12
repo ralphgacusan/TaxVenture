@@ -30,7 +30,6 @@ public static class TaskListProvider
             new TaskDefinition(typeof(ComplianceAuditState), "Submit the case for compliance audit."),
             new TaskDefinition(typeof(CaseOutcomeState), "Present the completed findings to the client."),
             new TaskDefinition(typeof(ArchiveCaseState), "Archive the completed case in the filing cabinet."),
-            new TaskDefinition(typeof(RewardsState), "Collect your rewards for completing the case."),
         };
     }
 }

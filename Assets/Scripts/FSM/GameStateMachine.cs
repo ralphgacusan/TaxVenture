@@ -160,7 +160,6 @@ public class GameStateMachine : MonoBehaviour
         return state is AuditSubmittedState
             || state is CaseOutcomeState
             || state is ArchiveCaseState
-            || state is RewardsState
             || state is CaseCompleteState
             || state is LevelCompleteState
             || state is ReceiveCaseState;

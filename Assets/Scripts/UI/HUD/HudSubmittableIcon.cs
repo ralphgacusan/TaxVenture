@@ -525,12 +525,10 @@ public class HudSubmittableIcon :
             return;
         }
 
-
         Debug.Log(
             $"[HudSubmittableIcon] " +
             $"{name}: TOGGLE"
         );
-
 
         Debug.Log(
             $"[HudSubmittableIcon] " +
@@ -538,16 +536,14 @@ public class HudSubmittableIcon :
             $"{floatingWindow.gameObject.activeSelf}"
         );
 
-
-        // -----------------------------------------------------
-        // NORMAL CLICK
-        //
-        // FloatingWindow.ToggleWindow() uses OpenWindow(),
-        // which opens the window CENTERED.
-        // -----------------------------------------------------
+        // Play paper sound every time the Case Folder or Tax Return
+        // HUD window is opened or closed through a normal click.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperSFX();
+        }
 
         floatingWindow.ToggleWindow();
-
 
         Debug.Log(
             $"[HudSubmittableIcon] " +
@@ -555,7 +551,6 @@ public class HudSubmittableIcon :
             $"{floatingWindow.gameObject.activeSelf}"
         );
     }
-
 
     // =========================================================
     // RESOLVE DRAG DROP
