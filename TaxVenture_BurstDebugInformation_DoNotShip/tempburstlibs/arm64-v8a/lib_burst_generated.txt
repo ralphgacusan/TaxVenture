@@ -10,7 +10,6 @@ Library: C:\Learn\Projects\TaxVenture\TaxVenture\Temp\BurstOutput\tempburstlibs\
 --target-framework=NetFramework
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=C:\Learn\Projects\TaxVenture\TaxVenture\Temp\Burst
---debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.4.5f1/Editor/Data/PlaybackEngines/AndroidPlayer
 --decode-folder=C:\Learn\Projects\TaxVenture\TaxVenture\Library\Burst
 --output=C:\Learn\Projects\TaxVenture\TaxVenture\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated
@@ -104,7 +103,6 @@ Library: C:\Learn\Projects\TaxVenture\TaxVenture\Temp\BurstOutput\tempburstlibs\
 --float-mode=Fast
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=C:\Learn\Projects\TaxVenture\TaxVenture\Temp\Burst
---debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.4.5f1/Editor/Data/PlaybackEngines/AndroidPlayer
 --decode-folder=C:\Learn\Projects\TaxVenture\TaxVenture\Library\Burst
 --output=C:\Learn\Projects\TaxVenture\TaxVenture\Temp\BurstOutput\tempburstlibs\arm64-v8a\lib_burst_generated

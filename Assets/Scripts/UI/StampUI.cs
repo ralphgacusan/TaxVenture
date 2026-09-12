@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using TMPro;
 
@@ -11,6 +10,7 @@ using TMPro;
 /// - FSM transition
 /// - World Space Case Folder refresh
 /// - Stamp feedback
+/// - Stamp application SFX
 /// </summary>
 public class StampUI : MonoBehaviour
 {
@@ -82,6 +82,16 @@ public class StampUI : MonoBehaviour
         Debug.Log(
             $"[StampUI] Applying 3D stamp: {type}"
         );
+
+
+        // -----------------------------------------------------
+        // STAMP SFX
+        // -----------------------------------------------------
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySelectSFX();
+        }
 
 
         // -----------------------------------------------------

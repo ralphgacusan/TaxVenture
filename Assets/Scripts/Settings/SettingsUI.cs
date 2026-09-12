@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class SettingsUI : MonoBehaviour
 {
@@ -35,6 +36,7 @@ public class SettingsUI : MonoBehaviour
         if (backButton != null)
         {
             backButton.onClick.AddListener(CloseSettings);
+            backButton.onClick.AddListener(GoToMainMenu);
         }
         else
         {
@@ -71,6 +73,7 @@ public class SettingsUI : MonoBehaviour
         if (backButton != null)
         {
             backButton.onClick.RemoveListener(CloseSettings);
+            backButton.onClick.RemoveListener(GoToMainMenu);
         }
     }
 
@@ -101,6 +104,20 @@ public class SettingsUI : MonoBehaviour
         }
 
         settingsPanel.SetActive(false);
+    }
+
+    // =========================================================
+    // RETURN TO MAIN MENU
+    // =========================================================
+
+    public void GoToMainMenu()
+    {
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySelectSFX();
+        }
+
+        SceneManager.LoadScene("MainMenu");
     }
 
     // =========================================================

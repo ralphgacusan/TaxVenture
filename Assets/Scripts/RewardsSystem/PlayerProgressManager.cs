@@ -16,6 +16,12 @@ using System.IO;
 /// CaseValidationResult<T>: Load() always produces a valid, non-null
 /// PlayerProgressData, and failures are logged rather than silently
 /// producing bad state.
+///
+/// PERSISTENCE:
+/// This GameObject survives scene loads via DontDestroyOnLoad, so it
+/// only needs to exist once — place it in the MainMenu scene. Progress,
+/// gameplay, and any other scene can then safely call
+/// PlayerProgressManager.Instance without re-loading from disk.
 /// </summary>
 public class PlayerProgressManager : MonoBehaviour
 {
@@ -41,6 +47,7 @@ public class PlayerProgressManager : MonoBehaviour
         }
 
         Instance = this;
+        DontDestroyOnLoad(gameObject);
 
         var loadResult = Load();
 

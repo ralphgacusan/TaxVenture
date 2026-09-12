@@ -137,6 +137,15 @@ public class StampTransitionController : MonoBehaviour
         if (notReadyHighlight != null)
             notReadyHighlight.Unhighlight();
 
+        // -----------------------------------------------------
+        // PAPER SFX
+        // -----------------------------------------------------
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperSFX();
+        }
+
         StopAllCoroutines();
 
         StartCoroutine(MoveStamps());
@@ -338,6 +347,15 @@ public class StampTransitionController : MonoBehaviour
             );
 
             return;
+        }
+
+        // -----------------------------------------------------
+        // PAPER SFX
+        // -----------------------------------------------------
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperSFX();
         }
 
         StopAllCoroutines();
