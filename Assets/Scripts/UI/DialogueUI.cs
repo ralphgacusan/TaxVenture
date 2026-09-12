@@ -1,3 +1,4 @@
+
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -5,118 +6,426 @@ using TMPro;
 
 /// <summary>
 /// PURPOSE:
-/// THE single, reusable dialogue system for every NPC conversation in the
+/// The single, reusable dialogue system for every NPC conversation in the
 /// game (Receptionist, Client interview, Client outcome, Auditor review,
-/// any future NPC). Replaces InterviewClientUI's question-button interview
-/// mode and the separate AuditorDialogueUI entirely — this is now the only
-/// dialogue panel in the project.
-///
-/// LAYOUT (per R4 spec):
-/// - Left 25%: circular portrait placeholder (swaps per DialogueLine.PortraitId
-///   once real art exists; currently a single placeholder sprite regardless)
-/// - Right 75%: dialogue text
-/// - Bottom-right: Continue button
+/// any future NPC).
 ///
 /// RESPONSIBILITIES:
-/// - Show/hide the panel
+/// - Show/hide the dialogue panel
 /// - Play a queue of DialogueLine entries one at a time via Continue
+/// - Display the correct speaker and portrait
+/// - Play NPC dialogue SFX whenever a new NPC line appears
 /// - Invoke a completion callback when the queue ends
-/// - Lock player controls for the full duration (CameraController)
+/// - Lock player controls for the full duration
 ///
 /// DOES NOT:
-/// - Know anything about WHICH npc is talking, what the conversation is
-///   ABOUT, or what happens after — all of that is supplied by the caller
-///   (ReceptionistInteractable, ClientInteractable, AuditorInteractable)
-///   via StartDialogue(lines, onConcluded).
+/// - Know anything about which NPC is talking
+/// - Know what the conversation is about
+/// - Know what happens after the conversation
+///
+/// All of that is supplied by the caller through:
+/// StartDialogue(lines, onConcluded).
 ///
 /// CONNECTS WITH:
 /// - CameraController.LockPlayerControls() / UnlockPlayerControls()
+/// - AudioManager.PlayNPCDialogueSFX()
+/// - DialoguePortraitDatabase
 /// - Any *Interactable script that needs a conversation
 /// </summary>
 public class DialogueUI : MonoBehaviour
 {
+    // =========================================================
+    // PANEL
+    // =========================================================
+
     [Header("Panel")]
-    [SerializeField] private GameObject panelRoot;
+    [SerializeField]
+    private GameObject panelRoot;
+
+
+    // =========================================================
+    // PORTRAIT
+    // =========================================================
 
     [Header("Portrait (left 25%)")]
-    [SerializeField] private Image portraitImage;
-    [SerializeField] private Sprite defaultPortraitPlaceholder;
+
+    [SerializeField]
+    private Image portraitImage;
+
+    [SerializeField]
+    private Sprite defaultPortraitPlaceholder;
+
+
+    // =========================================================
+    // DIALOGUE TEXT
+    // =========================================================
 
     [Header("Dialogue Text (right 75%)")]
-    [SerializeField] private TextMeshProUGUI speakerNameText; // optional, e.g. "Client" / "You"
-    [SerializeField] private TextMeshProUGUI dialogueText;
+
+    [SerializeField]
+    private TextMeshProUGUI speakerNameText;
+
+    [SerializeField]
+    private TextMeshProUGUI dialogueText;
+
+
+    // =========================================================
+    // CONTINUE BUTTON
+    // =========================================================
 
     [Header("Continue (bottom-right)")]
-    [SerializeField] private Button continueButton;
+
+    [SerializeField]
+    private Button continueButton;
+
+
+    // =========================================================
+    // INTERNAL STATE
+    // =========================================================
 
     private List<DialogueLine> currentLines;
+
     private int lineIndex;
+
     private System.Action onConcluded;
+
+
+    // =========================================================
+    // UNITY
+    // =========================================================
 
     private void Awake()
     {
         Hide();
-        continueButton.onClick.AddListener(OnContinuePressed);
+
+
+        if (continueButton != null)
+        {
+            continueButton.onClick.AddListener(
+                OnContinuePressed
+            );
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[DialogueUI] Continue Button is not assigned."
+            );
+        }
     }
 
-    /// <summary>
-    /// Starts a sequential conversation. Locks player controls for the
-    /// entire duration; unlocks automatically when the queue concludes.
-    /// </summary>
-    public void StartDialogue(List<DialogueLine> lines, System.Action onConcludedCallback)
+
+    private void OnDestroy()
     {
-        currentLines = lines;
-        lineIndex = 0;
-        onConcluded = onConcludedCallback;
+        if (continueButton != null)
+        {
+            continueButton.onClick.RemoveListener(
+                OnContinuePressed
+            );
+        }
+    }
 
-        CameraController.Instance.LockPlayerControls();
 
-        panelRoot.SetActive(true);
+    // =========================================================
+    // START DIALOGUE
+    // =========================================================
+
+    /// <summary>
+    /// Starts a sequential conversation.
+    ///
+    /// Player controls are locked for the entire duration.
+    /// </summary>
+    public void StartDialogue(
+        List<DialogueLine> lines,
+        System.Action onConcludedCallback
+    )
+    {
+        // -----------------------------------------------------
+        // Validate dialogue data.
+        // -----------------------------------------------------
+
+        if (lines == null ||
+            lines.Count == 0)
+        {
+            Debug.LogWarning(
+                "[DialogueUI] StartDialogue() received " +
+                "an empty dialogue list."
+            );
+
+            onConcludedCallback?.Invoke();
+
+            return;
+        }
+
+
+        // -----------------------------------------------------
+        // Store dialogue.
+        // -----------------------------------------------------
+
+        currentLines =
+            lines;
+
+        lineIndex =
+            0;
+
+        onConcluded =
+            onConcludedCallback;
+
+
+        // -----------------------------------------------------
+        // Lock player controls.
+        // -----------------------------------------------------
+
+        if (CameraController.Instance != null)
+        {
+            CameraController.Instance
+                .LockPlayerControls();
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[DialogueUI] " +
+                "CameraController.Instance is NULL."
+            );
+        }
+
+
+        // -----------------------------------------------------
+        // Show panel.
+        // -----------------------------------------------------
+
+        if (panelRoot != null)
+        {
+            panelRoot.SetActive(true);
+        }
+        else
+        {
+            Debug.LogError(
+                "[DialogueUI] " +
+                "Panel Root is NOT assigned."
+            );
+        }
+
+
+        // -----------------------------------------------------
+        // Render first line.
+        // -----------------------------------------------------
+
         RenderCurrentLine();
     }
 
+
+    // =========================================================
+    // RENDER CURRENT LINE
+    // =========================================================
+
     private void RenderCurrentLine()
     {
-        if (lineIndex >= currentLines.Count) return;
+        // -----------------------------------------------------
+        // Safety checks.
+        // -----------------------------------------------------
 
-        DialogueLine line = currentLines[lineIndex];
+        if (currentLines == null ||
+            currentLines.Count == 0)
+        {
+            return;
+        }
 
-        speakerNameText.text = line.Speaker == DialogueSpeaker.Player
-            ? "You"
-            : line.SpeakerName; dialogueText.text = line.Text;
 
-        // Placeholder portrait swap hook — currently always the same sprite,
-        // but reads PortraitId so future art only requires a lookup here.
-        Sprite portrait =
-            DialoguePortraitDatabase.Instance.GetPortrait(line.PortraitId);
+        if (lineIndex < 0 ||
+            lineIndex >= currentLines.Count)
+        {
+            return;
+        }
 
-        portraitImage.sprite = portrait != null
-            ? portrait
-            : defaultPortraitPlaceholder;
+
+        DialogueLine line =
+            currentLines[lineIndex];
+
+
+        // -----------------------------------------------------
+        // SPEAKER NAME
+        // -----------------------------------------------------
+
+        if (speakerNameText != null)
+        {
+            speakerNameText.text =
+                line.Speaker == DialogueSpeaker.Player
+                    ? "You"
+                    : line.SpeakerName;
+        }
+
+
+        // -----------------------------------------------------
+        // DIALOGUE TEXT
+        // -----------------------------------------------------
+
+        if (dialogueText != null)
+        {
+            dialogueText.text =
+                line.Text;
+        }
+
+
+        // -----------------------------------------------------
+        // PORTRAIT
+        // -----------------------------------------------------
+
+        if (portraitImage != null)
+        {
+            Sprite portrait = null;
+
+
+            if (DialoguePortraitDatabase.Instance != null)
+            {
+                portrait =
+                    DialoguePortraitDatabase.Instance
+                        .GetPortrait(
+                            line.PortraitId
+                        );
+            }
+
+
+            portraitImage.sprite =
+                portrait != null
+                    ? portrait
+                    : defaultPortraitPlaceholder;
+        }
+
+
+        // =====================================================
+        // NPC DIALOGUE SFX
+        // =====================================================
+        //
+        // Play the sound ONLY for NPC dialogue.
+        //
+        // Player lines do not trigger the NPC voice sound.
+        //
+        // This means every NPC automatically gets the sound:
+        //
+        // Receptionist → 🔊
+        // Client       → 🔊
+        // Auditor      → 🔊
+        // Future NPC   → 🔊
+        //
+        // No changes are required in their Interactable scripts.
+        // =====================================================
+
+        if (line.Speaker != DialogueSpeaker.Player)
+        {
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance
+                    .PlayNPCDialogueSFX();
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[DialogueUI] " +
+                    "AudioManager.Instance is NULL. " +
+                    "NPC dialogue SFX could not be played."
+                );
+            }
+        }
     }
+
+
+    // =========================================================
+    // CONTINUE
+    // =========================================================
 
     private void OnContinuePressed()
     {
+        // -----------------------------------------------------
+        // Safety check.
+        // -----------------------------------------------------
+
+        if (currentLines == null ||
+            currentLines.Count == 0)
+        {
+            ConcludeDialogue();
+
+            return;
+        }
+
+
+        // -----------------------------------------------------
+        // Move to next line.
+        // -----------------------------------------------------
+
         lineIndex++;
+
+
+        // -----------------------------------------------------
+        // End of dialogue.
+        // -----------------------------------------------------
 
         if (lineIndex >= currentLines.Count)
         {
             ConcludeDialogue();
+
             return;
         }
+
+
+        // -----------------------------------------------------
+        // Display next line.
+        // -----------------------------------------------------
 
         RenderCurrentLine();
     }
 
+
+    // =========================================================
+    // CONCLUDE DIALOGUE
+    // =========================================================
+
     private void ConcludeDialogue()
     {
         Hide();
-        CameraController.Instance.UnlockPlayerControls();
-        onConcluded?.Invoke();
+
+
+        // -----------------------------------------------------
+        // Unlock player controls.
+        // -----------------------------------------------------
+
+        if (CameraController.Instance != null)
+        {
+            CameraController.Instance
+                .UnlockPlayerControls();
+        }
+
+
+        // -----------------------------------------------------
+        // Save callback locally before clearing it.
+        // -----------------------------------------------------
+
+        System.Action callback =
+            onConcluded;
+
+        onConcluded =
+            null;
+
+        currentLines =
+            null;
+
+
+        // -----------------------------------------------------
+        // Notify caller.
+        // -----------------------------------------------------
+
+        callback?.Invoke();
     }
+
+
+    // =========================================================
+    // HIDE
+    // =========================================================
 
     private void Hide()
     {
-        panelRoot.SetActive(false);
+        if (panelRoot != null)
+        {
+            panelRoot.SetActive(false);
+        }
     }
 }

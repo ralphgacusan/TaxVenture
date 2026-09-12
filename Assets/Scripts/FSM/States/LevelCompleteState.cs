@@ -1,3 +1,4 @@
+
 using UnityEngine;
 
 /// <summary>
@@ -12,10 +13,26 @@ public class LevelCompleteState : IGameState
 
     public void Enter()
     {
-        Debug.Log("[LevelCompleteState] Entered — all cases in this level are finished.");
+        Debug.Log(
+            "[LevelCompleteState] Entered — all cases in this level are finished."
+        );
+
+        // Play achievement SFX when the entire level is completed.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayAchievementSFX();
+        }
+
         LevelCompleteUI.Instance.Show();
     }
 
-    public void Exit() => Debug.Log("[LevelCompleteState] Exited.");
-    public void Tick() { }
+    public void Exit()
+    {
+        Debug.Log("[LevelCompleteState] Exited.");
+    }
+
+    public void Tick()
+    {
+    }
 }
+

@@ -81,18 +81,36 @@ public class TaxCodeBookUI : MonoBehaviour
     }
     public void NextPage()
     {
+        if (bookData == null || bookData.sections == null || bookData.sections.Count == 0)
+            return;
+
         if (currentSectionIndex < bookData.sections.Count - 1)
         {
             currentSectionIndex++;
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayPaperSFX();
+            }
+
             RenderSection(currentSectionIndex);
         }
     }
 
     public void PreviousPage()
     {
+        if (bookData == null || bookData.sections == null || bookData.sections.Count == 0)
+            return;
+
         if (currentSectionIndex > 0)
         {
             currentSectionIndex--;
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayPaperSFX();
+            }
+
             RenderSection(currentSectionIndex);
         }
     }

@@ -1,4 +1,3 @@
-
 using UnityEngine;
 
 public class CaseCompleteState : IGameState
@@ -12,6 +11,12 @@ public class CaseCompleteState : IGameState
         Debug.Log($"[CaseCompleteState] Current Case: {CaseManager.Instance?.CurrentCase?.caseNumber}");
         Debug.Log($"[CaseCompleteState] Current Definition: {CaseManager.Instance?.CurrentDefinition?.caseId}");
         Debug.Log($"[CaseCompleteState] Progression Manager == null: {CaseProgressionManager.Instance == null}");
+
+        // Play achievement/reward SFX when a case is officially completed.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayAchievementSFX();
+        }
 
         // Tell HUD systems that the current case is officially complete.
         // The Case Folder icon will immediately become locked.
@@ -35,4 +40,3 @@ public class CaseCompleteState : IGameState
     {
     }
 }
-

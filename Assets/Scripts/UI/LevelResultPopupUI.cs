@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using TMPro;
 
@@ -39,14 +40,30 @@ public class LevelResultPopupUI : MonoBehaviour
 
         LevelResultData result = RewardsCalculator.BuildResult(data);
 
-        completionTimeText.text = $"Completion Time: {result.FormattedCompletionTime}";
+        completionTimeText.text =
+            $"Completion Time: {result.FormattedCompletionTime}";
+
         verdictText.text = result.VerdictWasCorrect
             ? $"Verdict: Correct ({EnumDisplayFormatter.Format(result.PlayerVerdict.ToString())})"
             : $"Verdict: Incorrect (You said {EnumDisplayFormatter.Format(result.PlayerVerdict.ToString())})";
-        issuesFoundText.text = $"Issues Found: {result.IssuesFound}";
-        expText.text = $"EXP Earned: {result.ExpEarned}";
-        reputationText.text = $"Reputation Earned: {result.ReputationEarned}";
-        summaryText.text = result.SummaryText;
+
+        issuesFoundText.text =
+            $"Issues Found: {result.IssuesFound}";
+
+        expText.text =
+            $"EXP Earned: {result.ExpEarned}";
+
+        reputationText.text =
+            $"Reputation Earned: {result.ReputationEarned}";
+
+        summaryText.text =
+            result.SummaryText;
+
+        // Play achievement/reward SFX when the result popup is shown.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayAchievementSFX();
+        }
 
         // Lock player movement and camera.
         CameraController.Instance?.LockPlayerControls();
@@ -63,5 +80,9 @@ public class LevelResultPopupUI : MonoBehaviour
 
         onClosed?.Invoke();
     }
-    private void Hide() => popupRoot.SetActive(false);
+
+    private void Hide()
+    {
+        popupRoot.SetActive(false);
+    }
 }

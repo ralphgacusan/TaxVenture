@@ -1,0 +1,65 @@
+```csharp
+using System.Collections.Generic;
+
+/// <summary>
+/// Stores the reward results for every completed case in the
+/// current level session.
+///
+/// This is temporary level-session data.
+/// Permanent saving should be handled by the player progression system.
+/// </summary>
+public class LevelRewardAccumulator
+{
+    private readonly List<LevelResultData> completedCaseResults =
+        new List<LevelResultData>();
+
+    public IReadOnlyList<LevelResultData> CompletedCaseResults =>
+        completedCaseResults;
+
+    public int TotalExp
+    {
+        get
+        {
+            int total = 0;
+
+            foreach (LevelResultData result in completedCaseResults)
+            {
+                total += result.ExpEarned;
+            }
+
+            return total;
+        }
+    }
+
+    public int TotalReputation
+    {
+        get
+        {
+            int total = 0;
+
+            foreach (LevelResultData result in completedCaseResults)
+            {
+                total += result.ReputationEarned;
+            }
+
+            return total;
+        }
+    }
+
+    public int CasesCompleted =>
+        completedCaseResults.Count;
+
+    public void AddCaseResult(LevelResultData result)
+    {
+        if (result == null)
+            return;
+
+        completedCaseResults.Add(result);
+    }
+
+    public void Clear()
+    {
+        completedCaseResults.Clear();
+    }
+}
+```

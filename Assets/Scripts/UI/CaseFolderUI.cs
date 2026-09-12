@@ -261,6 +261,13 @@ public class CaseFolderUI : MonoBehaviour
         if (currentPageIndex < pages.Count - 1)
         {
             currentPageIndex++;
+
+            // Play paper/page-turn SFX.
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayPaperSFX();
+            }
+
             RenderPage(currentPageIndex);
         }
     }
@@ -273,6 +280,13 @@ public class CaseFolderUI : MonoBehaviour
         if (currentPageIndex > 0)
         {
             currentPageIndex--;
+
+            // Play paper/page-turn SFX.
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayPaperSFX();
+            }
+
             RenderPage(currentPageIndex);
         }
     }
