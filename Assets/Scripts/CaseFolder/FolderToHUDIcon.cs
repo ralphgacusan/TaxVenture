@@ -222,22 +222,27 @@ public class FolderToHUDIcon :
         }
 
         /*
-         * Disable the closed folder's drag system.
+         * Fully hide and disable the closed/open folder pair.
+         * This handles both possible active states (closed or open)
+         * so the folder disappears completely.
          */
         if (caseFolder3DDrag != null)
         {
-            caseFolder3DDrag.enabled = false;
+            caseFolder3DDrag.HideAndDisableFolder();
 
             DebugLog(
-                "CaseFolder3DDrag disabled."
+                "CaseFolder3DDrag hidden and disabled."
             );
         }
 
         /*
          * Hide the folder after it has been stored.
+         * Only relevant for the FloatingModel3D (open folder) case,
+         * since CaseFolder3DDrag already hides itself above.
          */
         if (hideFolderAfterDrop &&
-            folderObject != null)
+            folderObject != null &&
+            caseFolder3DDrag == null)
         {
             folderObject.SetActive(false);
 

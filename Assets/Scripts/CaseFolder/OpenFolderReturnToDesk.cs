@@ -8,7 +8,7 @@ using UnityEngine.EventSystems;
 /// The original closed folder and the open folder are not modified.
 /// When the open folder is released over the desk target:
 /// - The open folder is hidden.
-/// - The original closed folder is moved to its saved original position.
+/// - The original closed folder is moved to the desk target's position.
 /// - The original closed folder is shown above the desk target.
 /// </summary>
 public class OpenFolderReturnToDesk :
@@ -34,6 +34,10 @@ public class OpenFolderReturnToDesk :
     [Tooltip("Extra distance added above the desk drop folder.")]
     [SerializeField]
     private float dropHeightOffset = 0.01f;
+
+    [Tooltip("Max random sideways tilt (degrees) applied when stacking the folder, for a more natural look.")]
+    [SerializeField]
+    private float sideTiltAngle = 6f;
 
     [Header("Debug")]
 
@@ -130,55 +134,30 @@ public class OpenFolderReturnToDesk :
 
     private void ReturnFolderToDesk()
     {
-        Transform deskTransform =
-            deskDropFolder.transform;
+        Transform deskTransform = deskDropFolder.transform;
+
+        originalClosedFolder.transform.position = deskTransform.position;
+        originalClosedFolder.transform.localScale = deskTransform.localScale;
 
         /*
-         * Restore the original closed folder to its original
-         * position, rotation, and scale.
+         * Match the target's rotation, then add a slight random
+         * tilt so the folder doesn't look perfectly stacked.
          */
-        originalClosedFolder.transform.position =
-            originalClosedPosition;
-
+        float randomYaw = Random.Range(-sideTiltAngle, sideTiltAngle);
         originalClosedFolder.transform.rotation =
-            originalClosedRotation;
+            deskTransform.rotation * Quaternion.Euler(0f, randomYaw, 0f);
 
-        originalClosedFolder.transform.localScale =
-            originalClosedScale;
+        // Stack it slightly above the target so it doesn't z-fight.
+        Vector3 stackedPosition = originalClosedFolder.transform.position;
+        stackedPosition.y += dropHeightOffset;
+        originalClosedFolder.transform.position = stackedPosition;
 
-        /*
-         * Make sure the original closed folder is positioned
-         * slightly above the desk drop folder.
-         */
-        Vector3 originalPosition =
-            originalClosedFolder.transform.position;
-
-        originalClosedFolder.transform.position =
-            new Vector3(
-                originalPosition.x,
-                originalPosition.y + dropHeightOffset,
-                originalPosition.z
-            );
-
-        /*
-         * Hide only the open folder.
-         * The original closed folder and desk drop folder
-         * remain separate objects.
-         */
         gameObject.SetActive(false);
-
         originalClosedFolder.SetActive(true);
 
-        DebugLog(
-            "Open folder successfully returned to the desk."
-        );
-
-        DebugLog(
-            $"Original closed folder restored at: " +
-            $"{originalClosedFolder.transform.position}"
-        );
+        DebugLog("Open folder successfully returned to the desk.");
+        DebugLog($"Original closed folder restored at: {originalClosedFolder.transform.position}");
     }
-
 
     private void DebugLog(string message)
     {

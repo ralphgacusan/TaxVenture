@@ -8,7 +8,8 @@ using UnityEngine.EventSystems;
 /// - Drag the closed book.
 /// - Release it after meaningful movement.
 /// - Hide the closed book.
-/// - Show the open book.
+/// - Show the open book, positioned sideways/up-down to match
+///   the drop point (depth from camera is never changed).
 /// - Open the existing 2D tax code UI.
 /// </summary>
 public class TaxCodeBook3DDrag :
@@ -57,6 +58,17 @@ public class TaxCodeBook3DDrag :
     private float minimumDragDistance = 25f;
 
 
+    [Header("Opening Settings")]
+
+    [Tooltip(
+        "When enabled, the open book's position (sideways/up-down only, " +
+        "not depth from camera) will match wherever the closed book " +
+        "was dropped."
+    )]
+    [SerializeField]
+    private bool positionOpenBookAtDropPoint = true;
+
+
     [Header("Debug")]
 
     [SerializeField]
@@ -78,6 +90,8 @@ public class TaxCodeBook3DDrag :
     private Vector3 dragTargetPosition;
 
     private Quaternion originalClosedRotation;
+
+    private Vector3 originalOpenPosition;
 
     private Vector2 pointerDownScreenPosition;
 
@@ -130,6 +144,14 @@ public class TaxCodeBook3DDrag :
 
         if (openTaxCodeBook != null)
         {
+            /*
+             * Save the open book's original position. This is the
+             * depth-from-camera reference used later so the open
+             * book only ever shifts sideways/up-down, never in depth.
+             */
+            originalOpenPosition =
+                openTaxCodeBook.transform.position;
+
             openTaxCodeBook.SetActive(false);
         }
 
@@ -314,7 +336,7 @@ public class TaxCodeBook3DDrag :
         isDragging = false;
         hasDragTarget = false;
 
-        ShowOpenTaxCodeBook();
+        ShowOpenTaxCodeBook(eventData.position);
     }
 
 
@@ -357,7 +379,52 @@ public class TaxCodeBook3DDrag :
     }
 
 
-    private void ShowOpenTaxCodeBook()
+    /// <summary>
+    /// Computes where the open book should sit so that its
+    /// sideways/up-down position matches the given screen point,
+    /// while keeping its original distance from the camera
+    /// (depth is never changed).
+    /// </summary>
+    private Vector3 GetOpenBookPositionForScreenPoint(
+        Vector2 screenPosition
+    )
+    {
+        if (mainCamera == null)
+        {
+            return originalOpenPosition;
+        }
+
+        /*
+         * Plane perpendicular to the camera, passing through the
+         * open book's original position. Any point on this plane
+         * shares the same depth-from-camera as the original position,
+         * so raycasting onto it only changes sideways/up-down placement.
+         */
+        Plane openBookPlane = new Plane(
+            mainCamera.transform.forward,
+            originalOpenPosition
+        );
+
+        Ray ray =
+            mainCamera.ScreenPointToRay(
+                screenPosition
+            );
+
+        if (!openBookPlane.Raycast(ray, out float enter))
+        {
+            DebugLog(
+                "Could not project drop point onto the open book's plane. " +
+                "Falling back to the original open book position."
+            );
+
+            return originalOpenPosition;
+        }
+
+        return ray.GetPoint(enter);
+    }
+
+
+    private void ShowOpenTaxCodeBook(Vector2 dropScreenPosition)
     {
         if (closedTaxCodeBook == null ||
             openTaxCodeBook == null)
@@ -366,6 +433,18 @@ public class TaxCodeBook3DDrag :
         }
 
         closedTaxCodeBook.SetActive(false);
+
+        if (positionOpenBookAtDropPoint)
+        {
+            openTaxCodeBook.transform.position =
+                GetOpenBookPositionForScreenPoint(dropScreenPosition);
+
+            DebugLog(
+                $"Open book positioned at drop point: " +
+                $"{openTaxCodeBook.transform.position}"
+            );
+        }
+
         openTaxCodeBook.SetActive(true);
 
         DebugLog(
@@ -402,6 +481,13 @@ public class TaxCodeBook3DDrag :
 
         if (openTaxCodeBook != null)
         {
+            /*
+             * Restore the open book to its original position so the
+             * next drop is measured from the same reference depth.
+             */
+            openTaxCodeBook.transform.position =
+                originalOpenPosition;
+
             openTaxCodeBook.SetActive(false);
         }
 

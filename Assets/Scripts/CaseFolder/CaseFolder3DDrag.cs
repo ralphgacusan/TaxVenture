@@ -15,7 +15,10 @@ public class CaseFolder3DDrag :
 
     [Tooltip(
         "Assign the open case folder object here. " +
-        "Its position, rotation, and scale will never be changed."
+        "Its rotation and scale will never be changed. " +
+        "Its position will be shifted sideways/up-down to match " +
+        "where the closed folder was dropped, while keeping its " +
+        "original distance from the camera."
     )]
     [SerializeField] private GameObject openFolder;
 
@@ -64,6 +67,12 @@ public class CaseFolder3DDrag :
     [Header("Opening Settings")]
     [SerializeField] private bool animateOpening = false;
 
+    [Tooltip(
+        "When enabled, the open folder's position (sideways/up-down only, " +
+        "not depth) will match wherever the closed folder was dropped."
+    )]
+    [SerializeField] private bool positionOpenFolderAtDropPoint = true;
+
     [Header("Debug Settings")]
     [SerializeField] private bool enableDebugLogs = true;
 
@@ -83,6 +92,7 @@ public class CaseFolder3DDrag :
     private Vector3 dragOffset;
 
     private Vector2 pointerDownScreenPosition;
+    private Vector2 lastPointerScreenPosition;
 
     private Vector3 originalClosedPosition;
     private Quaternion originalClosedRotation;
@@ -161,9 +171,11 @@ public class CaseFolder3DDrag :
             closedFolder.transform.localScale;
 
         /*
-         * Save the open folder's transform only for ResetFolder().
-         * The open folder is never repositioned, rotated, or scaled
-         * during dragging or opening.
+         * Save the open folder's original transform.
+         * Rotation and scale are never changed. Position is only
+         * ever shifted sideways/up-down from this saved position,
+         * never in depth, and only when
+         * positionOpenFolderAtDropPoint is enabled.
          */
         originalOpenPosition =
             openFolder.transform.position;
@@ -246,6 +258,9 @@ public class CaseFolder3DDrag :
         pointerDownScreenPosition =
             eventData.position;
 
+        lastPointerScreenPosition =
+            eventData.position;
+
         hasMovedDuringDrag = false;
         isDragging = true;
         hasDragTarget = false;
@@ -319,6 +334,9 @@ public class CaseFolder3DDrag :
             return;
         }
 
+        lastPointerScreenPosition =
+            eventData.position;
+
         float screenDistance =
             Vector2.Distance(
                 pointerDownScreenPosition,
@@ -345,6 +363,9 @@ public class CaseFolder3DDrag :
         {
             return;
         }
+
+        lastPointerScreenPosition =
+            eventData.position;
 
         float screenDistance =
             Vector2.Distance(
@@ -410,7 +431,7 @@ public class CaseFolder3DDrag :
             return;
         }
 
-        ShowOpenFolder();
+        ShowOpenFolder(eventData.position);
 
         DebugLog("Folder drop process completed.");
     }
@@ -538,7 +559,51 @@ public class CaseFolder3DDrag :
         hasDragTarget = true;
     }
 
-    private void ShowOpenFolder()
+    /// <summary>
+    /// Computes where the open folder should sit so that its
+    /// sideways/up-down position matches the given screen point,
+    /// while keeping its original distance from the camera
+    /// (depth is never changed).
+    /// </summary>
+    private Vector3 GetOpenFolderPositionForScreenPoint(
+        Vector2 screenPosition
+    )
+    {
+        if (mainCamera == null)
+        {
+            return originalOpenPosition;
+        }
+
+        /*
+         * Plane perpendicular to the camera, passing through the
+         * open folder's original position. Any point on this plane
+         * shares the same depth-from-camera as the original position,
+         * so raycasting onto it only changes sideways/up-down placement.
+         */
+        Plane openFolderPlane = new Plane(
+            mainCamera.transform.forward,
+            originalOpenPosition
+        );
+
+        Ray ray =
+            mainCamera.ScreenPointToRay(
+                screenPosition
+            );
+
+        if (!openFolderPlane.Raycast(ray, out float enter))
+        {
+            DebugLog(
+                "Could not project drop point onto the open folder's plane. " +
+                "Falling back to the original open folder position."
+            );
+
+            return originalOpenPosition;
+        }
+
+        return ray.GetPoint(enter);
+    }
+
+    private void ShowOpenFolder(Vector2 dropScreenPosition)
     {
         if (closedFolder == null ||
             openFolder == null)
@@ -552,13 +617,24 @@ public class CaseFolder3DDrag :
 
         /*
          * Hide the closed folder and show the open folder.
-         * The open folder's transform is not modified.
          */
         closedFolder.SetActive(false);
+
+        if (positionOpenFolderAtDropPoint)
+        {
+            openFolder.transform.position =
+                GetOpenFolderPositionForScreenPoint(dropScreenPosition);
+
+            DebugLog(
+                $"Open folder positioned at drop point: " +
+                $"{openFolder.transform.position}"
+            );
+        }
+
         openFolder.SetActive(true);
 
         DebugLog(
-            "Open folder shown without changing its transform."
+            "Open folder shown."
         );
 
         /*
@@ -659,6 +735,9 @@ public class CaseFolder3DDrag :
         pointerDownScreenPosition =
             screenPosition;
 
+        lastPointerScreenPosition =
+            screenPosition;
+
         hasMovedDuringDrag = false;
         isDragging = true;
         hasDragTarget = false;
@@ -715,6 +794,9 @@ public class CaseFolder3DDrag :
             return;
         }
 
+        lastPointerScreenPosition =
+            screenPosition;
+
         float screenDistance =
             Vector2.Distance(
                 externalPointerDownPosition,
@@ -738,6 +820,9 @@ public class CaseFolder3DDrag :
         {
             return false;
         }
+
+        lastPointerScreenPosition =
+            screenPosition;
 
         UpdateDragTarget(screenPosition);
 
@@ -767,7 +852,37 @@ public class CaseFolder3DDrag :
 
     public void OpenDraggedFolder()
     {
-        ShowOpenFolder();
+        ShowOpenFolder(lastPointerScreenPosition);
     }
-}
 
+    /// <summary>
+    /// Fully hides the case folder (both closed and open states) and
+    /// disables all dragging. Called when the folder has been stored
+    /// (e.g. dropped onto a HUD icon) and should disappear for good.
+    /// </summary>
+    public void HideAndDisableFolder()
+    {
+        isDragging = false;
+        hasDragTarget = false;
+        externalHUDDragging = false;
+        allowDragging = false;
+        allowExternalHUDDragging = false;
+
+        if (closedFolder != null)
+        {
+            closedFolder.SetActive(false);
+        }
+
+        if (openFolder != null)
+        {
+            openFolder.SetActive(false);
+        }
+
+        enabled = false;
+
+        DebugLog(
+            "Folder fully hidden and disabled after being stored."
+        );
+    }
+
+}
