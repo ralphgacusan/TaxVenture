@@ -93,19 +93,23 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
 
         data.auditMistakeCount = issues.Count;
 
+        // Single source of truth: zero issues == pass. This also implies the
+        // verdict is correct in Level 1 since both checks key off the same
+        // three facts — but we compute VerdictWasCorrect for display purposes
+        // without letting it independently decide pass/fail.
+        bool passed = issues.Count == 0;
+
         var result = new SubmissionResult
         {
             PlayerVerdict = data.caseAssessment,
             CorrectVerdict = correctVerdict,
-            VerdictWasCorrect = data.caseAssessment == correctVerdict,
+            VerdictWasCorrect = passed,
             MissedIssues = issues,
             FalseIssues = new List<ComplianceIssue>()
         };
 
-        data.auditPassed = issues.Count == 0;
-
-        // NEW: persist for the Client outcome conversation to read later.
-        data.finalVerdictWasCorrect = result.VerdictWasCorrect;
+        data.auditPassed = passed;
+        data.finalVerdictWasCorrect = passed;
         data.finalMissedIssueCount = issues.Count;
 
         return result;
@@ -122,33 +126,25 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
                 "Auditor_Happy");
 
             builder.Npc(
-                "Congratulations! You have successfully identified your taxpayer and completed the Case Folder properly.",
+                "Congratulations! You know your taxpayer. You correctly identified their residency, classification, and how they earn their income — that's the foundation every accurate filing is built on.",
                 "Auditor_Happy");
         }
         else
         {
             foreach (var issue in result.MissedIssues)
             {
-                if (issue == null)
-                {
-                    continue;
-                }
-
-                builder.Npc(
-                    issue.ShortLabel,
-                    "Auditor_Disappointed");
+                if (issue == null) continue;
+                builder.Npc(issue.ShortLabel, "Auditor_Disappointed");
             }
 
             builder.Npc(
-                "Take a closer look at the information you gathered and review the case carefully.",
+                "This case isn't quite ready yet. Take another look, and don't worry — you can go back and work through it again.",
                 "Auditor_Default");
         }
 
-        dialogueUI.StartDialogue(
-            builder.Build(),
-            () => OnDialogueConcluded(result)
-        );
+        dialogueUI.StartDialogue(builder.Build(), () => OnDialogueConcluded(result));
     }
+
     private void OnDialogueConcluded(SubmissionResult result)
     {
         summaryPopupUI.Show(result.MissedIssues, () => OnSummaryClosed(result));
@@ -156,23 +152,53 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
 
     private void OnSummaryClosed(SubmissionResult result)
     {
-        // Always proceeds forward now, per R11 — pass or fail, there is no
-        // return path. Compare with the old NpcIdleState fallback on failure,
-        // which is intentionally removed.
-        npcState.ChangeState(NpcCompletedStateFor(result));
+        bool passed = result.VerdictWasCorrect && result.MissedIssues.Count == 0;
 
-        if (GameStateMachine.Instance.CurrentState is AuditSubmittedState)
+        if (passed)
         {
-            GameStateMachine.Instance.ChangeState(new CaseOutcomeState());
+            npcState.ChangeState(new NpcCompletedState());
+
+            if (GameStateMachine.Instance.CurrentState is AuditSubmittedState)
+            {
+                CaseData data = CaseManager.Instance.CurrentCase;
+
+                // Single approved call site for reward calculation, per
+                // CaseProgressionManager's contract.
+                CaseProgressionManager.Instance.CalculateAndStoreCaseReward(data);
+
+                GameStateMachine.Instance.ChangeState(new CaseCompleteState());
+            }
+        }
+        else
+        {
+            // Failed — auditor is NOT done, he's ready for another submission.
+            npcState.ChangeState(new NpcIdleState());
+            RetryCase();
         }
     }
 
-    private NpcCompletedState NpcCompletedStateFor(SubmissionResult result)
+    /// <summary>
+    /// Per the retry loop requirement: a failed submission is NOT terminal.
+    /// Resets the case's player-entered facts, restores the folder to its
+    /// original position/state, unlocks player progression, and returns the
+    /// FSM to ReceiveCaseState so the player can re-investigate and resubmit.
+    /// </summary>
+    private void RetryCase()
     {
-        // Single Completed state regardless of pass/fail — the Auditor's
-        // job is done either way once the final review has happened.
-        return new NpcCompletedState();
+        CaseData data = CaseManager.Instance.CurrentCase;
+
+        // Clear player-entered answers — full reset per design.
+        CaseManager.Instance.ResetCurrentCaseForRetry();
+
+        // Bring the folder back into play at its original position.
+        submissionTray.ResetForRetryWithoutNewCase();
+
+        // Unlock and return control to the player at the start of the case.
+        GameStateMachine.Instance.UnlockProgression();
+        GameStateMachine.Instance.ChangeState(new ReceiveCaseState());
     }
+
+
 
     public string GetPromptText() => "Click to talk to the Auditor";
 }

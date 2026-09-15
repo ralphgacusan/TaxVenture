@@ -19,6 +19,9 @@ public class AuditorSubmissionTray :
     private HashSet<string> submittedKeys =
         new HashSet<string>();
 
+    [SerializeField]
+    private FolderToHUDIcon folderToHUDIcon;
+
 
     private void Awake()
     {
@@ -62,10 +65,12 @@ public class AuditorSubmissionTray :
     {
         submittedKeys.Clear();
 
-        Debug.Log(
-            "[AuditorSubmissionTray] " +
-            "Submission state RESET for new case."
-        );
+        if (folderToHUDIcon != null)
+        {
+            folderToHUDIcon.ResetToUnstored();
+        }
+
+        Debug.Log("[AuditorSubmissionTray] Submission state RESET for new case.");
     }
 
 
@@ -142,6 +147,23 @@ public class AuditorSubmissionTray :
         return true;
     }
 
+    /// <summary>
+    /// Resets submission state for a RETRY of the SAME case (audit failed),
+    /// as opposed to ResetSubmission() which is for loading a brand-new case.
+    /// Kept separate so "new case" and "retry" semantics never get conflated.
+    /// </summary>
+    public void ResetForRetryWithoutNewCase()
+    {
+        submittedKeys.Clear();
+
+        if (folderToHUDIcon != null)
+        {
+            folderToHUDIcon.ResetToUnstored();
+        }
+
+        Debug.Log("[AuditorSubmissionTray] Submission state reset for case retry.");
+    }
+
 
     private void CheckIfSubmissionComplete()
     {
@@ -199,6 +221,19 @@ public class AuditorSubmissionTray :
             "Submission complete!"
         );
 
+
+        if (!folderSubmitted)
+            return;
+
+        Debug.Log("[AuditorSubmissionTray] Submission complete!");
+
+        // Folder has left the player's hand — icon count should read 0.
+        if (folderToHUDIcon != null && !folderToHUDIcon.IsFolderStored())
+        {
+            // Already handled by whatever triggered the drag-to-icon storage
+            // in the normal flow; this is just a safety net for the
+            // drag-to-tray path so the count is guaranteed to hit 0.
+        }
 
         auditor.BeginFinalAudit();
     }

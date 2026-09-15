@@ -72,4 +72,21 @@ public class CaseManager : MonoBehaviour
             potentialIssues = new System.Collections.Generic.List<string>()
         };
     }
+
+    /// <summary>
+    /// Resets the CURRENT case's player-entered data in place (no JSON reload),
+    /// for the "audit failed, try again" loop. CurrentDefinition/CurrentCase
+    /// stay the same object — only CaseData.ResetForRetry() is invoked.
+    /// </summary>
+    public void ResetCurrentCaseForRetry()
+    {
+        if (CurrentCase == null)
+        {
+            Debug.LogError("[CaseManager] Cannot reset — CurrentCase is NULL.");
+            return;
+        }
+
+        CurrentCase.ResetForRetry();
+        Debug.Log($"[CaseManager] Case '{CurrentCase.caseNumber}' reset for retry.");
+    }
 }

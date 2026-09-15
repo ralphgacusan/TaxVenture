@@ -168,4 +168,20 @@ public class OpenFolderReturnToDesk :
             );
         }
     }
+
+    /// <summary>
+    /// Public entry point so other systems (e.g. audit retry logic) can force
+    /// the open folder back onto the desk programmatically, without requiring
+    /// an actual pointer-up drop event.
+    /// </summary>
+    public void ForceReturnToDesk()
+    {
+        if (deskDropFolder == null || originalClosedFolder == null)
+        {
+            Debug.LogError("[OpenFolderReturnToDesk] Cannot force return — references missing.");
+            return;
+        }
+
+        ReturnFolderToDesk();
+    }
 }

@@ -6793,6 +6793,7 @@ MonoBehaviour:
   animateDragging: 1
   dragSmoothness: 18
   minimumDragDistance: 25
+  positionOpenBookAtDropPoint: 1
   enableDebugLogs: 1
   drawDebugRay: 1
   debugRayLength: 20
@@ -14316,7 +14317,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 142c9ad7ea590d544a58e11e827425cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MouseRaycastDebug
-  mainCamera: {fileID: 1250158806}
 --- !u!1 &307546717
 GameObject:
   m_ObjectHideFlags: 0
@@ -37428,7 +37428,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 300}
+  m_AnchoredPosition: {x: 0, y: 300.0001}
   m_SizeDelta: {x: 0, y: 800}
   m_Pivot: {x: 0, y: 1}
 --- !u!4 &819781689 stripped
@@ -46215,6 +46215,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AuditorSubmissionTray
   clickDestination: {fileID: 1016139821}
   auditor: {fileID: 1016139817}
+  folderToHUDIcon: {fileID: 1869671340}
 --- !u!4 &1018777643 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4103799477115650, guid: 584b4f4c091f08f489b99e12d1f39c44, type: 3}
@@ -65446,7 +65447,7 @@ MonoBehaviour:
   closedFolder: {fileID: 1489254968}
   openFolder: {fileID: 1869671332}
   caseFolderUI: {fileID: 1493084227}
-  folderToHUDIcon: {fileID: 1489254977}
+  folderToHUDIcon: {fileID: 0}
   allowExternalHUDDragging: 1
   allowDragging: 1
   preserveClosedFolderRotation: 1
@@ -65456,6 +65457,7 @@ MonoBehaviour:
   closedFolderHeightOffset: 0
   minimumDragDistance: 25
   animateOpening: 1
+  positionOpenFolderAtDropPoint: 1
   enableDebugLogs: 1
   drawDebugRay: 1
   debugRayColor: {r: 1, g: 0, b: 0, a: 1}
@@ -65466,7 +65468,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1489254968}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cd6721209f24a3148b3b138391b2c15d, type: 3}
   m_Name: 
@@ -65478,6 +65480,7 @@ MonoBehaviour:
   folderCountText: {fileID: 841570833}
   hideFolderAfterDrop: 1
   enableDebugLogs: 1
+  openFolderReturnToDesk: {fileID: 0}
 --- !u!1 &1490047836 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 100000, guid: 7ca2a82b5b3d5c845bf06f73e685a09e, type: 3}
@@ -81883,7 +81886,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 515171271}
   m_HandleRect: {fileID: 515171270}
   m_Direction: 2
-  m_Value: 0.00000040690105
+  m_Value: -0.00000040690105
   m_Size: 0.625
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -82433,6 +82436,7 @@ MonoBehaviour:
   deskDropFolder: {fileID: 1209455472}
   mainCamera: {fileID: 1250158806}
   dropHeightOffset: 0.01
+  sideTiltAngle: 6
   enableDebugLogs: 1
 --- !u!114 &1869671340
 MonoBehaviour:
@@ -82453,6 +82457,7 @@ MonoBehaviour:
   folderCountText: {fileID: 841570833}
   hideFolderAfterDrop: 1
   enableDebugLogs: 1
+  openFolderReturnToDesk: {fileID: 1869671339}
 --- !u!1 &1871206243
 GameObject:
   m_ObjectHideFlags: 0

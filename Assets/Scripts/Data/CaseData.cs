@@ -26,6 +26,8 @@ using System.Collections.Generic;
 [Serializable]
 public class CaseData
 {
+
+
     // ---------- Page 1: Case Overview ----------
     public string caseNumber = "ITR-2026-0001";
     public string taxYear = "2026";
@@ -111,6 +113,49 @@ public class CaseData
     // ---------- Final Audit Result (R11/R12) ----------
     public bool finalVerdictWasCorrect = false;
     public int finalMissedIssueCount = 0;
+
+
+    /// <summary>
+    /// Called when the Auditor rejects a submission (not 100% correct).
+    /// Clears everything the player is responsible for discovering/filling in
+    /// so the case is a genuine clean restart, while keeping case identity
+    /// fields (name, TIN, case number, documents, etc.) untouched since those
+    /// are authored data, not player answers.
+    ///
+    /// Level 1 scope: only the three required taxpayer facts are checked/reset.
+    /// Extend this as later milestones add more player-entered fields
+    /// (numberOfEmployers, businessRegistration, taxOption, computation, etc.)
+    /// so a retry never carries over a previous wrong or right guess.
+    /// </summary>
+    public void ResetForRetry()
+    {
+        // Page 2/3 — the facts ComplianceChecker verifies
+        residencyStatus = null;
+        taxpayerType = null;
+        incomeSource = null;
+
+        // Other player-set classification fields (not yet checked this level,
+        // but reset for consistency so nothing carries over silently)
+        numberOfEmployers = null;
+        businessRegistration = null;
+        taxOption = null;
+
+        // Page 1 — the verdict the player stamped
+        caseAssessment = CaseAssessment.NotReadyForFiling;
+        assessmentStamped = false;
+
+        // Whatever the player typed into the encoded form, if any
+        encodedForm = null;
+
+        // Audit bookkeeping — cleared so a stale pass/fail doesn't leak into the retry
+        auditMistakeCount = 0;
+        auditPassed = false;
+        finalVerdictWasCorrect = false;
+        finalMissedIssueCount = 0;
+
+        // Folder carry state — back in the player's hand at case start
+        isCarryingCaseFolder = true;
+    }
 
 }
 

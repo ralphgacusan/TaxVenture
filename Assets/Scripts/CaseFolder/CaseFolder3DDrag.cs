@@ -885,4 +885,42 @@ public class CaseFolder3DDrag :
         );
     }
 
+    /// <summary>
+    /// Inverse of HideAndDisableFolder(). Re-enables dragging and fully
+    /// restores the closed folder to its original desk position/rotation/scale,
+    /// hides the open folder, per the "retry = complete fresh start" requirement.
+    /// Use this (not ResetFolder(), which assumes the component is still enabled)
+    /// when coming back from HideAndDisableFolder().
+    /// </summary>
+    public void RestoreAndEnableFolder()
+    {
+        allowDragging = true;
+        allowExternalHUDDragging = true;
+        enabled = true;
+
+        isDragging = false;
+        hasDragTarget = false;
+        externalHUDDragging = false;
+        isOpening = false;
+        hasMovedDuringDrag = false;
+
+        if (closedFolder != null)
+        {
+            closedFolder.transform.position = originalClosedPosition;
+            closedFolder.transform.rotation = originalClosedRotation;
+            closedFolder.transform.localScale = originalClosedScale;
+            closedFolder.SetActive(true);
+        }
+
+        if (openFolder != null)
+        {
+            openFolder.transform.position = originalOpenPosition;
+            openFolder.transform.rotation = originalOpenRotation;
+            openFolder.transform.localScale = originalOpenScale;
+            openFolder.SetActive(false);
+        }
+
+        DebugLog("Folder restored and re-enabled after a failed audit retry.");
+    }
+
 }

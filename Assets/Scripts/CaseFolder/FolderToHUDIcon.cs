@@ -69,6 +69,11 @@ public class FolderToHUDIcon :
     private bool enableDebugLogs = true;
 
 
+    [Tooltip("Optional. If this folder is the OPEN folder, assign the component that knows how to return it to the desk as a closed folder.")]
+    [SerializeField]
+    private OpenFolderReturnToDesk openFolderReturnToDesk;
+
+
     private bool pointerIsDown;
     private bool folderStored;
 
@@ -86,6 +91,11 @@ public class FolderToHUDIcon :
         {
             floatingModel3D =
                 GetComponent<FloatingModel3D>();
+        }
+
+        if (openFolderReturnToDesk == null)
+        {
+            openFolderReturnToDesk = GetComponent<OpenFolderReturnToDesk>();
         }
 
         if (caseFolder3DDrag == null)
@@ -311,5 +321,51 @@ public class FolderToHUDIcon :
     public RectTransform GetHUDIcon()
     {
         return folderHUDIcon;
+    }
+
+    /// <summary>
+    /// Inverse of StoreFolder(), for the "audit failed, try again" loop.
+    /// Brings the folder back into play, decrements the shared stored count,
+    /// and re-enables dragging on whichever drag component this folder uses.
+    /// </summary>
+    public void ResetToUnstored()
+    {
+        if (!folderStored)
+        {
+            return;
+        }
+
+        folderStored = false;
+
+        storedFolderCount = Mathf.Max(0, storedFolderCount - 1);
+        UpdateFolderCountText();
+
+        // Always re-enable the open folder's own dragging, regardless of
+        // which desk-return path is used below — StoreFolder() disabled it
+        // and nothing else turns it back on.
+        if (floatingModel3D != null)
+        {
+            floatingModel3D.SetDraggingEnabled(true);
+        }
+
+        if (openFolderReturnToDesk != null)
+        {
+            openFolderReturnToDesk.ForceReturnToDesk();
+        }
+        else if (caseFolder3DDrag != null)
+        {
+            caseFolder3DDrag.RestoreAndEnableFolder();
+        }
+        else if (floatingModel3D != null)
+        {
+            floatingModel3D.ResetModel();
+        }
+
+        if (folderObject != null && caseFolder3DDrag == null && openFolderReturnToDesk == null)
+        {
+            folderObject.SetActive(true);
+        }
+
+        DebugLog("Folder reset to unstored state for retry.");
     }
 }
