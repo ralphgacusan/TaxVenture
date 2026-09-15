@@ -22,6 +22,16 @@ public class CaseFolder3DDrag :
     [Header("Case Folder UI")]
     [SerializeField] private CaseFolderUI caseFolderUI;
 
+    [Header("HUD Storage")]
+    [SerializeField] private FolderToHUDIcon folderToHUDIcon;
+
+    [Header("External HUD Drag")]
+    [SerializeField] private bool allowExternalHUDDragging = true;
+
+    private bool externalHUDDragging;
+    private Vector2 externalPointerDownPosition;
+
+
     [Header("Drag Settings")]
     [SerializeField] private bool allowDragging = true;
 
@@ -60,6 +70,7 @@ public class CaseFolder3DDrag :
     [SerializeField] private bool drawDebugRay = true;
 
     [SerializeField] private Color debugRayColor = Color.red;
+
 
     private Plane dragPlane;
 
@@ -376,9 +387,57 @@ public class CaseFolder3DDrag :
             $"Closed folder released at: {closedFolder.transform.position}"
         );
 
+        bool droppedOnHUD =
+            IsPointerInsideHUDIcon(eventData);
+
+        if (droppedOnHUD)
+        {
+            DebugLog(
+                "Closed folder was dropped onto the HUD icon."
+            );
+
+            if (folderToHUDIcon != null)
+            {
+                folderToHUDIcon.StoreFolderFromExternalSource();
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[CaseFolder3DDrag] FolderToHUDIcon reference is missing."
+                );
+            }
+
+            return;
+        }
+
         ShowOpenFolder();
 
         DebugLog("Folder drop process completed.");
+    }
+
+
+    private bool IsPointerInsideHUDIcon(
+        PointerEventData eventData
+    )
+    {
+        if (folderToHUDIcon == null)
+        {
+            return false;
+        }
+
+        RectTransform hudIcon =
+            folderToHUDIcon.GetHUDIcon();
+
+        if (hudIcon == null)
+        {
+            return false;
+        }
+
+        return RectTransformUtility.RectangleContainsScreenPoint(
+            hudIcon,
+            eventData.position,
+            null
+        );
     }
 
     private void UpdateDragTarget(Vector2 screenPosition)
@@ -579,6 +638,136 @@ public class CaseFolder3DDrag :
                 $"[CaseFolder3DDrag] {message}"
             );
         }
+    }
+
+    public void BeginExternalDrag(Vector2 screenPosition)
+    {
+        if (!allowExternalHUDDragging ||
+            isOpening ||
+            mainCamera == null ||
+            closedFolder == null ||
+            openFolder == null)
+        {
+            return;
+        }
+
+        externalHUDDragging = true;
+
+        externalPointerDownPosition =
+            screenPosition;
+
+        pointerDownScreenPosition =
+            screenPosition;
+
+        hasMovedDuringDrag = false;
+        isDragging = true;
+        hasDragTarget = false;
+
+        dragPlane = new Plane(
+            mainCamera.transform.forward,
+            closedFolder.transform.position
+        );
+
+        Ray ray =
+            mainCamera.ScreenPointToRay(
+                screenPosition
+            );
+
+        if (!dragPlane.Raycast(ray, out float enter))
+        {
+            externalHUDDragging = false;
+            isDragging = false;
+
+            DebugLog(
+                "External HUD drag could not intersect the drag plane."
+            );
+
+            return;
+        }
+
+        Vector3 pointerWorldPosition =
+            ray.GetPoint(enter);
+
+        dragOffset =
+            closedFolder.transform.position -
+            pointerWorldPosition;
+
+        dragTargetPosition =
+            closedFolder.transform.position;
+
+        hasDragTarget = true;
+
+        closedFolder.SetActive(true);
+        openFolder.SetActive(false);
+
+        DebugLog(
+            "External HUD drag started."
+        );
+    }
+
+
+    public void UpdateExternalDrag(Vector2 screenPosition)
+    {
+        if (!externalHUDDragging ||
+            !isDragging ||
+            isOpening)
+        {
+            return;
+        }
+
+        float screenDistance =
+            Vector2.Distance(
+                externalPointerDownPosition,
+                screenPosition
+            );
+
+        if (screenDistance >= minimumDragDistance)
+        {
+            hasMovedDuringDrag = true;
+        }
+
+        UpdateDragTarget(screenPosition);
+    }
+
+
+    public bool EndExternalDrag(Vector2 screenPosition)
+    {
+        if (!externalHUDDragging ||
+            !isDragging ||
+            isOpening)
+        {
+            return false;
+        }
+
+        UpdateDragTarget(screenPosition);
+
+        if (hasDragTarget)
+        {
+            closedFolder.transform.position =
+                dragTargetPosition;
+        }
+
+        if (preserveClosedFolderRotation)
+        {
+            closedFolder.transform.rotation =
+                originalClosedRotation;
+        }
+
+        externalHUDDragging = false;
+        isDragging = false;
+        hasDragTarget = false;
+
+        DebugLog(
+            $"External HUD drag ended at: " +
+            $"{closedFolder.transform.position}"
+        );
+
+        return true;
+    }
+
+    public void OpenDraggedFolder()
+    {
+        ShowOpenFolder();
     }
 }
 

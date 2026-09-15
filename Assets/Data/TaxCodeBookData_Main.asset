@@ -70,25 +70,44 @@ MonoBehaviour:
 
       Earns income from employment.
 
+      
 
+      
 
+      
 
+      
 
-      Earns income from operating
-      a business.
+      
 
+      Earns
+      income from operating a business.
 
+      
 
+      
 
+      
 
-      Earns income from providing professional services independently.
+      
 
+      
 
+      Earns
+      income from providing professional services independently.
 
+      
+
+      
+
+      
+
+      
 
       Earns
       both employment income and business or professional income.
 
+      
 
 '
     clickableValues:
@@ -113,26 +132,46 @@ MonoBehaviour:
 
       Income received from an employer.
 
+      
 
+      
 
+      
 
+      
 
-      Income earned from
-      business activities.
+      
 
+      Income
+      earned from business activities.
 
+      
 
+      
 
+      
 
-      Income earned from professional services.
+      
 
+      
 
+      Income
+      earned from professional services.
 
+      
 
+      
+
+      
+
+      
+
+      
 
       Combination
       of multiple income sources.
 
+      
 
 '
     clickableValues:

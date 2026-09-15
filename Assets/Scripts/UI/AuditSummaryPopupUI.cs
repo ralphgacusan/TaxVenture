@@ -4,8 +4,8 @@ using TMPro;
 
 /// <summary>
 /// PURPOSE:
-/// Read-only popup shown after the Auditor's dialogue concludes. Lists
-/// issue count and short labels only — no explanations, no correct values.
+/// Read-only popup shown after the Auditor's dialogue concludes.
+/// Displays either a success message or hints about incomplete facts.
 /// </summary>
 public class AuditSummaryPopupUI : MonoBehaviour
 {
@@ -20,28 +20,45 @@ public class AuditSummaryPopupUI : MonoBehaviour
         Hide();
     }
 
-    public void Show(List<ComplianceIssue> issues, System.Action onClosedCallback)
+    public void Show(
+        List<ComplianceIssue> issues,
+        System.Action onClosedCallback)
     {
         CameraController.Instance.LockPlayerControls();
         onClosed = onClosedCallback;
 
         var sb = new System.Text.StringBuilder();
+
         sb.AppendLine("Audit Summary");
         sb.AppendLine();
 
-        if (issues.Count == 0)
+        if (issues == null || issues.Count == 0)
         {
-            sb.AppendLine("Issues Found: 0");
-            sb.AppendLine("No issues detected. This case is fully compliant.");
+            sb.AppendLine("Congratulations!");
+            sb.AppendLine();
+            sb.AppendLine(
+                "You now know your taxpayer. All three required facts have been gathered."
+            );
         }
         else
         {
-            sb.AppendLine($"Issues Found: {issues.Count}");
+            sb.AppendLine($"Hints: {issues.Count}");
             sb.AppendLine();
+
             foreach (var issue in issues)
             {
+                if (issue == null)
+                {
+                    continue;
+                }
+
                 sb.AppendLine($"- {issue.ShortLabel}");
             }
+
+            sb.AppendLine();
+            sb.AppendLine(
+                "Review the case again and look for details that may still be missing."
+            );
         }
 
         summaryText.text = sb.ToString();
@@ -50,11 +67,12 @@ public class AuditSummaryPopupUI : MonoBehaviour
 
     public void OnCloseButtonPressed()
     {
-
         popupPanelRoot.SetActive(false);
+
         CameraController.Instance.UnlockPlayerControls();
 
         onClosed?.Invoke();
+
         FirstPersonHands.Instance.ShowCarriedDocument();
     }
 

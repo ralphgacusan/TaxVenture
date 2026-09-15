@@ -3,18 +3,17 @@ using UnityEngine.EventSystems;
 using TMPro;
 
 /// <summary>
-/// Allows an open or closed 3D folder to be dragged onto a HUD icon.
+/// Allows an open or closed 3D folder to be dropped onto a HUD icon.
+///
+/// Supports:
+/// - Open folders using FloatingModel3D
+/// - Closed folders using CaseFolder3DDrag
+///
 /// When dropped successfully:
 /// - The folder is hidden.
-/// - The HUD folder count increases.
-/// - The folder is considered stored for the auditor.
-///
-/// Requirements:
-/// - The folder must have a Collider.
-/// - The folder must have FloatingModel3D.
-/// - The Main Camera must have a PhysicsRaycaster.
-/// - The HUD icon must have a UI Image or Button.
-/// - The scene must contain an EventSystem.
+/// - The folder count increases.
+/// - The folder can no longer be dragged.
+/// - The folder is considered stored.
 /// </summary>
 public class FolderToHUDIcon :
     MonoBehaviour,
@@ -23,13 +22,26 @@ public class FolderToHUDIcon :
 {
     [Header("Folder Settings")]
 
-    [Tooltip("The 3D folder model. Leave empty to use this GameObject.")]
+    [Tooltip(
+        "The folder object to hide after storage. " +
+        "Leave empty to use this GameObject."
+    )]
     [SerializeField]
     private GameObject folderObject;
 
-    [Tooltip("Existing FloatingModel3D component on the folder.")]
+
+    [Tooltip(
+        "Optional FloatingModel3D component used by an open folder."
+    )]
     [SerializeField]
     private FloatingModel3D floatingModel3D;
+
+
+    [Tooltip(
+        "Optional CaseFolder3DDrag component used by a closed folder."
+    )]
+    [SerializeField]
+    private CaseFolder3DDrag caseFolder3DDrag;
 
 
     [Header("HUD Destination")]
@@ -37,6 +49,7 @@ public class FolderToHUDIcon :
     [Tooltip("The HUD icon that receives the folder.")]
     [SerializeField]
     private RectTransform folderHUDIcon;
+
 
     [Tooltip("The UI object containing the folder count text.")]
     [SerializeField]
@@ -56,10 +69,7 @@ public class FolderToHUDIcon :
     private bool enableDebugLogs = true;
 
 
-    private Camera mainCamera;
-
     private bool pointerIsDown;
-
     private bool folderStored;
 
     private static int storedFolderCount = 0;
@@ -78,7 +88,11 @@ public class FolderToHUDIcon :
                 GetComponent<FloatingModel3D>();
         }
 
-        mainCamera = Camera.main;
+        if (caseFolder3DDrag == null)
+        {
+            caseFolder3DDrag =
+                GetComponent<CaseFolder3DDrag>();
+        }
 
         if (folderObject == null)
         {
@@ -87,10 +101,13 @@ public class FolderToHUDIcon :
             );
         }
 
-        if (floatingModel3D == null)
+        if (floatingModel3D == null &&
+            caseFolder3DDrag == null)
         {
-            Debug.LogError(
-                "[FolderToHUDIcon] FloatingModel3D was not found."
+            Debug.LogWarning(
+                "[FolderToHUDIcon] Neither FloatingModel3D nor " +
+                "CaseFolder3DDrag was found. Make sure one of them " +
+                "is assigned."
             );
         }
 
@@ -103,23 +120,6 @@ public class FolderToHUDIcon :
 
         UpdateFolderCountText();
     }
-
-
-    // private void Update()
-    // {
-    //     if (!pointerIsDown ||
-    //         folderStored ||
-    //         folderHUDIcon == null ||
-    //         mainCamera == null)
-    //     {
-    //         return;
-    //     }
-
-    //     /*
-    //      * The folder is checked continuously while dragging.
-    //      * The actual drop is completed in OnPointerUp().
-    //      */
-    // }
 
 
     public void OnPointerDown(
@@ -140,8 +140,8 @@ public class FolderToHUDIcon :
 
 
     public void OnPointerUp(
-       PointerEventData eventData
-   )
+        PointerEventData eventData
+    )
     {
         if (!pointerIsDown ||
             folderStored)
@@ -194,6 +194,8 @@ public class FolderToHUDIcon :
             );
         }
     }
+
+
     private void StoreFolder()
     {
         if (folderStored)
@@ -207,19 +209,46 @@ public class FolderToHUDIcon :
 
         UpdateFolderCountText();
 
+        /*
+         * Disable the open folder's drag system.
+         */
         if (floatingModel3D != null)
         {
             floatingModel3D.SetDraggingEnabled(false);
+
+            DebugLog(
+                "FloatingModel3D dragging disabled."
+            );
         }
 
+        /*
+         * Disable the closed folder's drag system.
+         */
+        if (caseFolder3DDrag != null)
+        {
+            caseFolder3DDrag.enabled = false;
+
+            DebugLog(
+                "CaseFolder3DDrag disabled."
+            );
+        }
+
+        /*
+         * Hide the folder after it has been stored.
+         */
         if (hideFolderAfterDrop &&
             folderObject != null)
         {
             folderObject.SetActive(false);
+
+            DebugLog(
+                "Folder object hidden."
+            );
         }
 
         DebugLog(
-            $"Folder stored successfully. Total folders: {storedFolderCount}"
+            $"Folder stored successfully. " +
+            $"Total folders: {storedFolderCount}"
         );
     }
 
@@ -262,5 +291,20 @@ public class FolderToHUDIcon :
                 $"[FolderToHUDIcon] {message}"
             );
         }
+    }
+
+    public void StoreFolderFromExternalSource()
+    {
+        if (folderStored)
+        {
+            return;
+        }
+
+        StoreFolder();
+    }
+
+    public RectTransform GetHUDIcon()
+    {
+        return folderHUDIcon;
     }
 }

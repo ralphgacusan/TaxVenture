@@ -406,20 +406,7 @@ public class CaseFolderUI : MonoBehaviour
                 )
         );
 
-        // Income Sources
-        AddEnumRow(
-            page1Rows,
-            page1FieldRowListRoot,
-            "Income Sources",
-            "IncomeSource",
-            data,
-            () => data.incomeSource?.ToString(),
-            v => data.incomeSource =
-                (IncomeSource)System.Enum.Parse(
-                    typeof(IncomeSource),
-                    v
-                )
-        );
+
 
         // Taxpayer Type
         AddEnumRow(
@@ -432,6 +419,21 @@ public class CaseFolderUI : MonoBehaviour
             v => data.taxpayerType =
                 (TaxpayerType)System.Enum.Parse(
                     typeof(TaxpayerType),
+                    v
+                )
+        );
+
+        // Income Sources
+        AddEnumRow(
+            page1Rows,
+            page1FieldRowListRoot,
+            "Income Sources",
+            "IncomeSource",
+            data,
+            () => data.incomeSource?.ToString(),
+            v => data.incomeSource =
+                (IncomeSource)System.Enum.Parse(
+                    typeof(IncomeSource),
                     v
                 )
         );

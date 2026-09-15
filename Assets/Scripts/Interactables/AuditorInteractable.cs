@@ -102,7 +102,7 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
             FalseIssues = new List<ComplianceIssue>()
         };
 
-        data.auditPassed = result.VerdictWasCorrect && issues.Count == 0;
+        data.auditPassed = issues.Count == 0;
 
         // NEW: persist for the Client outcome conversation to read later.
         data.finalVerdictWasCorrect = result.VerdictWasCorrect;
@@ -115,34 +115,39 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
     {
         var builder = new DialogueBuilder("Auditor");
 
-        if (result.VerdictWasCorrect && result.MissedIssues.Count == 0)
+        if (result.MissedIssues == null || result.MissedIssues.Count == 0)
         {
             builder.Npc(
-                "I've reviewed everything, and I found no issues. Well done.",
+                "Excellent work! I've reviewed your case, and everything is correct.",
+                "Auditor_Happy");
+
+            builder.Npc(
+                "Congratulations! You have successfully identified your taxpayer and completed the Case Folder properly.",
                 "Auditor_Happy");
         }
         else
         {
-            if (!result.VerdictWasCorrect)
-            {
-                builder.Npc(
-                    "Your verdict on this case does not match my findings.",
-                    "Auditor_Disappointed");
-            }
-
             foreach (var issue in result.MissedIssues)
             {
+                if (issue == null)
+                {
+                    continue;
+                }
+
                 builder.Npc(
                     issue.ShortLabel,
                     "Auditor_Disappointed");
             }
+
+            builder.Npc(
+                "Take a closer look at the information you gathered and review the case carefully.",
+                "Auditor_Default");
         }
 
-        builder.Npc(
-            "This concludes the final review. No further changes can be made to this case.",
-            "Auditor_Default");
-
-        dialogueUI.StartDialogue(builder.Build(), () => OnDialogueConcluded(result));
+        dialogueUI.StartDialogue(
+            builder.Build(),
+            () => OnDialogueConcluded(result)
+        );
     }
     private void OnDialogueConcluded(SubmissionResult result)
     {
