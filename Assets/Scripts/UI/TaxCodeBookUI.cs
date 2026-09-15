@@ -50,35 +50,96 @@ public class TaxCodeBookUI : MonoBehaviour
     [SerializeField] private Transform clickableValueListRoot;
     [SerializeField] private TaxCodeValueChip valueChipPrefab;
 
+    [Header("3D Book Interaction")]
+    [SerializeField] private Collider openBookCollider;
+
     private int currentSectionIndex = 0;
 
     private List<TaxCodeValueChip> spawnedChips = new List<TaxCodeValueChip>();
 
     private void Awake()
     {
-        leftEdgeZone.OnTapped += PreviousPage;
-        rightEdgeZone.OnTapped += NextPage;
-        swipeToClose.OnSwipeClosed += Hide;
+        if (leftEdgeZone != null)
+        {
+            leftEdgeZone.OnTapped += PreviousPage;
+        }
+        else
+        {
+            Debug.LogError(
+                "[TaxCodeBookUI] Left Edge Zone is not assigned."
+            );
+        }
 
-        // Hide without calling UnlockPlayerControls during startup.
-        bookPanelRoot.SetActive(false);
+        if (rightEdgeZone != null)
+        {
+            rightEdgeZone.OnTapped += NextPage;
+        }
+        else
+        {
+            Debug.LogError(
+                "[TaxCodeBookUI] Right Edge Zone is not assigned."
+            );
+        }
+
+        if (swipeToClose != null)
+        {
+            swipeToClose.OnSwipeClosed += Hide;
+        }
+        else
+        {
+            Debug.LogError(
+                "[TaxCodeBookUI] Swipe To Close is not assigned."
+            );
+        }
     }
 
     public void Show()
     {
+        Debug.Log("[TaxCodeBookUI] Show() was called.");
+
+        if (bookPanelRoot == null)
+        {
+            Debug.LogError("[TaxCodeBookUI] bookPanelRoot is not assigned.");
+            return;
+        }
+
         CameraController.Instance?.LockPlayerControls();
 
-        Debug.Log("Tax Book Show");
+        currentSectionIndex = 0;
 
-        WorkspaceLayoutManager.Instance.LeftZone.ShowPanel(bookPanelRoot);
         RenderSection(currentSectionIndex);
+
+        bookPanelRoot.SetActive(true);
+
+        if (openBookCollider != null)
+        {
+            openBookCollider.enabled = false;
+            Debug.Log("[TaxCodeBookUI] Open book collider disabled.");
+        }
+
+        Debug.Log(
+            "[TaxCodeBookUI] Panel activated: " +
+            bookPanelRoot.name
+        );
     }
     public void Hide()
     {
-        WorkspaceLayoutManager.Instance.LeftZone.HidePanel(bookPanelRoot);
+        if (bookPanelRoot != null)
+        {
+            bookPanelRoot.SetActive(false);
+        }
+
+        if (openBookCollider != null)
+        {
+            openBookCollider.enabled = true;
+            Debug.Log("[TaxCodeBookUI] Open book collider enabled.");
+        }
 
         CameraController.Instance?.UnlockPlayerControls();
+
+        Debug.Log("[TaxCodeBookUI] Tax Code Book UI hidden.");
     }
+
     public void NextPage()
     {
         if (bookData == null || bookData.sections == null || bookData.sections.Count == 0)
