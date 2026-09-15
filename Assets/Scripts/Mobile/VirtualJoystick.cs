@@ -100,4 +100,16 @@ public class VirtualJoystick : MonoBehaviour,
         else
             Hide();
     }
+
+    // Automatically reset the joystick when it is disabled.
+    private void OnDisable()
+    {
+        ResetJoystick();
+    }
+
+    // Reset the joystick when this component is destroyed.
+    private void OnDestroy()
+    {
+        ResetJoystick();
+    }
 }

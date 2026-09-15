@@ -28,7 +28,6 @@ public class CaseFolderUI : MonoBehaviour
 {
     [Header("Panel")]
     [SerializeField] private GameObject folderPanelRoot;
-    [SerializeField] private FloatingWindow floatingWindow;
 
     [Header("The Paper")]
     [SerializeField] private TextMeshProUGUI headingText;
@@ -79,11 +78,7 @@ public class CaseFolderUI : MonoBehaviour
     private List<CaseFolderFieldRow> page7Rows = new List<CaseFolderFieldRow>();
 
     private const int Page1Index = 0;
-    private const int Page2Index = 1;
-    private const int Page3Index = 2;
-    private const int Page4Index = 3;
-    private const int Page5Index = 4;
-    private const int Page7Index = 6;
+
 
     private List<CaseFolderPageContent> pages;
     private int currentPageIndex = 0;
@@ -105,8 +100,7 @@ public class CaseFolderUI : MonoBehaviour
         if (swipeToClose != null)
             swipeToClose.OnSwipeClosed += Hide;
 
-        // Start closed.
-        Hide();
+
     }
 
     // ============================================================
@@ -119,6 +113,7 @@ public class CaseFolderUI : MonoBehaviour
     /// </summary>
     public void Show()
     {
+        Debug.Log("[CaseFolderUI] Show() was called");
         Debug.Log("========== CASE FOLDER SHOW ==========");
 
         if (CaseManager.Instance == null)
@@ -133,14 +128,6 @@ public class CaseFolderUI : MonoBehaviour
         {
             Debug.LogError(
                 "[CaseFolderUI] CurrentCase is NULL."
-            );
-            return;
-        }
-
-        if (floatingWindow == null)
-        {
-            Debug.LogError(
-                "[CaseFolderUI] FloatingWindow reference is NULL!"
             );
             return;
         }
@@ -163,37 +150,22 @@ public class CaseFolderUI : MonoBehaviour
             $"activeInHierarchy={folderPanelRoot.activeInHierarchy}"
         );
 
-        // --------------------------------------------------------
-        // Lock player controls
-        // --------------------------------------------------------
-
+        // Lock player controls.
         CameraController.Instance?.LockPlayerControls();
 
-        // --------------------------------------------------------
-        // Build case pages
-        // --------------------------------------------------------
-
+        // Build case pages.
         pages = BuildPages(
             CaseManager.Instance.CurrentCase
         );
 
-        // --------------------------------------------------------
-        // Reset to first page
-        // --------------------------------------------------------
-
+        // Reset to the first page.
         currentPageIndex = Page1Index;
 
-        // --------------------------------------------------------
-        // Render page BEFORE opening
-        // --------------------------------------------------------
-
+        // Render the first page before showing the panel.
         RenderPage(currentPageIndex);
 
-        // --------------------------------------------------------
-        // Open through FloatingWindow
-        // --------------------------------------------------------
-
-        floatingWindow.OpenWindow();
+        // Directly show the UI panel.
+        folderPanelRoot.SetActive(true);
 
         Debug.Log(
             $"[CaseFolderUI] After Open -> " +
@@ -201,14 +173,7 @@ public class CaseFolderUI : MonoBehaviour
             $"activeInHierarchy={folderPanelRoot.activeInHierarchy}"
         );
 
-        // --------------------------------------------------------
-        // First normal folder opening:
-        //
-        // ReceiveCaseState
-        //        ↓
-        // ReviewDocumentsState
-        // --------------------------------------------------------
-
+        // Change the game state only on the first opening.
         if (!hasOpenedBefore)
         {
             hasOpenedBefore = true;
@@ -235,11 +200,7 @@ public class CaseFolderUI : MonoBehaviour
     /// </summary>
     public void Hide()
     {
-        if (floatingWindow != null)
-        {
-            floatingWindow.CloseWindow();
-        }
-        else if (folderPanelRoot != null)
+        if (folderPanelRoot != null)
         {
             folderPanelRoot.SetActive(false);
         }
@@ -304,98 +265,81 @@ public class CaseFolderUI : MonoBehaviour
             return;
         }
 
-        CaseFolderPageContent page =
-            pages[index];
+        CaseFolderPageContent page = pages[index];
 
-        headingText.text =
-            page.Heading;
+        if (headingText != null)
+        {
+            headingText.text = page.Heading;
+        }
 
-        pageIndicatorText.text =
-            $"Page {index + 1} / {pages.Count}";
+        if (pageIndicatorText != null)
+        {
+            pageIndicatorText.text =
+                $"Page {index + 1} / {pages.Count}";
+        }
 
         if (leftEdgeIndicator != null)
-            leftEdgeIndicator.SetActive(index > 0);
+        {
+            leftEdgeIndicator.SetActive(false);
+        }
 
         if (rightEdgeIndicator != null)
         {
-            rightEdgeIndicator.SetActive(
-                index < pages.Count - 1
-            );
+            rightEdgeIndicator.SetActive(false);
         }
 
         supportingDocumentsPageLink?.OnFolderPageChanged(index);
 
-        CaseData data =
-            CaseManager.Instance.CurrentCase;
+        CaseData data = CaseManager.Instance.CurrentCase;
 
-        page1FieldRowsContainer.SetActive(false);
-        page2FieldRowsContainer.SetActive(false);
-        page2FixedFieldRowsContainer.SetActive(false);
-        page3FieldRowsContainer.SetActive(false);
-        page4FieldRowsContainer.SetActive(false);
-        page5FieldRowsContainer.SetActive(false);
-        page7FieldRowsContainer.SetActive(false);
-
-        bodyText.gameObject.SetActive(true);
-        bodyText.text = page.Body;
-
-        switch (index)
+        if (page1FieldRowsContainer != null)
         {
-            case Page1Index:
+            page1FieldRowsContainer.SetActive(false);
+        }
 
-                bodyText.gameObject.SetActive(false);
+        if (page2FieldRowsContainer != null)
+        {
+            page2FieldRowsContainer.SetActive(false);
+        }
+
+        if (page2FixedFieldRowsContainer != null)
+        {
+            page2FixedFieldRowsContainer.SetActive(false);
+        }
+
+        if (page3FieldRowsContainer != null)
+        {
+            page3FieldRowsContainer.SetActive(false);
+        }
+
+        if (page4FieldRowsContainer != null)
+        {
+            page4FieldRowsContainer.SetActive(false);
+        }
+
+        if (page5FieldRowsContainer != null)
+        {
+            page5FieldRowsContainer.SetActive(false);
+        }
+
+        if (page7FieldRowsContainer != null)
+        {
+            page7FieldRowsContainer.SetActive(false);
+        }
+
+        if (bodyText != null)
+        {
+            bodyText.gameObject.SetActive(false);
+        }
+
+        if (index == Page1Index)
+        {
+            if (page1FieldRowsContainer != null)
+            {
                 page1FieldRowsContainer.SetActive(true);
+            }
 
-                BuildPage1Rows(data);
-
-                break;
-
-            case Page2Index:
-
-                bodyText.gameObject.SetActive(false);
-                page2FieldRowsContainer.SetActive(true);
-                page2FixedFieldRowsContainer.SetActive(true);
-
-                BuildPage2FixedRows(data);
-                BuildPage2Rows(data);
-
-                break;
-
-            case Page3Index:
-
-                bodyText.gameObject.SetActive(false);
-                page3FieldRowsContainer.SetActive(true);
-
-                BuildPage3Rows(data);
-
-                break;
-
-            case Page4Index:
-
-                bodyText.gameObject.SetActive(false);
-                page4FieldRowsContainer.SetActive(true);
-
-                BuildPage4Rows(data);
-
-                break;
-
-            case Page5Index:
-
-                bodyText.gameObject.SetActive(false);
-                page5FieldRowsContainer.SetActive(true);
-
-                BuildPage5Rows(data);
-
-                break;
-
-            case Page7Index:
-
-                bodyText.gameObject.SetActive(false);
-                page7FieldRowsContainer.SetActive(true);
-
-                BuildPage7Rows(data);
-
-                break;
+            BuildPage1Rows(data);
         }
     }
 
@@ -405,233 +349,12 @@ public class CaseFolderUI : MonoBehaviour
 
     private List<CaseFolderPageContent> BuildPages(CaseData data)
     {
-        var list =
-            new List<CaseFolderPageContent>();
-
-        // --------------------------------------------------------
-        // Page 1
-        // --------------------------------------------------------
-
-        string assessmentText;
-
-        if (!data.assessmentStamped)
-        {
-            assessmentText =
-                "Case Assessment: __________";
-        }
-        else
-        {
-            assessmentText =
-                $"Case Assessment: " +
-                $"{EnumDisplayFormatter.Format(data.caseAssessment.ToString())}";
-        }
-
-        list.Add(
-            new CaseFolderPageContent(
-                "Case Overview",
-                $"{data.caseTitle}\n\n" +
-                $"{data.caseSummary}\n\n" +
-                $"{assessmentText}"
-            )
-        );
-
-        // --------------------------------------------------------
-        // Page 2
-        // --------------------------------------------------------
-
-        StringBuilder p2 =
-            new StringBuilder();
-
-        p2.AppendLine(
-            $"Full Name: {data.fullName}"
-        );
-
-        p2.AppendLine(
-            $"TIN: {data.tin}"
-        );
-
-        p2.AppendLine(
-            $"Birthdate: {data.birthdate}"
-        );
-
-        p2.AppendLine(
-            $"Address: {data.address}"
-        );
-
-        p2.AppendLine(
-            $"Contact Number: {data.contactNumber}"
-        );
-
-        p2.AppendLine(
-            $"Civil Status: " +
-            $"{EnumDisplayFormatter.Format(data.civilStatus.ToString())}"
-        );
-
-        if (data.civilStatus == CivilStatus.Married)
-        {
-            p2.AppendLine(
-                $"Spouse Name: {data.spouseName}"
-            );
-
-            p2.AppendLine(
-                $"Spouse TIN: {data.spouseTin}"
-            );
-        }
-
-        p2.AppendLine(
-            $"Citizenship: {data.citizenship}"
-        );
-
-        p2.AppendLine(
-            $"Residency Status: " +
-            $"{EnumDisplayFormatter.Format(data.residencyStatus)}"
-        );
-
-        p2.Append(
-            $"Taxpayer Type: " +
-            $"{EnumDisplayFormatter.Format(data.taxpayerType)}"
-        );
+        var list = new List<CaseFolderPageContent>();
 
         list.Add(
             new CaseFolderPageContent(
                 "Taxpayer Information",
-                p2.ToString()
-            )
-        );
-
-        // --------------------------------------------------------
-        // Page 3
-        // --------------------------------------------------------
-
-        StringBuilder p3 =
-            new StringBuilder();
-
-        p3.AppendLine(
-            $"Income Sources: " +
-            $"{EnumDisplayFormatter.Format(data.incomeSource)}"
-        );
-
-        p3.AppendLine(
-            $"Number of Employers: " +
-            $"{EnumDisplayFormatter.Format(data.numberOfEmployers)}"
-        );
-
-        p3.AppendLine(
-            $"Business Registration: " +
-            $"{EnumDisplayFormatter.Format(data.businessRegistration)}"
-        );
-
-        p3.Append(
-            $"Tax Option: " +
-            $"{EnumDisplayFormatter.Format(data.taxOption)}"
-        );
-
-        list.Add(
-            new CaseFolderPageContent(
-                "Income Information",
-                p3.ToString()
-            )
-        );
-
-        // --------------------------------------------------------
-        // Page 4
-        // --------------------------------------------------------
-
-        list.Add(
-            new CaseFolderPageContent(
-                "Tax Computation Information",
                 ""
-            )
-        );
-
-        // --------------------------------------------------------
-        // Page 5
-        // --------------------------------------------------------
-
-        StringBuilder p5 =
-            new StringBuilder();
-
-        p5.AppendLine(
-            $"Required Form: " +
-            $"{(data.requiredForm.HasValue ? data.requiredForm.ToString() : "?")}"
-        );
-
-        p5.AppendLine(
-            $"Filing Status: " +
-            $"{EnumDisplayFormatter.Format(data.filingStatus.ToString())}"
-        );
-
-        p5.AppendLine(
-            $"Submission Date: " +
-            $"{(string.IsNullOrEmpty(data.submissionDate) ? "-" : data.submissionDate)}"
-        );
-
-        p5.AppendLine(
-            $"Remarks: " +
-            $"{(string.IsNullOrEmpty(data.remarks) ? "-" : data.remarks)}"
-        );
-
-        if (data.encodedForm != null)
-        {
-            p5.Append(
-                $"Encoded Form On File: BIR " +
-                $"{data.encodedForm.selectedForm}" +
-                $"{(data.encodedForm.isConfirmed ? " (Confirmed)" : " (Draft)")}"
-            );
-        }
-
-        list.Add(
-            new CaseFolderPageContent(
-                "Filing Information",
-                p5.ToString()
-            )
-        );
-
-        // --------------------------------------------------------
-        // Page 6
-        // --------------------------------------------------------
-
-        list.Add(
-            new CaseFolderPageContent(
-                "Supporting Documents",
-                ""
-            )
-        );
-
-        // --------------------------------------------------------
-        // Page 7
-        // --------------------------------------------------------
-
-        StringBuilder p7 =
-            new StringBuilder();
-
-        p7.AppendLine(
-            $"Residency Status: " +
-            $"{EnumDisplayFormatter.Format(data.residencyStatus)}"
-        );
-
-        p7.AppendLine(
-            $"Taxpayer Type: " +
-            $"{EnumDisplayFormatter.Format(data.taxpayerType)}"
-        );
-
-        p7.AppendLine();
-
-        p7.AppendLine(
-            "Potential Issues Identified:"
-        );
-
-        foreach (var issue in data.potentialIssuesIdentified)
-        {
-            p7.AppendLine(
-                $"- {issue}"
-            );
-        }
-
-        list.Add(
-            new CaseFolderPageContent(
-                "Consultant Findings",
-                p7.ToString()
             )
         );
 
@@ -646,60 +369,71 @@ public class CaseFolderUI : MonoBehaviour
     {
         ClearRows(page1Rows);
 
+        // Name
         AddSourceOnlyRow(
             page1Rows,
             page1FieldRowListRoot,
-            "Case Number",
-            data.caseNumber,
+            "Name",
+            data.fullName,
             DataValueType.Text,
-            "CaseNumber"
+            "FullName"
         );
 
+        // TIN ID
         AddSourceOnlyRow(
             page1Rows,
             page1FieldRowListRoot,
-            "Tax Year",
-            data.taxYear,
+            "TIN ID",
+            data.tin,
             DataValueType.Text,
-            "TaxYear"
+            "TIN"
         );
 
-        AddSourceOnlyRow(
+        // Taxpayer Classification
+        // Uses data.residencyStatus internally,
+        // but displays "Taxpayer Classification" in the UI.
+        AddEnumRow(
             page1Rows,
             page1FieldRowListRoot,
-            "Date Received",
-            data.dateReceived,
-            DataValueType.Text,
-            "DateReceived"
+            "Taxpayer Classification",
+            "ResidencyStatus",
+            data,
+            () => data.residencyStatus?.ToString(),
+            v => data.residencyStatus =
+                (ResidencyStatus)System.Enum.Parse(
+                    typeof(ResidencyStatus),
+                    v
+                )
         );
 
-        AddSourceOnlyRow(
+        // Income Sources
+        AddEnumRow(
             page1Rows,
             page1FieldRowListRoot,
-            "Assigned Consultant",
-            data.assignedConsultant,
-            DataValueType.Text,
-            "AssignedConsultant"
+            "Income Sources",
+            "IncomeSource",
+            data,
+            () => data.incomeSource?.ToString(),
+            v => data.incomeSource =
+                (IncomeSource)System.Enum.Parse(
+                    typeof(IncomeSource),
+                    v
+                )
         );
 
-        AddSourceOnlyRow(
+        // Taxpayer Type
+        AddEnumRow(
             page1Rows,
             page1FieldRowListRoot,
-            "Case Title",
-            data.caseTitle,
-            DataValueType.Text,
-            "CaseTitle"
-        );
-
-        AddSourceOnlyRow(
-            page1Rows,
-            page1FieldRowListRoot,
-            "Case Assessment",
-            data.assessmentStamped
-                ? data.caseAssessment.ToString()
-                : "Not Yet Stamped",
-            DataValueType.Text,
-            "CaseAssessment"
+            "Taxpayer Type",
+            "TaxpayerType",
+            data,
+            () => data.taxpayerType?.ToString(),
+            v => data.taxpayerType =
+                (TaxpayerType)System.Enum.Parse(
+                    typeof(TaxpayerType),
+                    v
+                )
         );
     }
 

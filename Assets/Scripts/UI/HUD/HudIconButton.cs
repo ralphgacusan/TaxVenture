@@ -65,7 +65,7 @@ public class HudIconButton : MonoBehaviour
 
     private void Awake()
     {
-        SetLocked();
+        Unlock();
     }
 
 
