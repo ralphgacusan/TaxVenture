@@ -63,17 +63,25 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerClickHandler
 
         collected = true;
 
+        // Play paper SFX when the taxpayer profile is collected.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperSFX();
+        }
+
         if (TaxpayerProfileCollectionHUD.Instance != null)
         {
             TaxpayerProfileCollectionHUD.Instance.CollectProfile(profileData);
         }
         else
         {
-            Debug.LogError("[TaxpayerProfileWorldPickup] TaxpayerProfileCollectionHUD.Instance is NULL.");
+            Debug.LogError(
+                "[TaxpayerProfileWorldPickup] " +
+                "TaxpayerProfileCollectionHUD.Instance is NULL."
+            );
         }
 
         gameObject.SetActive(false);
     }
-
     public TaxpayerProfile Profile => profileData;
 }

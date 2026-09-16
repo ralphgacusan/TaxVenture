@@ -110,6 +110,12 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
 
         if (isOpen)
         {
+            // Play paper SFX when the profile papers are opened.
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayPaperSFX();
+            }
+
             RespawnPapers();
         }
         else

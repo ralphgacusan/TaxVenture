@@ -18,6 +18,11 @@ public class PlayerMovement : MonoBehaviour
     private Rigidbody rb;
     private Vector3 moveDirection;
 
+    [Header("Footstep Audio")]
+    [SerializeField] private float footstepInterval = 0.7f;
+
+    private float footstepTimer;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -57,6 +62,29 @@ public class PlayerMovement : MonoBehaviour
         else
         {
             moveDirection = Vector3.zero;
+        }
+
+        // =========================================================
+        // FOOTSTEP AUDIO
+        // =========================================================
+
+        if (moveDirection.sqrMagnitude > 0.01f)
+        {
+            footstepTimer -= Time.deltaTime;
+
+            if (footstepTimer <= 0f)
+            {
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayFootstepSFX();
+                }
+
+                footstepTimer = footstepInterval;
+            }
+        }
+        else
+        {
+            footstepTimer = 0f;
         }
     }
 

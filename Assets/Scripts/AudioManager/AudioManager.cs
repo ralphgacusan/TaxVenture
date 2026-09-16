@@ -1,5 +1,5 @@
-
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class AudioManager : MonoBehaviour
 {
@@ -56,6 +56,13 @@ public class AudioManager : MonoBehaviour
     [SerializeField]
     private AudioClip selectSFX;
 
+    [SerializeField]
+    private AudioClip footstepSFX;
+
+    [SerializeField]
+    [Range(0f, 1f)]
+    private float footstepVolume = 0.3f;
+
 
     // =========================================================
     // SETTINGS
@@ -103,6 +110,8 @@ public class AudioManager : MonoBehaviour
 
         LoadSettings();
 
+        SceneManager.sceneLoaded += OnSceneLoaded;
+
 
         Debug.Log(
             "[AudioManager] Initialized."
@@ -111,6 +120,19 @@ public class AudioManager : MonoBehaviour
 
 
     private void Start()
+    {
+        SetupMusic();
+    }
+
+
+    // =========================================================
+    // SCENE LOADED
+    // =========================================================
+
+    private void OnSceneLoaded(
+        Scene scene,
+        LoadSceneMode mode
+    )
     {
         SetupMusic();
     }
@@ -132,6 +154,18 @@ public class AudioManager : MonoBehaviour
         }
 
 
+        // -----------------------------------------------------
+        // Only play music in MainMenu and Progress.
+        // -----------------------------------------------------
+
+        if (!IsMusicScene())
+        {
+            musicSource.Stop();
+
+            return;
+        }
+
+
         musicSource.clip =
             backgroundMusic;
 
@@ -143,10 +177,22 @@ public class AudioManager : MonoBehaviour
 
 
         if (musicEnabled &&
-            backgroundMusic != null)
+            backgroundMusic != null &&
+            !musicSource.isPlaying)
         {
             musicSource.Play();
         }
+    }
+
+
+    private bool IsMusicScene()
+    {
+        string sceneName =
+            SceneManager.GetActiveScene().name;
+
+        return sceneName == "MainMenu" ||
+               sceneName == "Progress" ||
+               sceneName == "Settings";
     }
 
 
@@ -176,7 +222,12 @@ public class AudioManager : MonoBehaviour
 
         if (enabled)
         {
-            if (!musicSource.isPlaying &&
+            // -------------------------------------------------
+            // Only start music if the current scene allows it.
+            // -------------------------------------------------
+
+            if (IsMusicScene() &&
+                !musicSource.isPlaying &&
                 backgroundMusic != null)
             {
                 musicSource.Play();
@@ -320,6 +371,27 @@ public class AudioManager : MonoBehaviour
 
 
     // =========================================================
+    // FOOTSTEP
+    // =========================================================
+
+    public void PlayFootstepSFX()
+    {
+        if (!sfxEnabled)
+            return;
+
+        if (sfxSource == null)
+            return;
+
+        if (footstepSFX == null)
+            return;
+
+        sfxSource.PlayOneShot(
+            footstepSFX,
+            footstepVolume
+        );
+    }
+
+    // =========================================================
     // SFX SETTINGS
     // =========================================================
 
@@ -374,5 +446,20 @@ public class AudioManager : MonoBehaviour
                 SFXEnabledKey,
                 1
             ) == 1;
+    }
+
+
+    // =========================================================
+    // CLEANUP
+    // =========================================================
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+
+            Instance = null;
+        }
     }
 }

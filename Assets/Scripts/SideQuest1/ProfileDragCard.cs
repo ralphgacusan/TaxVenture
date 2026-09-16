@@ -72,6 +72,12 @@ public class ProfileDragCard : MonoBehaviour, IPointerDownHandler, IDragHandler,
     {
         if (mainCamera == null) return;
 
+        // Play paper SFX when the player picks up the paper.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperSFX();
+        }
+
         // If this card currently occupies a slot, vacate it — it's being
         // picked back up regardless of whether it was correct or not.
         if (currentSlot != null)

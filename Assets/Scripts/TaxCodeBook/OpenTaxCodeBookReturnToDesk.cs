@@ -164,6 +164,12 @@ public class OpenTaxCodeBookReturnToDesk :
         closedTaxCodeBook.SetActive(true);
         gameObject.SetActive(false);
 
+        // Play paper sound when the open book closes.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperSFX();
+        }
+
         DebugLog(
             "Tax code book returned to the desk."
         );
