@@ -3,7 +3,12 @@ guid: 5dc89f8348d58724f941337d858a6a41
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cora_texture
+    second: {fileID: 2100000, guid: be249c4a94302e546835b4ecd5d91291, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
