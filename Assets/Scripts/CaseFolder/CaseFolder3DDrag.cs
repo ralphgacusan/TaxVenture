@@ -633,10 +633,15 @@ public class CaseFolder3DDrag :
 
         openFolder.SetActive(true);
 
+        // Play paper SFX when the folder opens.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperSFX();
+        }
+
         DebugLog(
             "Open folder shown."
         );
-
         /*
          * Show the Case Folder UI after the open folder appears.
          */

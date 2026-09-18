@@ -14,11 +14,25 @@ public class LevelCompleteState : IGameState
             return;
         }
 
-        LevelTotalResult levelTotal = LevelTotalResult.FromAccumulator(
-            CaseProgressionManager.Instance.RewardAccumulator
-        );
+        if (LevelCompleteUI.Instance == null)
+        {
+            Debug.LogError("[LevelCompleteState] LevelCompleteUI.Instance is NULL!");
+            return;
+        }
+
+        Debug.Log("[LevelCompleteState] LevelCompleteUI.Instance FOUND.");
+
+        LevelTotalResult levelTotal =
+            LevelTotalResult.FromAccumulator(
+                CaseProgressionManager.Instance.RewardAccumulator
+            );
+
+        Debug.Log("[LevelCompleteState] LevelTotalResult created.");
+        Debug.Log("[LevelCompleteState] Calling LevelCompleteUI.Show()...");
 
         LevelCompleteUI.Instance.Show(levelTotal);
+
+        Debug.Log("[LevelCompleteState] LevelCompleteUI.Show() finished.");
     }
 
     public void Exit()
