@@ -1,463 +1,482 @@
 {
-  "caseId": "case_marie_001",
+"caseId": "case_001",
+"caseNumber": "ITR-2026-0001",
+"clientId": "client_001",
+"clientModel": "Client_001",
 
-  "caseNumber": "ITR-2026-0101",
+"taxYear": "2026",
+"dateReceived": "June 15, 2026",
+"assignedConsultant": "Player",
+"caseTitle": "Juana Dela Cruz - Annual Income Tax Return Filing",
+"caseSummary": "Client seeks assistance in filing an annual income tax return. Employment and business records require verification.",
 
-  "taxYear": "2026",
+"fullName": "Juana Dela Cruz",
+"tin": "123-456-789-000",
+"birthdate": "January 15, 1995",
+"address": "Quezon City, Metro Manila",
+"contactNumber": "0917-123-4567",
+"civilStatus": "Married",
+"spouseName": "Maria Dela Cruz",
+"spouseTin": "987-654-321-000",
+"citizenship": "Filipino",
 
-  "dateReceived": "June 20, 2026",
+"answerKey": {
+"residencyStatus": "ResidentCitizen",
+"taxpayerType": "MixedIncomeEarner",
+"incomeSource": "MixedIncome",
+"numberOfEmployers": "OneEmployer",
+"businessRegistration": "Registered",
+"taxOption": "EightPercentTaxRate",
+"requiredForm": "BIR1701",
+"correctAssessment": "NotReadyForFiling",
 
-  "assignedConsultant": "Player",
+"grossIncome": 500000,
+"allowableExpenses": 150000,
+"taxableIncome": 350000,
+"taxDue": 0,
+"taxWithheldOrCredits": 45000,
+"finalTaxPayable": 0,
 
-  "caseTitle": "Marie Bautista - Individual Income Tax Classification",
+"employerTin": "123-456-789-000",
+"businessAddress": "Quezon City, Metro Manila",
+"dependentCount": 0
 
-  "caseSummary": "Marie Bautista, a local BPO employee, needs her taxpayer classification confirmed before her annual income tax return can be processed. She has lived and worked in the Philippines her entire life and earns income solely from her employer, so the case centers on correctly identifying her residency status and taxpayer type rather than on any financial discrepancies.",
+},
 
+"missingFieldKeys": [
+"ResidencyStatus",
+"TaxpayerType",
+"IncomeSource",
+"NumberOfEmployers",
+"BusinessRegistration",
+"TaxOption",
+"RequiredForm"
+],
 
-  "fullName": "Marie Bautista",
+"documents": [
+{
+"documentName": "BIR Form 2316",
+"fields": [
+{
+"label": "Employer Name",
+"displayValue": "ABC Corporation",
+"correctValue": "ABC Corporation",
+"type": "Text",
+"semanticKey": "EmployerName",
+"isIncorrect": false,
+"incorrectReason": "",
+"issueType": "",
+"severity": ""
+},
+{
+"label": "Total Compensation",
+"displayValue": "₱500,000",
+"correctValue": "₱500,000",
+"type": "Number",
+"semanticKey": "GrossIncome",
+"isIncorrect": false,
+"incorrectReason": "",
+"issueType": "",
+"severity": ""
+},
+{
+"label": "Tax Withheld",
+"displayValue": "₱45,000",
+"correctValue": "₱45,000",
+"type": "Number",
+"semanticKey": "TaxCredits",
+"isIncorrect": false,
+"incorrectReason": "",
+"issueType": "",
+"severity": ""
+}
+]
+},
 
-  "tin": "123-456-789-000",
-
-  "birthdate": "March 14, 1997",
-
-  "address": "Poblacion, Town Proper",
-
-  "contactNumber": "0917-123-4567",
-
-  "civilStatus": "Single",
-
-  "spouseName": "",
-
-  "spouseTin": "",
-
-  "citizenship": "Filipino",
-
-
-  "answerKey": {
-
-    "residencyStatus": "ResidentCitizen",
-
-    "taxpayerType": "CompensationEarner",
-
-    "incomeSource": "EmploymentIncome",
-
-    "numberOfEmployers": "One",
-
-    "businessRegistration": "NotApplicable",
-
-    "taxOption": "GraduatedIncomeTax",
-
-    "requiredForm": "BIR1700",
-
-    "correctAssessment": "ReadyForFiling",
-
-
-    "grossIncome": 480000,
-
-    "allowableExpenses": 0,
-
-    "taxableIncome": 480000,
-
-    "taxDue": 32500,
-
-    "taxWithheldOrCredits": 32500,
-
-    "finalTaxPayable": 0,
-
-
-    "employerTin": "789-012-345-000",
-
-    "businessAddress": "",
-
-    "dependentCount": 0
-
-  },
-
-
-  "missingFieldKeys": [
-
-    "ResidencyStatus",
-
-    "TaxpayerType",
-
-    "IncomeSource",
-
-    "NumberOfEmployers"
-
-  ],
-
-
-  "documents": [
-
+{
+  "documentName": "BIR Form 2303",
+  "fields": [
     {
-      "documentName": "Certificate of Compensation Payment/Tax Withheld (BIR Form 2316)",
-
-      "fields": [
-
-        {
-          "label": "Employee Name",
-          "displayValue": "Marie Bautista",
-          "correctValue": "Marie Bautista",
-          "type": "Text",
-          "semanticKey": "FullName",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Gross Compensation Income",
-          "displayValue": "₱480,000",
-          "correctValue": "₱480,000",
-          "type": "Number",
-          "semanticKey": "GrossIncome",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Tax Withheld",
-          "displayValue": "₱32,500",
-          "correctValue": "₱32,500",
-          "type": "Number",
-          "semanticKey": "TaxWithheldOrCredits",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Employer",
-          "displayValue": "Sunrise BPO Solutions Inc.",
-          "correctValue": "Sunrise BPO Solutions Inc.",
-          "type": "Text",
-          "semanticKey": "EmployerName",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Employer TIN",
-          "displayValue": "789-012-345-000",
-          "correctValue": "789-012-345-000",
-          "type": "Text",
-          "semanticKey": "EmployerTin",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        }
-
-      ]
+      "label": "Business Name",
+      "displayValue": "JD Online Services",
+      "correctValue": "JD Online Services",
+      "type": "Text",
+      "semanticKey": "BusinessName",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
     },
-
-
     {
-      "documentName": "Valid Government ID",
-
-      "fields": [
-
-        {
-          "label": "Full Name",
-          "displayValue": "Marie Bautista",
-          "correctValue": "Marie Bautista",
-          "type": "Text",
-          "semanticKey": "FullName",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Citizenship",
-          "displayValue": "Filipino",
-          "correctValue": "Filipino",
-          "type": "Text",
-          "semanticKey": "Citizenship",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Address",
-          "displayValue": "Poblacion, Town Proper",
-          "correctValue": "Poblacion, Town Proper",
-          "type": "Text",
-          "semanticKey": "Address",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        }
-
-      ]
+      "label": "Taxpayer TIN",
+      "displayValue": "123-456-789-000",
+      "correctValue": "123-456-789-000",
+      "type": "Text",
+      "semanticKey": "TIN",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
     },
-
-
     {
-      "documentName": "Employment Records",
-
-      "fields": [
-
-        {
-          "label": "Number of Employers This Year",
-          "displayValue": "One",
-          "correctValue": "One",
-          "type": "Text",
-          "semanticKey": "NumberOfEmployers",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Employment Type",
-          "displayValue": "Regular, full-time employee",
-          "correctValue": "Regular, full-time employee",
-          "type": "Text",
-          "semanticKey": "EmploymentType",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Length of Residency in the Philippines",
-          "displayValue": "Lifetime resident",
-          "correctValue": "Lifetime resident",
-          "type": "Text",
-          "semanticKey": "ResidencyStatus",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        }
-
-      ]
+      "label": "Tax Type",
+      "displayValue": "Non-VAT / 8% Tax Rate",
+      "correctValue": "Non-VAT / 8% Tax Rate",
+      "type": "Text",
+      "semanticKey": "TaxOption",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
     }
+  ]
+},
 
+{
+  "documentName": "Financial Statements",
+  "fields": [
+    {
+      "label": "Gross Sales",
+      "displayValue": "₱350,000",
+      "correctValue": "₱350,000",
+      "type": "Number",
+      "semanticKey": "GrossIncome",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    },
+    {
+      "label": "Total Expenses",
+      "displayValue": "₱150,000",
+      "correctValue": "₱150,000",
+      "type": "Number",
+      "semanticKey": "AllowableExpenses",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    },
+    {
+      "label": "Net Income",
+      "displayValue": "₱200,000",
+      "correctValue": "₱200,000",
+      "type": "Number",
+      "semanticKey": "NetIncome",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    }
+  ]
+},
+
+{
+  "documentName": "Sales Records",
+  "fields": [
+    {
+      "label": "Date",
+      "displayValue": "March 15, 2026",
+      "correctValue": "March 15, 2026",
+      "type": "Text",
+      "semanticKey": "SalesDate",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    },
+    {
+      "label": "Customer",
+      "displayValue": "XYZ Trading",
+      "correctValue": "XYZ Trading",
+      "type": "Text",
+      "semanticKey": "Customer",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    },
+    {
+      "label": "Amount",
+      "displayValue": "₱25,000",
+      "correctValue": "₱25,000",
+      "type": "Number",
+      "semanticKey": "GrossIncome",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    }
+  ]
+},
+
+{
+  "documentName": "Bank Statements",
+  "fields": [
+    {
+      "label": "Deposit",
+      "displayValue": "₱50,000",
+      "correctValue": "₱50,000",
+      "type": "Number",
+      "semanticKey": "Deposit",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    },
+    {
+      "label": "Withdrawal",
+      "displayValue": "₱10,000",
+      "correctValue": "₱10,000",
+      "type": "Number",
+      "semanticKey": "Withdrawal",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    },
+    {
+      "label": "Balance",
+      "displayValue": "₱250,000",
+      "correctValue": "₱250,000",
+      "type": "Number",
+      "semanticKey": "Balance",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    }
+  ]
+},
+
+{
+  "documentName": "Property Documents",
+  "fields": [
+    {
+      "label": "Property Owner",
+      "displayValue": "Juan Dela Cruz",
+      "correctValue": "Juan Dela Cruz",
+      "type": "Text",
+      "semanticKey": "PropertyOwner",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    },
+    {
+      "label": "Assessed Value",
+      "displayValue": "₱1,500,000",
+      "correctValue": "₱1,500,000",
+      "type": "Number",
+      "semanticKey": "AssessedValue",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    },
+    {
+      "label": "Selling Price",
+      "displayValue": "₱2,000,000",
+      "correctValue": "₱2,000,000",
+      "type": "Number",
+      "semanticKey": "SellingPrice",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    }
+  ]
+},
+
+{
+  "documentName": "Previous Year's ITR",
+  "fields": [
+    {
+      "label": "Declared Income",
+      "displayValue": "₱600,000",
+      "correctValue": "₱600,000",
+      "type": "Number",
+      "semanticKey": "PriorDeclaredIncome",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    },
+    {
+      "label": "Tax Due",
+      "displayValue": "₱45,000",
+      "correctValue": "₱45,000",
+      "type": "Number",
+      "semanticKey": "PriorTaxDue",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    },
+    {
+      "label": "Filing Date",
+      "displayValue": "April 15, 2025",
+      "correctValue": "April 15, 2025",
+      "type": "Text",
+      "semanticKey": "PriorFilingDate",
+      "isIncorrect": false,
+      "incorrectReason": "",
+      "issueType": "",
+      "severity": ""
+    }
+  ]
+}
+
+
+],
+ "potentialIssues": [
+    "Bank deposits exceed reported sales by ₱50,000.",
+    "One sales invoice was not included in declared revenue.",
+    "Business income was initially omitted from the case summary."
   ],
-
-
-  "potentialIssues": [
-
-    "Marie's income comes entirely from a single local employer, with no other sources of income to account for.",
-
-    "Her taxpayer classification depends on confirming both her citizenship and her Philippine residency.",
-
-    "Because tax was already properly withheld by her employer, there should be no additional tax payable once the classification is confirmed.",
-
-    "The player must correctly identify her as a Resident Citizen taxed on compensation income under the graduated income tax table.",
-
-    "No deductions, adjustments, or unsupported expenses are involved in this case — the focus is entirely on correct classification."
-
-  ],
-
 
   "clientPortraitDefault": "Client1_Marie_Default",
   "clientPortraitHappy": "Client1_Marie_Happy",
   "clientPortraitSad": "Client1_Marie_Sad",
 
-
   "receptionistGreeting": [
-
     {
       "speaker": "Npc",
-      "text": "Good afternoon! I heard you're getting familiar with the local taxpayers.",
+      "text": "Good morning! Welcome to the tax office.",
       "portraitId": "Client1_Marie_Happy"
     },
-
     {
       "speaker": "Npc",
-      "text": "Marie from the BPO office should be easy enough to start with. Her situation is pretty simple.",
+      "text": "I have a client case ready for you. Please review the documents carefully before making your assessment.",
       "portraitId": "Client1_Marie_Happy"
     },
-
     {
       "speaker": "Player",
-      "text": "Sounds good. I'll head over and speak with her.",
+      "text": "Understood. I'll review the client's records and determine what needs to be addressed.",
       "portraitId": "Auditor_Default"
     }
-
   ],
-
 
   "clientFirstMeeting": [
-
-    {
-      "speaker": "Player",
-      "text": "Good afternoon. Mind if I ask you a few questions? I'm the new tax consultant assigned to the town.",
-      "portraitId": "Auditor_Default"
-    },
-
     {
       "speaker": "Npc",
-      "text": "Oh, sure. Is there something I need to prepare?",
+      "text": "Hello. I'm here because I need help preparing my annual income tax return.",
       "portraitId": "Client1_Marie_Default"
     },
-
     {
       "speaker": "Player",
-      "text": "Nothing serious. I'm getting familiar with the taxpayers around here. What do you do for a living?",
+      "text": "I'll review your employment and business records first so we can determine the correct tax treatment.",
       "portraitId": "Auditor_Default"
     },
-
     {
       "speaker": "Npc",
-      "text": "I work at the BPO office nearby. I've been there for a few years now.",
+      "text": "Sure. I brought the documents I have with me.",
       "portraitId": "Client1_Marie_Default"
     }
-
   ],
-
 
   "interviewLines": [
-
     {
       "speaker": "Player",
-      "text": "I see. And have you been living here in the Philippines for most of your life?",
+      "text": "I see that you have both employment and business income. Can you confirm that you had one employer during the tax year?",
       "portraitId": "Auditor_Default"
     },
-
     {
       "speaker": "Npc",
-      "text": "Yes. I was born here, actually. My family and I have always lived here.",
+      "text": "Yes. I worked for ABC Corporation while also operating JD Online Services.",
       "portraitId": "Client1_Marie_Default"
     },
-
     {
       "speaker": "Player",
-      "text": "And you're a Filipino citizen?",
+      "text": "Your records also indicate that the business is registered. Did you choose the eight percent income tax option?",
       "portraitId": "Auditor_Default"
     },
-
     {
       "speaker": "Npc",
-      "text": "Yes.",
+      "text": "Yes, I registered the business and selected the eight percent tax rate.",
       "portraitId": "Client1_Marie_Default"
     },
-
     {
       "speaker": "Player",
-      "text": "Got it. That gives me a better idea of your taxpayer status. Thanks for your time.",
+      "text": "Thank you. I'll compare your declarations against the supporting records before making the final assessment.",
       "portraitId": "Auditor_Default"
-    },
-
-    {
-      "speaker": "Npc",
-      "text": "No problem. Good luck with your new job!",
-      "portraitId": "Client1_Marie_Happy"
     }
-
   ],
-
 
   "outcomeCorrectNoIssues": [
-
     {
       "speaker": "Player",
-      "text": "Marie is a Resident Citizen earning compensation income from a single local employer. Her tax was properly withheld, so her return is ready for filing with no further adjustments needed.",
+      "text": "After reviewing the records, the assessment is correct and there are no unresolved issues.",
       "portraitId": "Auditor_Happy"
     },
-
     {
       "speaker": "Npc",
-      "text": "That's a relief! Thanks for looking into it properly.",
+      "text": "That's good to hear. Thank you for checking everything carefully.",
       "portraitId": "Client1_Marie_Happy"
     }
-
   ],
-
 
   "outcomeCorrectWithIssues": [
-
     {
       "speaker": "Player",
-      "text": "Marie's classification as a Resident Citizen is correct, but a few details still need to be double-checked before finalizing the return.",
+      "text": "Your tax classification is correct, but I found issues that need to be addressed before the return can be filed.",
       "portraitId": "Auditor_Default"
     },
-
     {
       "speaker": "Npc",
-      "text": "Oh, is something missing from my documents?",
+      "text": "What kind of issues did you find?",
       "portraitId": "Client1_Marie_Default"
     },
-
     {
       "speaker": "Player",
-      "text": "Just some minor confirmations on the employment records. Nothing that should cause any issues.",
+      "text": "The bank records show deposits that are not fully reflected in the reported sales, so the records need further verification.",
       "portraitId": "Auditor_Default"
     },
-
     {
       "speaker": "Npc",
-      "text": "Okay, just let me know if you need anything else from me.",
+      "text": "I understand. I'll provide whatever additional records are needed.",
       "portraitId": "Client1_Marie_Default"
     }
-
   ],
-
 
   "outcomeWrongVerdict": [
-
     {
       "speaker": "Player",
-      "text": "The assessment doesn't correctly reflect Marie's taxpayer classification.",
+      "text": "The assessment does not match the information found in the case records.",
       "portraitId": "Auditor_Disappointed"
     },
-
     {
       "speaker": "Npc",
-      "text": "I don't understand — I've lived here my whole life and only have one job. Did I do something wrong?",
+      "text": "I thought the information I provided was enough. What did I miss?",
       "portraitId": "Client1_Marie_Sad"
     },
-
     {
       "speaker": "Player",
-      "text": "No, nothing on your end. A Filipino citizen who resides in the Philippines and earns compensation income here should be classified as a Resident Citizen — that determines how your income is taxed.",
+      "text": "Some of the taxpayer classification and income information needs to be reviewed before a final filing decision can be made.",
       "portraitId": "Auditor_Disappointed"
     }
-
   ],
 
-
   "outcomeWrongVerdictWithIssues": [
-
     {
       "speaker": "Player",
-      "text": "The assessment is incorrect, and a few supporting details were also overlooked.",
+      "text": "The assessment is incorrect, and the supporting records also contain unresolved discrepancies.",
       "portraitId": "Auditor_Disappointed"
     },
-
     {
       "speaker": "Npc",
-      "text": "That sounds more complicated than I expected.",
+      "text": "So the return cannot be filed yet?",
       "portraitId": "Client1_Marie_Sad"
     },
-
     {
       "speaker": "Player",
-      "text": "It shouldn't be, in your case — your situation is fairly simple. I'll need to review your employer records and residency details again before finalizing your classification.",
+      "text": "Correct. The taxpayer classification must be corrected and the discrepancies between the reported income and supporting documents must be investigated.",
       "portraitId": "Auditor_Disappointed"
     },
-
     {
       "speaker": "Npc",
-      "text": "All right, let me know if you need anything else.",
+      "text": "I'll work on getting the missing information and correcting the records.",
       "portraitId": "Client1_Marie_Sad"
     }
-
   ]
-
 }
