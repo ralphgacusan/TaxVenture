@@ -32,8 +32,7 @@ public class CameraController : MonoBehaviour
     {
         FirstPerson,
         Workstation,
-        Interview,
-        CorkboardSideQuest   // <-- add this
+        Interview
     }
 
     public CameraMode CurrentMode { get; private set; }
@@ -856,88 +855,5 @@ public class CameraController : MonoBehaviour
             new Rect(10, 10, 300, 30),
             $"CurrentMode: {CurrentMode}"
         );
-    }
-
-    // =============================================================
-    // ENTER CORKBOARD SIDE QUEST
-    // =============================================================
-
-    public void EnterCorkboardSideQuest(Transform viewpoint, System.Action onComplete = null)
-    {
-        Debug.Log("[CameraController] EnterCorkboardSideQuest called.");
-
-        if (viewpoint == null)
-        {
-            Debug.LogError("[CameraController] Corkboard viewpoint is NULL!");
-            return;
-        }
-
-        if (mainCamera == null)
-            mainCamera = Camera.main;
-
-        if (mainCamera == null)
-        {
-            Debug.LogError("[CameraController] Main Camera could not be found!");
-            return;
-        }
-
-        if (CurrentMode != CameraMode.FirstPerson)
-        {
-            Debug.LogWarning(
-                "[CameraController] Current mode is " + CurrentMode +
-                ". Resetting to FirstPerson before entering corkboard."
-            );
-
-            ForceResetToFirstPerson();
-        }
-
-        CurrentMode = CameraMode.CorkboardSideQuest;
-
-        // Same as interview mode: stop normal player systems entirely.
-        SetFirstPersonSystems(false);
-
-        if (workstationInteractor != null)
-            workstationInteractor.enabled = false;
-
-        if (firstPersonHands != null)
-            firstPersonHands.Hide();
-
-        StopActiveTransition();
-
-        Debug.Log("[CameraController] Moving camera to corkboard viewpoint: " + viewpoint.name);
-
-        activeTransition = StartCoroutine(
-            MoveCameraToViewpoint(
-                viewpoint,
-                () =>
-                {
-                    Debug.Log("[CameraController] Corkboard viewpoint reached.");
-                    onComplete?.Invoke();
-                }
-            )
-        );
-    }
-
-    // =============================================================
-    // EXIT CORKBOARD SIDE QUEST
-    // =============================================================
-
-    public void ExitCorkboardSideQuest()
-    {
-        if (CurrentMode != CameraMode.CorkboardSideQuest)
-            return;
-
-        Debug.Log("[CameraController] Exiting corkboard side quest.");
-
-        StopActiveTransition();
-
-        CurrentMode = CameraMode.FirstPerson;
-
-        SetFirstPersonSystems(true);
-
-        if (firstPersonHands != null)
-            firstPersonHands.Show();
-
-        Debug.Log("[CameraController] Returned to normal first-person.");
     }
 }

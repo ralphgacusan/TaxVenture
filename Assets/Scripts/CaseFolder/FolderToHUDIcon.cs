@@ -215,12 +215,6 @@ public class FolderToHUDIcon :
 
         folderStored = true;
 
-        // Play paper sound when the folder is dropped onto the HUD icon.
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayPaperSFX();
-        }
-
         storedFolderCount++;
 
         UpdateFolderCountText();

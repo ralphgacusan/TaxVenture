@@ -29,25 +29,25 @@ public class CaseData
 
 
     // ---------- Page 1: Case Overview ----------
-    public string caseNumber = "ITR-2026-0101";
+    public string caseNumber = "ITR-2026-0001";
     public string taxYear = "2026";
-    public string dateReceived = "June 20, 2026";
+    public string dateReceived = "June 15, 2026";
     public string assignedConsultant = "Player";
-    public string caseTitle = "Marie Bautista Annual Income Tax Filing";
-    public string caseSummary = "Marie Bautista, a local BPO employee, needs her taxpayer classification confirmed before her annual income tax return can be processed. She has lived and worked in the Philippines her entire life and earns income solely from her employer.";
+    public string caseTitle = "Juan Dela Cruz Annual Income Tax Filing";
+    public string caseSummary = "Client seeks assistance in filing an annual income tax return. Employment and business records require verification.";
     public CaseAssessment caseAssessment = CaseAssessment.NotReadyForFiling;
 
     public bool assessmentStamped = false;
 
     // ---------- Page 2: Taxpayer Information ----------
-    public string fullName = "Marie Bautista";
+    public string fullName = "Juan Dela Cruz";
     public string tin = "123-456-789-000";
-    public string birthdate = "March 14, 1997";
-    public string address = "Poblacion, Town Proper";
+    public string birthdate = "January 15, 1995";
+    public string address = "Quezon City, Metro Manila";
     public string contactNumber = "0917-123-4567";
-    public CivilStatus civilStatus = CivilStatus.Single;
-    public string spouseName = "";
-    public string spouseTin = "";
+    public CivilStatus civilStatus = CivilStatus.Married;
+    public string spouseName = "Maria Dela Cruz";
+    public string spouseTin = "987-654-321-000";
     public string citizenship = "Filipino";
 
     // Unknown at case start — filled in during Interview (Milestone 7)
@@ -84,9 +84,9 @@ public class CaseData
     // ---------- Page 7: Consultant Findings ----------
     public List<string> potentialIssuesIdentified = new List<string>
     {
-        "Marie's income comes entirely from a single local employer, with no other sources of income to account for.",
-        "Her taxpayer classification depends on confirming both her citizenship and her Philippine residency.",
-        "Tax was already properly withheld by her employer, so no additional tax should be payable once the classification is confirmed."
+        "Bank deposits exceed reported sales by \u20b150,000.",
+        "One sales invoice was not included in declared revenue.",
+        "Business income was initially omitted from the case summary."
     };
 
     // ---------- Compliance Audit (Milestone 13) ----------

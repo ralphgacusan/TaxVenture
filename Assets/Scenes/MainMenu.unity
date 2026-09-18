@@ -2041,7 +2041,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
   musicSource: {fileID: 690584923}
   sfxSource: {fileID: 1453070046}
-  backgroundMusic: {fileID: 8300000, guid: 390df451be376734fa5a44a38869ffa8, type: 3}
+  backgroundMusic: {fileID: 0}
   achievementSFX: {fileID: 8300000, guid: f5a54b9057808d94c8d3af2f07b4366c, type: 3}
   keyboardSFX: {fileID: 8300000, guid: 5f104e05106925f4abd86f28c9ce8047, type: 3}
   mouseClickSelectSFX: {fileID: 8300000, guid: 60b79c9a5e6450f478be7cde006a2b51, type: 3}
@@ -2049,8 +2049,6 @@ MonoBehaviour:
   paper2SFX: {fileID: 8300000, guid: 9a304b98fea1023408ea4a6d310a44bc, type: 3}
   paperSFX: {fileID: 8300000, guid: f07a05748a70dbd48afebb2e94c592d4, type: 3}
   selectSFX: {fileID: 8300000, guid: 6bf5961281ff90e4b9fd3e6fb5d708b3, type: 3}
-  footstepSFX: {fileID: 8300000, guid: f599cf842292a1e438fa6b98995e7dc0, type: 3}
-  footstepVolume: 0.3
 --- !u!4 &2060058707
 Transform:
   m_ObjectHideFlags: 0
