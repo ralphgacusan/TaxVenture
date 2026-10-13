@@ -155,7 +155,7 @@ public class AudioManager : MonoBehaviour
 
 
         // -----------------------------------------------------
-        // Only play music in MainMenu and Progress.
+        // Only play music in the menu and progression scenes.
         // -----------------------------------------------------
 
         if (!IsMusicScene())
@@ -190,7 +190,8 @@ public class AudioManager : MonoBehaviour
         string sceneName =
             SceneManager.GetActiveScene().name;
 
-        return sceneName == "MainMenu" ||
+        return sceneName == "3D Menu" ||
+               sceneName == "MainMenu" ||
                sceneName == "Progress" ||
                sceneName == "Settings";
     }

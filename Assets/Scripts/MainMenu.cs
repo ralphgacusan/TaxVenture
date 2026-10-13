@@ -5,6 +5,8 @@ public class MainMenu : MonoBehaviour
 {
     public ToggleCamera cameraManager;
 
+    [SerializeField] private string settingsSceneName = "Settings";
+
     private void Update()
     {
         if (Input.touchCount > 0)
@@ -27,6 +29,8 @@ public class MainMenu : MonoBehaviour
                 {
                     GameObject touchedObject = hit.collider.gameObject;
 
+                    Debug.Log("Menu touch hit: " + touchedObject.name);
+
                     switch (touchedObject.name)
                     {
                         case "play_button":
@@ -38,7 +42,7 @@ public class MainMenu : MonoBehaviour
                             break;
 
                         case "settings_button":
-                            SceneManager.LoadScene("SettingsPage");
+                            SceneManager.LoadScene(settingsSceneName);
                             break;
                     }
                 }

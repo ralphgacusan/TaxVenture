@@ -31,6 +31,7 @@ public class PlayerProgressManager : MonoBehaviour
 
     private string SaveDirectory => Path.Combine(Application.persistentDataPath, "Save");
     private string SavePath => Path.Combine(SaveDirectory, "progress.json");
+    private string LegacyBackupPath => SavePath + ".legacy.bak";
 
     public PlayerProgressData CurrentProgress => progress;
 
@@ -54,6 +55,7 @@ public class PlayerProgressManager : MonoBehaviour
         progress = loadResult.IsSuccess
             ? loadResult.Data
             : new PlayerProgressData();
+        progress.Normalize();
 
         Debug.Log(
             $"[PlayerProgressManager] Ready. " +
@@ -74,9 +76,15 @@ public class PlayerProgressManager : MonoBehaviour
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(levelTotal.LevelId))
+        {
+            Debug.LogError("[PlayerProgressManager] ApplyLevelResult requires a level ID.");
+            return;
+        }
+
         progress.totalExp += levelTotal.TotalExp;
         progress.totalReputation += levelTotal.TotalReputation;
-        progress.levelsCompleted += 1;
+        progress.RecordLevelCompletion(levelTotal.LevelId);
 
         Debug.Log(
             $"[PlayerProgressManager] Applied level result. " +
@@ -139,6 +147,32 @@ public class PlayerProgressManager : MonoBehaviour
             }
 
             Debug.Log($"[PlayerProgressManager] Progress loaded from {SavePath}.");
+
+            if (data.Normalize())
+            {
+                try
+                {
+                    if (!File.Exists(LegacyBackupPath))
+                        File.Copy(SavePath, LegacyBackupPath);
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError(
+                        $"[PlayerProgressManager] Could not back up progress before migration: {e.Message}. " +
+                        "The original save was preserved and the migration was not written."
+                    );
+
+                    return CaseValidationResult<PlayerProgressData>.Success(data);
+                }
+
+                var saveResult = Save(data);
+                if (!saveResult.IsSuccess)
+                {
+                    Debug.LogError(
+                        $"[PlayerProgressManager] Could not write normalized progress: {saveResult.ErrorMessage}"
+                    );
+                }
+            }
 
             return CaseValidationResult<PlayerProgressData>.Success(data);
         }

@@ -3,47 +3,44 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// PURPOSE:
-/// Progress / Level Select screen. Displays the player's permanent
-/// progression (Total EXP, Total Reputation) and gates level buttons
-/// based on PlayerProgressData.levelsCompleted.
-///
-/// LOCK RULE:
-/// Level N is unlocked once levelsCompleted >= N - 1.
-/// Level 1 is always unlocked. Level 2 unlocks after 1 level completed.
-///
-/// VISUALS:
-/// Each level button's own Image swaps between a locked sprite
-/// (notepad_white) and an unlocked sprite (notepad_yellow) based on
-/// unlock state — no lock icon overlay, no CanvasGroup dimming.
-/// </summary>
 public class ProgressUI : MonoBehaviour
 {
+    [System.Serializable]
+    public class LevelButtonEntry
+    {
+        public Button button;
+        public Renderer note;
+    }
+
     [Header("Scene Names")]
     [SerializeField] private string levelOneCutscene = "Level1_Character_Intro_Cutscene";
     [SerializeField] private string levelTwoCutscene = "Office_Level2";
-    [SerializeField] private string mainMenuSceneName = "MainMenu";
+    [SerializeField] private string mainMenuSceneName = "3D Menu";
 
     [Header("Progress Display")]
     [SerializeField] private TextMeshProUGUI totalExpText;
     [SerializeField] private TextMeshProUGUI totalReputationText;
     [SerializeField] private TextMeshProUGUI levelsCompletedText;
 
-    [Header("Level Buttons")]
-    [SerializeField] private Button levelOneButton;
-    [SerializeField] private Button levelTwoButton;
+    [Header("Level Buttons — Order: Level 1 to Level 5")]
+    [SerializeField]
+    private LevelButtonEntry[] levels =
+        new LevelButtonEntry[5];
 
-    [Header("Lock/Unlock Sprites")]
-    [SerializeField] private Sprite lockedSprite;   // notepad_white
-    [SerializeField] private Sprite unlockedSprite; // notepad_yellow
+    [Header("3D Note Materials")]
+    [SerializeField] private Material lockedMaterial;
+    [SerializeField] private Material unlockedMaterial;
+
+    [Header("2D Note Sprites")]
+    [SerializeField] private Sprite lockedSprite;
+    [SerializeField] private Sprite unlockedSprite;
 
     private void Start()
     {
         RefreshDisplay();
     }
 
-    private void RefreshDisplay()
+    public void RefreshDisplay()
     {
         if (PlayerProgressManager.Instance == null)
         {
@@ -51,75 +48,87 @@ public class ProgressUI : MonoBehaviour
             return;
         }
 
-        PlayerProgressData progress = PlayerProgressManager.Instance.CurrentProgress;
+        PlayerProgressData progress =
+            PlayerProgressManager.Instance.CurrentProgress;
 
         if (totalExpText != null)
             totalExpText.text = $"Total EXP: {progress.totalExp}";
 
         if (totalReputationText != null)
-            totalReputationText.text = $"Total Reputation: {progress.totalReputation}";
+            totalReputationText.text =
+                $"Total Reputation: {progress.totalReputation}";
 
         if (levelsCompletedText != null)
-            levelsCompletedText.text = $"Levels Completed: {progress.levelsCompleted}";
+            levelsCompletedText.text =
+                $"Levels Completed: {progress.levelsCompleted}";
 
-        // Level 1 is always unlocked.
-        SetLevelButtonState(levelOneButton, isUnlocked: true);
+        for (int i = 0; i < levels.Length; i++)
+        {
+            if (levels[i] == null)
+                continue;
 
-        // Level 2 unlocks once at least 1 level has been completed.
-        bool levelTwoUnlocked = progress.levelsCompleted >= 1;
-        SetLevelButtonState(levelTwoButton, levelTwoUnlocked);
+            bool isUnlocked = progress.IsLevelUnlocked(i + 1);
+
+            SetLevelButtonState(
+                levels[i].button,
+                levels[i].note,
+                isUnlocked
+            );
+        }
     }
 
-    private void SetLevelButtonState(Button button, bool isUnlocked)
+    private void SetLevelButtonState(
+        Button button, Renderer note, bool isUnlocked)
     {
-        if (button == null) return;
-
-        button.interactable = isUnlocked;
-
-        Image img = button.GetComponent<Image>();
-        if (img != null)
+        if (button != null)
         {
-            img.sprite = isUnlocked ? unlockedSprite : lockedSprite;
+            button.interactable = isUnlocked;
+            Image image = button.GetComponent<Image>();
+            Sprite sprite = isUnlocked ? unlockedSprite : lockedSprite;
+            if (image != null && sprite != null)
+                image.sprite = sprite;
         }
+
+        Material material =
+            isUnlocked ? unlockedMaterial : lockedMaterial;
+
+        if (note != null && material != null)
+            note.sharedMaterial = material;
     }
 
     public void OnLevelOneGameplayButtonPressed()
     {
-        // Play button click sound before changing scenes.
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlaySelectSFX();
-        }
-
+        PlaySelectSound();
         SceneManager.LoadScene(levelOneCutscene);
     }
 
     public void OnLevelTwoGameplayButtonPressed()
     {
-        if (PlayerProgressManager.Instance != null &&
-            PlayerProgressManager.Instance.CurrentProgress.levelsCompleted < 1)
+        if (PlayerProgressManager.Instance == null)
+        {
+            Debug.LogError("[ProgressUI] Cannot check Level 2 unlock state.");
+            return;
+        }
+
+        if (!PlayerProgressManager.Instance.CurrentProgress.IsLevelUnlocked(2))
         {
             Debug.LogWarning("[ProgressUI] Level 2 is locked. Ignoring press.");
             return;
         }
 
-        // Play button click sound before changing scenes.
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlaySelectSFX();
-        }
-
+        PlaySelectSound();
         SceneManager.LoadScene(levelTwoCutscene);
     }
 
     public void OnBackToMainMenuButtonPressed()
     {
-        // Play button click sound before changing scenes.
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlaySelectSFX();
-        }
-
+        PlaySelectSound();
         SceneManager.LoadScene(mainMenuSceneName);
+    }
+
+    private void PlaySelectSound()
+    {
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlaySelectSFX();
     }
 }

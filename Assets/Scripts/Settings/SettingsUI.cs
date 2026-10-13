@@ -124,7 +124,7 @@ public class SettingsUI : MonoBehaviour
             AudioManager.Instance.PlaySelectSFX();
         }
 
-        SceneManager.LoadScene("MainMenu");
+        SceneManager.LoadScene("3D Menu");
     }
 
     // =========================================================

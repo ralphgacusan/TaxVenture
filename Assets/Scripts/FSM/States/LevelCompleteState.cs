@@ -26,6 +26,7 @@ public class LevelCompleteState : IGameState
             LevelTotalResult.FromAccumulator(
                 CaseProgressionManager.Instance.RewardAccumulator
             );
+        levelTotal.LevelId = CaseProgressionManager.Instance.CurrentLevelId;
 
         Debug.Log("[LevelCompleteState] LevelTotalResult created.");
         Debug.Log("[LevelCompleteState] Calling LevelCompleteUI.Show()...");

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 /// </summary>
 public class LevelTotalResult
 {
+    public string LevelId;
     public int TotalExp;
     public int TotalReputation;
     public int CasesCompleted;
