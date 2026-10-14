@@ -35,6 +35,7 @@ public class FirstPersonCameraController : MonoBehaviour
 
     [Header("Touch Look")]
     [SerializeField] private bool disableTouchLook = false;
+    [SerializeField, Range(0.2f, 1f)] private float touchLookScreenWidth = 0.75f;
 
     [Header("Mouse Look")]
     [Tooltip("Mouse look sensitivity for Editor/Desktop testing.")]
@@ -102,6 +103,8 @@ public class FirstPersonCameraController : MonoBehaviour
     {
         if (Mouse.current == null)
             return;
+        if (VirtualJoystick.BlocksWorldInput || MobileInputGuard.HasTouchInput ||
+            (Cursor.lockState != CursorLockMode.Locked && MobileInputGuard.IsPointerOverUI(Mouse.current.position.ReadValue()))) return;
 
         Vector2 mouseDelta =
             Mouse.current.delta.ReadValue();
@@ -143,14 +146,15 @@ public class FirstPersonCameraController : MonoBehaviour
             {
                 var touch = touches[i];
 
-                if (!touch.press.wasPressedThisFrame)
+                if (!touch.press.wasPressedThisFrame ||
+                    touch.position.ReadValue().x < Screen.width * (1f - touchLookScreenWidth))
                     continue;
 
                 int fingerId =
                     touch.touchId.ReadValue();
 
                 // Ignore UI touches
-                if (IsTouchOverUI(fingerId))
+                if (MobileInputGuard.IsPointerOverUI(touch.position.ReadValue()))
                     continue;
 
                 activeLookFingerId =
@@ -182,7 +186,7 @@ public class FirstPersonCameraController : MonoBehaviour
             }
 
             Vector2 touchDelta =
-                touch.delta.ReadValue();
+                touch.delta.ReadValue() * (1080f / Mathf.Max(1, Screen.height));
 
             yaw +=
                 touchDelta.x *
@@ -205,14 +209,13 @@ public class FirstPersonCameraController : MonoBehaviour
         activeLookFingerId = -1;
     }
 
-    private bool IsTouchOverUI(int fingerId)
+    private void OnDisable()
     {
-        if (EventSystem.current == null)
-            return false;
-
-        return EventSystem.current
-            .IsPointerOverGameObject(fingerId);
+        activeLookFingerId = -1;
     }
+
+    private void OnApplicationFocus(bool focused) { if (!focused) OnDisable(); }
+    private void OnApplicationPause(bool paused) { if (paused) OnDisable(); }
 
     public void SetPlayer(Transform newPlayer)
     {

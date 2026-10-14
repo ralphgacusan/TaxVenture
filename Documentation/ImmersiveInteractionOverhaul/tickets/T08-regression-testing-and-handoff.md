@@ -13,7 +13,7 @@ Relevant checks: C# compilation and Git diff checks; `Tests/VerifyProfileCards.p
 
 Record each as PASS / FAIL / NOT RUN, method, date, scene, resolution/device and evidence. Include actual results and reproduction steps, not this checklist alone.
 
-- [ ] Walking/look sticks indoors/outdoors; analog/dead zone; multi-touch; release/cancel/focus loss; desktop fallback.
+- [ ] Movement joystick/right-side screen-swipe look indoors/outdoors; analog/dead zone; multi-touch; release/cancel/focus loss; desktop fallback; swipes never become unintended world taps.
 - [ ] Elijah rig/materials, idle/walk transitions, stop/lock state, facing, foot contact and mobile cost.
 - [ ] Camera walls/ceilings/corners/furniture, narrow office space, initial overlap, near-plane clearance and smooth obstruction recovery.
 - [ ] Every exploration/first-person interaction entry, exit, cancel, failed start and interruption.

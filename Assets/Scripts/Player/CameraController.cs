@@ -52,6 +52,7 @@ public class CameraController : MonoBehaviour
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private Interactor playerInteractor;
     [SerializeField] private VirtualJoystick virtualJoystick;
+    [SerializeField] private VirtualJoystick lookJoystick;
 
     [Header("First Person Hands")]
     [SerializeField] private FirstPersonHands firstPersonHands;
@@ -71,6 +72,7 @@ public class CameraController : MonoBehaviour
     private Behaviour[] profileViewerControls;
     private bool[] profileViewerControlStates;
     private bool profileViewerJoystickVisible;
+    private bool profileViewerLookJoystickVisible;
     private Rigidbody profileViewerBody;
     private RigidbodyConstraints profileViewerBodyConstraints;
     private CursorLockMode profileViewerCursorLock;
@@ -95,6 +97,11 @@ public class CameraController : MonoBehaviour
             profileViewerControls[i].enabled = false;
         }
         if (playerInteractor != null) playerInteractor.ClearFocus();
+        if (lookJoystick != null)
+        {
+            profileViewerLookJoystickVisible = lookJoystick.gameObject.activeSelf;
+            lookJoystick.Hide();
+        }
         if (virtualJoystick != null)
         {
             profileViewerJoystickVisible = virtualJoystick.gameObject.activeSelf;
@@ -134,6 +141,7 @@ public class CameraController : MonoBehaviour
                 if (profileViewerControls[i] != null)
                     profileViewerControls[i].enabled = profileViewerControlStates[i];
             if (virtualJoystick != null) virtualJoystick.SetVisible(profileViewerJoystickVisible);
+            if (lookJoystick != null) lookJoystick.SetVisible(profileViewerLookJoystickVisible);
             Cursor.lockState = profileViewerCursorLock;
             Cursor.visible = profileViewerCursorVisible;
         }
@@ -320,6 +328,7 @@ public class CameraController : MonoBehaviour
                 "[CameraController] Virtual joystick hidden."
             );
         }
+        if (lookJoystick != null) lookJoystick.Hide();
 
         // ---------------------------------------------------------
         // STOP NORMAL PLAYER INTERACTION
@@ -811,6 +820,7 @@ public class CameraController : MonoBehaviour
 
     public void LockPlayerControls()
     {
+        if (lookJoystick != null) lookJoystick.Hide();
         if (firstPersonCamera != null)
             firstPersonCamera.enabled = false;
 
@@ -856,6 +866,7 @@ public class CameraController : MonoBehaviour
 
     private void SetFirstPersonSystems(bool enabled)
     {
+        if (lookJoystick != null) lookJoystick.SetVisible(enabled);
         if (firstPersonCamera != null)
             firstPersonCamera.enabled = enabled;
 

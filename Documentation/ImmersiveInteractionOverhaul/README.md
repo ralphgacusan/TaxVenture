@@ -1,6 +1,6 @@
 # Immersive interaction overhaul
 
-Status: **planning complete; gameplay implementation awaiting approval**. Inspected 2026-10-14 on branch `bug-fixes`.
+Status: **T01 code implemented; Unity setup and user gameplay acceptance pending**. Updated 2026-10-14 on `feat/immersive-interaction-overhaul`. T02 has not started.
 
 This is documentation inside the existing Unity project, not a second Unity project. Repository root: `C:\Learn\Projects\TaxVenture\TaxVenture`. All `Assets/`, `Packages/`, `ProjectSettings/`, and `Tests/` paths in these documents are relative to that root.
 
@@ -23,7 +23,7 @@ No NPC animations, art replacement, new quest/reward rules, package upgrades, or
 
 | Ticket | Deliverable | Depends on | Status | Rough implementation tokens |
 |---|---|---|---|---|
-| [T01](tickets/T01-joystick-and-touch-controls.md) | Matching movement/look joysticks; touch ownership and analog movement | Plan approval | Planned | 8k-14k |
+| [T01](tickets/T01-joystick-and-touch-controls.md) | Movement joystick and screen-swipe look; touch ownership and analog movement | Approved | Code ready; revised setup/test pending | 8k-14k original estimate |
 | [T02](tickets/T02-third-person-camera-and-collision.md) | Exploration camera, collision, player model/locomotion | T01 | Planned | 16k-28k; split recommended |
 | [T03](tickets/T03-interaction-camera-transitions.md) | Shared interaction entry/exit and close viewpoints | T02 | Planned | 12k-20k; split if needed |
 | [T04](tickets/T04-unified-dialogue-system.md) | Shared conversation lifecycle and preserved outcomes | T03 | Planned | 10k-18k |
@@ -44,6 +44,6 @@ Use one writer for `CameraController.cs`, one for `DialogueUI.cs`, and one for `
 
 ## Overall progress
 
-- Documentation and eight tickets: created; no overhaul gameplay work started.
-- Existing uncommitted profile viewer work: preserved, not part of the overhaul's completed-ticket count.
-- Next action: obtain approval for T01, then inspect its live dependencies again.
+- Documentation and eight tickets: created; T01 code and focused internal checks completed, awaiting Unity scene setup/gameplay acceptance.
+- Earlier profile viewer work was committed by the user before T01; it remains preserved.
+- Next action: follow T01's Unity setup/test checklist. After acceptance and explicit approval, start T02a (follow/ownership), not the whole T02 automatically.

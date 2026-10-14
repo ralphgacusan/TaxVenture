@@ -4,7 +4,7 @@ Status: proposed implementation, awaiting user approval. No proposed new API, st
 
 ## Player stories
 
-1. As a mobile player, I want separate, responsive movement and look sticks so I can explore while looking around without accidental taps.
+1. As a mobile player, I want a responsive movement joystick and right-side screen-swipe look so I can explore while looking around without accidental taps (user revision after initial T01).
 2. As a player, I want a visible, style-matched character with idle/walk transitions so movement feels grounded and readable.
 3. As a player, I want a third-person camera that handles confined rooms and outdoor space so walls and furniture do not obscure navigation.
 4. As a player, I want close viewpoints for conversations, desk work, board tasks, notes and profiles so interactions feel intentional and readable.
@@ -35,7 +35,7 @@ Separate preferred orbit distance from obstruction-limited distance. Query a cam
 
 ### A03: One owner per pointer and input context
 
-Reuse VirtualJoystick for movement and a matching look-stick instance/role; MobileLookArea may be adapted or retired only after checking its references. Do not run raw touch swipe and look-stick rotation simultaneously. Reuse the Input System already installed without migrating the whole game to new action maps unnecessarily. Keep desktop input and serialized bindings working.
+Reuse VirtualJoystick for movement and the existing single-finger camera swipe path. Latest user instruction removes the visible LOOK stick; right 75% is the configurable origin zone, with UI touches excluded. Disable old LOOK UI and clear references through the setup menu; leave unused MobileLookArea inactive rather than adding a transparent raycast surface over NPCs. Reuse the installed Input System native tap qualification for touch-world actions on release, so starting a swipe cannot immediately activate a focused object. Keep desktop input working.
 
 Capture pointer identity on press and release only that pointer; reset on cancel, focus loss, disable and mode changes. UI-started touches remain UI-owned even when dragged away; joystick touches cannot interact with NPCs/world objects. Move/look can use two separate fingers; a third HUD tap cannot steal either. Normalize only above unit magnitude and remap an adjustable dead zone while retaining analog movement strength. Input should reset immediately on release while the handle visual may ease home; visual smoothing must not produce residual movement.
 
@@ -73,7 +73,7 @@ Out of scope: unrelated case grading, tax calculations, level unlocking/rewards,
 | Elijah static/idle Generic imports versus Humanoid walking import | Verify skeleton/avatar compatibility and non-looping walking clip configuration in Unity. Inspect shared references before importer changes; avoid altering NPCs while configuring the player. |
 | Existing rig/controller/license uncertainty | Inspect Animator references in Unity, humanoid avatar validity, root motion, triangles/skinning/materials, license entitlement and clip permissions. Record actual findings, not guessed metrics. External candidate only if needed, with exact source URL before import. |
 | Root player rotation competes with camera/model | Keep movement facing, orbit yaw, and visual animation separate; camera should not force a second player rotation. Retain Rigidbody/capsule behavior. |
-| Mixed input, default pointer-over checks, inactive look area | T01 owns pointer routing and dead zones; verify two sticks plus HUD on actual touch input. Asset presence is not working wiring. |
+| Mixed input, default pointer-over checks, inactive look area | T01 owns movement pointer routing/dead zones and single-finger screen swipe; verify movement + look + HUD on actual touch input. Asset presence is not working wiring. |
 | Old FirstPerson guards and multiple camera scripts | T02 audits startup/exit compatibility; T03 completes ownership migration and guarantees one writer. Preserve serialized enum/API callers. |
 | Notes currently permit walking/look | T03 explicitly migrates notes into close reading mode while preserving task refresh and swipe close. |
 | UI overlay/GraphicRaycaster and raw paper hit tests | Preserve icon priority, camera pixelRect projection, viewer layering and disabled world raycasts. Lock through both paper close and camera return. |
@@ -86,6 +86,6 @@ Out of scope: unrelated case grading, tax calculations, level unlocking/rewards,
 
 For every implemented ticket: C# compile and diff checks; focused state/input/data checks; relevant Unity EditMode/PlayMode checks where runnable; user manual/device checklist with actual results. Do not repeatedly run unrelated checks or count old Library reports as fresh passes. Existing PlayerProgressData tests do not validate conversations.
 
-T08 must cover indoor/outdoor movement, analog strength and both sticks, character idle/walk/lock, wall/ceiling/corner/furniture collision and obstruction recovery, every interaction entry/exit/cancel, indoor/outdoor/four target conversations, typewriter/skip/advance, repeated/busy/empty conversations, correct progress/indicators, corkboard/tray/pinning, complete profile open/drag/close, objective notes/desk, pause/focus loss, scene transitions, and supported resolutions/safe areas. Record real device and performance measurements; do not invent an FPS/triangle budget without a target-device baseline.
+T08 must cover indoor/outdoor movement, analog strength and movement-plus-screen-swipe controls, character idle/walk/lock, wall/ceiling/corner/furniture collision and obstruction recovery, every interaction entry/exit/cancel, indoor/outdoor/four target conversations, typewriter/skip/advance, repeated/busy/empty conversations, correct progress/indicators, corkboard/tray/pinning, complete profile open/drag/close, objective notes/desk, pause/focus loss, scene transitions, and supported resolutions/safe areas. Record real device and performance measurements; do not invent an FPS/triangle budget without a target-device baseline.
 
 Manual acceptance includes readable framing, unobstructed faces/papers, stable movement/camera, no stuck locks, no lost/duplicated callbacks or changed quest outcomes, and no new Console errors. Initial documentation delivery requires complete files/links/ticket dependencies and unchanged gameplay files; it does not require a gameplay build.

@@ -2,6 +2,26 @@
 
 Inspected 2026-10-14 from scripts, package/project settings, scene serialization, and imported asset metadata. This is **static inspection**, not a Unity Editor or Android playthrough. Future agents must update this as tickets land.
 
+## T01 implementation update (2026-10-14)
+
+**Latest user revision:** no visible camera-look joystick. Swipe origins use the right 75% of the screen, excluding UI. MOVE is enlarged and shifted inward/up. This replaces the original two-stick design.
+
+Current branch is `feat/immersive-interaction-overhaul`; it was clean at T01 entry after the user committed/pushed previous work. Runtime changes are implemented, but **scene wiring remains unchanged on disk** until the user runs the setup menu below. The older inspection table describes the pre-T01 baseline; this section supersedes its input behavior descriptions.
+
+- VirtualJoystick now owns one left pointer, rejects other pointer drags/releases, remaps radial dead zones, bounds sensitivity, preserves analog magnitude and resets on cancel/disable/focus loss/pause. Logical input is zero immediately on release; visual thumb return uses unscaled easing. Pressed thumb scale/tint reuse existing Images. Static capture/release-frame blocking prevents camera/world mouse leakage.
+- `Assets/Scripts/Mobile/JoystickInputMath.cs` contains the production pure response function, exercised by `Tests/ControlsRegression` (5,734 assertions).
+- PlayerMovement retains analog strength and clears horizontal Rigidbody motion on disable/focus loss/pause. Keyboard fallback is desktop/Editor-only.
+- Both camera scripts reuse their single-finger raw swipe path with `touchLookScreenWidth = .75`. UI-started touches are excluded, delta is normalized to 1080 screen height, and look stops on release/focus loss/disable. No transparent raycast overlay is added over NPCs. Mouse look remains available for desktop and rejects UI/captured/release-frame input.
+- CameraController's old look-stick reference remains for legacy compatibility; setup clears it and disables the obsolete LookJoystick object. Existing mode locks disable the camera input component and hide/reset movement; profile return continues to restore controls only after its animation.
+- `MobileInputGuard.cs` uses fresh GraphicRaycaster UI hits, touch input and joystick capture rather than default pointer-ID assumptions. Interactor/WorkstationInteractor and three town NPC/pickup pointer paths use it; quest callbacks/data are unchanged.
+- `MobileControlsSafeArea.cs` insets only the configured mobile-controls root using Screen.safeArea; existing HUD/notes layout is not globally changed.
+- `Assets/Editor/MobileControlsSetup.cs`: **Tools > TaxVenture > Configure Mobile Controls**, outside Play mode in Office_Level1. Uses Undo, styles MOVE, disables the existing LookJoystick without deletion, clears its owner reference, configures 75% touch coverage, leaves unused MobileLookArea inactive, adds safe-area support, and marks the scene dirty. User saves Ctrl+S. No automatic scene save or external YAML changes.
+- MOVE uses existing sprites, dark base/rim and gold thumb, non-raycasting label/thumb and raycasting base. Base/handle sizes are now 280/112 (previously 240/96); bottom-left center is now (260,240), previously (180,180), in reference-canvas units. Travel 80, dead zone .12, sensitivity 1. Existing Button/highlight feedback remains.
+- Touch world interactions now wait for Input System native tap release, avoiding interaction on swipe-down. Workstation uses the actual touch position. Town NPC/profile pointer paths reject drag/cancel/non-tap gestures. Native tap qualification uses package tap time/radius; a very fast out-and-back gesture inside one input update is a residual device-test edge case, not a verified pass.
+- The user saved an Office_Level1 scene edit after initial setup. This follow-up preserves that modified scene byte-for-byte and requires rerunning the menu to apply the revised layout.
+- Office_Level2 has legacy serialized camera references; setup deliberately fails with a clear error if required references are missing rather than guessing. Its scene has not been migrated; unconfigured input fallback remains. T02/T07 must inspect this separately before claiming multi-scene acceptance.
+- Checks performed: direct runtime C# compilation (including Editor/Standalone defines), separate setup-tool compilation, production math assertions, source review and diff checks. Unity import/menu execution, appearance, Undo, multi-touch, gameplay locks and safe-area/device tests are **not run** and are assigned to the user.
+
 ## Baseline and existing work
 
 - Root: `C:\Learn\Projects\TaxVenture\TaxVenture`; branch `bug-fixes`, tracking `origin/bug-fixes` at inspection.

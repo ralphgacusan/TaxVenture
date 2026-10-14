@@ -39,7 +39,7 @@ public class WorkstationInteractor : MonoBehaviour
 
         IInteractable hitInteractable = null;
 
-        bool cursorOverUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+        bool cursorOverUI = MobileInputGuard.BlocksWorldInput();
 
         if (!cursorOverUI)
         {
@@ -61,14 +61,14 @@ public class WorkstationInteractor : MonoBehaviour
 
     private void HandleClick()
     {
-        if (currentFocus == null) return;
-
-        bool cursorOverUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+        bool cursorOverUI = MobileInputGuard.BlocksWorldInput();
         if (cursorOverUI) return; // don't double-trigger world objects through UI clicks
 
-        if (Input.GetMouseButtonDown(0))
+        if (MobileInputGuard.TryGetWorldTap(out Vector2 position) && Camera.main != null)
         {
-            currentFocus.OnInteract();
+            Ray ray = Camera.main.ScreenPointToRay(position);
+            if (Physics.Raycast(ray, out RaycastHit hit, interactRange, interactableLayer))
+                hit.collider.GetComponent<IInteractable>()?.OnInteract();
         }
     }
 

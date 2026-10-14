@@ -39,6 +39,8 @@ If Unity/device execution is unavailable, record NOT RUN with the reason and giv
 
 Never discard, revert, overwrite, or stage unrelated work. Never commit, merge, push, switch branches, delete files, or rewrite history without explicit authorization. Do not create a branch merely because tickets exist. If a new branch is requested without an exact name, use `codex/` as the default prefix.
 
-At planning baseline, `CameraController.cs` and `CollectedProfilesWorldPanel.cs` already have uncommitted changes. Preserve them and account for them in tests. Coordinate single-writer ownership of shared scripts and all scene/prefab files; read others' changes before integrating.
+At planning baseline, `CameraController.cs` and `CollectedProfilesWorldPanel.cs` had uncommitted changes; the user subsequently committed/pushed them and created `feat/immersive-interaction-overhaul`. Preserve that paper behavior and inspect live status rather than assuming the old diff remains. Coordinate single-writer ownership of shared scripts and all scene/prefab files; read others' changes before integrating.
+
+The user performs Git write actions and manual Unity gameplay testing to save usage. Agents run focused internal checks and provide concise commands/Editor steps; do not commit/push or run a manual playthrough on the user's behalf during this work.
 
 After a work unit update the assigned ticket, CURRENT_STATE.md as implementation changes, PROGRESS.md, and HANDOFF.md. Report files changed, behavior, tests/results, unresolved issues, exact next step, and the next unit's rough token range and uncertainties. Stop for approval.

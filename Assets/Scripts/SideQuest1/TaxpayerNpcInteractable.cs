@@ -79,6 +79,8 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (eventData.button != PointerEventData.InputButton.Left || MobileInputGuard.IsDragOrCancelled(eventData) || VirtualJoystick.BlocksWorldInput ||
+            MobileInputGuard.IsPointerOverUI(eventData.position)) return;
         if (hasBeenTalkedTo)
         {
             return;

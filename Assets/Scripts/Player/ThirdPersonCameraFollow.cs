@@ -46,6 +46,7 @@ public class ThirdPersonCameraFollow : MonoBehaviour
 
     [Tooltip("If enabled, touch look will be disabled.")]
     [SerializeField] private bool disableTouchLook = false;
+    [SerializeField, Range(0.2f, 1f)] private float touchLookScreenWidth = 0.75f;
 
     [Header("Pitch Limits")]
     [SerializeField] private float minPitch = -15f;
@@ -155,6 +156,8 @@ public class ThirdPersonCameraFollow : MonoBehaviour
         // Only process mouse input when a mouse exists.
         if (Mouse.current == null)
             return;
+        if (isCursorFreed || VirtualJoystick.BlocksWorldInput || MobileInputGuard.HasTouchInput ||
+            (Cursor.lockState != CursorLockMode.Locked && MobileInputGuard.IsPointerOverUI(Mouse.current.position.ReadValue()))) return;
 
         // Read mouse movement using the NEW Input System.
         Vector2 mouseDelta = Mouse.current.delta.ReadValue();
@@ -197,7 +200,8 @@ public class ThirdPersonCameraFollow : MonoBehaviour
                 var touch = touches[i];
 
                 // Only consider newly pressed fingers.
-                if (!touch.press.wasPressedThisFrame)
+                if (!touch.press.wasPressedThisFrame ||
+                    touch.position.ReadValue().x < Screen.width * (1f - touchLookScreenWidth))
                     continue;
 
                 int fingerId = touch.touchId.ReadValue();
@@ -206,7 +210,7 @@ public class ThirdPersonCameraFollow : MonoBehaviour
                 // If this finger started on ANY UI element
                 // (joystick, HUD button, dialogue button, etc.),
                 // it belongs to the UI and must NOT control the camera.
-                if (IsTouchOverUI(fingerId))
+                if (MobileInputGuard.IsPointerOverUI(touch.position.ReadValue()))
                     continue;
 
                 // This finger started on empty gameplay space.
@@ -241,7 +245,7 @@ public class ThirdPersonCameraFollow : MonoBehaviour
             }
 
             // Get movement of THIS finger only.
-            Vector2 touchDelta = touch.delta.ReadValue();
+            Vector2 touchDelta = touch.delta.ReadValue() * (1080f / Mathf.Max(1, Screen.height));
 
             yaw += touchDelta.x * touchSensitivity;
 
@@ -264,13 +268,13 @@ public class ThirdPersonCameraFollow : MonoBehaviour
     // UI DETECTION
     // =============================================================
 
-    private bool IsTouchOverUI(int fingerId)
+    private void OnDisable()
     {
-        if (EventSystem.current == null)
-            return false;
-
-        return EventSystem.current.IsPointerOverGameObject(fingerId);
+        activeLookFingerId = -1;
     }
+
+    private void OnApplicationFocus(bool focused) { if (!focused) OnDisable(); }
+    private void OnApplicationPause(bool paused) { if (paused) OnDisable(); }
 
     // =============================================================
     // TARGET

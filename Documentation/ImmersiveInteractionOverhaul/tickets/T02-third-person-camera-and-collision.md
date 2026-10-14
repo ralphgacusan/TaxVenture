@@ -19,7 +19,7 @@ Static/idle currently import as Generic; walking imports as Humanoid with a non-
 
 ## Approved-unit proposal
 
-1. **T02a — Ownership and follow:** make third person the default, use T01 look stick, configure orbit distance/height/pitch/damping. Establish the minimum CameraController compatibility bridge so existing interactions and profile APIs can enter/exit safely and return to exploration. No simultaneous camera writers.
+1. **T02a — Ownership and follow:** make third person the default, use T01's right-side screen-swipe look (user rejected LOOK stick), configure orbit distance/height/pitch/damping. Establish the minimum CameraController compatibility bridge so existing interactions and profile APIs can enter/exit safely and return to exploration. No simultaneous camera writers.
 2. **T02b — Collision:** camera-volume sweep/overlap clearance, wall/ceiling/corner/furniture handling, smooth outward recovery and stable narrow-space behavior. Configure masks, radius, skin, distance limits; exclude player/triggers/papers/markers.
 3. **T02c — Elijah model and animation:** validate rig/avatar and clip imports, shared NPC references, texture/materials, model scale, ground alignment, collider fit, triangle/bone/material cost, licensing evidence. Build a player-specific visual/prefab/controller, reuse Elijah idle/walk where valid, configure loop/root-motion policies and speed-based blending. Do not modify NPC animation behavior.
 

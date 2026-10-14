@@ -278,6 +278,8 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (eventData != null && (eventData.button != PointerEventData.InputButton.Left || MobileInputGuard.IsDragOrCancelled(eventData) || VirtualJoystick.BlocksWorldInput ||
+            MobileInputGuard.IsPointerOverUI(eventData.position))) return;
         if (collected || isCollecting || isDropping || profileData == null)
         {
             return;

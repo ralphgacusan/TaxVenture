@@ -123,7 +123,7 @@ public class Interactor : MonoBehaviour
     private void HandleInteractInput()
     {
         if (currentFocus == null) return;
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
+        if (MobileInputGuard.BlocksWorldInput()) return;
         if (TryGetInteractInput())
         {
             currentFocus.OnInteract();
@@ -138,7 +138,7 @@ public class Interactor : MonoBehaviour
 
     private bool TryGetInteractInput()
     {
-        return Input.GetMouseButtonDown(0);
+        return MobileInputGuard.TryGetWorldTap(out _);
     }
 
     // Optional: visualize the interact ray in the Scene view for debugging.
