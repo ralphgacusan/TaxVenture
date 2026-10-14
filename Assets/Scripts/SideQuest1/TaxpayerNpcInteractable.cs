@@ -123,6 +123,7 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerClickHandler
         }
 
         profilePickup.Initialize(data);
+        profilePickup.DropFrom(transform.position + Vector3.up * 1f);
         profilePickup.gameObject.SetActive(true);
 
         Debug.Log($"[TaxpayerNpcInteractable:{name}] Dropped profile for '{data.TaxpayerName}'.");
