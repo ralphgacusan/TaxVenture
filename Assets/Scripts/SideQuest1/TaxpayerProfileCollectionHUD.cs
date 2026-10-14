@@ -73,6 +73,59 @@ public class TaxpayerProfileCollectionHUD : MonoBehaviour
         }
     }
 
+    public bool TryGetCollectionScreenPoint(out Vector2 screenPoint)
+    {
+        screenPoint = default;
+
+        RectTransform icon = transform as RectTransform;
+        if (!isActiveAndEnabled || !gameObject.activeInHierarchy || icon == null || !icon.gameObject.activeInHierarchy)
+        {
+            return false;
+        }
+
+        Canvas canvas = icon.GetComponentInParent<Canvas>();
+        if (canvas == null)
+        {
+            return false;
+        }
+
+        Canvas rootCanvas = canvas.rootCanvas;
+        if (rootCanvas == null || !rootCanvas.isActiveAndEnabled)
+        {
+            return false;
+        }
+
+        for (Transform parent = icon; parent != null; parent = parent.parent)
+        {
+            CanvasGroup group = parent.GetComponent<CanvasGroup>();
+            if (group != null && group.alpha <= 0.001f)
+            {
+                return false;
+            }
+
+            if (parent == rootCanvas.transform)
+            {
+                break;
+            }
+        }
+
+        CanvasRenderer renderer = icon.GetComponent<CanvasRenderer>();
+        if ((renderer != null && renderer.cull) || icon.rect.width <= 0f || icon.rect.height <= 0f)
+        {
+            return false;
+        }
+
+        Camera canvasCamera = rootCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : rootCanvas.worldCamera;
+        if (rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay && canvasCamera == null)
+        {
+            return false;
+        }
+
+        screenPoint = RectTransformUtility.WorldToScreenPoint(canvasCamera, icon.TransformPoint(icon.rect.center));
+        return !float.IsNaN(screenPoint.x) && !float.IsInfinity(screenPoint.x)
+            && !float.IsNaN(screenPoint.y) && !float.IsInfinity(screenPoint.y);
+    }
+
     /// <summary>
     /// Wire to the HUD icon Button's onClick in the Inspector. Delegates
     /// entirely to CollectedProfilesWorldPanel — this class no longer

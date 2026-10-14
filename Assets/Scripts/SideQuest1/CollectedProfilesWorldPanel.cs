@@ -225,6 +225,8 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
         if (pickupText != null)
         {
             pickupText.Initialize(profile);
+            // The browse copy is moved by FloatingModel3D, so it must not also bob.
+            pickupText.enabled = false;
         }
 
         // Wire up dragging via the reusable FloatingModel3D.
