@@ -35,8 +35,7 @@ public class SettingsUI : MonoBehaviour
         // Setup the Back button.
         if (backButton != null)
         {
-            backButton.onClick.AddListener(CloseSettings);
-            backButton.onClick.AddListener(GoToMainMenu);
+            backButton.onClick.AddListener(OnBackButtonInGamePressed);
         }
         else
         {
@@ -72,8 +71,7 @@ public class SettingsUI : MonoBehaviour
 
         if (backButton != null)
         {
-            backButton.onClick.RemoveListener(CloseSettings);
-            backButton.onClick.RemoveListener(GoToMainMenu);
+            backButton.onClick.RemoveListener(OnBackButtonInGamePressed);
         }
     }
 
@@ -107,6 +105,15 @@ public class SettingsUI : MonoBehaviour
     }
 
     // =========================================================
+    // BACK BUTTON (IN-GAME) — just hides the settings UI
+    // =========================================================
+
+    private void OnBackButtonInGamePressed()
+    {
+        CloseSettings();
+    }
+
+    // =========================================================
     // RETURN TO MAIN MENU
     // =========================================================
 
@@ -117,7 +124,7 @@ public class SettingsUI : MonoBehaviour
             AudioManager.Instance.PlaySelectSFX();
         }
 
-        SceneManager.LoadScene("MainMenu");
+        SceneManager.LoadScene("3D Menu");
     }
 
     // =========================================================

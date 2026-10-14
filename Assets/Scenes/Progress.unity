@@ -3803,13 +3803,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProgressUI
   levelOneCutscene: Level1_Character_Intro_Cutscene
-  levelTwoCutscene: Level2_Character_Intro_Cutscene
-  mainMenuSceneName: MainMenu
+  levelTwoCutscene: Office_Level2
+  mainMenuSceneName: 3D Menu
   totalExpText: {fileID: 961151974}
   totalReputationText: {fileID: 1049973189}
   levelsCompletedText: {fileID: 1457743981}
-  levelOneButton: {fileID: 706007045}
-  levelTwoButton: {fileID: 1695387339}
+  levels:
+  - button: {fileID: 706007045}
+    note: {fileID: 0}
+  - button: {fileID: 1695387339}
+    note: {fileID: 0}
   lockedSprite: {fileID: 21300000, guid: 2dc810de88e816c43bb15f53887ebe33, type: 3}
   unlockedSprite: {fileID: 21300000, guid: 43a34b4bb971bfe44bdbe08138fc3e4c, type: 3}
 --- !u!1 &1457743978
@@ -4460,7 +4463,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1695387340}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1457294216}
+        m_TargetAssemblyTypeName: ProgressUI, Assembly-CSharp
+        m_MethodName: OnLevelTwoGameplayButtonPressed
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: ''
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1695387340
 MonoBehaviour:
   m_ObjectHideFlags: 0

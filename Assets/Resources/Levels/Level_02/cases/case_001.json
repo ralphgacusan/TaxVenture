@@ -1,8 +1,7 @@
-
 {
-  "caseId": "case_001",
+  "caseId": "case_marie_001",
 
-  "caseNumber": "ITR-2026-0001",
+  "caseNumber": "ITR-2026-0101",
 
   "taxYear": "2026",
 
@@ -10,22 +9,22 @@
 
   "assignedConsultant": "Player",
 
-  "caseTitle": "Bayani Garments Corp. - Corporate Income Tax Assessment",
+  "caseTitle": "Marie Bautista - Individual Income Tax Classification",
 
-  "caseSummary": "Bayani Garments Corp. seeks assistance in reviewing its annual corporate income tax position after reporting a net operating loss. The company's audited financial statements show that expenses exceeded revenues, but several expense classifications require verification before the reported loss and available tax treatment can be finalized.",
+  "caseSummary": "Marie Bautista, a local BPO employee, needs her taxpayer classification confirmed before her annual income tax return can be processed. She has lived and worked in the Philippines her entire life and earns income solely from her employer, so the case centers on correctly identifying her residency status and taxpayer type rather than on any financial discrepancies.",
 
 
-  "fullName": "Bayani Garments Corp.",
+  "fullName": "Marie Bautista",
 
-  "tin": "456-789-012-000",
+  "tin": "123-456-789-000",
 
-  "birthdate": "",
+  "birthdate": "March 14, 1997",
 
-  "address": "Valenzuela City, Metro Manila",
+  "address": "Poblacion, Town Proper",
 
-  "contactNumber": "0917-456-7890",
+  "contactNumber": "0917-123-4567",
 
-  "civilStatus": "N/A",
+  "civilStatus": "Single",
 
   "spouseName": "",
 
@@ -36,39 +35,39 @@
 
   "answerKey": {
 
-    "residencyStatus": "DomesticCorporation",
+    "residencyStatus": "ResidentCitizen",
 
-    "taxpayerType": "Corporation",
+    "taxpayerType": "Individual",
 
-    "incomeSource": "BusinessIncome",
+    "incomeSource": "CompensationIncome",
 
-    "numberOfEmployers": "NotApplicable",
+    "numberOfEmployers": "One",
 
-    "businessRegistration": "Registered",
+    "businessRegistration": "NotApplicable",
 
-    "taxOption": "RegularCorporateIncomeTax",
+    "taxOption": "GraduatedIncomeTax",
 
-    "requiredForm": "BIR1702",
+    "requiredForm": "BIR1700",
 
-    "correctAssessment": "NotReadyForFiling",
+    "correctAssessment": "ReadyForFiling",
 
 
-    "grossIncome": 18000000,
+    "grossIncome": 480000,
 
-    "allowableExpenses": 17500000,
+    "allowableExpenses": 0,
 
-    "taxableIncome": 500000,
+    "taxableIncome": 480000,
 
-    "taxDue": 0,
+    "taxDue": 32500,
 
-    "taxWithheldOrCredits": 0,
+    "taxWithheldOrCredits": 32500,
 
     "finalTaxPayable": 0,
 
 
-    "employerTin": "",
+    "employerTin": "789-012-345-000",
 
-    "businessAddress": "Valenzuela City, Metro Manila",
+    "businessAddress": "",
 
     "dependentCount": 0
 
@@ -83,11 +82,7 @@
 
     "IncomeSource",
 
-    "BusinessRegistration",
-
-    "TaxOption",
-
-    "RequiredForm"
+    "NumberOfEmployers"
 
   ],
 
@@ -95,14 +90,26 @@
   "documents": [
 
     {
-      "documentName": "Audited Financial Statements",
+      "documentName": "Certificate of Compensation Payment/Tax Withheld (BIR Form 2316)",
 
       "fields": [
 
         {
-          "label": "Gross Revenue",
-          "displayValue": "₱18,000,000",
-          "correctValue": "₱18,000,000",
+          "label": "Employee Name",
+          "displayValue": "Marie Bautista",
+          "correctValue": "Marie Bautista",
+          "type": "Text",
+          "semanticKey": "FullName",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+
+        {
+          "label": "Gross Compensation Income",
+          "displayValue": "₱480,000",
+          "correctValue": "₱480,000",
           "type": "Number",
           "semanticKey": "GrossIncome",
           "isIncorrect": false,
@@ -112,44 +119,11 @@
         },
 
         {
-          "label": "Total Operating Expenses",
-          "displayValue": "₱18,900,000",
-          "correctValue": "₱17,500,000",
+          "label": "Tax Withheld",
+          "displayValue": "₱32,500",
+          "correctValue": "₱32,500",
           "type": "Number",
-          "semanticKey": "AllowableExpenses",
-          "isIncorrect": true,
-          "incorrectReason": "Reported expenses include ₱1,400,000 of expenses requiring tax review and adjustment.",
-          "issueType": "ExcessDeduction",
-          "severity": "High"
-        },
-
-        {
-          "label": "Reported Net Loss",
-          "displayValue": "₱900,000",
-          "correctValue": "₱500,000",
-          "type": "Number",
-          "semanticKey": "TaxableIncome",
-          "isIncorrect": true,
-          "incorrectReason": "The reported accounting loss includes expenses that are not fully allowable for income tax purposes.",
-          "issueType": "TaxAdjustment",
-          "severity": "High"
-        }
-
-      ]
-    },
-
-
-    {
-      "documentName": "Schedule of Operating Expenses",
-
-      "fields": [
-
-        {
-          "label": "Raw Materials",
-          "displayValue": "₱7,000,000",
-          "correctValue": "₱7,000,000",
-          "type": "Number",
-          "semanticKey": "RawMaterialExpense",
+          "semanticKey": "TaxWithheldOrCredits",
           "isIncorrect": false,
           "incorrectReason": "",
           "issueType": "",
@@ -157,92 +131,11 @@
         },
 
         {
-          "label": "Employee Salaries",
-          "displayValue": "₱4,500,000",
-          "correctValue": "₱4,500,000",
-          "type": "Number",
-          "semanticKey": "LaborExpense",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Utilities",
-          "displayValue": "₱1,200,000",
-          "correctValue": "₱1,200,000",
-          "type": "Number",
-          "semanticKey": "UtilityExpense",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Logistics",
-          "displayValue": "₱1,800,000",
-          "correctValue": "₱1,800,000",
-          "type": "Number",
-          "semanticKey": "LogisticsExpense",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Marketing and Advertising",
-          "displayValue": "₱1,000,000",
-          "correctValue": "₱1,000,000",
-          "type": "Number",
-          "semanticKey": "MarketingExpense",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Personal Expenses Charged to Company",
-          "displayValue": "₱600,000",
-          "correctValue": "₱0",
-          "type": "Number",
-          "semanticKey": "PersonalExpense",
-          "isIncorrect": true,
-          "incorrectReason": "The expense relates to the personal use of corporate funds and is not an allowable business deduction.",
-          "issueType": "NonDeductibleExpense",
-          "severity": "High"
-        },
-
-        {
-          "label": "Unsupported Miscellaneous Expenses",
-          "displayValue": "₱800,000",
-          "correctValue": "₱400,000",
-          "type": "Number",
-          "semanticKey": "MiscellaneousExpense",
-          "isIncorrect": true,
-          "incorrectReason": "Only ₱400,000 is supported by adequate documentation.",
-          "issueType": "UnsupportedDeduction",
-          "severity": "High"
-        }
-
-      ]
-    },
-
-
-    {
-      "documentName": "Corporate Registration Documents",
-
-      "fields": [
-
-        {
-          "label": "Registered Name",
-          "displayValue": "Bayani Garments Corp.",
-          "correctValue": "Bayani Garments Corp.",
+          "label": "Employer",
+          "displayValue": "Sunrise BPO Solutions Inc.",
+          "correctValue": "Sunrise BPO Solutions Inc.",
           "type": "Text",
-          "semanticKey": "BusinessName",
+          "semanticKey": "EmployerName",
           "isIncorrect": false,
           "incorrectReason": "",
           "issueType": "",
@@ -250,44 +143,32 @@
         },
 
         {
-          "label": "Entity Type",
-          "displayValue": "Domestic Corporation",
-          "correctValue": "Domestic Corporation",
+          "label": "Employer TIN",
+          "displayValue": "789-012-345-000",
+          "correctValue": "789-012-345-000",
           "type": "Text",
-          "semanticKey": "TaxpayerType",
+          "semanticKey": "EmployerTin",
           "isIncorrect": false,
           "incorrectReason": "",
           "issueType": "",
           "severity": ""
-        },
+        }
+
+      ]
+    },
+
+
+    {
+      "documentName": "Valid Government ID",
+
+      "fields": [
 
         {
-          "label": "Tax Registration",
-          "displayValue": "Registered Corporation",
-          "correctValue": "Registered Corporation",
+          "label": "Full Name",
+          "displayValue": "Marie Bautista",
+          "correctValue": "Marie Bautista",
           "type": "Text",
-          "semanticKey": "BusinessRegistration",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        }
-
-      ]
-    },
-
-
-    {
-      "documentName": "Revenue Schedule",
-
-      "fields": [
-
-        {
-          "label": "Local Garment Sales",
-          "displayValue": "₱14,000,000",
-          "correctValue": "₱14,000,000",
-          "type": "Number",
-          "semanticKey": "LocalSales",
+          "semanticKey": "FullName",
           "isIncorrect": false,
           "incorrectReason": "",
           "issueType": "",
@@ -295,134 +176,11 @@
         },
 
         {
-          "label": "Export Sales",
-          "displayValue": "₱4,000,000",
-          "correctValue": "₱4,000,000",
-          "type": "Number",
-          "semanticKey": "ExportSales",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Total Revenue",
-          "displayValue": "₱18,000,000",
-          "correctValue": "₱18,000,000",
-          "type": "Number",
-          "semanticKey": "GrossIncome",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        }
-
-      ]
-    },
-
-
-    {
-      "documentName": "Net Operating Loss Schedule",
-
-      "fields": [
-
-        {
-          "label": "Accounting Net Loss",
-          "displayValue": "₱900,000",
-          "correctValue": "₱500,000",
-          "type": "Number",
-          "semanticKey": "NetOperatingLoss",
-          "isIncorrect": true,
-          "incorrectReason": "The accounting loss must be adjusted for non-deductible and unsupported expenses before determining the tax result.",
-          "issueType": "NOLAdjustment",
-          "severity": "High"
-        },
-
-        {
-          "label": "Adjusted Taxable Result",
-          "displayValue": "₱500,000",
-          "correctValue": "₱500,000",
-          "type": "Number",
-          "semanticKey": "TaxableIncome",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "NOLCO Available",
-          "displayValue": "₱0",
-          "correctValue": "₱0",
-          "type": "Number",
-          "semanticKey": "NOLCO",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        }
-
-      ]
-    },
-
-
-    {
-      "documentName": "Previous Year's Corporate ITR",
-
-      "fields": [
-
-        {
-          "label": "Previous Year's Taxable Income",
-          "displayValue": "₱2,400,000",
-          "correctValue": "₱2,400,000",
-          "type": "Number",
-          "semanticKey": "PriorTaxableIncome",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Previous Year's Tax Due",
-          "displayValue": "₱600,000",
-          "correctValue": "₱600,000",
-          "type": "Number",
-          "semanticKey": "PriorTaxDue",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "NOLCO Balance",
-          "displayValue": "₱0",
-          "correctValue": "₱0",
-          "type": "Number",
-          "semanticKey": "PriorNOLCO",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        }
-
-      ]
-    },
-
-
-    {
-      "documentName": "Expense Supporting Documents",
-
-      "fields": [
-
-        {
-          "label": "Supplier Invoices",
-          "displayValue": "Complete for major production expenses",
-          "correctValue": "Complete for major production expenses",
+          "label": "Citizenship",
+          "displayValue": "Filipino",
+          "correctValue": "Filipino",
           "type": "Text",
-          "semanticKey": "SupplierInvoices",
+          "semanticKey": "Citizenship",
           "isIncorrect": false,
           "incorrectReason": "",
           "issueType": "",
@@ -430,27 +188,60 @@
         },
 
         {
-          "label": "Personal Expenses",
-          "displayValue": "₱600,000",
-          "correctValue": "₱0",
-          "type": "Number",
-          "semanticKey": "PersonalExpense",
-          "isIncorrect": true,
-          "incorrectReason": "The supporting documents show that the expense was personal rather than directly connected with corporate operations.",
-          "issueType": "NonDeductibleExpense",
-          "severity": "High"
+          "label": "Address",
+          "displayValue": "Poblacion, Town Proper",
+          "correctValue": "Poblacion, Town Proper",
+          "type": "Text",
+          "semanticKey": "Address",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        }
+
+      ]
+    },
+
+
+    {
+      "documentName": "Employment Records",
+
+      "fields": [
+
+        {
+          "label": "Number of Employers This Year",
+          "displayValue": "One",
+          "correctValue": "One",
+          "type": "Text",
+          "semanticKey": "NumberOfEmployers",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
         },
 
         {
-          "label": "Unsupported Expenses",
-          "displayValue": "₱800,000",
-          "correctValue": "₱400,000",
-          "type": "Number",
-          "semanticKey": "UnsupportedExpense",
-          "isIncorrect": true,
-          "incorrectReason": "Only part of the claimed miscellaneous expense is supported by sufficient documentation.",
-          "issueType": "UnsupportedDeduction",
-          "severity": "High"
+          "label": "Employment Type",
+          "displayValue": "Regular, full-time employee",
+          "correctValue": "Regular, full-time employee",
+          "type": "Text",
+          "semanticKey": "EmploymentType",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
+        },
+
+        {
+          "label": "Length of Residency in the Philippines",
+          "displayValue": "Lifetime resident",
+          "correctValue": "Lifetime resident",
+          "type": "Text",
+          "semanticKey": "ResidencyStatus",
+          "isIncorrect": false,
+          "incorrectReason": "",
+          "issueType": "",
+          "severity": ""
         }
 
       ]
@@ -461,49 +252,41 @@
 
   "potentialIssues": [
 
-    "The corporation reported an accounting net loss of ₱900,000, but ₱1,400,000 of claimed expenses require tax adjustment.",
+    "Marie's income comes entirely from a single local employer, with no other sources of income to account for.",
 
-    "₱600,000 of expenses were identified as personal expenses charged to the corporation.",
+    "Her taxpayer classification depends on confirming both her citizenship and her Philippine residency.",
 
-    "₱800,000 of miscellaneous expenses were claimed, but only ₱400,000 is adequately supported.",
+    "Because tax was already properly withheld by her employer, there should be no additional tax payable once the classification is confirmed.",
 
-    "The reported accounting loss cannot automatically be treated as a tax loss without reviewing the deductibility of the claimed expenses.",
+    "The player must correctly identify her as a Resident Citizen taxed on compensation income under the graduated income tax table.",
 
-    "The player must determine whether a net operating loss actually exists after tax adjustments.",
-
-    "The CFO is attempting to maximize deductions by defending expenses that may not qualify as allowable business deductions.",
-
-    "NOLCO treatment must only be considered after determining the corporation's actual tax loss.",
-
-    "The corporation's minimum corporate income tax position must be considered where applicable."
+    "No deductions, adjustments, or unsupported expenses are involved in this case — the focus is entirely on correct classification."
 
   ],
 
 
-  "clientPortraitDefault": "Client2_Realyn_Default",
-
-  "clientPortraitHappy": "Client2_Realyn_Happy",
-
-  "clientPortraitSad": "Client2_Realyn_Sad",
+  "clientPortraitDefault": "Client1_Marie_Default",
+  "clientPortraitHappy": "Client1_Marie_Happy",
+  "clientPortraitSad": "Client1_Marie_Sad",
 
 
   "receptionistGreeting": [
 
     {
       "speaker": "Npc",
-      "text": "Good morning! Welcome to the tax office.",
-      "portraitId": "Client2_Realyn_Happy"
+      "text": "Good afternoon! I heard you're getting familiar with the local taxpayers.",
+      "portraitId": "Client1_Marie_Happy"
     },
 
     {
       "speaker": "Npc",
-      "text": "I have a corporate case ready for you. The company reported a significant net loss, so please review the audited financial statements and supporting schedules carefully.",
-      "portraitId": "Client2_Realyn_Happy"
+      "text": "Marie from the BPO office should be easy enough to start with. Her situation is pretty simple.",
+      "portraitId": "Client1_Marie_Happy"
     },
 
     {
       "speaker": "Player",
-      "text": "Understood. I'll review the financial statements, verify the deductions, and determine the corporation's proper tax position.",
+      "text": "Sounds good. I'll head over and speak with her.",
       "portraitId": "Auditor_Default"
     }
 
@@ -513,21 +296,27 @@
   "clientFirstMeeting": [
 
     {
-      "speaker": "Npc",
-      "text": "Good morning. I'm Realyn Sotto, the CFO of Bayani Garments Corp. We're here because the company reported a substantial loss this year.",
-      "portraitId": "Client2_Realyn_Default"
-    },
-
-    {
       "speaker": "Player",
-      "text": "I'll review your audited financial statements and supporting schedules to determine whether the reported loss is also recognized for tax purposes.",
+      "text": "Good afternoon. Mind if I ask you a few questions? I'm the new tax consultant assigned to the town.",
       "portraitId": "Auditor_Default"
     },
 
     {
       "speaker": "Npc",
-      "text": "I've brought the complete audit binder. Everything should be there, but I want to make sure we don't end up paying tax when the company clearly lost money.",
-      "portraitId": "Client2_Realyn_Default"
+      "text": "Oh, sure. Is there something I need to prepare?",
+      "portraitId": "Client1_Marie_Default"
+    },
+
+    {
+      "speaker": "Player",
+      "text": "Nothing serious. I'm getting familiar with the taxpayers around here. What do you do for a living?",
+      "portraitId": "Auditor_Default"
+    },
+
+    {
+      "speaker": "Npc",
+      "text": "I work at the BPO office nearby. I've been there for a few years now.",
+      "portraitId": "Client1_Marie_Default"
     }
 
   ],
@@ -537,50 +326,38 @@
 
     {
       "speaker": "Player",
-      "text": "Your financial statements show an accounting net loss of ₱900,000. Can you confirm that this is the company's reported result for the year?",
+      "text": "I see. And have you been living here in the Philippines for most of your life?",
       "portraitId": "Auditor_Default"
     },
 
     {
       "speaker": "Npc",
-      "text": "Yes. Our costs increased significantly this year, especially materials, logistics, and operating expenses.",
-      "portraitId": "Client2_Realyn_Default"
+      "text": "Yes. I was born here, actually. My family and I have always lived here.",
+      "portraitId": "Client1_Marie_Default"
     },
 
     {
       "speaker": "Player",
-      "text": "I also found ₱600,000 in expenses that appear to be personal expenses charged to the corporation. Can you explain these items?",
+      "text": "And you're a Filipino citizen?",
       "portraitId": "Auditor_Default"
     },
 
     {
       "speaker": "Npc",
-      "text": "Those were expenses connected to management activities. They're not a huge amount compared with the company's total expenses, so I believe they should still be considered.",
-      "portraitId": "Client2_Realyn_Default"
+      "text": "Yes.",
+      "portraitId": "Client1_Marie_Default"
     },
 
     {
       "speaker": "Player",
-      "text": "There is also ₱800,000 in miscellaneous expenses, but only ₱400,000 appears to have sufficient supporting documentation.",
+      "text": "Got it. That gives me a better idea of your taxpayer status. Thanks for your time.",
       "portraitId": "Auditor_Default"
     },
 
     {
       "speaker": "Npc",
-      "text": "The remaining expenses were legitimate business costs. Some suppliers simply didn't provide complete paperwork.",
-      "portraitId": "Client2_Realyn_Default"
-    },
-
-    {
-      "speaker": "Player",
-      "text": "I'll need to distinguish between expenses that are actually deductible and expenses that cannot be supported for tax purposes before determining whether the corporation has a valid net operating loss.",
-      "portraitId": "Auditor_Default"
-    },
-
-    {
-      "speaker": "Npc",
-      "text": "I understand. I just want to make sure we're not giving up legitimate deductions.",
-      "portraitId": "Client2_Realyn_Default"
+      "text": "No problem. Good luck with your new job!",
+      "portraitId": "Client1_Marie_Happy"
     }
 
   ],
@@ -590,14 +367,14 @@
 
     {
       "speaker": "Player",
-      "text": "After reviewing the financial statements and supporting schedules, the corporation's expenses have been properly evaluated and the resulting tax position is supported by the records.",
+      "text": "Marie is a Resident Citizen earning compensation income from a single local employer. Her tax was properly withheld, so her return is ready for filing with no further adjustments needed.",
       "portraitId": "Auditor_Happy"
     },
 
     {
       "speaker": "Npc",
-      "text": "Good. I'm glad we were able to defend the legitimate expenses while removing the unsupported ones.",
-      "portraitId": "Client2_Realyn_Happy"
+      "text": "That's a relief! Thanks for looking into it properly.",
+      "portraitId": "Client1_Marie_Happy"
     }
 
   ],
@@ -607,26 +384,26 @@
 
     {
       "speaker": "Player",
-      "text": "The corporation's business classification is correct, but several claimed expenses require adjustment before the corporate return can be finalized.",
+      "text": "Marie's classification as a Resident Citizen is correct, but a few details still need to be double-checked before finalizing the return.",
       "portraitId": "Auditor_Default"
     },
 
     {
       "speaker": "Npc",
-      "text": "Which expenses are you questioning?",
-      "portraitId": "Client2_Realyn_Default"
+      "text": "Oh, is something missing from my documents?",
+      "portraitId": "Client1_Marie_Default"
     },
 
     {
       "speaker": "Player",
-      "text": "The personal expenses and unsupported portion of the miscellaneous expenses cannot be accepted without sufficient business purpose and documentation. The reported accounting loss therefore cannot simply be carried over as a tax loss.",
+      "text": "Just some minor confirmations on the employment records. Nothing that should cause any issues.",
       "portraitId": "Auditor_Default"
     },
 
     {
       "speaker": "Npc",
-      "text": "Understood. We'll gather the missing documentation and adjust the affected items.",
-      "portraitId": "Client2_Realyn_Default"
+      "text": "Okay, just let me know if you need anything else from me.",
+      "portraitId": "Client1_Marie_Default"
     }
 
   ],
@@ -636,19 +413,19 @@
 
     {
       "speaker": "Player",
-      "text": "The assessment does not properly distinguish the corporation's accounting loss from its tax-adjusted result.",
+      "text": "The assessment doesn't correctly reflect Marie's taxpayer classification.",
       "portraitId": "Auditor_Disappointed"
     },
 
     {
       "speaker": "Npc",
-      "text": "But the company clearly lost money. Why can't we just report the entire loss?",
-      "portraitId": "Client2_Realyn_Sad"
+      "text": "I don't understand — I've lived here my whole life and only have one job. Did I do something wrong?",
+      "portraitId": "Client1_Marie_Sad"
     },
 
     {
       "speaker": "Player",
-      "text": "An accounting loss does not automatically mean that every expense is deductible for income tax purposes. The supporting schedules must be reviewed before determining the corporation's actual tax loss.",
+      "text": "No, nothing on your end. A Filipino citizen who resides in the Philippines and earns compensation income here should be classified as a Resident Citizen — that determines how your income is taxed.",
       "portraitId": "Auditor_Disappointed"
     }
 
@@ -659,26 +436,26 @@
 
     {
       "speaker": "Player",
-      "text": "The assessment is incorrect, and the supporting records contain significant issues affecting the reported loss.",
+      "text": "The assessment is incorrect, and a few supporting details were also overlooked.",
       "portraitId": "Auditor_Disappointed"
     },
 
     {
       "speaker": "Npc",
-      "text": "So you're saying we can't claim the entire ₱900,000 loss?",
-      "portraitId": "Client2_Realyn_Sad"
+      "text": "That sounds more complicated than I expected.",
+      "portraitId": "Client1_Marie_Sad"
     },
 
     {
       "speaker": "Player",
-      "text": "Correct. The personal expenses and unsupported deductions must be removed or adjusted before determining the corporation's proper tax position and whether any NOLCO is available.",
+      "text": "It shouldn't be, in your case — your situation is fairly simple. I'll need to review your employer records and residency details again before finalizing your classification.",
       "portraitId": "Auditor_Disappointed"
     },
 
     {
       "speaker": "Npc",
-      "text": "All right. We'll review the expense schedules and provide the missing documentation.",
-      "portraitId": "Client2_Realyn_Sad"
+      "text": "All right, let me know if you need anything else.",
+      "portraitId": "Client1_Marie_Sad"
     }
 
   ]

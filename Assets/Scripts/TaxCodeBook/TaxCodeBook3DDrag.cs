@@ -447,9 +447,16 @@ public class TaxCodeBook3DDrag :
 
         openTaxCodeBook.SetActive(true);
 
+        // Play paper sound when the tax code book opens.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperSFX();
+        }
+
         DebugLog(
             "Open tax code book shown."
         );
+
 
         if (taxCodeBookUI != null)
         {

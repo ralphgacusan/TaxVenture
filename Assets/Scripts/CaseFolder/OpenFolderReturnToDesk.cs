@@ -155,6 +155,12 @@ public class OpenFolderReturnToDesk :
         gameObject.SetActive(false);
         originalClosedFolder.SetActive(true);
 
+        // Play paper sound when the open folder closes.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperSFX();
+        }
+
         DebugLog("Open folder successfully returned to the desk.");
         DebugLog($"Original closed folder restored at: {originalClosedFolder.transform.position}");
     }

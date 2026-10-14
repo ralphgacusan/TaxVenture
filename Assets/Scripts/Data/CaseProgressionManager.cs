@@ -40,6 +40,8 @@ public class CaseProgressionManager : MonoBehaviour
     private int currentCaseIndex;
     private string levelId;
 
+    [SerializeField] private string startingLevelId = "Level_01";
+
     private bool levelStarted = false;
     private bool waitingForNextCase = false;
 
@@ -47,6 +49,7 @@ public class CaseProgressionManager : MonoBehaviour
     private readonly LevelRewardAccumulator rewardAccumulator = new LevelRewardAccumulator();
 
     public LevelRewardAccumulator RewardAccumulator => rewardAccumulator;
+    public string CurrentLevelId => levelId;
 
     private float caseStartTime;
 
@@ -74,7 +77,7 @@ public class CaseProgressionManager : MonoBehaviour
     {
         Debug.Log("[CaseProgressionManager] Start.");
 
-        StartLevel("Level_01");
+        StartLevel(startingLevelId);
     }
 
 

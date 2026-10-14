@@ -235,6 +235,14 @@ public class AuditorSubmissionTray :
             // drag-to-tray path so the count is guaranteed to hit 0.
         }
 
+        // Play paper sound when the case folder is successfully submitted.
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperSFX();
+        }
+
+        auditor.BeginFinalAudit();
+
         auditor.BeginFinalAudit();
     }
 

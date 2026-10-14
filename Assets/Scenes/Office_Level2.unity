@@ -43147,6 +43147,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f13c96dfea406b54d87dcfb3b58872c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CaseProgressionManager
+  startingLevelId: Level_02
 --- !u!4 &1082111483 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4666233842903064, guid: ea634ef5668e60a4dbdda0c4079abb88, type: 3}
