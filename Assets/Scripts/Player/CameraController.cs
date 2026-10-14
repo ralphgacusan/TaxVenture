@@ -33,7 +33,8 @@ public class CameraController : MonoBehaviour
         FirstPerson,
         Workstation,
         Interview,
-        CorkboardSideQuest   // <-- add this
+        CorkboardSideQuest,
+        ProfileViewer
     }
 
     public CameraMode CurrentMode { get; private set; }
@@ -66,6 +67,85 @@ public class CameraController : MonoBehaviour
     [SerializeField] private DeskItemHighlight[] deskItemHighlights;
 
     private Coroutine activeTransition;
+
+    private Behaviour[] profileViewerControls;
+    private bool[] profileViewerControlStates;
+    private bool profileViewerJoystickVisible;
+    private Rigidbody profileViewerBody;
+    private RigidbodyConstraints profileViewerBodyConstraints;
+    private CursorLockMode profileViewerCursorLock;
+    private bool profileViewerCursorVisible;
+
+    public bool TryBeginProfileViewer()
+    {
+        if (!isActiveAndEnabled || CurrentMode != CameraMode.FirstPerson || activeTransition != null ||
+            profileViewerControls != null)
+            return false;
+
+        profileViewerControls = new Behaviour[]
+        {
+            firstPersonCamera, playerMovement, playerInteractor, workstationInteractor,
+            mainCamera != null ? mainCamera.GetComponent<UnityEngine.EventSystems.PhysicsRaycaster>() : null
+        };
+        profileViewerControlStates = new bool[profileViewerControls.Length];
+        for (int i = 0; i < profileViewerControls.Length; i++)
+        {
+            if (profileViewerControls[i] == null) continue;
+            profileViewerControlStates[i] = profileViewerControls[i].enabled;
+            profileViewerControls[i].enabled = false;
+        }
+        if (playerInteractor != null) playerInteractor.ClearFocus();
+        if (virtualJoystick != null)
+        {
+            profileViewerJoystickVisible = virtualJoystick.gameObject.activeSelf;
+            virtualJoystick.SetVisible(false);
+        }
+        profileViewerBody = playerMovement != null ? playerMovement.GetComponent<Rigidbody>() : null;
+        if (profileViewerBody != null)
+        {
+            profileViewerBodyConstraints = profileViewerBody.constraints;
+            if (!profileViewerBody.isKinematic)
+            {
+                profileViewerBody.linearVelocity = Vector3.zero;
+                profileViewerBody.angularVelocity = Vector3.zero;
+            }
+            profileViewerBody.constraints = RigidbodyConstraints.FreezeAll;
+        }
+        profileViewerCursorLock = Cursor.lockState;
+        profileViewerCursorVisible = Cursor.visible;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        CurrentMode = CameraMode.ProfileViewer;
+        return true;
+    }
+
+    public void EndProfileViewer()
+    {
+        if (profileViewerControls == null) return;
+        if (profileViewerBody != null) profileViewerBody.constraints = profileViewerBodyConstraints;
+        // Other camera modes manage movement themselves, but not the viewer's click-through guard.
+        int raycasterIndex = profileViewerControls.Length - 1;
+        if (profileViewerControls[raycasterIndex] != null)
+            profileViewerControls[raycasterIndex].enabled = profileViewerControlStates[raycasterIndex];
+        if (CurrentMode == CameraMode.ProfileViewer)
+        {
+            CurrentMode = CameraMode.FirstPerson;
+            for (int i = 0; i < profileViewerControls.Length; i++)
+                if (profileViewerControls[i] != null)
+                    profileViewerControls[i].enabled = profileViewerControlStates[i];
+            if (virtualJoystick != null) virtualJoystick.SetVisible(profileViewerJoystickVisible);
+            Cursor.lockState = profileViewerCursorLock;
+            Cursor.visible = profileViewerCursorVisible;
+        }
+        profileViewerControls = null;
+        profileViewerControlStates = null;
+        profileViewerBody = null;
+    }
+
+    private void OnDisable()
+    {
+        EndProfileViewer();
+    }
 
     // =============================================================
     // INITIALIZATION
