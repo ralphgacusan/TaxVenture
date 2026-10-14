@@ -9,12 +9,20 @@
 /// </summary>
 public enum DialogueSpeaker { Npc, Player }
 
+/// <summary>
+/// How the conversation camera may frame a line. Auto lets the camera decide
+/// from what is being said; CloseUp forces a solo close-up of the speaker;
+/// OverShoulder forbids one.
+/// </summary>
+public enum DialogueCameraHint { Auto, OverShoulder, CloseUp }
+
 public class DialogueLine
 {
     public DialogueSpeaker Speaker;
     public string Text;
     public string PortraitId;
     public string SpeakerName;
+    public DialogueCameraHint CameraHint = DialogueCameraHint.Auto;
 
     public DialogueLine(
         DialogueSpeaker speaker,

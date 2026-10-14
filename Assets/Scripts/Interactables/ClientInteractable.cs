@@ -3,18 +3,27 @@ using System.Collections.Generic;
 
 [RequireComponent(typeof(HighlightEffect))]
 [RequireComponent(typeof(NpcStateMachine))]
-public class ClientInteractable : MonoBehaviour, IInteractable
+public class ClientInteractable : MonoBehaviour, IInteractable, INpcAvailabilitySource
 {
     [SerializeField] private DialogueUI dialogueUI; // CHANGED: was InterviewClientUI
 
     private HighlightEffect highlight;
     private NpcStateMachine npcState;
     private bool hasInterviewed = false;
+    private bool dialogueSessionActive;
 
     private void Awake()
     {
         highlight = GetComponent<HighlightEffect>();
         npcState = GetComponent<NpcStateMachine>();
+    }
+
+    private void OnDisable()
+    {
+        if (dialogueSessionActive && dialogueUI != null)
+        {
+            dialogueUI.CancelDialogueFor(this);
+        }
     }
 
     public void OnFocus()
@@ -31,16 +40,19 @@ public class ClientInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract()
     {
+        if (dialogueSessionActive || dialogueUI == null || npcState == null) return;
+
         if (GameStateMachine.Instance.CurrentState is CaseOutcomeState)
         {
+            if (CaseManager.Instance == null ||
+                CaseManager.Instance.CurrentCase == null ||
+                CaseManager.Instance.CurrentCase.clientPresentationCompleted) return;
+
             PresentFindings();
             return;
         }
 
         if (hasInterviewed) return; // interview only happens once, matching the scripted-conversation model
-
-        npcState.ChangeState(new NpcInteractState());
-        npcState.ChangeState(new NpcDialogueState());
 
         RunInterview();
     }
@@ -52,18 +64,48 @@ public class ClientInteractable : MonoBehaviour, IInteractable
     /// </summary>
     private void RunInterview()
     {
+        if (CaseManager.Instance == null ||
+            CaseManager.Instance.CurrentDefinition == null ||
+            CaseManager.Instance.CurrentCase == null) return;
+
         CaseDefinition def = CaseManager.Instance.CurrentDefinition;
-        var lines = CaseFactory.BuildDialogue(def.interviewLines, CaseManager.Instance.CurrentCase.fullName);
+        List<DialogueLine> lines = CaseFactory.BuildDialogue(
+            def.interviewLines,
+            CaseManager.Instance.CurrentCase.fullName
+        );
 
-        dialogueUI.StartDialogue(lines, OnInterviewConcluded);
+        GameStateMachine gameStateMachine = GameStateMachine.Instance;
+        IGameState priorGameState = gameStateMachine != null
+            ? gameStateMachine.CurrentState
+            : null;
+        INpcState priorNpcState = npcState.CurrentState;
+        bool shouldEnterInterviewState = priorGameState is ReviewDocumentsState;
+        IGameState enteredGameState = null;
 
-        if (GameStateMachine.Instance.CurrentState is ReviewDocumentsState)
+        if (!dialogueUI.TryStartDialogue(
+            lines,
+            OnInterviewConcluded,
+            () => OnInterviewCancelled(
+                priorNpcState,
+                gameStateMachine,
+                priorGameState,
+                enteredGameState
+            ),
+            this)) return;
+
+        dialogueSessionActive = true;
+        npcState.ChangeState(new NpcInteractState());
+        npcState.ChangeState(new NpcDialogueState());
+
+        if (shouldEnterInterviewState && gameStateMachine != null)
         {
-            GameStateMachine.Instance.ChangeState(new InterviewClientState());
+            enteredGameState = new InterviewClientState();
+            gameStateMachine.ChangeState(enteredGameState);
         }
     }
     private void OnInterviewConcluded()
     {
+        dialogueSessionActive = false;
         hasInterviewed = true;
         npcState.ChangeState(new NpcCompletedState());
 
@@ -71,16 +113,46 @@ public class ClientInteractable : MonoBehaviour, IInteractable
             TutorialController.Instance.ReportInteraction("interview_client");
     }
 
+    private void OnInterviewCancelled(
+        INpcState priorNpcState,
+        GameStateMachine gameStateMachine,
+        IGameState priorGameState,
+        IGameState enteredGameState)
+    {
+        dialogueSessionActive = false;
+        RestoreNpcState(priorNpcState);
+
+        if (gameStateMachine != null &&
+            enteredGameState != null &&
+            System.Object.ReferenceEquals(
+                gameStateMachine.CurrentState,
+                enteredGameState
+            ))
+        {
+            gameStateMachine.ChangeState(priorGameState);
+        }
+    }
+
     private void PresentFindings()
     {
-        npcState.ChangeState(new NpcInteractState());
-        npcState.ChangeState(new NpcDialogueState());
-
+        if (dialogueSessionActive || CaseManager.Instance == null) return;
         CaseData data = CaseManager.Instance.CurrentCase;
+        if (data == null || data.clientPresentationCompleted) return;
+
         ClientOutcomeBranch branch = ClientOutcomeEvaluator.Determine(data);
 
         var lines = BuildOutcomeDialogue(branch);
-        dialogueUI.StartDialogue(lines, () => OnPresentationConcluded(branch));
+        INpcState priorNpcState = npcState.CurrentState;
+
+        if (!dialogueUI.TryStartDialogue(
+            lines,
+            () => OnPresentationConcluded(branch),
+            () => OnPresentationCancelled(priorNpcState),
+            this)) return;
+
+        dialogueSessionActive = true;
+        npcState.ChangeState(new NpcInteractState());
+        npcState.ChangeState(new NpcDialogueState());
     }
 
     private List<DialogueLine> BuildOutcomeDialogue(ClientOutcomeBranch branch)
@@ -101,7 +173,14 @@ public class ClientInteractable : MonoBehaviour, IInteractable
 
     private void OnPresentationConcluded(ClientOutcomeBranch branch)
     {
-        CaseManager.Instance.CurrentCase.clientPresentationCompleted = true;
+        dialogueSessionActive = false;
+
+        CaseData data = CaseManager.Instance != null
+            ? CaseManager.Instance.CurrentCase
+            : null;
+        if (data == null || data.clientPresentationCompleted) return;
+
+        data.clientPresentationCompleted = true;
         npcState.ChangeState(new NpcCompletedState());
 
         if (TutorialController.Instance != null)
@@ -109,8 +188,6 @@ public class ClientInteractable : MonoBehaviour, IInteractable
 
         if (!(GameStateMachine.Instance is CaseOutcomeState) &&
             !(GameStateMachine.Instance.CurrentState is CaseOutcomeState)) return;
-
-        CaseData data = CaseManager.Instance.CurrentCase;
 
         // Calculate and store the reward exactly ONCE, regardless of branch.
         LevelResultData caseResult =
@@ -133,6 +210,21 @@ public class ClientInteractable : MonoBehaviour, IInteractable
         }
     }
 
+    private void OnPresentationCancelled(INpcState priorNpcState)
+    {
+        dialogueSessionActive = false;
+        RestoreNpcState(priorNpcState);
+    }
+
+    private void RestoreNpcState(INpcState priorNpcState)
+    {
+        if (npcState == null) return;
+
+        npcState.ChangeState(priorNpcState is NpcCompletedState
+            ? priorNpcState
+            : new NpcIdleState());
+    }
+
     private void OnCaseResultClosed()
     {
         GameStateMachine.Instance.ChangeState(new ArchiveCaseState());
@@ -144,9 +236,36 @@ public class ClientInteractable : MonoBehaviour, IInteractable
         GameStateMachine.Instance.ChangeState(new ArchiveCaseState());
     }
 
+    /// <summary>
+    /// T04 marker state: interview once, then available again for the
+    /// findings presentation in the case-outcome phase.
+    /// </summary>
+    public NpcAvailability Availability
+    {
+        get
+        {
+            CaseManager cases = CaseManager.Instance;
+            bool caseLoaded = cases != null && cases.CurrentDefinition != null && cases.CurrentCase != null;
+            bool outcome = GameStateMachine.Instance != null && GameStateMachine.Instance.CurrentState is CaseOutcomeState;
+            return NpcAvailabilityRules.Client(caseLoaded, outcome,
+                caseLoaded && cases.CurrentCase.clientPresentationCompleted, hasInterviewed);
+        }
+    }
+
     public string GetPromptText()
     {
-        if (GameStateMachine.Instance.CurrentState is CaseOutcomeState) return "Click to present findings to Client";
+        if (GameStateMachine.Instance.CurrentState is CaseOutcomeState)
+        {
+            if (CaseManager.Instance != null &&
+                CaseManager.Instance.CurrentCase != null &&
+                CaseManager.Instance.CurrentCase.clientPresentationCompleted)
+            {
+                return "Client";
+            }
+
+            return "Click to present findings to Client";
+        }
+
         if (hasInterviewed) return "Client";
         return "Click to talk to Client";
     }

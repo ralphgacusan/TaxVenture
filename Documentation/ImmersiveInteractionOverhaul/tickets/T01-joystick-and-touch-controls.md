@@ -1,11 +1,11 @@
 # T01 — Joystick and touch controls
 
 Status: **IMPLEMENTED — Unity setup and manual acceptance pending**
-Dependencies: user approved T01. Next after acceptance/approval: T02a. Original estimate: **8k-14k tokens**.
+Dependencies: user approved T01. Next after acceptance/approval: T02 unified dialogue. Original estimate: **8k-14k tokens**.
 
 ## Delivered and internally verified
 
-Single-pointer movement joystick/reset and release-frame blocking; radial dead-zone/sensitivity response; immediate logical stop with eased thumb return/press visuals; analog PlayerMovement; UI-excluded right-75%-screen swipe in both camera scripts; fresh UI/world guards and native tap-on-release gesture discrimination; existing interaction locks; safe-area component; Undo-capable setup menu. User rejected LOOK joystick after initial setup. Revised MOVE size/handle are 280/112 and center offset (260,240), larger and further upward/inward than before. Existing paper/quest data and the user's saved scene edits remain unchanged by this follow-up.
+Single-pointer movement joystick/reset and release-frame blocking; radial dead-zone/sensitivity response; immediate logical stop with eased thumb return/press visuals; analog PlayerMovement; UI-excluded right-75%-screen swipe in the existing camera input path; fresh UI/world guards and native tap-on-release gesture discrimination; existing interaction locks; safe-area component; Undo-capable setup menu. User rejected LOOK joystick after initial setup. Revised MOVE size/handle are 280/112 and center offset (260,240), larger and further upward/inward than before. Existing paper/quest data and the user's saved scene edits remain unchanged by this follow-up.
 
 Internal results: direct runtime C# compilation with Editor/Standalone paths passed; setup tool compiled; production JoystickInputMath regression passed **5,734 assertions**; diff check passed. Source review found center-stick drift and release-frame mouse leakage; both corrected. No Unity menu/play/device acceptance is claimed. Acceptance checkboxes below remain open until manual evidence arrives.
 
@@ -19,13 +19,13 @@ Internal results: direct runtime C# compilation with Editor/Standalone paths pas
 6. Test dialogue, desk, board and profile open/drag/close: movement hides/resets and swipe look is locked as appropriate. Profiles stay locked through the last paper's return. Verify intentional NPC/profile taps still work after releasing controls.
 7. Check supported landscape aspects and a notched device/safe area. Rerunning setup must not recreate LOOK; old LOOK is disabled without deletion. Undo/Ctrl+S behavior remains a manual check.
 
-Report failures with Console text, scene/device/aspect and the failing step. Do not proceed to T02 until accepted and explicitly approved. Next estimate: T02a follow/ownership **8k-12k tokens**; full T02 **16k-28k**, so split checkpoints recommended.
+Report failures with Console text, scene/device/aspect and the failing step. Do not proceed to T02 until accepted and explicitly approved. Next estimate: T02 unified dialogue **10k-18k tokens**; split into approved checkpoints if needed.
 
 ## Objective and inspected entry points
 
 Provide a polished movement joystick and independent screen-swipe look, per the user's latest instruction. Use the existing camera touch path, not a visible LOOK joystick or a UI surface blocking world clicks. MobileLookArea remains inactive.
 
-Primary files: `Assets/Scripts/Mobile/VirtualJoystick.cs`, `MobileLookArea.cs`; `Assets/Scripts/Player/PlayerMovement.cs`, `FirstPersonCameraController.cs`, `ThirdPersonCameraFollow.cs`, `Interactor.cs`, `WorkstationInteractor.cs`; `Assets/Scripts/Interactables/HighlightEffect.cs`; `Assets/Scenes/Office_Level1.unity` HUD_Canvas/MobileControls; `Assets/InputSystem_Actions.inputactions` for existing bindings inspection.
+Primary files: `Assets/Scripts/Mobile/VirtualJoystick.cs`, `MobileLookArea.cs`; `Assets/Scripts/Player/PlayerMovement.cs`, `FirstPersonCameraController.cs`, `Interactor.cs`, `WorkstationInteractor.cs`; `Assets/Scripts/Interactables/HighlightEffect.cs`; `Assets/Scenes/Office_Level1.unity` HUD_Canvas/MobileControls; `Assets/InputSystem_Actions.inputactions` for existing bindings inspection.
 
 ## Scope
 
@@ -51,5 +51,5 @@ Primary files: `Assets/Scripts/Mobile/VirtualJoystick.cs`, `MobileLookArea.cs`; 
 
 Compile; inspect serialized bindings; add focused input/math checks where meaningful. Manual: move + look + HUD with separate fingers; drag off controls; release/cancel; pause/focus; desktop fallback; each current interaction and profile close. Record real device/resolution and unrun cases. Scene edits have one writer.
 
-Do not implement third-person collision, character replacement or dialogue overhaul here. Update ticket status, CURRENT_STATE, PROGRESS and HANDOFF with input ownership/configuration and exact remaining manual tests. Stop for approval.
+Preserve the current exploration view and existing player setup; dialogue overhaul belongs to its own ticket. Update ticket status, CURRENT_STATE, PROGRESS and HANDOFF with input ownership/configuration and exact remaining manual tests. Stop for approval.
 

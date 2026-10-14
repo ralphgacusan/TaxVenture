@@ -4228,6 +4228,7 @@ GameObject:
   - component: {fileID: 72836760}
   - component: {fileID: 72836764}
   - component: {fileID: 72836763}
+  - component: {fileID: 72836765}
   m_Layer: 3
   m_Name: Colleague
   m_TagString: Untagged
@@ -4300,6 +4301,37 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
   highlightMaterial: {fileID: 0}
+--- !u!114 &72836765
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 72836758}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 72836763}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!1 &72948437 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1248801567619574, guid: 5f9e6d4b2005b0445b630830d867e2c8, type: 3}
@@ -16504,6 +16536,61 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 200340765}
   m_SourcePrefab: {fileID: 100100000, guid: 476a98adea211d945bca14747adedee6, type: 3}
+--- !u!1 &263585190
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 263585192}
+  - component: {fileID: 263585191}
+  m_Layer: 0
+  m_Name: ConversationElijahVisual
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &263585191
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 263585190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06bc453abc82b8c46a22099167116e2d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ConversationActorVisual
+  modelPrefab: {fileID: 919132149155446097, guid: 4d8c6cb1568c845489cd64e97a4ff7e6, type: 3}
+  poseClip: {fileID: -203655887218126122, guid: 4d8c6cb1568c845489cd64e97a4ff7e6, type: 3}
+  poseTime: 0
+  animateIdle: 1
+  idleSampleRate: 30
+  standingHeight: 1.5726485
+  nativeMinY: -0.003197104
+  nativeMaxY: 6.6562467
+  headHeightFraction: 0.8731609
+  forwardYawOffset: -1.3114709
+  castShadows: 1
+--- !u!4 &263585192
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 263585190}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &264195251 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1263473793766684, guid: 8633d1fc084eee24383e522b8b29e723, type: 3}
@@ -22078,7 +22165,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &363494139
 RectTransform:
   m_ObjectHideFlags: 0
@@ -24861,9 +24948,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 50}
-  m_Pivot: {x: 0.5, y: 1}
+  m_AnchoredPosition: {x: 32, y: -16}
+  m_SizeDelta: {x: -64, y: 44}
+  m_Pivot: {x: 0, y: 1}
 --- !u!114 &405329634
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24878,7 +24965,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -24893,8 +24980,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278190080
-  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
+    rgba: 4285780479
+  m_fontColor: {r: 1, g: 0.82, b: 0.45, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -24911,8 +24998,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 30
+  m_fontSizeBase: 30
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -34658,6 +34745,7 @@ GameObject:
   - component: {fileID: 554849393}
   - component: {fileID: 554849392}
   - component: {fileID: 554849395}
+  - component: {fileID: 554849396}
   m_Layer: 3
   m_Name: NPC_Marie
   m_TagString: Untagged
@@ -34745,6 +34833,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f8388cb09e79284aa02f4f95f49cad3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RawPointerTest
+--- !u!114 &554849396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 554849390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 554849393}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!1001 &555732565
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -38335,6 +38454,7 @@ GameObject:
   - component: {fileID: 617965375}
   - component: {fileID: 617965377}
   - component: {fileID: 617965376}
+  - component: {fileID: 617965378}
   m_Layer: 5
   m_Name: Dialogue
   m_TagString: Untagged
@@ -38359,11 +38479,11 @@ RectTransform:
   - {fileID: 1350718502}
   m_Father: {fileID: 1416291529}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 1, y: 0}
-  m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -150, y: 20}
-  m_SizeDelta: {x: 900, y: 350}
-  m_Pivot: {x: 1, y: 0}
+  m_AnchorMin: {x: 0.12, y: 0}
+  m_AnchorMax: {x: 0.88, y: 0}
+  m_AnchoredPosition: {x: 0, y: 24}
+  m_SizeDelta: {x: 0, y: 250}
+  m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &617965376
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -38377,7 +38497,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.07, g: 0.08, b: 0.11, a: 0.92}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -38402,6 +38522,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 617965374}
   m_CullTransparentMesh: 1
+--- !u!114 &617965378
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 617965374}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da837c42119a5f9459c292d08265d581, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueBoxTapRelay
+  dialogueUI: {fileID: 1416291532}
 --- !u!1001 &618358890
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -44651,6 +44784,7 @@ GameObject:
   - component: {fileID: 724378881}
   - component: {fileID: 724378880}
   - component: {fileID: 724378879}
+  - component: {fileID: 724378882}
   m_Layer: 3
   m_Name: NPC_Zorbix
   m_TagString: Untagged
@@ -44726,6 +44860,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddaf1cece5e5b934a8a22cbcd68247b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NpcStateMachine
+--- !u!114 &724378882
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 724378877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 724378880}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!1001 &728589333
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -45200,6 +45365,7 @@ GameObject:
   - component: {fileID: 739575923}
   - component: {fileID: 739575924}
   - component: {fileID: 739575925}
+  - component: {fileID: 739575926}
   m_Layer: 3
   m_Name: Client
   m_TagString: Untagged
@@ -45316,6 +45482,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98b9d8aee3749054c97cba8719f62c13, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CaseDropDestination
+--- !u!114 &739575926
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 739575916}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 739575921}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!1001 &742335659
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -48442,11 +48639,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 617965375}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -70}
-  m_SizeDelta: {x: 0, y: 50}
-  m_Pivot: {x: 0.5, y: 1}
+  m_AnchoredPosition: {x: 0, y: 6}
+  m_SizeDelta: {x: -64, y: -140}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &804113820
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -48461,7 +48658,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -48476,8 +48673,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278190080
-  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
+    rgba: 4294637042
+  m_fontColor: {r: 0.95, g: 0.96, b: 0.98, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -48494,12 +48691,12 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
+  m_fontSize: 32
   m_fontSizeBase: 36
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 22
+  m_fontSizeMax: 32
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -49146,7 +49343,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 299.99994}
+  m_AnchoredPosition: {x: 0, y: 300.00015}
   m_SizeDelta: {x: 0, y: 800}
   m_Pivot: {x: 0, y: 1}
 --- !u!4 &819781689 stripped
@@ -51351,6 +51548,7 @@ GameObject:
   - component: {fileID: 855095586}
   - component: {fileID: 855095585}
   - component: {fileID: 855095584}
+  - component: {fileID: 855095587}
   m_Layer: 3
   m_Name: NPC_Jhun
   m_TagString: Untagged
@@ -51426,6 +51624,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddaf1cece5e5b934a8a22cbcd68247b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NpcStateMachine
+--- !u!114 &855095587
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 855095582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 855095585}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!4 &857518428 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8153497578120330777, guid: 8af81d950c39c18499cba36e9fd24291, type: 3}
@@ -60719,6 +60948,7 @@ GameObject:
   - component: {fileID: 1016139820}
   - component: {fileID: 1016139819}
   - component: {fileID: 1016139821}
+  - component: {fileID: 1016139823}
   m_Layer: 3
   m_Name: Auditor
   m_TagString: Untagged
@@ -60851,6 +61081,37 @@ MonoBehaviour:
   clickDestination: {fileID: 1016139821}
   auditor: {fileID: 1016139817}
   folderToHUDIcon: {fileID: 1869671340}
+--- !u!114 &1016139823
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1016139812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 1016139817}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!4 &1018777643 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4103799477115650, guid: 584b4f4c091f08f489b99e12d1f39c44, type: 3}
@@ -73001,6 +73262,7 @@ GameObject:
   - component: {fileID: 1250158809}
   - component: {fileID: 1250158810}
   - component: {fileID: 1250158811}
+  - component: {fileID: 1250158813}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -73133,6 +73395,50 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 200
   m_MaxRayIntersections: 0
+--- !u!114 &1250158813
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1250158804}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 0
+  m_Cameras: []
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 0
+  m_Antialiasing: 0
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
 --- !u!1001 &1252470672
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -79843,8 +80149,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: 0.00012207031, y: 0}
-  m_SizeDelta: {x: 400, y: 65}
+  m_AnchoredPosition: {x: -20, y: 14}
+  m_SizeDelta: {x: 200, y: 52}
   m_Pivot: {x: 1, y: 0}
 --- !u!114 &1350718503
 MonoBehaviour:
@@ -79903,7 +80209,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.95, g: 0.8, b: 0.43, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -82990,6 +83296,7 @@ GameObject:
   - component: {fileID: 1416291531}
   - component: {fileID: 1416291530}
   - component: {fileID: 1416291532}
+  - component: {fileID: 1416291533}
   m_Layer: 5
   m_Name: DialoguePanel
   m_TagString: Untagged
@@ -83016,7 +83323,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 400}
+  m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1416291530
 MonoBehaviour:
@@ -83031,7 +83338,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.80784315}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -83074,6 +83381,29 @@ MonoBehaviour:
   speakerNameText: {fileID: 405329634}
   dialogueText: {fileID: 804113820}
   continueButton: {fileID: 1350718503}
+  useTypewriter: 1
+  charactersPerSecond: 40
+  sentencePause: 0.22
+  clausePause: 0.08
+  showBackdrop: 1
+  backdropColor: {r: 1, g: 1, b: 1, a: 0.15686275}
+  backdropPadding: 10
+  backdropShadow: 1
+  openingGrace: 0.15
+  minimumGestureInterval: 0.12
+--- !u!114 &1416291533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1416291528}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42926cd21af89b1419607634d7be7811, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SafeAreaBottomPanel
+  bottomMargin: 0
 --- !u!1001 &1417219760
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -85735,6 +86065,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1474987322}
   - component: {fileID: 1474987321}
+  - component: {fileID: 1474987323}
   m_Layer: 0
   m_Name: CameraController
   m_TagString: Untagged
@@ -85784,6 +86115,43 @@ Transform:
   m_Children: []
   m_Father: {fileID: 498136065}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1474987323
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1474987320}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdde5985814cdf84fbd1749ce79019cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueCameraDirector
+  dialogueUI: {fileID: 1416291532}
+  playerVisual: {fileID: 263585191}
+  backDistance: 0.5
+  shoulderOffset: 0.4
+  heightOffset: 0.04
+  framingBias: 0.12
+  twoShotDistance: 1.25
+  shotFieldOfView: 0
+  minSeparation: 0.5
+  maxSeparation: 0.85
+  enableCloseUps: 1
+  closeUpDistance: 0.3
+  closeUpSideOffset: 0.1
+  closeUpThreshold: 2
+  closeUpRandomChance: 0.15
+  closeUpMinLinesBetween: 2
+  entryBlend: 0.45
+  shotBlend: 0.35
+  returnBlend: 0.45
+  obstructionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  clearanceRadius: 0.05
+  headClearance: 0.3
+  settingsVersion: 1
 --- !u!1 &1475041984
 GameObject:
   m_ObjectHideFlags: 0
@@ -88955,6 +89323,7 @@ GameObject:
   - component: {fileID: 1529582763}
   - component: {fileID: 1529582767}
   - component: {fileID: 1529582768}
+  - component: {fileID: 1529582769}
   m_Layer: 3
   m_Name: Client1
   m_TagString: Untagged
@@ -89016,6 +89385,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddaf1cece5e5b934a8a22cbcd68247b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NpcStateMachine
+--- !u!114 &1529582769
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1529582760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 1529582767}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!1 &1529990846
 GameObject:
   m_ObjectHideFlags: 0
@@ -91268,6 +91668,7 @@ GameObject:
   - component: {fileID: 1558340862}
   - component: {fileID: 1558340861}
   - component: {fileID: 1558340860}
+  - component: {fileID: 1558340863}
   m_Layer: 3
   m_Name: NPC_Milo
   m_TagString: Untagged
@@ -91343,6 +91744,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddaf1cece5e5b934a8a22cbcd68247b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NpcStateMachine
+--- !u!114 &1558340863
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1558340858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 1558340861}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!1 &1559902443
 GameObject:
   m_ObjectHideFlags: 0
@@ -102264,6 +102696,7 @@ GameObject:
   - component: {fileID: 1742861005}
   - component: {fileID: 1742861007}
   - component: {fileID: 1742861006}
+  - component: {fileID: 1742861008}
   m_Layer: 3
   m_Name: Receptionist
   m_TagString: Untagged
@@ -102378,6 +102811,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddaf1cece5e5b934a8a22cbcd68247b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NpcStateMachine
+--- !u!114 &1742861008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1742860998}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 1742861003}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!1001 &1743323386
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -103312,6 +103776,7 @@ GameObject:
   - component: {fileID: 1758385984}
   - component: {fileID: 1758385986}
   - component: {fileID: 1758385985}
+  - component: {fileID: 1758385987}
   m_Layer: 3
   m_Name: NPC_TutorialGuide
   m_TagString: Untagged
@@ -103373,6 +103838,37 @@ MonoBehaviour:
   visualRoot: {fileID: 1230587850}
   dialogueUI: {fileID: 1416291532}
   corkboardSideQuest: {fileID: 579630137}
+--- !u!114 &1758385987
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1758385983}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 1758385986}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!1001 &1760281188
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -104509,7 +105005,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -104524,8 +105020,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
-  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+    rgba: 4279899156
+  m_fontColor: {r: 0.08, g: 0.08, b: 0.1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -109232,8 +109728,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 515171271}
   m_HandleRect: {fileID: 515171270}
   m_Direction: 2
-  m_Value: 0
-  m_Size: 0.62497
+  m_Value: -0.00000061035155
+  m_Size: 0.625
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -123559,6 +124055,7 @@ GameObject:
   - component: {fileID: 2117401587}
   - component: {fileID: 2117401591}
   - component: {fileID: 2117401592}
+  - component: {fileID: 2117401593}
   m_Layer: 3
   m_Name: Client2
   m_TagString: Untagged
@@ -123620,6 +124117,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddaf1cece5e5b934a8a22cbcd68247b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NpcStateMachine
+--- !u!114 &2117401593
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2117401584}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 2117401591}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!1001 &2117956384
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -125633,3 +126161,4 @@ SceneRoots:
   - {fileID: 552808194}
   - {fileID: 1967822609}
   - {fileID: 434171630}
+  - {fileID: 263585192}

@@ -2,12 +2,13 @@ using UnityEngine;
 
 [RequireComponent(typeof(HighlightEffect))]
 [RequireComponent(typeof(NpcStateMachine))]
-public class ReceptionistInteractable : MonoBehaviour, IInteractable
+public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvailabilitySource
 {
     [SerializeField] private DialogueUI dialogueUI;
 
     private HighlightEffect highlight;
     private NpcStateMachine npcState;
+    private bool dialogueSessionActive;
 
     // Stores which case this receptionist has already spoken to.
     // This automatically allows interaction again when a new case loads.
@@ -17,6 +18,14 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
     {
         highlight = GetComponent<HighlightEffect>();
         npcState = GetComponent<NpcStateMachine>();
+    }
+
+    private void OnDisable()
+    {
+        if (dialogueSessionActive && dialogueUI != null)
+        {
+            dialogueUI.CancelDialogueFor(this);
+        }
     }
 
     public void OnFocus()
@@ -41,6 +50,8 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract()
     {
+        if (dialogueSessionActive) return;
+
         Debug.Log("[Receptionist] OnInteract started.");
 
         // ---------------------------------------------------------
@@ -121,19 +132,6 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
         );
 
         // ---------------------------------------------------------
-        // NPC STATE
-        // ---------------------------------------------------------
-
-        npcState.ChangeState(new NpcInteractState());
-        npcState.ChangeState(new NpcDialogueState());
-
-        // ---------------------------------------------------------
-        // LOCK PLAYER CONTROLS DURING CONVERSATION
-        // ---------------------------------------------------------
-
-        CameraController.Instance.LockPlayerControls();
-
-        // ---------------------------------------------------------
         // BUILD DIALOGUE
         // ---------------------------------------------------------
 
@@ -149,18 +147,28 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
                 $"for case '{def.caseId}'."
             );
 
-            OnConversationConcluded(def.caseId);
             return;
         }
 
-        dialogueUI.StartDialogue(
+        INpcState priorNpcState = npcState.CurrentState;
+        bool admitted = dialogueUI.TryStartDialogue(
             lines,
-            () => OnConversationConcluded(def.caseId)
+            () => OnConversationConcluded(def.caseId),
+            () => OnConversationCancelled(priorNpcState),
+            this
         );
+
+        if (!admitted) return;
+
+        dialogueSessionActive = true;
+        npcState.ChangeState(new NpcInteractState());
+        npcState.ChangeState(new NpcDialogueState());
     }
 
     private void OnConversationConcluded(string caseId)
     {
+        dialogueSessionActive = false;
+
         // Mark receptionist as spoken to for THIS case only.
         spokenForCaseId = caseId;
 
@@ -181,6 +189,30 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
         if (TutorialController.Instance != null)
         {
             TutorialController.Instance.ReportInteraction("receptionist");
+        }
+    }
+
+    private void OnConversationCancelled(INpcState priorNpcState)
+    {
+        dialogueSessionActive = false;
+
+        if (npcState == null) return;
+
+        npcState.ChangeState(priorNpcState is NpcCompletedState
+            ? priorNpcState
+            : new NpcIdleState());
+    }
+
+    /// <summary>T04 marker state: greets once per loaded case.</summary>
+    public NpcAvailability Availability
+    {
+        get
+        {
+            CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+            return NpcAvailabilityRules.Receptionist(
+                def != null,
+                def != null && def.receptionistGreeting != null && def.receptionistGreeting.Count > 0,
+                def != null && spokenForCaseId == def.caseId);
         }
     }
 

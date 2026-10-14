@@ -852,6 +852,93 @@ public class CameraController : MonoBehaviour
     // UNLOCK PLAYER CONTROLS
     // =============================================================
 
+    public bool CanStartDialogue => isActiveAndEnabled && CurrentMode == CameraMode.FirstPerson &&
+        activeTransition == null && profileViewerControls == null;
+
+    // T03 read-only accessors for the conversation presentation. Ownership of
+    // modes, controls and the camera stays here; nothing below changes state.
+    public Camera MainCamera
+    {
+        get
+        {
+            if (mainCamera == null) mainCamera = Camera.main;
+            return mainCamera;
+        }
+    }
+
+    public Transform PlayerRoot => playerMovement != null ? playerMovement.transform : null;
+
+    public FirstPersonHands Hands => firstPersonHands != null ? firstPersonHands : FirstPersonHands.Instance;
+
+    /// <summary>The view the first-person controller will resume when it is re-enabled.</summary>
+    public bool TryGetFirstPersonView(out Vector3 position, out Quaternion rotation)
+    {
+        FirstPersonCameraController controller = firstPersonCamera != null
+            ? firstPersonCamera
+            : MainCamera != null ? MainCamera.GetComponent<FirstPersonCameraController>() : null;
+        if (controller != null && controller.TryGetViewPose(out position, out rotation)) return true;
+        position = default;
+        rotation = Quaternion.identity;
+        return false;
+    }
+
+    /// <summary>Conversation-owned snapshot; does not alter the camera mode or viewpoint.</summary>
+    public System.Action AcquireDialogueControls()
+    {
+        Behaviour[] controls = {
+            firstPersonCamera,
+            mainCamera != null ? mainCamera.GetComponent<FirstPersonCameraController>() : null,
+            playerMovement, playerInteractor, workstationInteractor
+        };
+        bool[] enabledStates = new bool[controls.Length];
+        for (int i = 0; i < controls.Length; i++)
+            enabledStates[i] = controls[i] != null && controls[i].enabled;
+        bool movementVisible = virtualJoystick != null && virtualJoystick.gameObject.activeSelf;
+        bool lookVisible = lookJoystick != null && lookJoystick.gameObject.activeSelf;
+        CameraMode mode = CurrentMode;
+        CursorLockMode cursorLock = Cursor.lockState;
+        bool cursorVisible = Cursor.visible;
+        LockPlayerControls();
+        foreach (Behaviour control in controls)
+            if (control != null) control.enabled = false;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        // T03: freeze the gameplay body for the whole conversation so the
+        // restored first-person view matches where the player still stands.
+        // Only constraints/velocity change; the root, collider and scale do not.
+        Rigidbody body = playerMovement != null ? playerMovement.GetComponent<Rigidbody>() : null;
+        RigidbodyConstraints bodyConstraints = body != null ? body.constraints : RigidbodyConstraints.None;
+        if (body != null)
+        {
+            if (!body.isKinematic)
+            {
+                body.linearVelocity = Vector3.zero;
+                body.angularVelocity = Vector3.zero;
+            }
+            body.constraints = RigidbodyConstraints.FreezeAll;
+        }
+
+        bool released = false;
+        return () =>
+        {
+            if (released) return;
+            released = true;
+            // Body constraints belong to this conversation alone; restore them
+            // even when another mode has since taken the camera.
+            if (body != null) body.constraints = bodyConstraints;
+            // A different mode/transition has taken ownership; its own exit
+            // path decides when controls return, not this finished dialogue.
+            if (this == null || !isActiveAndEnabled || CurrentMode != mode || activeTransition != null) return;
+            for (int i = 0; i < controls.Length; i++)
+                if (controls[i] != null) controls[i].enabled = enabledStates[i];
+            if (virtualJoystick != null) virtualJoystick.SetVisible(movementVisible);
+            if (lookJoystick != null) lookJoystick.SetVisible(lookVisible);
+            Cursor.lockState = cursorLock;
+            Cursor.visible = cursorVisible;
+        };
+    }
+
     public void UnlockPlayerControls()
     {
         if (CurrentMode != CameraMode.FirstPerson)

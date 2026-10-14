@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="../../Assets/Scripts/UI/DialogueSession.cs" Link="DialogueSession.cs" />
+    <Compile Include="../../Assets/Scripts/Data/DialogueLine.cs" Link="DialogueLine.cs" />
+    <Compile Include="../../Assets/Scripts/Data/DialogueBuilder.cs" Link="DialogueBuilder.cs" />
+    <Compile Include="../../Assets/Scripts/SideQuest1/TownNpcDialogueLibrary.cs" Link="TownNpcDialogueLibrary.cs" />
+    <Compile Include="../../Assets/Scripts/SideQuest1/TaxpayerProfileData.cs" Link="TaxpayerProfileData.cs" />
+    <Compile Include="PresentationTests.cs" />
+    <Compile Include="../../Assets/Scripts/UI/DialogueTerminalHandoff.cs" Link="DialogueTerminalHandoff.cs" />
+    <Compile Include="../../Assets/Scripts/UI/DialogueAdvanceGate.cs" Link="DialogueAdvanceGate.cs" />
+    <Compile Include="../../Assets/Scripts/UI/DialogueRevealSchedule.cs" Link="DialogueRevealSchedule.cs" />
+    <Compile Include="../../Assets/Scripts/Player/DialogueShotMath.cs" Link="DialogueShotMath.cs" />
+    <Compile Include="../../Assets/Scripts/Player/DialogueCloseUpPolicy.cs" Link="DialogueCloseUpPolicy.cs" />
+    <Compile Include="NpcMarkerTests.cs" />
+    <Compile Include="../../Assets/Scripts/FSM/NPC/NpcAvailability.cs" Link="NpcAvailability.cs" />
+  </ItemGroup>
+</Project>

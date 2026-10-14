@@ -14,7 +14,27 @@ public static class TownNpcDialogueLibrary
 {
     public static List<DialogueLine> GetDialogueFor(string npcId, string npcDisplayName)
     {
+        return GetDialogueFor(npcId, npcDisplayName, out _);
+    }
+
+    /// <summary>
+    /// Returns true when this library actually authored lines for
+    /// <paramref name="npcId"/>. The placeholder fallback in
+    /// GetDialogueFor is itself a valid one-line conversation, so a caller
+    /// that advances quest progress on completion must check this instead
+    /// of assuming every returned list is real content.
+    /// </summary>
+    public static bool HasDialogueFor(string npcId)
+    {
+        GetDialogueFor(npcId, string.Empty, out bool recognized);
+        return recognized;
+    }
+
+    public static List<DialogueLine> GetDialogueFor(string npcId, string npcDisplayName,
+        out bool recognized)
+    {
         var builder = new DialogueBuilder(npcDisplayName);
+        recognized = true;
 
         switch (npcId)
         {
@@ -93,6 +113,7 @@ public static class TownNpcDialogueLibrary
                 break;
 
             default:
+                recognized = false;
                 builder.Npc("...");
                 break;
         }

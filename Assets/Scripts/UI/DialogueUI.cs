@@ -1,431 +1,469 @@
-
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
-/// PURPOSE:
-/// The single, reusable dialogue system for every NPC conversation in the
-/// game (Receptionist, Client interview, Client outcome, Auditor review,
-/// any future NPC).
+/// Shared conversation admission, presentation and completion/cancellation.
 ///
-/// RESPONSIBILITIES:
-/// - Show/hide the dialogue panel
-/// - Play a queue of DialogueLine entries one at a time via Continue
-/// - Display the correct speaker and portrait
-/// - Play NPC dialogue SFX whenever a new NPC line appears
-/// - Invoke a completion callback when the queue ends
-/// - Lock player controls for the full duration
+/// T02 lifecycle: one admitted session at a time, owner-scoped cancellation,
+/// once-only terminal callbacks.
 ///
-/// DOES NOT:
-/// - Know anything about which NPC is talking
-/// - Know what the conversation is about
-/// - Know what happens after the conversation
-///
-/// All of that is supplied by the caller through:
-/// StartDialogue(lines, onConcluded).
-///
-/// CONNECTS WITH:
-/// - CameraController.LockPlayerControls() / UnlockPlayerControls()
-/// - AudioManager.PlayNPCDialogueSFX()
-/// - DialoguePortraitDatabase
-/// - Any *Interactable script that needs a conversation
+/// T03 presentation:
+/// - Progressive TMP reveal over VISIBLE characters (rich-text tags are never
+///   typed), with sentence/clause pauses.
+/// - Box taps, the Continue button, submit and AdvanceDialogue() all go through
+///   one DialogueAdvanceGate: a gesture while typing reveals only the current
+///   line; a distinct later gesture advances or, on the last line, closes. The
+///   opening interaction and duplicate/near-simultaneous events are rejected.
+/// - An optional IDialoguePresentation (DialogueCameraDirector) frames shots.
+///   On end or cancel the panel hides, the presentation blends back to first
+///   person, and ONLY THEN are controls released and the completion or
+///   cancellation callback run (DialogueTerminalHandoff). While that return
+///   is running the conversation still counts as active, so no other
+///   conversation can start.
 /// </summary>
 public class DialogueUI : MonoBehaviour
 {
-    // =========================================================
-    // PANEL
-    // =========================================================
-
     [Header("Panel")]
-    [SerializeField]
-    private GameObject panelRoot;
-
-
-    // =========================================================
-    // PORTRAIT
-    // =========================================================
-
+    [SerializeField] private GameObject panelRoot;
     [Header("Portrait (left 25%)")]
-
-    [SerializeField]
-    private Image portraitImage;
-
-    [SerializeField]
-    private Sprite defaultPortraitPlaceholder;
-
-
-    // =========================================================
-    // DIALOGUE TEXT
-    // =========================================================
-
+    [SerializeField] private Image portraitImage;
+    [SerializeField] private Sprite defaultPortraitPlaceholder;
     [Header("Dialogue Text (right 75%)")]
-
-    [SerializeField]
-    private TextMeshProUGUI speakerNameText;
-
-    [SerializeField]
-    private TextMeshProUGUI dialogueText;
-
-
-    // =========================================================
-    // CONTINUE BUTTON
-    // =========================================================
-
+    [SerializeField] private TextMeshProUGUI speakerNameText;
+    [SerializeField] private TextMeshProUGUI dialogueText;
     [Header("Continue (bottom-right)")]
+    [SerializeField] private Button continueButton;
 
-    [SerializeField]
-    private Button continueButton;
+    [Header("Typewriter (T03)")]
+    [SerializeField] private bool useTypewriter = true;
+    [SerializeField, Range(5f, 120f)] private float charactersPerSecond = 40f;
+    [SerializeField, Range(0f, 1f)] private float sentencePause = 0.22f;
+    [SerializeField, Range(0f, 0.5f)] private float clausePause = 0.08f;
 
+    [Header("Backdrop (T03)")]
+    [Tooltip("Adds a rectangle behind the dialogue box so it stands out from the scene. The box, fonts and colours are unchanged.")]
+    [SerializeField] private bool showBackdrop = true;
+    [Tooltip("Backdrop colour. White frames the box; lower alpha makes it more transparent.")]
+    [SerializeField] private Color backdropColor = new Color(1f, 1f, 1f, 0.85f);
+    [Tooltip("How far the backdrop extends beyond the box on every side (canvas units).")]
+    [SerializeField, Range(0f, 60f)] private float backdropPadding = 10f;
+    [SerializeField] private bool backdropShadow = true;
 
-    // =========================================================
-    // INTERNAL STATE
-    // =========================================================
+    [Header("Gestures (T03)")]
+    [Tooltip("Seconds after a conversation opens during which taps are ignored, so the opening interaction cannot skip the first line.")]
+    [SerializeField, Range(0f, 0.6f)] private float openingGrace = 0.15f;
+    [Tooltip("Minimum seconds between two accepted gestures (tap + button, repeated submit).")]
+    [SerializeField, Range(0.02f, 0.5f)] private float minimumGestureInterval = 0.12f;
 
-    private List<DialogueLine> currentLines;
+    private const int AllCharactersVisible = 99999;
 
-    private int lineIndex;
+    private readonly DialogueSession session = new DialogueSession();
+    private readonly DialogueAdvanceGate gate = new DialogueAdvanceGate();
+    private readonly DialogueRevealSchedule reveal = new DialogueRevealSchedule();
+    private readonly DialogueTerminalHandoff handoff = new DialogueTerminalHandoff();
+    private static DialogueUI activeUI;
+    private UnityEngine.Object sessionOwner;
+    private bool hasSessionOwner;
+    private bool initialized;
+    private bool hidingSelf;
+    private Action releaseControls;
+    private int sessionVersion;
+    private IDialoguePresentation presentation;
+    private IDialoguePresentation sessionPresentation;
+    private IDialoguePresentation returningPresentation;
+    private char[] revealBuffer = new char[128];
+    private RectTransform backdrop;
+    private Image backdropImage;
 
-    private System.Action onConcluded;
+    /// <summary>True from admission until controls are released after the return.</summary>
+    public bool IsDialogueActive => session.IsActive || handoff.IsPending;
+    public static bool IsAnyDialogueActive => activeUI != null && activeUI.IsDialogueActive;
+    public bool CanStartDialogue => !IsAnyDialogueActive && CanShowPanel() &&
+        (CameraController.Instance == null || CameraController.Instance.CanStartDialogue) &&
+        (GameStateMachine.Instance == null || !GameStateMachine.Instance.IsPaused);
+    public DialogueLine CurrentLine => session.CurrentLine;
+    public UnityEngine.Object CurrentOwner => sessionOwner;
+    public int CurrentLineIndex => session.LineIndex;
+    /// <summary>True while the current line is still being typed out.</summary>
+    public bool IsLineTyping => session.IsActive && reveal.IsTyping;
+    /// <summary>True after the last line or a cancel, while the view returns to first person.</summary>
+    public bool IsReturning => handoff.IsPending;
+    public event Action DialogueStarted;
+    public event Action<DialogueLine> LineChanged;
+    /// <summary>Raised when the current line is fully visible (typed out or revealed by a tap).</summary>
+    public event Action<DialogueLine> LineRevealed;
+    public event Action<DialogueEndReason> DialogueEnded;
 
+    private void Awake() => Initialize();
 
-    // =========================================================
-    // UNITY
-    // =========================================================
-
-    private void Awake()
+    private void Initialize()
     {
-        Hide();
+        if (initialized) return;
+        initialized = true;
+        if (continueButton != null) continueButton.onClick.AddListener(OnContinuePressed);
+        EnsureBoxTapRelay();
+        SyncBackdrop();
+        HideSelf();
+    }
 
+    // The original scene puts this component on panelRoot itself, which is
+    // inactive between conversations. A direct start must be allowed to show it.
+    private bool CanShowPanel()
+    {
+        if (!enabled || panelRoot == null || continueButton == null || dialogueText == null) return false;
+        return gameObject.activeInHierarchy || (panelRoot == gameObject &&
+            (transform.parent == null || transform.parent.gameObject.activeInHierarchy));
+    }
 
-        if (continueButton != null)
+    // ------------------------------------------------------------------
+    // Presentation registration (DialogueCameraDirector)
+    // ------------------------------------------------------------------
+
+    public void RegisterPresentation(IDialoguePresentation value)
+    {
+        if (value != null) presentation = value;
+    }
+
+    public void UnregisterPresentation(IDialoguePresentation value)
+    {
+        if (ReferenceEquals(presentation, value)) presentation = null;
+    }
+
+    // ------------------------------------------------------------------
+    // Admission
+    // ------------------------------------------------------------------
+
+    public bool StartDialogue(List<DialogueLine> lines, Action onConcludedCallback,
+        Action onCancelled = null, UnityEngine.Object owner = null)
+        => TryStartDialogue(lines, onConcludedCallback, onCancelled, owner);
+
+    public bool TryStartDialogue(List<DialogueLine> lines, Action onCompleted,
+        Action onCancelled = null, UnityEngine.Object owner = null)
+    {
+        if (!CanStartDialogue) return false;
+        Initialize();
+        if (!CanShowPanel() || !session.TryStart(lines, onCompleted, onCancelled)) return false;
+        activeUI = this;
+        sessionOwner = owner;
+        hasSessionOwner = !ReferenceEquals(owner, null);
+        int startingVersion = ++sessionVersion;
+        gate.OpeningGrace = openingGrace;
+        gate.MinimumInterval = minimumGestureInterval;
+        gate.Open(Time.frameCount, Time.unscaledTime);
+        try
         {
-            continueButton.onClick.AddListener(
-                OnContinuePressed
-            );
+            if (CameraController.Instance != null)
+                releaseControls = CameraController.Instance.AcquireDialogueControls();
+
+            sessionPresentation = IsAlive(presentation) ? presentation : null;
+            if (sessionPresentation != null)
+            {
+                try { sessionPresentation.BeginConversation(owner); }
+                catch (Exception exception)
+                {
+                    // A broken presentation must never block the conversation itself.
+                    Debug.LogException(exception, this);
+                    SafeAbort(sessionPresentation);
+                    sessionPresentation = null;
+                }
+            }
+            if (!session.IsActive || sessionVersion != startingVersion) return false;
+
+            SyncBackdrop();
+            if (!panelRoot.activeSelf) panelRoot.SetActive(true);
+            if (!session.IsActive || sessionVersion != startingVersion) return false;
+            RenderCurrentLine();
+            if (!session.IsActive || sessionVersion != startingVersion) return false;
+            DialogueStarted?.Invoke();
+            return session.IsActive && sessionVersion == startingVersion;
         }
-        else
+        catch (Exception exception)
         {
-            Debug.LogWarning(
-                "[DialogueUI] Continue Button is not assigned."
-            );
+            Debug.LogException(exception, this);
+            if (sessionVersion == startingVersion) Finish(DialogueEndReason.Cancelled);
+            return false;
         }
     }
 
-
-    private void OnDestroy()
+    private void Update()
     {
-        if (continueButton != null)
+        if (session.IsActive && hasSessionOwner && sessionOwner == null)
         {
-            continueButton.onClick.RemoveListener(
-                OnContinuePressed
-            );
-        }
-    }
-
-
-    // =========================================================
-    // START DIALOGUE
-    // =========================================================
-
-    /// <summary>
-    /// Starts a sequential conversation.
-    ///
-    /// Player controls are locked for the entire duration.
-    /// </summary>
-    public void StartDialogue(
-        List<DialogueLine> lines,
-        System.Action onConcludedCallback
-    )
-    {
-        // -----------------------------------------------------
-        // Validate dialogue data.
-        // -----------------------------------------------------
-
-        if (lines == null ||
-            lines.Count == 0)
-        {
-            Debug.LogWarning(
-                "[DialogueUI] StartDialogue() received " +
-                "an empty dialogue list."
-            );
-
-            onConcludedCallback?.Invoke();
-
+            CancelDialogue();
             return;
         }
 
-
-        // -----------------------------------------------------
-        // Store dialogue.
-        // -----------------------------------------------------
-
-        currentLines =
-            lines;
-
-        lineIndex =
-            0;
-
-        onConcluded =
-            onConcludedCallback;
-
-
-        // -----------------------------------------------------
-        // Lock player controls.
-        // -----------------------------------------------------
-
-        if (CameraController.Instance != null)
+        if (session.IsActive && reveal.IsTyping)
         {
-            CameraController.Instance
-                .LockPlayerControls();
+            int visible = reveal.Tick(Time.unscaledDeltaTime);
+            if (dialogueText != null) dialogueText.maxVisibleCharacters = visible;
+            if (!reveal.IsTyping) OnLineFullyRevealed();
         }
-        else
-        {
-            Debug.LogWarning(
-                "[DialogueUI] " +
-                "CameraController.Instance is NULL."
-            );
-        }
-
-
-        // -----------------------------------------------------
-        // Show panel.
-        // -----------------------------------------------------
-
-        if (panelRoot != null)
-        {
-            panelRoot.SetActive(true);
-        }
-        else
-        {
-            Debug.LogError(
-                "[DialogueUI] " +
-                "Panel Root is NOT assigned."
-            );
-        }
-
-
-        // -----------------------------------------------------
-        // Render first line.
-        // -----------------------------------------------------
-
-        RenderCurrentLine();
     }
-
-
-    // =========================================================
-    // RENDER CURRENT LINE
-    // =========================================================
 
     private void RenderCurrentLine()
     {
-        // -----------------------------------------------------
-        // Safety checks.
-        // -----------------------------------------------------
-
-        if (currentLines == null ||
-            currentLines.Count == 0)
-        {
-            return;
-        }
-
-
-        if (lineIndex < 0 ||
-            lineIndex >= currentLines.Count)
-        {
-            return;
-        }
-
-
-        DialogueLine line =
-            currentLines[lineIndex];
-
-
-        // -----------------------------------------------------
-        // SPEAKER NAME
-        // -----------------------------------------------------
-
+        DialogueLine line = session.CurrentLine;
+        if (line == null) return;
         if (speakerNameText != null)
-        {
-            speakerNameText.text =
-                line.Speaker == DialogueSpeaker.Player
-                    ? "You"
-                    : line.SpeakerName;
-        }
-
-
-        // -----------------------------------------------------
-        // DIALOGUE TEXT
-        // -----------------------------------------------------
-
-        if (dialogueText != null)
-        {
-            dialogueText.text =
-                line.Text;
-        }
-
-
-        // -----------------------------------------------------
-        // PORTRAIT
-        // -----------------------------------------------------
-
+            speakerNameText.text = line.Speaker == DialogueSpeaker.Player ? "You" : line.SpeakerName;
+        dialogueText.text = line.Text;
         if (portraitImage != null)
         {
-            Sprite portrait = null;
-
-
-            if (DialoguePortraitDatabase.Instance != null)
-            {
-                portrait =
-                    DialoguePortraitDatabase.Instance
-                        .GetPortrait(
-                            line.PortraitId
-                        );
-            }
-
-
-            portraitImage.sprite =
-                portrait != null
-                    ? portrait
-                    : defaultPortraitPlaceholder;
+            Sprite portrait = DialoguePortraitDatabase.Instance != null
+                ? DialoguePortraitDatabase.Instance.GetPortrait(line.PortraitId) : null;
+            portraitImage.sprite = portrait != null ? portrait : defaultPortraitPlaceholder;
         }
+        if (line.Speaker != DialogueSpeaker.Player && AudioManager.Instance != null)
+            AudioManager.Instance.PlayNPCDialogueSFX();
 
+        BeginReveal();
 
-        // =====================================================
-        // NPC DIALOGUE SFX
-        // =====================================================
-        //
-        // Play the sound ONLY for NPC dialogue.
-        //
-        // Player lines do not trigger the NPC voice sound.
-        //
-        // This means every NPC automatically gets the sound:
-        //
-        // Receptionist → 🔊
-        // Client       → 🔊
-        // Auditor      → 🔊
-        // Future NPC   → 🔊
-        //
-        // No changes are required in their Interactable scripts.
-        // =====================================================
-
-        if (line.Speaker != DialogueSpeaker.Player)
+        if (IsAlive(sessionPresentation))
         {
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance
-                    .PlayNPCDialogueSFX();
-            }
-            else
-            {
-                Debug.LogWarning(
-                    "[DialogueUI] " +
-                    "AudioManager.Instance is NULL. " +
-                    "NPC dialogue SFX could not be played."
-                );
-            }
+            try { sessionPresentation.ShowLine(line, session.LineIndex); }
+            catch (Exception exception) { Debug.LogException(exception, this); }
         }
+        LineChanged?.Invoke(line);
     }
 
+    // ------------------------------------------------------------------
+    // Typewriter
+    // ------------------------------------------------------------------
 
-    // =========================================================
-    // CONTINUE
-    // =========================================================
-
-    private void OnContinuePressed()
+    private void BeginReveal()
     {
-        // -----------------------------------------------------
-        // Safety check.
-        // -----------------------------------------------------
-
-        if (currentLines == null ||
-            currentLines.Count == 0)
+        if (!useTypewriter || dialogueText == null)
         {
-            ConcludeDialogue();
-
+            reveal.Clear();
+            if (dialogueText != null) dialogueText.maxVisibleCharacters = AllCharactersVisible;
             return;
         }
 
+        // TMP parses rich text; characterInfo holds only what is rendered, so
+        // tags are never typed and maxVisibleCharacters maps 1:1 to the schedule.
+        dialogueText.maxVisibleCharacters = 0;
+        dialogueText.ForceMeshUpdate();
+        TMP_TextInfo info = dialogueText.textInfo;
+        int count = info != null ? info.characterCount : 0;
+        if (revealBuffer.Length < count) revealBuffer = new char[Math.Max(count, revealBuffer.Length * 2)];
+        for (int i = 0; i < count; i++) revealBuffer[i] = info.characterInfo[i].character;
+        reveal.Begin(revealBuffer, count, charactersPerSecond, sentencePause, clausePause);
+        if (!reveal.IsTyping) OnLineFullyRevealed();
+    }
 
-        // -----------------------------------------------------
-        // Move to next line.
-        // -----------------------------------------------------
+    private void OnLineFullyRevealed()
+    {
+        if (dialogueText != null) dialogueText.maxVisibleCharacters = AllCharactersVisible;
+        DialogueLine line = session.CurrentLine;
+        if (line != null) LineRevealed?.Invoke(line);
+    }
 
-        lineIndex++;
+    // ------------------------------------------------------------------
+    // Gestures: every route converges here
+    // ------------------------------------------------------------------
 
+    private void OnContinuePressed() => HandleGesture();
 
-        // -----------------------------------------------------
-        // End of dialogue.
-        // -----------------------------------------------------
+    /// <summary>Called by DialogueBoxTapRelay for a tap on the dialogue box.</summary>
+    public void HandleBoxTap() => HandleGesture();
 
-        if (lineIndex >= currentLines.Count)
+    /// <summary>
+    /// One advance gesture. While the line is typing it reveals the line; otherwise
+    /// it advances, or ends the conversation on the last line.
+    /// </summary>
+    public void AdvanceDialogue() => HandleGesture();
+
+    private void HandleGesture()
+    {
+        if (!session.IsActive) return;
+        switch (gate.Evaluate(Time.frameCount, Time.unscaledTime, reveal.IsTyping))
         {
-            ConcludeDialogue();
+            case DialogueGesture.RevealLine:
+                reveal.RevealAll();
+                OnLineFullyRevealed();
+                break;
+            case DialogueGesture.Advance:
+                if (!session.TryAdvance(out bool completed)) return;
+                if (completed) Finish(DialogueEndReason.Completed);
+                else RenderCurrentLine();
+                break;
+        }
+    }
 
+    // ------------------------------------------------------------------
+    // Termination: hide → presentation return → release → callback
+    // ------------------------------------------------------------------
+
+    public void CancelDialogue() => Finish(DialogueEndReason.Cancelled);
+
+    public bool CancelDialogueFor(UnityEngine.Object owner)
+    {
+        if (!session.IsActive || !hasSessionOwner || !ReferenceEquals(sessionOwner, owner)) return false;
+        Finish(DialogueEndReason.Cancelled);
+        return true;
+    }
+
+    private void Finish(DialogueEndReason reason)
+    {
+        if (!session.TryEnd(reason, out Action callback)) return;
+        int version = sessionVersion;
+        sessionOwner = null;
+        hasSessionOwner = false;
+        gate.Close();
+        reveal.Clear();
+        Action release = releaseControls;
+        releaseControls = null;
+        IDialoguePresentation returning = sessionPresentation;
+        sessionPresentation = null;
+        HideSelf();
+
+        if (!handoff.Begin(version, () => CompleteFinish(reason, release, callback)))
+        {
+            // Defensive: never strand controls or callbacks.
+            CompleteFinish(reason, release, callback);
             return;
         }
 
-
-        // -----------------------------------------------------
-        // Display next line.
-        // -----------------------------------------------------
-
-        RenderCurrentLine();
+        bool waiting = false;
+        if (IsAlive(returning))
+        {
+            returningPresentation = returning;
+            try { waiting = returning.BeginReturn(reason, () => handoff.Complete(version)); }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+                SafeAbort(returning);
+                waiting = false;
+            }
+        }
+        if (!waiting) handoff.Complete(version);
     }
 
-
-    // =========================================================
-    // CONCLUDE DIALOGUE
-    // =========================================================
-
-    private void ConcludeDialogue()
+    private void CompleteFinish(DialogueEndReason reason, Action release, Action callback)
     {
-        Hide();
-
-
-        // -----------------------------------------------------
-        // Unlock player controls.
-        // -----------------------------------------------------
-
-        if (CameraController.Instance != null)
-        {
-            CameraController.Instance
-                .UnlockPlayerControls();
-        }
-
-
-        // -----------------------------------------------------
-        // Save callback locally before clearing it.
-        // -----------------------------------------------------
-
-        System.Action callback =
-            onConcluded;
-
-        onConcluded =
-            null;
-
-        currentLines =
-            null;
-
-
-        // -----------------------------------------------------
-        // Notify caller.
-        // -----------------------------------------------------
-
-        callback?.Invoke();
+        returningPresentation = null;
+        if (activeUI == this) activeUI = null;
+        release?.Invoke();
+        try { callback?.Invoke(); }
+        finally { DialogueEnded?.Invoke(reason); }
     }
 
+    // ------------------------------------------------------------------
+    // Visibility and teardown
+    // ------------------------------------------------------------------
 
-    // =========================================================
-    // HIDE
-    // =========================================================
-
-    private void Hide()
+    private void HideSelf()
     {
-        if (panelRoot != null)
+        // Skip while Unity is already deactivating the panel (activeSelf is false
+        // then); calling SetActive again from OnDisable is not allowed.
+        if (panelRoot == null || !panelRoot.activeSelf) return;
+        hidingSelf = true;
+        try { panelRoot.SetActive(false); }
+        finally { hidingSelf = false; }
+    }
+
+    /// <summary>
+    /// Keeps a plain rectangle directly behind the dialogue box, matching its
+    /// layout plus padding. Created at runtime (no scene edit), raycast-transparent,
+    /// and hidden with the panel because it is the box's sibling.
+    /// </summary>
+    private void SyncBackdrop()
+    {
+        RectTransform box = dialogueText != null ? dialogueText.transform.parent as RectTransform : null;
+        bool usable = showBackdrop && box != null && box.parent != null &&
+                      (panelRoot == null || box != panelRoot.transform);
+        if (!usable)
         {
-            panelRoot.SetActive(false);
+            if (backdrop != null) backdrop.gameObject.SetActive(false);
+            return;
         }
+
+        if (backdrop == null)
+        {
+            var go = new GameObject("DialogueBackdrop", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            go.layer = box.gameObject.layer;
+            backdrop = (RectTransform)go.transform;
+            backdrop.SetParent(box.parent, false);
+            backdropImage = go.GetComponent<Image>();
+            backdropImage.raycastTarget = false;
+            Image boxImage = box.GetComponent<Image>();
+            if (boxImage != null)
+            {
+                backdropImage.sprite = boxImage.sprite;
+                backdropImage.type = boxImage.type;
+                backdropImage.pixelsPerUnitMultiplier = boxImage.pixelsPerUnitMultiplier;
+            }
+            if (backdropShadow)
+            {
+                Shadow shadow = go.AddComponent<Shadow>();
+                shadow.effectColor = new Color(0f, 0f, 0f, 0.35f);
+                shadow.effectDistance = new Vector2(4f, -4f);
+            }
+        }
+
+        backdrop.gameObject.SetActive(true);
+        int boxIndex = box.GetSiblingIndex();
+        int backdropIndex = backdrop.GetSiblingIndex();
+        if (backdropIndex != boxIndex - 1)
+            backdrop.SetSiblingIndex(backdropIndex < boxIndex ? boxIndex - 1 : boxIndex);
+
+        backdrop.anchorMin = box.anchorMin;
+        backdrop.anchorMax = box.anchorMax;
+        backdrop.pivot = box.pivot;
+        backdrop.localScale = box.localScale;
+        backdrop.localRotation = box.localRotation;
+        backdrop.sizeDelta = box.sizeDelta + Vector2.one * (2f * backdropPadding);
+        backdrop.anchoredPosition = box.anchoredPosition + (box.pivot * 2f - Vector2.one) * backdropPadding;
+        backdropImage.color = backdropColor;
+    }
+
+    private void EnsureBoxTapRelay()
+    {
+        if (dialogueText == null) return;
+        Transform box = dialogueText.transform.parent;
+        if (box == null || box.GetComponent<Graphic>() == null)
+            box = panelRoot != null ? panelRoot.transform : null;
+        if (box == null) return;
+        DialogueBoxTapRelay relay = box.GetComponent<DialogueBoxTapRelay>();
+        if (relay == null) relay = box.gameObject.AddComponent<DialogueBoxTapRelay>();
+        relay.Bind(this);
+    }
+
+    private void OnDisable()
+    {
+        // Our own hide disables this component (it lives on panelRoot); that is
+        // not a cancellation. Any other disable cancels the active conversation;
+        // the presentation still returns the view before callbacks run.
+        if (hidingSelf) return;
+        CancelDialogue();
+    }
+
+    private void OnDestroy()
+    {
+        CancelDialogue();
+        if (handoff.IsPending)
+        {
+            // Teardown: the blend cannot be trusted to finish.
+            SafeAbort(returningPresentation);
+            returningPresentation = null;
+            handoff.ForceComplete();
+        }
+        if (activeUI == this) activeUI = null;
+        if (initialized && continueButton != null)
+            continueButton.onClick.RemoveListener(OnContinuePressed);
+    }
+
+    private static bool IsAlive(IDialoguePresentation value) =>
+        value != null && !(value is UnityEngine.Object unityObject && unityObject == null);
+
+    private void SafeAbort(IDialoguePresentation value)
+    {
+        if (!IsAlive(value)) return;
+        try { value.AbortConversation(); }
+        catch (Exception exception) { Debug.LogException(exception, this); }
     }
 }

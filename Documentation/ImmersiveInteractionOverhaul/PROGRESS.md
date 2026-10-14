@@ -1,71 +1,64 @@
 # Progress and continuation
 
-Last updated: 2026-10-14. Current work unit: **T01 implemented; awaiting user Unity setup/manual acceptance**. Branch: `feat/immersive-interaction-overhaul`, clean at T01 entry. No Git write actions performed.
+## T03 implemented (all four checkpoints) — 2026-10-15
 
-## T01 delivered
+The user asked for the whole ticket ("do ticket 3", internal tests only, user does Unity testing), so the four checkpoints were delivered together.
 
-- Single-pointer, dead-zone/sensitivity-aware movement joystick, immediate logical release and eased thumb feedback.
-- User follow-up replaces LOOK stick with right-75%-screen swipe in FP/TP cameras, excluding UI. MOVE grows from 240 to 280 and moves from (180,180) to (260,240). Setup disables the old LOOK object and clears its owner reference.
-- World touch actions wait for native tap release; swipes do not activate on touch-down. Desktop mouse interaction remains press-based. User's saved scene edits are preserved; menu rerun/save applies revised settings.
-- Fresh UI hit guards and capture/release-frame isolation for world interaction, paired movement/look visibility in existing camera lock paths.
-- Safe-area control layout plus **Tools > TaxVenture > Configure Mobile Controls** Editor command; user must run it in Office_Level1 and save the open scene. No scene/prefab/model/material asset edits were made externally.
-- New production response regression in `Tests/ControlsRegression`.
+During an admitted NPC conversation only, the game now:
 
-T01 checks: runtime C# compiled against installed Unity references with Editor/Standalone defines; Editor setup tool compiled separately; **5,734 production analog-response assertions passed**; source review and diff checks passed. Review findings (center-stick drift and mouse release-frame leakage) were corrected. Pointer routing, menu execution/idempotency/Undo, visual quality, safe areas, full interaction locks and Android multi-touch remain **NOT RUN**, for the user to test.
+- shows a grounded, standing Elijah built from the existing idle model,
+- frames shot/reverse-shot over the correct shoulders, with obstruction fallbacks,
+- uses a compact bottom safe-area panel with a typewriter and a single reveal/advance gesture gate,
+- returns to the exact captured first-person view before controls are released and outcomes run.
 
-Actual runtime files: `VirtualJoystick.cs`, `JoystickInputMath.cs`, `MobileInputGuard.cs`, `MobileControlsSafeArea.cs`; `PlayerMovement.cs`, `FirstPersonCameraController.cs`, `ThirdPersonCameraFollow.cs`, `CameraController.cs`, `Interactor.cs`, `WorkstationInteractor.cs`; input guards only in `TaxpayerNpcInteractable.cs`, `TutorialNpcController.cs`, `TaxpayerProfileWorldPickup.cs`. New Editor tool: `Assets/Editor/MobileControlsSetup.cs`. New scripts have .meta files; no packages changed. Existing profile-viewer code, card sizing, quest/dialogue callbacks and model files were preserved.
+Exploration and T01 are unchanged.
 
-## Earlier planning session (historical baseline)
+Code is complete, but the scene is not configured yet. The user runs **Tools > TaxVenture > Configure Dialogue Presentation** once in Edit mode, then saves the scene. Until then conversations behave exactly as T02 plus the typewriter. No scene, prefab, importer, data or Git change was made by the agent.
 
-- Inspected the repository root/branch/status, live mobile/movement/camera scripts, interaction adapters, NPC/dialogue paths, paper viewer, scene wiring, package/input settings and character import metadata.
-- Created this documentation folder, six shared documents and all eight named tickets; no duplicate Unity project.
-- Defined existing-system reuse, camera/control ownership, pointer routing, dialogue outcomes, test boundaries, dependency order, agent ownership and stop gates.
-- Recorded the user's main-character decision: **Elijah**. Located static/idle/walking FBXs and texture under `Assets/3D Models/npc_elijah/`; documented Generic/Humanoid mismatch and non-looping walking metadata for T02.
-- Preserved existing paper-viewer modifications. No gameplay, scene, prefab, model, material, animation controller or package changes are authorized for this first session.
+Updated 2026-10-15. Current unit: **T03 implementation and internal verification — complete; user setup and Unity acceptance pending.** T02's own manual acceptance is also still pending.
 
-## Ticket status
+## T04 implemented — 2026-10-15
+
+NPC markers are in: an amber pulsing triangle for available, a green check for completed, and nothing when unavailable, during any conversation, in other camera modes, out of range or occluded. Every NPC interactable reports `Availability` through pure `NpcAvailabilityRules` that mirror its own rules: receptionist per case, client interview and later presentation, auditor resume, four independent taxpayers, guide phases. The user runs **Tools > TaxVenture > Configure NPC Markers** once and saves the scene. Unity compile 0 errors; 796 assertions pass. Not run in Unity. Details are in the T04 ticket.
+
+## T03 revision 1 — 2026-10-15
+
+On user request, camera changes are now instant cuts (the blends are commented out for easy restore), the over-the-shoulder angle is wider (side offset 0.40, migrated automatically in saved scenes), a white 85%-opacity backdrop sits behind the dialogue box, and content-driven or intentional solo close-ups were added (`DialogueCloseUpPolicy`, `DialogueBuilder.CloseUp()`). The Unity compile has 0 errors and 757 assertions pass. Not run in Unity. Details are in the T03 ticket under "Revision 1".
+
+## Status
 
 | Ticket | State | Next condition |
 |---|---|---|
-| T01 | Code implemented; manual acceptance pending | User runs Unity setup/save and T01 test checklist |
-| T02 | Planned | T01 accepted and explicit approval; separately approve follow/collision/Elijah checkpoints |
-| T03 | Planned | T02 compatibility foundation accepted |
-| T04 | Planned | Shared camera/control lifecycle accepted |
-| T05 | Planned | T04 events and Elijah visual/targets ready |
-| T06 | Planned | Truthful availability/completion contract from T04 |
-| T07 | Planned | T01-T06 integrated |
-| T08 | Planned | T07 accepted; run/document final matrix |
+| T01 | Implemented/retained | Record remaining user Unity/device acceptance |
+| T02 | Phases 1 and 2 implemented; internal checks passed; manual acceptance pending | User runs the T02 manual matrix |
+| T03 | **All four checkpoints implemented; internal checks passed; setup and manual acceptance pending** | User runs the setup menu, the preview and the T03 manual matrix |
+| T04 | **Implemented; internal checks passed; setup and manual acceptance pending** | User runs Configure NPC Markers and the T04 matrix |
+| T05 | Planned: integration and safe input returns | T01–T04 accepted and explicit approval |
+| T06 | Planned: regression/handoff | T05 accepted and approval |
 
-## Evidence log
+## Retained T01
 
-| Check | Result / scope |
-|---|---|
-| Git branch/status inspection | `bug-fixes...origin/bug-fixes`; two pre-existing modified runtime files listed below |
-| Source/package/scene/metadata inspection | Performed; findings in CURRENT_STATE; no claim of live gameplay behavior |
-| Documentation file completeness, local links and diff hygiene | PASS: 14 expected Markdown files, eight ticket structures, 13 local links; whitespace cleanup and tracked diff check passed |
-| Preservation of existing runtime edits | PASS: SHA-256 hashes of both pre-existing modified runtime files matched planning-entry hashes byte for byte; final Git status adds only Documentation/ |
-| C# compilation during this documentation session | NOT RUN: no gameplay code changed |
-| Unity EditMode/PlayMode/device regression | NOT RUN: documentation-only session; leave manual/device acceptance for ticket work |
-| Earlier paper viewer work | Direct C# compile + geometry/timing calculations passed in prior work; user confirmed Phase 3 working. Phase 4/5 full manual acceptance not recorded |
+Single-pointer analog MOVE, dead zones/sensitivity, larger inward/upward layout (280/112, center 260/240), right-75%-screen UI-excluded swipe with no LOOK stick, press/return feedback, capture/release/focus reset, tap-on-release guards, safe-area support and Undo-capable setup. Existing paper/quest behavior is preserved.
 
-Existing modified files at original planning entry (subsequently committed by user before T01):
-- `Assets/Scripts/Player/CameraController.cs`
-- `Assets/Scripts/SideQuest1/CollectedProfilesWorldPanel.cs`
+## Evidence
 
-## Known issues and unresolved verification
+- PASS: **full-project compilation against the real Unity 6000.4.5f1 assemblies** (the installed `Editor/Data/Managed` and `NetStandard` folders, the project's generated `.csproj` source lists, defines and references, and `Library/ScriptAssemblies` package DLLs). The unmodified project compiles with 0 errors for both runtime and Editor, which validates the harness. With T03 swapped in, 0 errors and only the 2 baseline warnings. The Editor build used .NET Standard facades instead of Unity's .NET Framework profile.
+- PASS: **610 production contract assertions** (`Tests/DialogueRegression`): 311 T02 plus 299 T03 covering terminal handoff ordering, the gesture gate including a rapid-tap walkthrough, typewriter timing and the shot/reverse-shot geometry across 24 configurations.
+- PASS: scoped diff. The on-disk content of all 17 written files hash-matches what was compiled and tested. Existing files changed additively except `DialogueUI.cs`. Line endings follow each file's convention.
+- PASS: static asset inspection. The Elijah FBX files are in centimetres, Y up, an armless/legless stylised figure about 6.7 m tall at import scale; the idle clip is 7.57 s and the rig is Generic with no avatar.
+- PASS (T02): 311 assertions and the Phase 2 scene verification as recorded in the T02 ticket. PASS (T01): 5,734 controls assertions.
+- NOT RUN by agent: the setup menu, Edit-mode preview, Play mode, shots, typewriter, taps, return and input restoration, outcomes, Android, safe areas or devices. Internal checks are not gameplay tests.
 
-- Default exploration is first person; third-person script is not wired in Office_Level1. No enabled humanoid player visual was found there.
-- Elijah static/idle import as Generic, walking as Humanoid; walking clip has loopTime 0. No rig/loop/controller fix has been attempted.
-- T01 addresses pointer ownership/dead zones/analog strength/swipe look, but the revised Editor setup and actual feel still need user acceptance. Level2 has older camera serialization and is not migrated here.
-- Shared DialogueUI has no typewriter and can overwrite an active queue/callback. Receptionist empty-content/pre-lock behavior is a lock risk.
-- NPC state-color feedback is not the requested overhead available/completed presentation.
-- Old audit reports global FSM/startup/retry issues; duplicate audit start calls remain in current source. Runtime impact/reproduction is unverified; these are not blanket scope for unrelated fixes.
-- Device performance, asset/license evidence, avatar/clip compatibility, screen safe areas, and camera collision remain unverified.
+## Limits and next action
 
-## Exact next action
+Office_Level2 is unverified and unconfigured (the setup menu is per scene). Historical tutorial and progression warnings are out of scope. Known T03 risks are listed in the T03 ticket: facing sign, Generic clip sampling without an avatar, NPC bounds that include props, and the intended 0.45 s wait before outcomes. The compile check left two archives (about 22 MB) in the git-ignored `Library` folder, and they can be deleted.
 
-**User:** stop Play mode, open Office_Level1, wait for compilation, run **Tools > TaxVenture > Configure Mobile Controls**, press **Ctrl+S**, then follow T01's manual checklist and report results. Agents must wait; do not start T02 automatically. User handles commits/pushes after testing.
+User next:
 
-After T01 acceptance/explicit approval, next-unit estimate: **T02a follow/ownership 8k-12k tokens**. Full T02 remains **16k-28k**; split follow, collision and Elijah/animation into approved checkpoints. Rig and legacy scene compatibility are the main uncertainties; no reliable account-percentage conversion is available.
+1. Let Unity compile.
+2. In `Office_Level1` (Edit mode) run **Configure Dialogue Presentation** and read its report.
+3. Run **Toggle Conversation Visual Preview** to check grounding, scale and facing.
+4. Save the scene.
+5. Run the T02 and T03 manual matrices. Report Console errors, screenshots of any bad shot, and the NPC or route.
 
-Planning validation corrected a missing Verification heading in T08, then reran successfully. No gameplay error was encountered or repaired during this session.
+Agent next only on explicit approval: **T04 NPC indicators**. Read truthful availability from the existing NPC FSMs and the read-only status properties T02 added (`HasBeenTalkedTo`, `IsInConversation`, `HasAppeared`, `HasStartedSideQuest`), hide markers while `DialogueUI.IsAnyDialogueActive`, and add no click-stealing colliders. Rough estimate **8k–14k tokens**; the main uncertainties are the office NPCs' case-dependent availability and marker placement.

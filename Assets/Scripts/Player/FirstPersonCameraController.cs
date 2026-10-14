@@ -230,6 +230,24 @@ public class FirstPersonCameraController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// The exact pose this controller writes in normal first-person mode. Used by
+    /// the conversation presentation to return precisely to it before input resumes.
+    /// </summary>
+    public bool TryGetViewPose(out Vector3 position, out Quaternion rotation)
+    {
+        if (player == null)
+        {
+            position = default;
+            rotation = Quaternion.identity;
+            return false;
+        }
+
+        position = player.position + Vector3.up * cameraHeight;
+        rotation = Quaternion.Euler(pitch, yaw, 0f);
+        return true;
+    }
+
     public void ResetLook()
     {
         if (player == null)

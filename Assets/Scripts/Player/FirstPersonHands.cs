@@ -46,6 +46,12 @@ public class FirstPersonHands : MonoBehaviour
         HideCarriedDocument();
     }
 
+    /// <summary>Whether the hands are currently visible (captured before a conversation hides them).</summary>
+    public bool IsShowing => handsRoot != null && handsRoot.activeSelf;
+
+    /// <summary>Whether the carried document is currently visible.</summary>
+    public bool IsShowingCarriedDocument => carriedDocumentVisual != null && carriedDocumentVisual.activeSelf;
+
     public void Show()
     {
         if (handsRoot != null) handsRoot.SetActive(true);
