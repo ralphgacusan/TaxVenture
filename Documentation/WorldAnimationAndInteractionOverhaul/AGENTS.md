@@ -2,7 +2,7 @@
 
 ## Current user scope and stop point (2026-10-15)
 
-Only `Assets/Scenes/Office_Level1.unity` is in scope. Disregard Office_Level1_COPY and Office_Level2 for this initiative. Ticket 01 is complete (walking deferred); Ticket 02 is complete; do not start Ticket 03 until the user asks; do not start another ticket until the user explicitly asks. Read `handoffs/TICKET-01_CODE_COMPLETE.md` before the next implementation session. The user does all git actions and Play Mode testing.
+Only `Assets/Scenes/Office_Level1.unity` is in scope. Disregard Office_Level1_COPY and Office_Level2 for this initiative. Tickets 01-04 are complete (walking deferred). Before Ticket 05, read Ticket 04 sections 15-19 and `handoffs/TICKET-04_WORK_LOG.md`; Ticket 05 overlaps work already done there. Do not start Ticket 05 or another ticket until the user explicitly asks. The user does all git actions and Play Mode testing.
 
 Before any work, read `README.md`, `AGENTS.md`, `PROGRESS.md`, `DECISIONS.md`, and the active ticket. Read `PROJECT_AUDIT.md` when the task depends on the initial inventory. Inspect the actual Unity project and current Git state before editing. Identify the current implementation phase and completed acceptance criteria.
 

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
@@ -354,8 +355,18 @@ public class CaseFolderFieldRow :
         // Update Label
         // -----------------------------------------------------
 
+        bool isBlank =
+            !hasValue ||
+            currentValue == null;
+
         labelText.text =
-            $"{label}: {displayValue}";
+            PaperInkStyle.FieldText(label, displayValue, isBlank);
+
+        // Printed-form presentation; data and drop behaviour are unchanged.
+        Image rowImage = GetComponent<Image>();
+        if (rowImage == null)
+            rowImage = GetComponentInChildren<Image>(true);
+        PaperInkStyle.StyleFieldRow(rowImage, labelText, isDestination, highlighter, typeFeedback);
     }
 
     // ---------------------------------------------------------

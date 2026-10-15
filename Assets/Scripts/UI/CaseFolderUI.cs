@@ -69,6 +69,22 @@ public class CaseFolderUI : MonoBehaviour
     [SerializeField] private Transform page7FieldRowListRoot;
     [SerializeField] private GameObject page7FieldRowsContainer;
 
+    [Header("Page Layout")]
+    [Tooltip("Width of the centred content column (heading, rows, document links) on the paper.")]
+    [SerializeField, Min(100f)] private float contentWidth = 760f;
+
+    private bool layoutCentred;
+
+    [Header("Page Turn")]
+    [Tooltip("Rect flipped when the page changes. Defaults to the heading's parent (the paper).")]
+    [SerializeField] private RectTransform pageTurnRoot;
+    [SerializeField, Min(0f)] private float pageTurnDuration = 0.26f;
+
+    private Coroutine pageTurnRoutine;
+    private bool hasPageTurnRest;
+    private Quaternion pageTurnRestRotation;
+    private Vector3 pageTurnRestScale;
+
     private List<CaseFolderFieldRow> page1Rows = new List<CaseFolderFieldRow>();
     private List<CaseFolderFieldRow> page2FixedRows = new List<CaseFolderFieldRow>();
     private List<CaseFolderFieldRow> page2Rows = new List<CaseFolderFieldRow>();
@@ -101,6 +117,11 @@ public class CaseFolderUI : MonoBehaviour
             swipeToClose.OnSwipeClosed += Hide;
 
 
+    }
+
+    private void OnDisable()
+    {
+        StopPageTurn();
     }
 
     // ============================================================
@@ -159,6 +180,7 @@ public class CaseFolderUI : MonoBehaviour
         );
 
         // Reset to the first page.
+        StopPageTurn();
         currentPageIndex = Page1Index;
 
         // Render the first page before showing the panel.
@@ -166,6 +188,8 @@ public class CaseFolderUI : MonoBehaviour
 
         // Directly show the UI panel.
         folderPanelRoot.SetActive(true);
+        PrintedPaperStyle.Apply(GetPageTurnRoot(), headingText, bodyText, pageIndicatorText);
+        CentreContentColumn();
 
         Debug.Log(
             $"[CaseFolderUI] After Open -> " +
@@ -200,6 +224,8 @@ public class CaseFolderUI : MonoBehaviour
     /// </summary>
     public void Hide()
     {
+        StopPageTurn();
+
         if (folderPanelRoot != null)
         {
             folderPanelRoot.SetActive(false);
@@ -216,6 +242,10 @@ public class CaseFolderUI : MonoBehaviour
 
     public void NextPage()
     {
+        // Changing page rebuilds the rows/chips; never do it under a dragged value.
+        if (ValueDragSource.IsAnyDragActive)
+            return;
+
         if (pages == null || pages.Count == 0)
             return;
 
@@ -229,12 +259,16 @@ public class CaseFolderUI : MonoBehaviour
                 AudioManager.Instance.PlayPaperSFX();
             }
 
-            RenderPage(currentPageIndex);
+            TurnToCurrentPage(1);
         }
     }
 
     public void PreviousPage()
     {
+        // Changing page rebuilds the rows/chips; never do it under a dragged value.
+        if (ValueDragSource.IsAnyDragActive)
+            return;
+
         if (pages == null || pages.Count == 0)
             return;
 
@@ -248,8 +282,122 @@ public class CaseFolderUI : MonoBehaviour
                 AudioManager.Instance.PlayPaperSFX();
             }
 
-            RenderPage(currentPageIndex);
+            TurnToCurrentPage(-1);
         }
+    }
+
+    // ============================================================
+    // PAGE LAYOUT
+    // ============================================================
+
+    /// <summary>
+    /// Puts the heading, every row list and the document links in one wider
+    /// column centred on the paper, and mirrors the left page-turn strip to
+    /// the right one so it does not overlap the wider column. Positions only;
+    /// the rows, data and page flow are unchanged.
+    /// </summary>
+    private void CentreContentColumn()
+    {
+        if (layoutCentred)
+            return;
+        layoutCentred = true;
+
+        // Only the open 3D folder's paper; the HUD copy keeps its own layout.
+        Canvas canvas = GetComponentInParent<Canvas>(true);
+        if (canvas == null || canvas.renderMode != RenderMode.WorldSpace)
+            return;
+
+        Transform[] columns =
+        {
+            page1FieldRowListRoot, page2FixedFieldRowListRoot, page2FieldRowListRoot,
+            page3FieldRowListRoot, page4FieldRowListRoot, page5FieldRowListRoot,
+            page7FieldRowListRoot,
+            supportingDocumentsPageLink != null ? supportingDocumentsPageLink.transform : null,
+            pageIndicatorText != null ? pageIndicatorText.transform : null
+        };
+
+        foreach (Transform column in columns)
+        {
+            RectTransform rect = column as RectTransform;
+            if (rect == null || !Mathf.Approximately(rect.anchorMin.x, rect.anchorMax.x))
+                continue;
+
+            rect.anchorMin = new Vector2(0.5f, rect.anchorMin.y);
+            rect.anchorMax = new Vector2(0.5f, rect.anchorMax.y);
+            rect.pivot = new Vector2(0.5f, rect.pivot.y);
+            rect.anchoredPosition = new Vector2(0f, rect.anchoredPosition.y);
+            if (column != (pageIndicatorText != null ? pageIndicatorText.transform : null))
+                rect.sizeDelta = new Vector2(contentWidth, rect.sizeDelta.y);
+        }
+
+        if (headingText != null)
+        {
+            RectTransform heading = headingText.rectTransform;
+            heading.anchorMin = new Vector2(0.5f, heading.anchorMin.y);
+            heading.anchorMax = new Vector2(0.5f, heading.anchorMax.y);
+            heading.pivot = new Vector2(0.5f, heading.pivot.y);
+            heading.anchoredPosition = new Vector2(0f, heading.anchoredPosition.y);
+            heading.sizeDelta = new Vector2(contentWidth, heading.sizeDelta.y);
+            headingText.horizontalAlignment = HorizontalAlignmentOptions.Center;
+        }
+
+        RectTransform left = leftEdgeZone != null ? leftEdgeZone.transform as RectTransform : null;
+        RectTransform right = rightEdgeZone != null ? rightEdgeZone.transform as RectTransform : null;
+        if (left != null && right != null)
+            left.anchoredPosition = new Vector2(Mathf.Abs(right.anchoredPosition.x), left.anchoredPosition.y);
+    }
+
+    // ============================================================
+    // PAGE TURN
+    // ============================================================
+
+    private void TurnToCurrentPage(int direction)
+    {
+        RectTransform root = GetPageTurnRoot();
+        if (root == null || pageTurnDuration <= 0f || !isActiveAndEnabled)
+        {
+            RenderPage(currentPageIndex);
+            return;
+        }
+
+        StopPageTurn();
+        pageTurnRoutine = StartCoroutine(DeskMotion.TurnPage(root, pageTurnRestRotation,
+            pageTurnRestScale, direction, pageTurnDuration, () =>
+            {
+                RenderPage(currentPageIndex);
+            }));
+    }
+
+    /// <summary>Stops a page turn and puts the paper back at rest.</summary>
+    private void StopPageTurn()
+    {
+        if (pageTurnRoutine != null)
+        {
+            StopCoroutine(pageTurnRoutine);
+            pageTurnRoutine = null;
+        }
+
+        if (hasPageTurnRest && pageTurnRoot != null)
+        {
+            pageTurnRoot.localRotation = pageTurnRestRotation;
+            pageTurnRoot.localScale = pageTurnRestScale;
+        }
+
+    }
+
+    private RectTransform GetPageTurnRoot()
+    {
+        if (pageTurnRoot == null && headingText != null)
+            pageTurnRoot = headingText.transform.parent as RectTransform;
+
+        if (pageTurnRoot != null && !hasPageTurnRest)
+        {
+            pageTurnRestRotation = pageTurnRoot.localRotation;
+            pageTurnRestScale = pageTurnRoot.localScale;
+            hasPageTurnRest = true;
+        }
+
+        return pageTurnRoot;
     }
 
     // ============================================================

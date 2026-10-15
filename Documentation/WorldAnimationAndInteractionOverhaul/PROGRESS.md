@@ -4,7 +4,7 @@ Last updated: 2026-10-15
 
 ## Current stop point
 
-Ticket 01 is complete: the user confirmed the idle and conversation facing in Play Mode (2026-10-15). Walking is deferred (KNOWN_ISSUES.md). Only `Assets/Scenes/Office_Level1.unity` is in scope. Wait for explicit instruction before Ticket 02.
+Tickets 01-03 are complete and user-verified (Ticket 03 confirmed in Play Mode on 2026-10-15). Ticket 04 is complete and user-verified (2026-10-15). Walking is deferred (KNOWN_ISSUES.md). Only `Assets/Scenes/Office_Level1.unity` is in scope. Do not start Ticket 05 until the user asks.
 
 ## Setup checklist
 
@@ -20,8 +20,8 @@ Ticket 01 is complete: the user confirmed the idle and conversation facing in Pl
 |---|---|---|
 | T01 NPC animation | Complete (walking deferred) | Rig/controller audit done (Marie, Jhun, Zorbix: Humanoid Standing Idle; 8 others: static head fallback). Driver hardened and compiled; regressions pass. Follow-up adds visible static idle, pacing and a walk setup tool (ticket section 16). Now idle-only with varied idle actions (section 18); walking disabled as a known problem. User verified in Play Mode. |
 | T02 Conversation animation | Complete | Procedural talk/listen/facing/farewell in the driver (ticket section 15). Builds 0 errors; regressions pass; User verified in Play Mode, including Elijah motion and the first-tap/Milo camera fixes (ticket sections 17-18). |
-| T03 Desk interaction | Deferred; partial work retained | DeskPlacementSurface and metadata exist; folder/book drag scripts reference it. Desk scene wiring and verification remain. |
-| T04 3D documents | Planned; do not start | No implementation claimed. |
+| T03 Desk interaction | Complete | Shared DeskPlacementSurface on Desk wired to folder and book (bounded drag, lift, slide-on-overlap). Section 16 adds open/close/settle animations, held tilt, page flips, Exit Desk return to original spots, and the gold Exit Desk button. Compiles; regressions pass. User verified in Play Mode. |
+| T04 3D documents | Complete | Runtime PrintedPaperStyle (shadow, stacked sheets, border, ink text) on both papers. Round 2 (section 16): printed-form rows, highlighter-mark chips, descriptions printed under each chip. Round 3 (section 17): book chips on one line, bigger auto-fitting descriptions. Round 4 (section 18): game-style drop feedback (DropFeedbackFX), centred 760-wide folder column. Page turns blocked during value drags. Ticket 03 flip is the transition. Compiles; regressions pass. User verified in Play Mode. |
 | T05 Feedback polish | Planned; do not start | No implementation claimed. |
 | T06 Dynamic minimap | Planned; do not start | Transcript reviewed; no minimap implementation. |
 
@@ -46,4 +46,17 @@ Earlier code added animation components to 11 Office_Level1 NPCs. Writing Office
 
 ## Next step
 
-Wait for the user to commit Tickets 01-02 and explicitly start Ticket 03.
+User: commit Tickets 03-04, including the new DeskDocumentAnimator, DeskMotion, PrintedPaperStyle, PaperInkStyle and DropFeedbackFX scripts and their .meta files. Start Ticket 05 only on explicit instruction.
+
+## Ticket 03 verification (2026-10-15)
+
+- Compile: scratch csproj (project references mapped to Library/ScriptAssemblies DLLs): 0 errors.
+- Geometry check against scene values: both document resting pivots sit inside their clamp ranges.
+- ControlsRegression 5,734 PASS. VerifyInteractionOutlines drag/hint checks PASS; its Mobile_Renderer outline-width assertion fails before and after this change (asset not touched).
+- No Play Mode, device or visual test was run.
+
+## Ticket 03 desk experience pass (2026-10-15)
+
+- Added DeskMotion and DeskDocumentAnimator. Open/close/settle/slide animations, held tilt and page flips; Exit Desk returns documents to their original spots; Exit Desk button restyled (ticket section 16).
+- Compile 0 errors. Outline drag checks, ControlsRegression 5,734, DialogueRegression 796 and ProgressionRegression all PASS.
+- No Play Mode, device or visual test was run.

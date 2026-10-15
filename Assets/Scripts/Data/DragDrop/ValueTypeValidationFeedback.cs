@@ -34,10 +34,16 @@ public class ValueTypeValidationFeedback : MonoBehaviour
 
     [Header("Feedback Colors")]
 
+    [Tooltip("Accepted drop (right kind of value): soft mint.")]
     [SerializeField]
-    private Color correctColor = Color.green;
+    private Color successColor = new Color(0.33f, 0.76f, 0.5f, 1f);
+    [Tooltip("Rejected drop (wrong kind of value): soft coral.")]
     [SerializeField]
-    private Color incorrectColor = Color.red;
+    private Color errorColor = new Color(0.92f, 0.37f, 0.35f, 1f);
+
+    [Tooltip("How strongly the field fill is tinted at the peak of the pulse.")]
+    [SerializeField, Range(0f, 1f)]
+    private float tintStrength = 0.7f;
 
 
     // =========================================================
@@ -82,6 +88,22 @@ public class ValueTypeValidationFeedback : MonoBehaviour
         SetupVisualTargets();
     }
 
+    /// <summary>
+    /// Updates the colour an image returns to after a flash (e.g. after the
+    /// row was restyled). Does not repaint the image.
+    /// </summary>
+    public void SetRestingColor(Image image, Color color)
+    {
+        if (image == null || targetImages == null || originalColors == null)
+            return;
+
+        for (int i = 0; i < targetImages.Length && i < originalColors.Length; i++)
+        {
+            if (targetImages[i] == image)
+                originalColors[i] = color;
+        }
+    }
+
 
     // =========================================================
     // SETUP VISUAL TARGETS
@@ -97,7 +119,9 @@ public class ValueTypeValidationFeedback : MonoBehaviour
             targetImages.Length == 0)
         {
             targetImages =
-                GetComponentsInChildren<Image>(true);
+                System.Array.FindAll(
+                    GetComponentsInChildren<Image>(true),
+                    IsFeedbackTarget);
         }
 
         // -----------------------------------------------------
@@ -391,70 +415,26 @@ public class ValueTypeValidationFeedback : MonoBehaviour
     {
         Color feedbackColor =
             correct
-                ? correctColor
-                : incorrectColor;
+                ? successColor
+                : errorColor;
 
-        Debug.Log(
-            $"[Type Feedback] APPLYING " +
-            $"{(correct ? "GREEN" : "RED")} " +
-            $"to {gameObject.name}"
-        );
+        // Badge, punch/wobble and edge glow (presentation only).
+        DropFeedbackFX.For(this).Play(correct, feedbackColor);
 
-        Debug.Log(
-            $"[Type Feedback] Color = " +
-            $"{feedbackColor} | " +
-            $"Target Count = {GetTargetCount()}"
-        );
+        // Smooth tint pulse: quick rise, then ease back to the resting colours.
+        float duration =
+            Mathf.Max(0.2f, feedbackDuration + 0.3f);
 
-        // -----------------------------------------------------
-        // Apply color
-        // -----------------------------------------------------
-
-        if (targetImages != null)
+        for (float elapsed = 0f; elapsed < duration; elapsed += Time.unscaledDeltaTime)
         {
-            for (int i = 0;
-                 i < targetImages.Length;
-                 i++)
-            {
-                Image image =
-                    targetImages[i];
+            float t = elapsed / duration;
+            float blend = t < 0.15f
+                ? t / 0.15f
+                : Mathf.SmoothStep(1f, 0f, (t - 0.15f) / 0.85f);
 
-                if (image == null)
-                {
-                    Debug.LogWarning(
-                        $"[Type Feedback] " +
-                        $"Target Image {i} is NULL."
-                    );
-
-                    continue;
-                }
-
-                Debug.Log(
-                    $"[Type Feedback] " +
-                    $"Changing {image.gameObject.name} " +
-                    $"from {image.color} " +
-                    $"to {feedbackColor}"
-                );
-
-                image.color =
-                    feedbackColor;
-
-                // -------------------------------------------------
-                // Force Unity UI refresh
-                // -------------------------------------------------
-
-                image.SetVerticesDirty();
-                image.SetMaterialDirty();
-            }
+            ApplyTint(feedbackColor, blend * tintStrength);
+            yield return null;
         }
-
-        // -----------------------------------------------------
-        // Wait
-        // -----------------------------------------------------
-
-        yield return new WaitForSeconds(
-            feedbackDuration
-        );
 
         // -----------------------------------------------------
         // Restore
@@ -463,11 +443,35 @@ public class ValueTypeValidationFeedback : MonoBehaviour
         RestoreOriginalColors();
 
         feedbackCoroutine = null;
+    }
 
-        Debug.Log(
-            $"[Type Feedback] " +
-            $"Feedback finished on {gameObject.name}"
-        );
+    private void ApplyTint(Color tint, float amount)
+    {
+        if (targetImages == null || originalColors == null)
+            return;
+
+        for (int i = 0; i < targetImages.Length && i < originalColors.Length; i++)
+        {
+            Image image = targetImages[i];
+            if (image == null)
+                continue;
+
+            Color rest = originalColors[i];
+            Color peak = tint;
+            peak.a = Mathf.Max(rest.a, 0.85f);
+            image.color = Color.Lerp(rest, peak, amount);
+        }
+    }
+
+    private static bool IsFeedbackTarget(Image image)
+    {
+        for (Transform t = image.transform; t != null; t = t.parent)
+        {
+            if (t.name == "DropFeedbackBadge" || t.name == "PaperInkDecor")
+                return false;
+        }
+
+        return true;
     }
 
 
@@ -521,6 +525,10 @@ public class ValueTypeValidationFeedback : MonoBehaviour
         }
 
         RestoreOriginalColors();
+
+        DropFeedbackFX fx = GetComponent<DropFeedbackFX>();
+        if (fx != null)
+            fx.Restore();
     }
 
 

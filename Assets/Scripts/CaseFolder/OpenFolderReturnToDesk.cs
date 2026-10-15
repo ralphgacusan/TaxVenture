@@ -50,6 +50,7 @@ public class OpenFolderReturnToDesk :
     private Vector3 originalClosedScale;
 
     private Collider deskDropCollider;
+    private DeskDocumentAnimator deskAnimator;
 
 
     private void Awake()
@@ -83,6 +84,12 @@ public class OpenFolderReturnToDesk :
 
             originalClosedScale =
                 originalClosedFolder.transform.localScale;
+        }
+
+        if (originalClosedFolder != null)
+        {
+            deskAnimator =
+                originalClosedFolder.GetComponentInParent<DeskDocumentAnimator>(true);
         }
 
         if (deskDropFolder != null)
@@ -128,38 +135,50 @@ public class OpenFolderReturnToDesk :
             return;
         }
 
-        ReturnFolderToDesk();
+        ReturnFolderToDesk(true);
     }
 
 
-    private void ReturnFolderToDesk()
+    private void ReturnFolderToDesk(bool animate)
     {
         Transform deskTransform = deskDropFolder.transform;
-
-        originalClosedFolder.transform.position = deskTransform.position;
-        originalClosedFolder.transform.localScale = deskTransform.localScale;
 
         /*
          * Match the target's rotation, then add a slight random
          * tilt so the folder doesn't look perfectly stacked.
          */
         float randomYaw = Random.Range(-sideTiltAngle, sideTiltAngle);
-        originalClosedFolder.transform.rotation =
+        Quaternion stackedRotation =
             deskTransform.rotation * Quaternion.Euler(0f, randomYaw, 0f);
 
         // Stack it slightly above the target so it doesn't z-fight.
-        Vector3 stackedPosition = originalClosedFolder.transform.position;
+        Vector3 stackedPosition = deskTransform.position;
         stackedPosition.y += dropHeightOffset;
-        originalClosedFolder.transform.position = stackedPosition;
 
-        gameObject.SetActive(false);
-        originalClosedFolder.SetActive(true);
+        bool canAnimate = animate && deskAnimator != null;
+
+        void Finish()
+        {
+            originalClosedFolder.transform.SetPositionAndRotation(stackedPosition, stackedRotation);
+            originalClosedFolder.transform.localScale = deskTransform.localScale;
+
+            gameObject.SetActive(false);
+            originalClosedFolder.SetActive(true);
+
+            if (canAnimate)
+                deskAnimator.PlaySettle(originalClosedFolder.transform);
+        }
 
         // Play paper sound when the open folder closes.
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.PlayPaperSFX();
         }
+
+        if (canAnimate)
+            deskAnimator.PlayClose(transform, stackedPosition, Finish);
+        else
+            Finish();
 
         DebugLog("Open folder successfully returned to the desk.");
         DebugLog($"Original closed folder restored at: {originalClosedFolder.transform.position}");
@@ -188,6 +207,12 @@ public class OpenFolderReturnToDesk :
             return;
         }
 
-        ReturnFolderToDesk();
+        if (deskAnimator != null)
+        {
+            deskAnimator.Complete(transform);
+            deskAnimator.Complete(originalClosedFolder.transform);
+        }
+
+        ReturnFolderToDesk(false);
     }
 }

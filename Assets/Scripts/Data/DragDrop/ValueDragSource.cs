@@ -31,6 +31,11 @@ public class ValueDragSource : MonoBehaviour,
 
     private bool isDragging = false;
 
+    private static ValueDragSource activeDrag;
+
+    /// <summary>True while any value is being dragged.</summary>
+    public static bool IsAnyDragActive => activeDrag != null && activeDrag.isDragging;
+
     // ---------------------------------------------------------
     // Initialization
     // ---------------------------------------------------------
@@ -165,6 +170,7 @@ public class ValueDragSource : MonoBehaviour,
         // -----------------------------------------------------
 
         isDragging = true;
+        activeDrag = this;
 
         // -----------------------------------------------------
         // Determine Floating Drag Visual Text
@@ -254,6 +260,8 @@ public class ValueDragSource : MonoBehaviour,
             return;
 
         isDragging = false;
+        if (activeDrag == this)
+            activeDrag = null;
 
         // -----------------------------------------------------
         // Hide Floating Visual
@@ -280,5 +288,13 @@ public class ValueDragSource : MonoBehaviour,
         Debug.Log(
             $"Stopped dragging {gameObject.name}"
         );
+    }
+
+    private void OnDisable()
+    {
+        // A disabled or destroyed source can no longer finish its drag.
+        isDragging = false;
+        if (activeDrag == this)
+            activeDrag = null;
     }
 }

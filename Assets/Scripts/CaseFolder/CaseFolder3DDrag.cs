@@ -30,6 +30,9 @@ public class CaseFolder3DDrag :
     [Tooltip("Optional bounded surface shared by desk documents.")]
     [SerializeField] private DeskPlacementSurface deskSurface;
 
+    [Tooltip("Optional open/close/settle motion shared by desk documents.")]
+    [SerializeField] private DeskDocumentAnimator deskAnimator;
+
     [Header("HUD Storage")]
     [SerializeField] private FolderToHUDIcon folderToHUDIcon;
 
@@ -135,6 +138,11 @@ public class CaseFolder3DDrag :
 
         if (deskSurface == null)
             deskSurface = GetComponentInParent<DeskPlacementSurface>();
+        if (deskAnimator == null)
+            deskAnimator = GetComponentInParent<DeskDocumentAnimator>();
+        // Scenes saved before the animator was added still get desk motion.
+        if (deskAnimator == null && deskSurface != null)
+            deskAnimator = deskSurface.gameObject.AddComponent<DeskDocumentAnimator>();
         if (closedFolder != null)
             placementCollider = closedFolder.GetComponent<Collider>();
 
@@ -238,6 +246,11 @@ public class CaseFolder3DDrag :
             return;
         }
 
+        Vector3 heldPosition = dragTargetPosition;
+        if (deskSurface != null)
+            heldPosition += deskSurface.DragLiftOffset;
+        Vector3 dragLag = heldPosition - closedFolder.transform.position;
+
         if (animateDragging)
         {
             float interpolation =
@@ -248,27 +261,32 @@ public class CaseFolder3DDrag :
             closedFolder.transform.position =
                 Vector3.Lerp(
                     closedFolder.transform.position,
-                    dragTargetPosition,
+                    heldPosition,
                     interpolation
                 );
         }
         else
         {
             closedFolder.transform.position =
-                dragTargetPosition;
+                heldPosition;
         }
 
         if (preserveClosedFolderRotation)
         {
-            closedFolder.transform.rotation =
-                originalClosedRotation;
+            closedFolder.transform.rotation = deskSurface != null
+                ? DeskMotion.HeldRotation(originalClosedRotation, dragLag, deskSurface.transform.up)
+                : originalClosedRotation;
         }
     }
 
     private void OnDisable()
     {
         if (isDragging && closedFolder != null)
+        {
             closedFolder.transform.position = hasDragTarget ? dragTargetPosition : dragStartPosition;
+            if (preserveClosedFolderRotation)
+                closedFolder.transform.rotation = originalClosedRotation;
+        }
         isDragging = false;
         externalHUDDragging = false;
         hasDragTarget = false;
@@ -299,6 +317,9 @@ public class CaseFolder3DDrag :
             return;
         }
 
+        if (deskAnimator != null)
+            deskAnimator.Complete(closedFolder.transform);
+
         pointerDownScreenPosition =
             eventData.position;
 
@@ -321,7 +342,7 @@ public class CaseFolder3DDrag :
         Vector3 pointerWorldPosition;
         if (deskSurface != null)
         {
-            if (!deskSurface.TryGetPointerPoint(ray, out pointerWorldPosition))
+            if (!deskSurface.TryGetPointerPoint(ray, dragStartPosition, out pointerWorldPosition))
             {
                 currentDropValid = false;
                 isDragging = false;
@@ -454,6 +475,8 @@ public class CaseFolder3DDrag :
             screenDistance < minimumDragDistance)
         {
             closedFolder.transform.position = dragStartPosition;
+            if (preserveClosedFolderRotation)
+                closedFolder.transform.rotation = originalClosedRotation;
             DebugLog(
                 "No meaningful drag detected. " +
                 "The closed folder remains visible."
@@ -467,9 +490,16 @@ public class CaseFolder3DDrag :
             return;
         }
 
-        if (!currentDropValid)
+        bool droppedOnHUD =
+            IsPointerInsideHUDIcon(eventData);
+
+        if (!currentDropValid && !droppedOnHUD)
         {
             closedFolder.transform.position = hasDragTarget ? dragTargetPosition : dragStartPosition;
+            if (preserveClosedFolderRotation)
+                closedFolder.transform.rotation = originalClosedRotation;
+            if (deskAnimator != null)
+                deskAnimator.PlaySettle(closedFolder.transform);
             isDragging = false;
             hasDragTarget = false;
             isPointerOver = false;
@@ -497,9 +527,6 @@ public class CaseFolder3DDrag :
         DebugLog(
             $"Closed folder released at: {closedFolder.transform.position}"
         );
-
-        bool droppedOnHUD =
-            IsPointerInsideHUDIcon(eventData);
 
         if (droppedOnHUD)
         {
@@ -579,15 +606,20 @@ public class CaseFolder3DDrag :
 
         if (deskSurface != null)
         {
-            if (!deskSurface.TryGetPointerPoint(ray, out Vector3 surfacePoint) ||
-                !deskSurface.TryClampPosition(closedFolder.transform, placementCollider,
-                    surfacePoint + dragOffset, out Vector3 clampedPosition))
+            // Pointer off the desk plane: keep the last safe pose, do not open on release.
+            if (!deskSurface.TryGetPointerPoint(ray, dragStartPosition, out Vector3 surfacePoint))
             {
                 currentDropValid = false;
                 return;
             }
 
-            dragTargetPosition = clampedPosition;
+            // A blocked move keeps the last valid target, which stays a valid drop.
+            if (deskSurface.TryClampPosition(closedFolder.transform, placementCollider,
+                    surfacePoint + dragOffset, out Vector3 clampedPosition))
+            {
+                dragTargetPosition = clampedPosition;
+            }
+
             hasDragTarget = true;
             currentDropValid = true;
             return;
@@ -744,6 +776,9 @@ public class CaseFolder3DDrag :
 
         openFolder.SetActive(true);
 
+        if (deskAnimator != null)
+            deskAnimator.PlayOpen(openFolder.transform, closedFolder.transform.position);
+
         // Play paper SFX when the folder opens.
         if (AudioManager.Instance != null)
         {
@@ -775,6 +810,8 @@ public class CaseFolder3DDrag :
     public void ResetFolder()
     {
         DebugLog("ResetFolder() called.");
+
+        CompleteDeskMotion();
 
         if (openingCoroutine != null)
         {
@@ -848,6 +885,9 @@ public class CaseFolder3DDrag :
 
         pointerPosition = screenPosition;
 
+        if (deskAnimator != null)
+            deskAnimator.Complete(closedFolder.transform);
+
         externalHUDDragging = true;
 
         externalPointerDownPosition =
@@ -871,7 +911,7 @@ public class CaseFolder3DDrag :
         Vector3 pointerWorldPosition;
         if (deskSurface != null)
         {
-            if (!deskSurface.TryGetPointerPoint(ray, out pointerWorldPosition))
+            if (!deskSurface.TryGetPointerPoint(ray, dragStartPosition, out pointerWorldPosition))
             {
                 externalHUDDragging = false;
                 isDragging = false;
@@ -965,6 +1005,8 @@ public class CaseFolder3DDrag :
         if (!currentDropValid)
         {
             closedFolder.transform.position = hasDragTarget ? dragTargetPosition : dragStartPosition;
+            if (preserveClosedFolderRotation)
+                closedFolder.transform.rotation = originalClosedRotation;
             externalHUDDragging = false;
             isDragging = false;
             hasDragTarget = false;
@@ -1005,12 +1047,81 @@ public class CaseFolder3DDrag :
     }
 
     /// <summary>
+    /// Puts the folder back exactly where it started on the desk: an open
+    /// folder closes onto that spot, a moved closed folder slides back.
+    /// Does nothing while the folder is stored in the HUD.
+    /// </summary>
+    public void ReturnToOriginalPlace(bool animate)
+    {
+        if (!enabled || !allowDragging || closedFolder == null)
+            return;
+
+        CompleteDeskMotion();
+        isDragging = false;
+        hasDragTarget = false;
+        externalHUDDragging = false;
+        isPointerOver = false;
+        SetOutlineFocused(false);
+
+        bool canAnimate = animate && deskAnimator != null;
+        if (openFolder != null && openFolder.activeSelf)
+        {
+            void Finish()
+            {
+                openFolder.SetActive(false);
+                openFolder.transform.SetPositionAndRotation(originalOpenPosition, originalOpenRotation);
+                openFolder.transform.localScale = originalOpenScale;
+                PlaceClosedFolderAtOrigin();
+                closedFolder.SetActive(true);
+                if (canAnimate)
+                    deskAnimator.PlaySettle(closedFolder.transform);
+            }
+
+            if (canAnimate)
+                deskAnimator.PlayClose(openFolder.transform, originalClosedPosition, Finish);
+            else
+                Finish();
+            return;
+        }
+
+        if (!closedFolder.activeSelf)
+            return;
+
+        if (canAnimate)
+        {
+            closedFolder.transform.localScale = originalClosedScale;
+            deskAnimator.PlaySlide(closedFolder.transform, originalClosedPosition, originalClosedRotation);
+        }
+        else
+        {
+            PlaceClosedFolderAtOrigin();
+        }
+    }
+
+    private void PlaceClosedFolderAtOrigin()
+    {
+        closedFolder.transform.SetPositionAndRotation(originalClosedPosition, originalClosedRotation);
+        closedFolder.transform.localScale = originalClosedScale;
+    }
+
+    private void CompleteDeskMotion()
+    {
+        if (deskAnimator == null)
+            return;
+        if (closedFolder != null)
+            deskAnimator.Complete(closedFolder.transform);
+        if (openFolder != null)
+            deskAnimator.Complete(openFolder.transform);
+    }
+
+    /// <summary>
     /// Fully hides the case folder (both closed and open states) and
     /// disables all dragging. Called when the folder has been stored
     /// (e.g. dropped onto a HUD icon) and should disappear for good.
     /// </summary>
     public void HideAndDisableFolder()
     {
+        CompleteDeskMotion();
         isDragging = false;
         hasDragTarget = false;
         externalHUDDragging = false;
@@ -1045,6 +1156,7 @@ public class CaseFolder3DDrag :
     /// </summary>
     public void RestoreAndEnableFolder()
     {
+        CompleteDeskMotion();
         isPointerOver = false;
         SetOutlineFocused(false);
         allowDragging = true;

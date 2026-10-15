@@ -40,6 +40,12 @@ public class CameraController : MonoBehaviour
     public CameraMode CurrentMode { get; private set; }
         = CameraMode.FirstPerson;
 
+    /// <summary>
+    /// Raised after the player leaves a workstation view (e.g. Exit Desk),
+    /// once first-person control has been restored.
+    /// </summary>
+    public static event System.Action WorkstationExited;
+
     // =============================================================
     // REFERENCES
     // =============================================================
@@ -714,6 +720,8 @@ public class CameraController : MonoBehaviour
         Debug.Log(
             "[CameraController] Returned to normal first-person."
         );
+
+        WorkstationExited?.Invoke();
     }
 
     // =============================================================

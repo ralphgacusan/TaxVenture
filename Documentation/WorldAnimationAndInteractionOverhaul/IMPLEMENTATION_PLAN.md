@@ -19,4 +19,4 @@ Preserve current dirty changes. Reuse existing regression suites where relevant,
 
 ## Exact continuation
 
-Ticket 01 is code-complete; after the user's manual check, read `handoffs/TICKET-01_CODE_COMPLETE.md` and Ticket 02 when the user authorizes it. Never run the earlier multi-scene setup script.
+Tickets 01-04 are done. When the user authorizes Ticket 05, read Tickets 03-04 records first. Never run the earlier multi-scene setup script.

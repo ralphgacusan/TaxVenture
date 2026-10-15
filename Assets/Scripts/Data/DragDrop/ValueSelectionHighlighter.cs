@@ -14,10 +14,23 @@ public class ValueSelectionHighlighter : MonoBehaviour
 
     private object ownerComponent;
     private bool subscribed;
+    private bool isSelected;
 
     public void SetOwner(object owner)
     {
         ownerComponent = owner;
+    }
+
+    /// <summary>
+    /// Replaces the resting/selected tints (e.g. a restyled row) and
+    /// re-applies the current state.
+    /// </summary>
+    public void SetColors(Color normal, Color selected)
+    {
+        normalColor = normal;
+        selectedColor = selected;
+        if (targetImage != null)
+            targetImage.color = isSelected ? selectedColor : normalColor;
     }
 
     private void OnEnable()
@@ -80,10 +93,12 @@ public class ValueSelectionHighlighter : MonoBehaviour
         if (targetImage == null)
             return;
 
-        targetImage.color =
+        isSelected =
             selectedComponent != null &&
-            selectedComponent == ownerComponent
-                ? selectedColor
-                : normalColor;
+            selectedComponent == ownerComponent;
+
+        targetImage.color = isSelected
+            ? selectedColor
+            : normalColor;
     }
 }

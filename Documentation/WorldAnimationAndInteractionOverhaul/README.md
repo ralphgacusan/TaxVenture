@@ -11,7 +11,7 @@ This initiative improves NPC animation and conversation feedback, desk document 
 
 ## Execution gate
 
-Ticket 01 is complete (2026-10-15, user-verified in Play Mode; walking deferred). Do not start Ticket 02 or later tickets until the user explicitly asks. Earlier partial desk edits remain in place and are documented in `PROGRESS.md`.
+Tickets 01-04 are complete (user-verified; walking deferred). Do not start Ticket 05 or later until the user explicitly asks.
 
 ## Start here
 
@@ -23,8 +23,8 @@ Before implementation, read `AGENTS.md`, `PROJECT_AUDIT.md`, `IMPLEMENTATION_PLA
 |---:|---|---|---|
 | 1 | [Reusable NPC Animation Framework](tickets/TICKET-01-NPC-ANIMATION-FRAMEWORK.md) | Complete (walking deferred) | Audit |
 | 2 | [NPC Conversation Animations](tickets/TICKET-02-NPC-CONVERSATION-ANIMATIONS.md) | Complete | Ticket 01 |
-| 3 | [Desk Interaction Overhaul](tickets/TICKET-03-DESK-INTERACTION-OVERHAUL.md) | Planned | Audit |
-| 4 | [3D Document Presentation](tickets/TICKET-04-3D-DOCUMENT-PRESENTATION.md) | Planned | Ticket 03 |
+| 3 | [Desk Interaction Overhaul](tickets/TICKET-03-DESK-INTERACTION-OVERHAUL.md) | Complete | Audit |
+| 4 | [3D Document Presentation](tickets/TICKET-04-3D-DOCUMENT-PRESENTATION.md) | Complete | Ticket 03 |
 | 5 | [Interaction Feedback Polish](tickets/TICKET-05-INTERACTION-FEEDBACK-POLISH.md) | Planned | Tickets 03 and 04 |
 | 6 | [Dynamic Minimap](tickets/TICKET-06-DYNAMIC-MINIMAP.md) | Planned | Audit and tutorial review |
 

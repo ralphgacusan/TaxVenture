@@ -8553,7 +8553,8 @@ MonoBehaviour:
   closedTaxCodeBook: {fileID: 136131379}
   openTaxCodeBook: {fileID: 183795252}
   taxCodeBookUI: {fileID: 552615866}
-  deskSurface: {fileID: 0}
+  deskSurface: {fileID: 190001486}
+  deskAnimator: {fileID: 0}
   allowDragging: 1
   preserveClosedBookRotation: 1
   animateDragging: 1
@@ -11587,6 +11588,7 @@ GameObject:
   - component: {fileID: 190001484}
   - component: {fileID: 190001483}
   - component: {fileID: 190001485}
+  - component: {fileID: 190001486}
   m_Layer: 3
   m_Name: Desk
   m_TagString: Untagged
@@ -11663,6 +11665,25 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.9774475, y: 0.68495476, z: 2.264937}
   m_Center: {x: -0.011276245, y: 0.35468727, z: 0.017531633}
+--- !u!114 &190001486
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 190001478}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dfecf3cf909b4540b0d3b0e490df3844, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeskPlacementSurface
+  surfaceCollider: {fileID: 1554425890}
+  edgeInset: 0.035
+  dragLiftHeight: 0.015
+  placementObstacles:
+  - {fileID: 1489254972}
+  - {fileID: 136131383}
+  - {fileID: 1752182492}
 --- !u!1 &190312556
 GameObject:
   m_ObjectHideFlags: 0
@@ -16565,6 +16586,10 @@ MonoBehaviour:
   headHeightFraction: 0.8731609
   forwardYawOffset: -1.3114709
   castShadows: 1
+  conversationMotion: 1
+  conversationStrength: 1
+  speechDegrees: 3.5
+  headTurnLimit: 25
 --- !u!4 &263585192
 Transform:
   m_ObjectHideFlags: 0
@@ -19685,6 +19710,8 @@ MonoBehaviour:
   clickableValueListRoot: {fileID: 76993898}
   valueChipPrefab: {fileID: 223237124147553539, guid: e0e67d21305e6f645accec92ea1f3de5, type: 3}
   openBookCollider: {fileID: 0}
+  pageTurnRoot: {fileID: 0}
+  pageTurnDuration: 0.26
 --- !u!114 &326375009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -34667,6 +34694,8 @@ MonoBehaviour:
   clickableValueListRoot: {fileID: 1245238167}
   valueChipPrefab: {fileID: 223237124147553539, guid: e0e67d21305e6f645accec92ea1f3de5, type: 3}
   openBookCollider: {fileID: 183795259}
+  pageTurnRoot: {fileID: 0}
+  pageTurnDuration: 0.26
 --- !u!1 &552808193
 GameObject:
   m_ObjectHideFlags: 0
@@ -49302,7 +49331,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 299.99997}
+  m_AnchoredPosition: {x: 0, y: 299.99994}
   m_SizeDelta: {x: 0, y: 800}
   m_Pivot: {x: 0, y: 1}
 --- !u!4 &819781689 stripped
@@ -53716,6 +53745,8 @@ MonoBehaviour:
   idleActionStrength: 1
   idleActionInterval: {x: 2.5, y: 6}
   animateRigBones: 1
+  conversationStrength: 1
+  maxConversationBodyTurn: 35
 --- !u!114 &890000002
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53752,6 +53783,8 @@ MonoBehaviour:
   idleActionStrength: 1
   idleActionInterval: {x: 2.5, y: 6}
   animateRigBones: 1
+  conversationStrength: 1
+  maxConversationBodyTurn: 35
 --- !u!114 &890000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53788,6 +53821,8 @@ MonoBehaviour:
   idleActionStrength: 1
   idleActionInterval: {x: 2.5, y: 6}
   animateRigBones: 1
+  conversationStrength: 1
+  maxConversationBodyTurn: 35
 --- !u!114 &890000004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53822,6 +53857,8 @@ MonoBehaviour:
   idleActionStrength: 1
   idleActionInterval: {x: 2.5, y: 6}
   animateRigBones: 1
+  conversationStrength: 1
+  maxConversationBodyTurn: 35
 --- !u!114 &890000005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53858,6 +53895,8 @@ MonoBehaviour:
   idleActionStrength: 1
   idleActionInterval: {x: 2.5, y: 6}
   animateRigBones: 1
+  conversationStrength: 1
+  maxConversationBodyTurn: 35
 --- !u!114 &890000006
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53892,6 +53931,8 @@ MonoBehaviour:
   idleActionStrength: 1
   idleActionInterval: {x: 2.5, y: 6}
   animateRigBones: 1
+  conversationStrength: 1
+  maxConversationBodyTurn: 35
 --- !u!114 &890000007
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53926,6 +53967,8 @@ MonoBehaviour:
   idleActionStrength: 1
   idleActionInterval: {x: 2.5, y: 6}
   animateRigBones: 1
+  conversationStrength: 1
+  maxConversationBodyTurn: 35
 --- !u!114 &890000008
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53960,6 +54003,8 @@ MonoBehaviour:
   idleActionStrength: 1
   idleActionInterval: {x: 2.5, y: 6}
   animateRigBones: 1
+  conversationStrength: 1
+  maxConversationBodyTurn: 35
 --- !u!114 &890000009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53994,6 +54039,8 @@ MonoBehaviour:
   idleActionStrength: 1
   idleActionInterval: {x: 2.5, y: 6}
   animateRigBones: 1
+  conversationStrength: 1
+  maxConversationBodyTurn: 35
 --- !u!114 &890000010
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -54028,6 +54075,8 @@ MonoBehaviour:
   idleActionStrength: 1
   idleActionInterval: {x: 2.5, y: 6}
   animateRigBones: 1
+  conversationStrength: 1
+  maxConversationBodyTurn: 35
 --- !u!114 &890000011
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -54062,6 +54111,8 @@ MonoBehaviour:
   idleActionStrength: 1
   idleActionInterval: {x: 2.5, y: 6}
   animateRigBones: 1
+  conversationStrength: 1
+  maxConversationBodyTurn: 35
 --- !u!1 &891480631
 GameObject:
   m_ObjectHideFlags: 0
@@ -87315,7 +87366,8 @@ MonoBehaviour:
   closedFolder: {fileID: 1489254968}
   openFolder: {fileID: 1869671332}
   caseFolderUI: {fileID: 1493084227}
-  deskSurface: {fileID: 0}
+  deskSurface: {fileID: 190001486}
+  deskAnimator: {fileID: 0}
   folderToHUDIcon: {fileID: 0}
   allowExternalHUDDragging: 1
   allowDragging: 1
@@ -87813,6 +87865,8 @@ MonoBehaviour:
   page2FixedFieldRowsContainer: {fileID: 494194909}
   page7FieldRowListRoot: {fileID: 618866419}
   page7FieldRowsContainer: {fileID: 618866418}
+  pageTurnRoot: {fileID: 0}
+  pageTurnDuration: 0.26
 --- !u!1001 &1493134559
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -95509,6 +95563,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WorkstationUI
   panelRoot: {fileID: 1612138751}
   exitButtonLabel: {fileID: 1542201990}
+  styleSource: {fileID: 1350718503}
+  buttonColor: {r: 0.95, g: 0.8, b: 0.43, a: 1}
+  labelColor: {r: 0.08, g: 0.08, b: 0.1, a: 1}
 --- !u!114 &1612138754
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -110084,7 +110141,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 515171270}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.625
+  m_Size: 0.62498647
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -125505,6 +125562,8 @@ MonoBehaviour:
   page2FixedFieldRowsContainer: {fileID: 1621830998}
   page7FieldRowListRoot: {fileID: 151837519}
   page7FieldRowsContainer: {fileID: 151837518}
+  pageTurnRoot: {fileID: 0}
+  pageTurnDuration: 0.26
 --- !u!114 &2135244882
 MonoBehaviour:
   m_ObjectHideFlags: 0

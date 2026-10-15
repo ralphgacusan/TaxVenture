@@ -31,3 +31,11 @@ No new clips, controllers or profile assets. Humanoid NPCs keep their assigned "
 ## D008 - Visible ambient motion without new assets
 
 Static NPCs animate their model container procedurally (breathing, sway, glance, step bob); colliders stay on the unmoved root. Pacing is a separate opt-in component that only moves NPCs whose model can show walking. Humanoid walking reuses the project's unused walking FBXs through an editor tool, not hand-edited import YAML.
+
+## D009 - Desk surface is the desk model's top collider
+
+Ticket 03 uses the BoxCollider on `Desk/Visual/SM_Prop_Desk_03` (top y 0.75, the visible desk top) as the single placement surface, not the lower `Desk` root collider. Drags project at the item's resting height and clamp with an asymmetric footprint. Blocked moves slide or hold, and are never rejected outright, so a drop over the desk always stays valid. Stack snap-back on close stays in the existing return-to-desk scripts.
+
+## D010 - Desk motion is presentation-only and completable
+
+Desk document animation lives in `DeskDocumentAnimator` (on `Desk`) and `DeskMotion`. The existing scripts still own every state change and pass it in as a completion callback. Any tween can be completed instantly (before a grab, reset, HUD store or audit retry), so no object is left mid-flight. Leaving the desk uses a `CameraController.WorkstationExited` event rather than giving the camera desk references.
