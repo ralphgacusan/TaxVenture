@@ -10,7 +10,8 @@ using UnityEngine.SceneManagement;
 /// Adds an NpcStatusMarker to every NPC whose interactable reports
 /// availability (INpcAvailabilitySource) in the open scene, and assigns one
 /// shared unlit material asset (created once so it is included in builds).
-/// Changes no NPC transform, collider, quest rule or existing indicator.
+/// Removes legacy NPC body tints and focus highlights in favour of the marker.
+/// Changes no NPC transform, collider or quest rule.
 /// </summary>
 public static class NpcMarkerSetup
 {
@@ -61,8 +62,11 @@ public static class NpcMarkerSetup
             data.FindProperty("markerMaterial").objectReferenceValue = material;
             data.ApplyModifiedProperties();
 
-            bool legacyTint = source.GetComponent<NpcVisualIndicator>() != null;
-            report.AppendLine($"  {source.GetType().Name} '{source.name}': {(isNew ? "marker added" : "marker updated")}{(legacyTint ? " (also has the old NpcVisualIndicator body tint, left unchanged)" : "")}");
+            foreach (NpcVisualIndicator tint in source.GetComponents<NpcVisualIndicator>())
+                Undo.DestroyObjectImmediate(tint);
+            foreach (HighlightEffect highlight in source.GetComponents<HighlightEffect>())
+                Undo.DestroyObjectImmediate(highlight);
+            report.AppendLine($"  {source.GetType().Name} '{source.name}': {(isNew ? "marker added" : "marker updated")}; legacy body tint and focus highlight removed");
         }
 
         Undo.CollapseUndoOperations(group);

@@ -4226,9 +4226,9 @@ GameObject:
   m_Component:
   - component: {fileID: 72836759}
   - component: {fileID: 72836760}
-  - component: {fileID: 72836764}
   - component: {fileID: 72836763}
   - component: {fileID: 72836765}
+  - component: {fileID: 890000001}
   m_Layer: 3
   m_Name: Colleague
   m_TagString: Untagged
@@ -4288,19 +4288,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ColleagueInteractable
   dialogueUI: {fileID: 1416291532}
---- !u!114 &72836764
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 72836758}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
 --- !u!114 &72836765
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8504,6 +8491,8 @@ GameObject:
   - component: {fileID: 136131380}
   - component: {fileID: 136131383}
   - component: {fileID: 136131388}
+  - component: {fileID: 1876543203}
+  - component: {fileID: 1876543204}
   m_Layer: 6
   m_Name: TaxCodeBook
   m_TagString: Untagged
@@ -8564,6 +8553,7 @@ MonoBehaviour:
   closedTaxCodeBook: {fileID: 136131379}
   openTaxCodeBook: {fileID: 183795252}
   taxCodeBookUI: {fileID: 552615866}
+  deskSurface: {fileID: 0}
   allowDragging: 1
   preserveClosedBookRotation: 1
   animateDragging: 1
@@ -11652,7 +11642,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 2100000, guid: f2521fd75cd166c4284aec7e0d9b6442, type: 2}
 --- !u!65 &190001485
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -22496,7 +22485,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 2100000, guid: f2521fd75cd166c4284aec7e0d9b6442, type: 2}
 --- !u!65 &369587039
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -34746,6 +34734,8 @@ GameObject:
   - component: {fileID: 554849392}
   - component: {fileID: 554849395}
   - component: {fileID: 554849396}
+  - component: {fileID: 890000002}
+  - component: {fileID: 1257505780}
   m_Layer: 3
   m_Name: NPC_Marie
   m_TagString: Untagged
@@ -44785,6 +44775,8 @@ GameObject:
   - component: {fileID: 724378880}
   - component: {fileID: 724378879}
   - component: {fileID: 724378882}
+  - component: {fileID: 890000003}
+  - component: {fileID: 937982722}
   m_Layer: 3
   m_Name: NPC_Zorbix
   m_TagString: Untagged
@@ -45360,12 +45352,11 @@ GameObject:
   m_Component:
   - component: {fileID: 739575917}
   - component: {fileID: 739575918}
-  - component: {fileID: 739575922}
   - component: {fileID: 739575921}
   - component: {fileID: 739575923}
-  - component: {fileID: 739575924}
   - component: {fileID: 739575925}
   - component: {fileID: 739575926}
+  - component: {fileID: 890000004}
   m_Layer: 3
   m_Name: Client
   m_TagString: Untagged
@@ -45427,19 +45418,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ClientInteractable
   dialogueUI: {fileID: 1416291532}
---- !u!114 &739575922
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 739575916}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
 --- !u!114 &739575923
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -45452,24 +45430,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddaf1cece5e5b934a8a22cbcd68247b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NpcStateMachine
---- !u!114 &739575924
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 739575916}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 541b21b396cf7c84d8ed02d9331d0c28, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NpcVisualIndicator
-  visualRoot: {fileID: 1844997908}
-  idleColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  waitingColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  interactColor: {r: 1, g: 0.6, b: 0, a: 1}
-  dialogueColor: {r: 0, g: 1, b: 1, a: 1}
-  completedColor: {r: 0, g: 1, b: 0, a: 1}
 --- !u!114 &739575925
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46821,7 +46781,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
 --- !u!65 &768669306
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -49343,7 +49302,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 300.00015}
+  m_AnchoredPosition: {x: 0, y: 299.99997}
   m_SizeDelta: {x: 0, y: 800}
   m_Pivot: {x: 0, y: 1}
 --- !u!4 &819781689 stripped
@@ -50850,7 +50809,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
 --- !u!65 &838530914
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -51549,6 +51507,8 @@ GameObject:
   - component: {fileID: 855095585}
   - component: {fileID: 855095584}
   - component: {fileID: 855095587}
+  - component: {fileID: 890000005}
+  - component: {fileID: 996204926}
   m_Layer: 3
   m_Name: NPC_Jhun
   m_TagString: Untagged
@@ -53722,6 +53682,386 @@ RectTransform:
   m_AnchoredPosition: {x: -0.000030517578, y: -50}
   m_SizeDelta: {x: 400, y: 70}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &890000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 72836758}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71acb6d2699a47a59a75d134cf4b763e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcAnimationDriver
+  animator: {fileID: 0}
+  stateMachine: {fileID: 0}
+  dialogueUI: {fileID: 0}
+  defaultBehavior: 0
+  idleStateName: Standing Idle
+  stateBindings: []
+  transitionSeconds: 0.18
+  animatorLayer: 0
+  detectMovement: 1
+  movementThreshold: 0.08
+  animateStaticHead: 1
+  headParts: []
+  conversationTurnLimit: 18
+  headMotionDegrees: 3.5
+  idleGlanceDegrees: 14
+  animateStaticBody: 1
+  bodyRoot: {fileID: 0}
+  bodySwayDegrees: 1.8
+  breathingScale: 0.015
+  idleActionStrength: 1
+  idleActionInterval: {x: 2.5, y: 6}
+  animateRigBones: 1
+--- !u!114 &890000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 554849390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71acb6d2699a47a59a75d134cf4b763e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcAnimationDriver
+  animator: {fileID: 0}
+  stateMachine: {fileID: 0}
+  dialogueUI: {fileID: 0}
+  defaultBehavior: 0
+  idleStateName: Standing Idle
+  stateBindings:
+  - behavior: 10
+    stateName: Walking
+  transitionSeconds: 0.18
+  animatorLayer: 0
+  detectMovement: 1
+  movementThreshold: 0.08
+  animateStaticHead: 1
+  headParts: []
+  conversationTurnLimit: 18
+  headMotionDegrees: 3.5
+  idleGlanceDegrees: 14
+  animateStaticBody: 1
+  bodyRoot: {fileID: 0}
+  bodySwayDegrees: 1.8
+  breathingScale: 0.015
+  idleActionStrength: 1
+  idleActionInterval: {x: 2.5, y: 6}
+  animateRigBones: 1
+--- !u!114 &890000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 724378877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71acb6d2699a47a59a75d134cf4b763e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcAnimationDriver
+  animator: {fileID: 0}
+  stateMachine: {fileID: 0}
+  dialogueUI: {fileID: 0}
+  defaultBehavior: 0
+  idleStateName: Standing Idle
+  stateBindings:
+  - behavior: 10
+    stateName: Walking
+  transitionSeconds: 0.18
+  animatorLayer: 0
+  detectMovement: 1
+  movementThreshold: 0.08
+  animateStaticHead: 1
+  headParts: []
+  conversationTurnLimit: 18
+  headMotionDegrees: 3.5
+  idleGlanceDegrees: 14
+  animateStaticBody: 1
+  bodyRoot: {fileID: 0}
+  bodySwayDegrees: 1.8
+  breathingScale: 0.015
+  idleActionStrength: 1
+  idleActionInterval: {x: 2.5, y: 6}
+  animateRigBones: 1
+--- !u!114 &890000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 739575916}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71acb6d2699a47a59a75d134cf4b763e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcAnimationDriver
+  animator: {fileID: 0}
+  stateMachine: {fileID: 0}
+  dialogueUI: {fileID: 0}
+  defaultBehavior: 0
+  idleStateName: Standing Idle
+  stateBindings: []
+  transitionSeconds: 0.18
+  animatorLayer: 0
+  detectMovement: 1
+  movementThreshold: 0.08
+  animateStaticHead: 1
+  headParts: []
+  conversationTurnLimit: 18
+  headMotionDegrees: 3.5
+  idleGlanceDegrees: 14
+  animateStaticBody: 1
+  bodyRoot: {fileID: 0}
+  bodySwayDegrees: 1.8
+  breathingScale: 0.015
+  idleActionStrength: 1
+  idleActionInterval: {x: 2.5, y: 6}
+  animateRigBones: 1
+--- !u!114 &890000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 855095582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71acb6d2699a47a59a75d134cf4b763e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcAnimationDriver
+  animator: {fileID: 0}
+  stateMachine: {fileID: 0}
+  dialogueUI: {fileID: 0}
+  defaultBehavior: 0
+  idleStateName: Standing Idle
+  stateBindings:
+  - behavior: 10
+    stateName: Walking
+  transitionSeconds: 0.18
+  animatorLayer: 0
+  detectMovement: 1
+  movementThreshold: 0.08
+  animateStaticHead: 1
+  headParts: []
+  conversationTurnLimit: 18
+  headMotionDegrees: 3.5
+  idleGlanceDegrees: 14
+  animateStaticBody: 1
+  bodyRoot: {fileID: 0}
+  bodySwayDegrees: 1.8
+  breathingScale: 0.015
+  idleActionStrength: 1
+  idleActionInterval: {x: 2.5, y: 6}
+  animateRigBones: 1
+--- !u!114 &890000006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1016139812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71acb6d2699a47a59a75d134cf4b763e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcAnimationDriver
+  animator: {fileID: 0}
+  stateMachine: {fileID: 0}
+  dialogueUI: {fileID: 0}
+  defaultBehavior: 0
+  idleStateName: Standing Idle
+  stateBindings: []
+  transitionSeconds: 0.18
+  animatorLayer: 0
+  detectMovement: 1
+  movementThreshold: 0.08
+  animateStaticHead: 1
+  headParts: []
+  conversationTurnLimit: 18
+  headMotionDegrees: 3.5
+  idleGlanceDegrees: 14
+  animateStaticBody: 1
+  bodyRoot: {fileID: 0}
+  bodySwayDegrees: 1.8
+  breathingScale: 0.015
+  idleActionStrength: 1
+  idleActionInterval: {x: 2.5, y: 6}
+  animateRigBones: 1
+--- !u!114 &890000007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1529582760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71acb6d2699a47a59a75d134cf4b763e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcAnimationDriver
+  animator: {fileID: 0}
+  stateMachine: {fileID: 0}
+  dialogueUI: {fileID: 0}
+  defaultBehavior: 0
+  idleStateName: Standing Idle
+  stateBindings: []
+  transitionSeconds: 0.18
+  animatorLayer: 0
+  detectMovement: 1
+  movementThreshold: 0.08
+  animateStaticHead: 1
+  headParts: []
+  conversationTurnLimit: 18
+  headMotionDegrees: 3.5
+  idleGlanceDegrees: 14
+  animateStaticBody: 1
+  bodyRoot: {fileID: 0}
+  bodySwayDegrees: 1.8
+  breathingScale: 0.015
+  idleActionStrength: 1
+  idleActionInterval: {x: 2.5, y: 6}
+  animateRigBones: 1
+--- !u!114 &890000008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1558340858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71acb6d2699a47a59a75d134cf4b763e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcAnimationDriver
+  animator: {fileID: 0}
+  stateMachine: {fileID: 0}
+  dialogueUI: {fileID: 0}
+  defaultBehavior: 0
+  idleStateName: Standing Idle
+  stateBindings: []
+  transitionSeconds: 0.18
+  animatorLayer: 0
+  detectMovement: 1
+  movementThreshold: 0.08
+  animateStaticHead: 1
+  headParts: []
+  conversationTurnLimit: 18
+  headMotionDegrees: 3.5
+  idleGlanceDegrees: 14
+  animateStaticBody: 1
+  bodyRoot: {fileID: 0}
+  bodySwayDegrees: 1.8
+  breathingScale: 0.015
+  idleActionStrength: 1
+  idleActionInterval: {x: 2.5, y: 6}
+  animateRigBones: 1
+--- !u!114 &890000009
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1742860998}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71acb6d2699a47a59a75d134cf4b763e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcAnimationDriver
+  animator: {fileID: 0}
+  stateMachine: {fileID: 0}
+  dialogueUI: {fileID: 0}
+  defaultBehavior: 0
+  idleStateName: Standing Idle
+  stateBindings: []
+  transitionSeconds: 0.18
+  animatorLayer: 0
+  detectMovement: 1
+  movementThreshold: 0.08
+  animateStaticHead: 1
+  headParts: []
+  conversationTurnLimit: 18
+  headMotionDegrees: 3.5
+  idleGlanceDegrees: 14
+  animateStaticBody: 1
+  bodyRoot: {fileID: 0}
+  bodySwayDegrees: 1.8
+  breathingScale: 0.015
+  idleActionStrength: 1
+  idleActionInterval: {x: 2.5, y: 6}
+  animateRigBones: 1
+--- !u!114 &890000010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1758385983}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71acb6d2699a47a59a75d134cf4b763e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcAnimationDriver
+  animator: {fileID: 0}
+  stateMachine: {fileID: 0}
+  dialogueUI: {fileID: 0}
+  defaultBehavior: 0
+  idleStateName: Standing Idle
+  stateBindings: []
+  transitionSeconds: 0.18
+  animatorLayer: 0
+  detectMovement: 1
+  movementThreshold: 0.08
+  animateStaticHead: 1
+  headParts: []
+  conversationTurnLimit: 18
+  headMotionDegrees: 3.5
+  idleGlanceDegrees: 14
+  animateStaticBody: 1
+  bodyRoot: {fileID: 0}
+  bodySwayDegrees: 1.8
+  breathingScale: 0.015
+  idleActionStrength: 1
+  idleActionInterval: {x: 2.5, y: 6}
+  animateRigBones: 1
+--- !u!114 &890000011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2117401584}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71acb6d2699a47a59a75d134cf4b763e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcAnimationDriver
+  animator: {fileID: 0}
+  stateMachine: {fileID: 0}
+  dialogueUI: {fileID: 0}
+  defaultBehavior: 0
+  idleStateName: Standing Idle
+  stateBindings: []
+  transitionSeconds: 0.18
+  animatorLayer: 0
+  detectMovement: 1
+  movementThreshold: 0.08
+  animateStaticHead: 1
+  headParts: []
+  conversationTurnLimit: 18
+  headMotionDegrees: 3.5
+  idleGlanceDegrees: 14
+  animateStaticBody: 1
+  bodyRoot: {fileID: 0}
+  bodySwayDegrees: 1.8
+  breathingScale: 0.015
+  idleActionStrength: 1
+  idleActionInterval: {x: 2.5, y: 6}
+  animateRigBones: 1
 --- !u!1 &891480631
 GameObject:
   m_ObjectHideFlags: 0
@@ -56455,6 +56795,28 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4a9759c60f7be6645ac3d3bcbb28c308, type: 3}
+--- !u!114 &937982722
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 724378877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a16755d627982e47b0539c77e3717c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcIdlePacing
+  enableWalking: 0
+  pacingDistance: 3
+  localDirection: {x: 1, y: 0, z: 0}
+  walkSpeed: 0.6
+  turnDegreesPerSecond: 220
+  pauseSeconds: {x: 1.5, y: 4}
+  allowStaticModels: 0
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!4 &938122156 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4664849264669146, guid: eccdbe991a4c3dd4db855b1ee15df92b, type: 3}
@@ -59571,6 +59933,28 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1746842795ad90d4880ceb345f695800, type: 3}
+--- !u!114 &996204926
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 855095582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a16755d627982e47b0539c77e3717c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcIdlePacing
+  enableWalking: 0
+  pacingDistance: 3
+  localDirection: {x: 1, y: 0, z: 0}
+  walkSpeed: 0.6
+  turnDegreesPerSecond: 220
+  pauseSeconds: {x: 1.5, y: 4}
+  allowStaticModels: 0
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &996314371
 GameObject:
   m_ObjectHideFlags: 0
@@ -60943,12 +61327,11 @@ GameObject:
   - component: {fileID: 1016139813}
   - component: {fileID: 1016139814}
   - component: {fileID: 1016139822}
-  - component: {fileID: 1016139818}
   - component: {fileID: 1016139817}
   - component: {fileID: 1016139820}
-  - component: {fileID: 1016139819}
   - component: {fileID: 1016139821}
   - component: {fileID: 1016139823}
+  - component: {fileID: 890000006}
   m_Layer: 3
   m_Name: Auditor
   m_TagString: Untagged
@@ -61011,37 +61394,6 @@ MonoBehaviour:
   dialogueUI: {fileID: 1416291532}
   summaryPopupUI: {fileID: 834182304}
   submissionTray: {fileID: 1016139822}
---- !u!114 &1016139818
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1016139812}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 2100000, guid: f2521fd75cd166c4284aec7e0d9b6442, type: 2}
---- !u!114 &1016139819
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1016139812}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 541b21b396cf7c84d8ed02d9331d0c28, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NpcVisualIndicator
-  visualRoot: {fileID: 2103741866}
-  idleColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  waitingColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  interactColor: {r: 1, g: 0.6, b: 0, a: 1}
-  dialogueColor: {r: 0, g: 1, b: 1, a: 1}
-  completedColor: {r: 0, g: 1, b: 0, a: 1}
 --- !u!114 &1016139820
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -73893,6 +74245,28 @@ MonoBehaviour:
   rowListRoot: {fileID: 968101427}
   rowPrefab: {fileID: 3347030343334095988, guid: f223a8a7e711427409547b8c228b42d3, type: 3}
   swipeToClose: {fileID: 1257453718}
+--- !u!114 &1257505780
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 554849390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a16755d627982e47b0539c77e3717c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcIdlePacing
+  enableWalking: 0
+  pacingDistance: 3
+  localDirection: {x: 1, y: 0, z: 0}
+  walkSpeed: 0.6
+  turnDegreesPerSecond: 220
+  pauseSeconds: {x: 1.5, y: 4}
+  allowStaticModels: 0
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1001 &1257960573
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -86096,8 +86470,8 @@ MonoBehaviour:
   workstationInteractor: {fileID: 959859130}
   transitionDuration: 0.5
   deskItemHighlights:
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 1876543202}
+  - {fileID: 1876543204}
   - {fileID: 1752182493}
   - {fileID: 0}
 --- !u!4 &1474987322
@@ -86877,6 +87251,8 @@ GameObject:
   - component: {fileID: 1489254972}
   - component: {fileID: 1489254976}
   - component: {fileID: 1489254977}
+  - component: {fileID: 1876543201}
+  - component: {fileID: 1876543202}
   m_Layer: 6
   m_Name: CaseFolder
   m_TagString: Untagged
@@ -86939,6 +87315,7 @@ MonoBehaviour:
   closedFolder: {fileID: 1489254968}
   openFolder: {fileID: 1869671332}
   caseFolderUI: {fileID: 1493084227}
+  deskSurface: {fileID: 0}
   folderToHUDIcon: {fileID: 0}
   allowExternalHUDDragging: 1
   allowDragging: 1
@@ -89320,10 +89697,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1529582761}
-  - component: {fileID: 1529582763}
   - component: {fileID: 1529582767}
   - component: {fileID: 1529582768}
   - component: {fileID: 1529582769}
+  - component: {fileID: 890000007}
   m_Layer: 3
   m_Name: Client1
   m_TagString: Untagged
@@ -89347,19 +89724,6 @@ Transform:
   - {fileID: 338189046}
   m_Father: {fileID: 397073992}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1529582763
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1529582760}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
 --- !u!114 &1529582767
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -90672,7 +91036,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
 --- !u!65 &1542315541
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -91669,6 +92032,8 @@ GameObject:
   - component: {fileID: 1558340861}
   - component: {fileID: 1558340860}
   - component: {fileID: 1558340863}
+  - component: {fileID: 890000008}
+  - component: {fileID: 1558340864}
   m_Layer: 3
   m_Name: NPC_Milo
   m_TagString: Untagged
@@ -91775,6 +92140,28 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967291
   pollInterval: 0.2
+--- !u!114 &1558340864
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1558340858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a16755d627982e47b0539c77e3717c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcIdlePacing
+  enableWalking: 0
+  pacingDistance: 3
+  localDirection: {x: 1, y: 0, z: 0}
+  walkSpeed: 1
+  turnDegreesPerSecond: 220
+  pauseSeconds: {x: 1.5, y: 4}
+  allowStaticModels: 0
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &1559902443
 GameObject:
   m_ObjectHideFlags: 0
@@ -102691,12 +103078,11 @@ GameObject:
   m_Component:
   - component: {fileID: 1742860999}
   - component: {fileID: 1742861000}
-  - component: {fileID: 1742861004}
   - component: {fileID: 1742861003}
   - component: {fileID: 1742861005}
   - component: {fileID: 1742861007}
-  - component: {fileID: 1742861006}
   - component: {fileID: 1742861008}
+  - component: {fileID: 890000009}
   m_Layer: 3
   m_Name: Receptionist
   m_TagString: Untagged
@@ -102756,19 +103142,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ReceptionistInteractable
   dialogueUI: {fileID: 1416291532}
---- !u!114 &1742861004
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1742860998}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
 --- !u!114 &1742861005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -102781,24 +103154,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ca6eb05854a0e54cb0a66d2b576b0c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameStateMachine
---- !u!114 &1742861006
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1742860998}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 541b21b396cf7c84d8ed02d9331d0c28, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NpcVisualIndicator
-  visualRoot: {fileID: 192683664}
-  idleColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  waitingColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  interactColor: {r: 1, g: 0.6, b: 0, a: 1}
-  dialogueColor: {r: 0, g: 1, b: 1, a: 1}
-  completedColor: {r: 0, g: 1, b: 0, a: 1}
 --- !u!114 &1742861007
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -103580,7 +103935,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 2100000, guid: f2521fd75cd166c4284aec7e0d9b6442, type: 2}
 --- !u!65 &1752182492
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -103777,6 +104131,7 @@ GameObject:
   - component: {fileID: 1758385986}
   - component: {fileID: 1758385985}
   - component: {fileID: 1758385987}
+  - component: {fileID: 890000010}
   m_Layer: 3
   m_Name: NPC_TutorialGuide
   m_TagString: Untagged
@@ -109728,7 +110083,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 515171271}
   m_HandleRect: {fileID: 515171270}
   m_Direction: 2
-  m_Value: -0.00000061035155
+  m_Value: 0
   m_Size: 0.625
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -110358,7 +110713,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 2100000, guid: f2521fd75cd166c4284aec7e0d9b6442, type: 2}
 --- !u!65 &1869671337
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -110593,6 +110947,54 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4752569902175844, guid: 495d0002f84929749aa573420e24dbf2, type: 3}
   m_PrefabInstance: {fileID: 59736073}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1876543201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1489254968}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
+--- !u!114 &1876543202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1489254968}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8e061edb5a2c0749a10535dee32c5e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeskItemHighlight
+--- !u!114 &1876543203
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 136131379}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
+--- !u!114 &1876543204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 136131379}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8e061edb5a2c0749a10535dee32c5e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeskItemHighlight
 --- !u!4 &1879750328 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4644228265360266, guid: e90f3565c0687a74db2ed0504ebd6243, type: 3}
@@ -120640,7 +121042,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
 --- !u!1001 &2064974618
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -124052,10 +124453,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2117401585}
-  - component: {fileID: 2117401587}
   - component: {fileID: 2117401591}
   - component: {fileID: 2117401592}
   - component: {fileID: 2117401593}
+  - component: {fileID: 890000011}
   m_Layer: 3
   m_Name: Client2
   m_TagString: Untagged
@@ -124079,19 +124480,6 @@ Transform:
   - {fileID: 143554020}
   m_Father: {fileID: 397073992}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2117401587
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2117401584}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
 --- !u!114 &2117401591
 MonoBehaviour:
   m_ObjectHideFlags: 0

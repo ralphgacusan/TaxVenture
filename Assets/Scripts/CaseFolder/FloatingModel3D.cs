@@ -21,7 +21,9 @@ public class FloatingModel3D :
     MonoBehaviour,
     IPointerDownHandler,
     IDragHandler,
-    IPointerUpHandler
+    IPointerUpHandler,
+    IPointerEnterHandler,
+    IPointerExitHandler
 {
     [Header("Model")]
 
@@ -106,6 +108,12 @@ public class FloatingModel3D :
 
     private bool hasDragTarget;
 
+    private bool isPointerOver;
+
+    private Vector2 pointerPosition;
+
+    private HighlightEffect highlightEffect;
+
     private Camera eventCamera;
 
 
@@ -166,8 +174,20 @@ public class FloatingModel3D :
     }
 
 
+    private void OnDisable()
+    {
+        isPointerOver = false;
+        SetOutlineFocused(false);
+    }
+
+
     private void Update()
     {
+        if (isPointerOver || isDragging)
+        {
+            UpdateOutlineFocus();
+        }
+
         if (!isDragging ||
             !hasDragTarget ||
             model == null)
@@ -211,6 +231,13 @@ public class FloatingModel3D :
         PointerEventData eventData
     )
     {
+        if (!isActiveAndEnabled)
+        {
+            return;
+        }
+
+        pointerPosition = eventData.position;
+
         DebugLog(
             $"OnPointerDown detected on {gameObject.name}."
         );
@@ -291,6 +318,7 @@ public class FloatingModel3D :
 
         isDragging = true;
         hasDragTarget = true;
+        UpdateOutlineFocus();
 
         if (preserveOriginalRotation)
         {
@@ -329,6 +357,27 @@ public class FloatingModel3D :
     }
 
 
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (!isActiveAndEnabled || !allowDragging)
+        {
+            return;
+        }
+
+        if (eventData != null)
+            pointerPosition = eventData.position;
+        isPointerOver = true;
+        UpdateOutlineFocus();
+    }
+
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        isPointerOver = false;
+        UpdateOutlineFocus();
+    }
+
+
     public void OnDrag(
         PointerEventData eventData
     )
@@ -338,6 +387,8 @@ public class FloatingModel3D :
         {
             return;
         }
+
+        pointerPosition = eventData.position;
 
         UpdateDragTarget(
             eventData.position
@@ -422,6 +473,8 @@ public class FloatingModel3D :
 
         isDragging = false;
         hasDragTarget = false;
+        isPointerOver = false;
+        UpdateOutlineFocus();
 
         DebugLog(
             $"Dragging finished on {gameObject.name}."
@@ -438,6 +491,12 @@ public class FloatingModel3D :
     )
     {
         allowDragging = enabled;
+
+        if (!enabled)
+        {
+            isPointerOver = false;
+            SetOutlineFocused(false);
+        }
 
         DebugLog(
             $"Dragging enabled: {allowDragging}"
@@ -460,6 +519,8 @@ public class FloatingModel3D :
 
         isDragging = false;
         hasDragTarget = false;
+        isPointerOver = false;
+        SetOutlineFocused(false);
 
         model.position =
             dragTargetPosition;
@@ -485,6 +546,41 @@ public class FloatingModel3D :
             Debug.Log(
                 $"[FloatingModel3D] {message}"
             );
+        }
+    }
+
+
+    private void UpdateOutlineFocus()
+    {
+        bool pointerBlocked = isPointerOver &&
+            !isDragging &&
+            (DialogueUI.IsAnyDialogueActive ||
+             VirtualJoystick.BlocksWorldInput ||
+             MobileInputGuard.IsPointerOverUI(pointerPosition));
+
+        SetOutlineFocused(
+            isActiveAndEnabled &&
+            allowDragging &&
+            (isDragging || isPointerOver && !pointerBlocked)
+        );
+    }
+
+
+    private void SetOutlineFocused(bool focused)
+    {
+        if (focused && (!isActiveAndEnabled || !allowDragging))
+        {
+            return;
+        }
+
+        if (focused && highlightEffect == null && model != null)
+        {
+            highlightEffect = HighlightEffect.For(model);
+        }
+
+        if (highlightEffect != null)
+        {
+            highlightEffect.SetFocused(focused);
         }
     }
 }

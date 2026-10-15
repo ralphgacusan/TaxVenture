@@ -16,7 +16,9 @@ public class TaxCodeBook3DDrag :
     MonoBehaviour,
     IPointerDownHandler,
     IDragHandler,
-    IPointerUpHandler
+    IPointerUpHandler,
+    IPointerEnterHandler,
+    IPointerExitHandler
 {
     [Header("References")]
 
@@ -35,6 +37,9 @@ public class TaxCodeBook3DDrag :
     [Tooltip("Existing 2D tax code UI controller.")]
     [SerializeField]
     private TaxCodeBookUI taxCodeBookUI;
+
+    [Tooltip("Optional bounded surface shared by desk documents.")]
+    [SerializeField] private DeskPlacementSurface deskSurface;
 
 
     [Header("Drag Settings")]
@@ -99,6 +104,16 @@ public class TaxCodeBook3DDrag :
     private bool hasDragTarget;
     private bool hasMovedDuringDrag;
 
+    private bool isPointerOver;
+
+    private Vector2 pointerPosition;
+    private Collider placementCollider;
+    private Camera eventCamera;
+    private Vector3 dragStartPosition;
+    private bool currentDropValid;
+
+    private HighlightEffect highlightEffect;
+
 
     private void Awake()
     {
@@ -111,6 +126,11 @@ public class TaxCodeBook3DDrag :
         {
             closedTaxCodeBook = gameObject;
         }
+
+        if (deskSurface == null)
+            deskSurface = GetComponentInParent<DeskPlacementSurface>();
+        if (closedTaxCodeBook != null)
+            placementCollider = closedTaxCodeBook.GetComponent<Collider>();
 
         if (openTaxCodeBook == null)
         {
@@ -159,8 +179,30 @@ public class TaxCodeBook3DDrag :
     }
 
 
+    private void OnDisable()
+    {
+        if (isDragging && closedTaxCodeBook != null)
+            closedTaxCodeBook.transform.position = hasDragTarget ? dragTargetPosition : dragStartPosition;
+        isDragging = false;
+        hasDragTarget = false;
+        currentDropValid = false;
+        isPointerOver = false;
+        SetOutlineFocused(false);
+    }
+
+
     private void Update()
     {
+        if (!allowDragging)
+        {
+            isPointerOver = false;
+            SetOutlineFocused(false);
+        }
+        else if (isPointerOver || isDragging)
+        {
+            UpdateOutlineFocus();
+        }
+
         if (!isDragging ||
             !hasDragTarget ||
             closedTaxCodeBook == null)
@@ -201,30 +243,28 @@ public class TaxCodeBook3DDrag :
         PointerEventData eventData
     )
     {
-        if (!allowDragging ||
+        if (!isActiveAndEnabled ||
+            !allowDragging ||
             closedTaxCodeBook == null ||
             mainCamera == null)
         {
             return;
         }
 
+        pointerPosition = eventData.position;
+
         pointerDownScreenPosition =
             eventData.position;
 
         hasMovedDuringDrag = false;
         isDragging = true;
-        hasDragTarget = false;
+        currentDropValid = true;
+        dragStartPosition = closedTaxCodeBook.transform.position;
+        dragTargetPosition = dragStartPosition;
+        hasDragTarget = true;
 
-        dragPlane =
-            new Plane(
-                mainCamera.transform.forward,
-                closedTaxCodeBook.transform.position
-            );
-
-        Ray ray =
-            mainCamera.ScreenPointToRay(
-                eventData.position
-            );
+        eventCamera = eventData.pressEventCamera != null ? eventData.pressEventCamera : mainCamera;
+        Ray ray = eventCamera.ScreenPointToRay(eventData.position);
 
         if (drawDebugRay)
         {
@@ -237,17 +277,29 @@ public class TaxCodeBook3DDrag :
             );
         }
 
-        if (!dragPlane.Raycast(
-                ray,
-                out float enter
-            ))
+        Vector3 pointerWorldPosition;
+        if (deskSurface != null)
         {
-            isDragging = false;
-            return;
+            if (!deskSurface.TryGetPointerPoint(ray, out pointerWorldPosition))
+            {
+                isDragging = false;
+                hasDragTarget = false;
+                currentDropValid = false;
+                return;
+            }
         }
-
-        Vector3 pointerWorldPosition =
-            ray.GetPoint(enter);
+        else
+        {
+            dragPlane = new Plane(mainCamera.transform.forward, closedTaxCodeBook.transform.position);
+            if (!dragPlane.Raycast(ray, out float enter))
+            {
+                isDragging = false;
+                hasDragTarget = false;
+                currentDropValid = false;
+                return;
+            }
+            pointerWorldPosition = ray.GetPoint(enter);
+        }
 
         dragOffset =
             closedTaxCodeBook.transform.position -
@@ -257,8 +309,30 @@ public class TaxCodeBook3DDrag :
             closedTaxCodeBook.transform.position;
 
         hasDragTarget = true;
+        UpdateOutlineFocus();
 
         DebugLog("Tax code book dragging started.");
+    }
+
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (!isActiveAndEnabled || !allowDragging || closedTaxCodeBook == null)
+        {
+            return;
+        }
+
+        if (eventData != null)
+            pointerPosition = eventData.position;
+        isPointerOver = true;
+        UpdateOutlineFocus();
+    }
+
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        isPointerOver = false;
+        UpdateOutlineFocus();
     }
 
 
@@ -271,6 +345,8 @@ public class TaxCodeBook3DDrag :
         {
             return;
         }
+
+        pointerPosition = eventData.position;
 
         float screenDistance =
             Vector2.Distance(
@@ -298,6 +374,8 @@ public class TaxCodeBook3DDrag :
             return;
         }
 
+        pointerPosition = eventData.position;
+
         float screenDistance =
             Vector2.Distance(
                 pointerDownScreenPosition,
@@ -311,13 +389,27 @@ public class TaxCodeBook3DDrag :
         if (!hasMovedDuringDrag ||
             screenDistance < minimumDragDistance)
         {
+            closedTaxCodeBook.transform.position = dragStartPosition;
             isDragging = false;
             hasDragTarget = false;
+            currentDropValid = false;
+            isPointerOver = false;
+            UpdateOutlineFocus();
 
             DebugLog(
                 "No meaningful drag detected."
             );
 
+            return;
+        }
+
+        if (!currentDropValid)
+        {
+            closedTaxCodeBook.transform.position = hasDragTarget ? dragTargetPosition : dragStartPosition;
+            isDragging = false;
+            hasDragTarget = false;
+            isPointerOver = false;
+            UpdateOutlineFocus();
             return;
         }
 
@@ -335,6 +427,8 @@ public class TaxCodeBook3DDrag :
 
         isDragging = false;
         hasDragTarget = false;
+        isPointerOver = false;
+        UpdateOutlineFocus();
 
         ShowOpenTaxCodeBook(eventData.position);
     }
@@ -344,10 +438,13 @@ public class TaxCodeBook3DDrag :
         Vector2 screenPosition
     )
     {
-        Ray ray =
-            mainCamera.ScreenPointToRay(
-                screenPosition
-            );
+        Camera pointerCamera = eventCamera != null ? eventCamera : mainCamera;
+        if (pointerCamera == null)
+        {
+            currentDropValid = false;
+            return;
+        }
+        Ray ray = pointerCamera.ScreenPointToRay(screenPosition);
 
         if (drawDebugRay)
         {
@@ -360,11 +457,25 @@ public class TaxCodeBook3DDrag :
             );
         }
 
-        if (!dragPlane.Raycast(
-                ray,
-                out float enter
-            ))
+        if (deskSurface != null)
         {
+            if (!deskSurface.TryGetPointerPoint(ray, out Vector3 surfacePoint) ||
+                !deskSurface.TryClampPosition(closedTaxCodeBook.transform, placementCollider,
+                    surfacePoint + dragOffset, out Vector3 clampedPosition))
+            {
+                currentDropValid = false;
+                return;
+            }
+
+            dragTargetPosition = clampedPosition;
+            hasDragTarget = true;
+            currentDropValid = true;
+            return;
+        }
+
+        if (!dragPlane.Raycast(ray, out float enter))
+        {
+            currentDropValid = false;
             return;
         }
 
@@ -376,6 +487,7 @@ public class TaxCodeBook3DDrag :
             dragOffset;
 
         hasDragTarget = true;
+        currentDropValid = true;
     }
 
 
@@ -432,6 +544,9 @@ public class TaxCodeBook3DDrag :
             return;
         }
 
+        isPointerOver = false;
+        SetOutlineFocused(false);
+
         closedTaxCodeBook.SetActive(false);
 
         if (positionOpenBookAtDropPoint)
@@ -480,6 +595,8 @@ public class TaxCodeBook3DDrag :
         isDragging = false;
         hasDragTarget = false;
         hasMovedDuringDrag = false;
+        isPointerOver = false;
+        SetOutlineFocused(false);
 
         if (closedTaxCodeBook != null)
         {
@@ -513,6 +630,41 @@ public class TaxCodeBook3DDrag :
             Debug.Log(
                 $"[TaxCodeBook3DDrag] {message}"
             );
+        }
+    }
+
+
+    private void UpdateOutlineFocus()
+    {
+        bool pointerBlocked = isPointerOver &&
+            !isDragging &&
+            (DialogueUI.IsAnyDialogueActive ||
+             VirtualJoystick.BlocksWorldInput ||
+             MobileInputGuard.IsPointerOverUI(pointerPosition));
+
+        SetOutlineFocused(
+            isActiveAndEnabled &&
+            allowDragging &&
+            (isDragging || isPointerOver && !pointerBlocked)
+        );
+    }
+
+
+    private void SetOutlineFocused(bool focused)
+    {
+        if (focused && (!isActiveAndEnabled || !allowDragging))
+        {
+            return;
+        }
+
+        if (focused && highlightEffect == null && closedTaxCodeBook != null)
+        {
+            highlightEffect = HighlightEffect.For(closedTaxCodeBook.transform);
+        }
+
+        if (highlightEffect != null)
+        {
+            highlightEffect.SetFocused(focused);
         }
     }
 }

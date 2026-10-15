@@ -6,7 +6,9 @@ public class CaseFolder3DDrag :
     MonoBehaviour,
     IPointerDownHandler,
     IDragHandler,
-    IPointerUpHandler
+    IPointerUpHandler,
+    IPointerEnterHandler,
+    IPointerExitHandler
 {
     [Header("References")]
     [SerializeField] private Camera mainCamera;
@@ -24,6 +26,9 @@ public class CaseFolder3DDrag :
 
     [Header("Case Folder UI")]
     [SerializeField] private CaseFolderUI caseFolderUI;
+
+    [Tooltip("Optional bounded surface shared by desk documents.")]
+    [SerializeField] private DeskPlacementSurface deskSurface;
 
     [Header("HUD Storage")]
     [SerializeField] private FolderToHUDIcon folderToHUDIcon;
@@ -88,8 +93,18 @@ public class CaseFolder3DDrag :
     private bool isOpening;
     private bool hasMovedDuringDrag;
 
+    private bool isPointerOver;
+
+    private Vector2 pointerPosition;
+
+    private HighlightEffect highlightEffect;
+
     private Vector3 dragTargetPosition;
     private Vector3 dragOffset;
+    private Vector3 dragStartPosition;
+    private Collider placementCollider;
+    private Camera eventCamera;
+    private bool currentDropValid;
 
     private Vector2 pointerDownScreenPosition;
     private Vector2 lastPointerScreenPosition;
@@ -117,6 +132,11 @@ public class CaseFolder3DDrag :
         {
             closedFolder = gameObject;
         }
+
+        if (deskSurface == null)
+            deskSurface = GetComponentInParent<DeskPlacementSurface>();
+        if (closedFolder != null)
+            placementCollider = closedFolder.GetComponent<Collider>();
 
         if (deskViewpoint == null)
         {
@@ -200,6 +220,16 @@ public class CaseFolder3DDrag :
 
     private void Update()
     {
+        if (isOpening || (!allowDragging && !externalHUDDragging))
+        {
+            isPointerOver = false;
+            SetOutlineFocused(false);
+        }
+        else if (isPointerOver || isDragging)
+        {
+            UpdateOutlineFocus();
+        }
+
         if (!isDragging ||
             !hasDragTarget ||
             isOpening ||
@@ -235,14 +265,28 @@ public class CaseFolder3DDrag :
         }
     }
 
+    private void OnDisable()
+    {
+        if (isDragging && closedFolder != null)
+            closedFolder.transform.position = hasDragTarget ? dragTargetPosition : dragStartPosition;
+        isDragging = false;
+        externalHUDDragging = false;
+        hasDragTarget = false;
+        currentDropValid = false;
+        isPointerOver = false;
+        SetOutlineFocused(false);
+    }
+
     public void OnPointerDown(PointerEventData eventData)
     {
         DebugLog("OnPointerDown() detected.");
 
-        if (!allowDragging || isOpening)
+        if (!isActiveAndEnabled || !allowDragging || isOpening)
         {
             return;
         }
+
+        pointerPosition = eventData.position;
 
         if (mainCamera == null ||
             closedFolder == null ||
@@ -263,34 +307,41 @@ public class CaseFolder3DDrag :
 
         hasMovedDuringDrag = false;
         isDragging = true;
-        hasDragTarget = false;
+        dragStartPosition = closedFolder.transform.position;
+        dragTargetPosition = dragStartPosition;
+        hasDragTarget = true;
+        currentDropValid = true;
 
         /*
          * The plane is parallel to the camera and passes directly
          * through the closed folder's current position.
          */
-        dragPlane = new Plane(
-            mainCamera.transform.forward,
-            closedFolder.transform.position
-        );
-
-        Ray ray =
-            mainCamera.ScreenPointToRay(
-                eventData.position
-            );
-
-        if (!dragPlane.Raycast(ray, out float enter))
+        eventCamera = eventData.pressEventCamera != null ? eventData.pressEventCamera : mainCamera;
+        Ray ray = eventCamera.ScreenPointToRay(eventData.position);
+        Vector3 pointerWorldPosition;
+        if (deskSurface != null)
         {
-            DebugLog(
-                "The pointer did not intersect the drag plane."
-            );
-
-            isDragging = false;
-            return;
+            if (!deskSurface.TryGetPointerPoint(ray, out pointerWorldPosition))
+            {
+                currentDropValid = false;
+                isDragging = false;
+                hasDragTarget = false;
+                return;
+            }
         }
-
-        Vector3 pointerWorldPosition =
-            ray.GetPoint(enter);
+        else
+        {
+            dragPlane = new Plane(mainCamera.transform.forward, closedFolder.transform.position);
+            if (!dragPlane.Raycast(ray, out float enter))
+            {
+                DebugLog("The pointer did not intersect the drag plane.");
+                currentDropValid = false;
+                isDragging = false;
+                hasDragTarget = false;
+                return;
+            }
+            pointerWorldPosition = ray.GetPoint(enter);
+        }
 
         /*
          * Calculate the exact grab offset.
@@ -303,6 +354,7 @@ public class CaseFolder3DDrag :
             closedFolder.transform.position;
 
         hasDragTarget = true;
+        UpdateOutlineFocus();
 
         if (preserveClosedFolderRotation)
         {
@@ -327,12 +379,33 @@ public class CaseFolder3DDrag :
         );
     }
 
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (!isActiveAndEnabled || !allowDragging || isOpening || closedFolder == null)
+        {
+            return;
+        }
+
+        if (eventData != null)
+            pointerPosition = eventData.position;
+        isPointerOver = true;
+        UpdateOutlineFocus();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        isPointerOver = false;
+        UpdateOutlineFocus();
+    }
+
     public void OnDrag(PointerEventData eventData)
     {
         if (!isDragging || isOpening)
         {
             return;
         }
+
+        pointerPosition = eventData.position;
 
         lastPointerScreenPosition =
             eventData.position;
@@ -364,6 +437,8 @@ public class CaseFolder3DDrag :
             return;
         }
 
+        pointerPosition = eventData.position;
+
         lastPointerScreenPosition =
             eventData.position;
 
@@ -378,6 +453,7 @@ public class CaseFolder3DDrag :
         if (!hasMovedDuringDrag ||
             screenDistance < minimumDragDistance)
         {
+            closedFolder.transform.position = dragStartPosition;
             DebugLog(
                 "No meaningful drag detected. " +
                 "The closed folder remains visible."
@@ -385,7 +461,19 @@ public class CaseFolder3DDrag :
 
             isDragging = false;
             hasDragTarget = false;
+            isPointerOver = false;
+            UpdateOutlineFocus();
 
+            return;
+        }
+
+        if (!currentDropValid)
+        {
+            closedFolder.transform.position = hasDragTarget ? dragTargetPosition : dragStartPosition;
+            isDragging = false;
+            hasDragTarget = false;
+            isPointerOver = false;
+            UpdateOutlineFocus();
             return;
         }
 
@@ -403,6 +491,8 @@ public class CaseFolder3DDrag :
 
         isDragging = false;
         hasDragTarget = false;
+        isPointerOver = false;
+        UpdateOutlineFocus();
 
         DebugLog(
             $"Closed folder released at: {closedFolder.transform.position}"
@@ -469,10 +559,13 @@ public class CaseFolder3DDrag :
             return;
         }
 
-        Ray ray =
-            mainCamera.ScreenPointToRay(
-                screenPosition
-            );
+        Camera pointerCamera = eventCamera != null ? eventCamera : mainCamera;
+        if (pointerCamera == null)
+        {
+            currentDropValid = false;
+            return;
+        }
+        Ray ray = pointerCamera.ScreenPointToRay(screenPosition);
 
         if (drawDebugRay)
         {
@@ -484,12 +577,26 @@ public class CaseFolder3DDrag :
             );
         }
 
+        if (deskSurface != null)
+        {
+            if (!deskSurface.TryGetPointerPoint(ray, out Vector3 surfacePoint) ||
+                !deskSurface.TryClampPosition(closedFolder.transform, placementCollider,
+                    surfacePoint + dragOffset, out Vector3 clampedPosition))
+            {
+                currentDropValid = false;
+                return;
+            }
+
+            dragTargetPosition = clampedPosition;
+            hasDragTarget = true;
+            currentDropValid = true;
+            return;
+        }
+
         if (!dragPlane.Raycast(ray, out float enter))
         {
-            DebugLog(
-                "Screen ray did not intersect the drag plane."
-            );
-
+            DebugLog("Screen ray did not intersect the drag plane.");
+            currentDropValid = false;
             return;
         }
 
@@ -557,6 +664,7 @@ public class CaseFolder3DDrag :
         }
 
         hasDragTarget = true;
+        currentDropValid = true;
     }
 
     /// <summary>
@@ -614,6 +722,9 @@ public class CaseFolder3DDrag :
 
             return;
         }
+
+        isPointerOver = false;
+        SetOutlineFocused(false);
 
         /*
          * Hide the closed folder and show the open folder.
@@ -675,6 +786,8 @@ public class CaseFolder3DDrag :
         hasDragTarget = false;
         isOpening = false;
         hasMovedDuringDrag = false;
+        isPointerOver = false;
+        SetOutlineFocused(false);
 
         if (closedFolder != null)
         {
@@ -723,7 +836,8 @@ public class CaseFolder3DDrag :
 
     public void BeginExternalDrag(Vector2 screenPosition)
     {
-        if (!allowExternalHUDDragging ||
+        if (!isActiveAndEnabled ||
+            !allowExternalHUDDragging ||
             isOpening ||
             mainCamera == null ||
             closedFolder == null ||
@@ -731,6 +845,8 @@ public class CaseFolder3DDrag :
         {
             return;
         }
+
+        pointerPosition = screenPosition;
 
         externalHUDDragging = true;
 
@@ -745,32 +861,42 @@ public class CaseFolder3DDrag :
 
         hasMovedDuringDrag = false;
         isDragging = true;
-        hasDragTarget = false;
+        dragStartPosition = closedFolder.transform.position;
+        dragTargetPosition = dragStartPosition;
+        hasDragTarget = true;
+        currentDropValid = true;
+        eventCamera = mainCamera;
 
-        dragPlane = new Plane(
-            mainCamera.transform.forward,
-            closedFolder.transform.position
-        );
-
-        Ray ray =
-            mainCamera.ScreenPointToRay(
-                screenPosition
-            );
-
-        if (!dragPlane.Raycast(ray, out float enter))
+        Ray ray = mainCamera.ScreenPointToRay(screenPosition);
+        Vector3 pointerWorldPosition;
+        if (deskSurface != null)
         {
-            externalHUDDragging = false;
-            isDragging = false;
-
-            DebugLog(
-                "External HUD drag could not intersect the drag plane."
-            );
-
-            return;
+            if (!deskSurface.TryGetPointerPoint(ray, out pointerWorldPosition))
+            {
+                externalHUDDragging = false;
+                isDragging = false;
+                hasDragTarget = false;
+                currentDropValid = false;
+                UpdateOutlineFocus();
+                DebugLog("External HUD drag could not intersect the desk surface.");
+                return;
+            }
         }
-
-        Vector3 pointerWorldPosition =
-            ray.GetPoint(enter);
+        else
+        {
+            dragPlane = new Plane(mainCamera.transform.forward, closedFolder.transform.position);
+            if (!dragPlane.Raycast(ray, out float enter))
+            {
+                externalHUDDragging = false;
+                isDragging = false;
+                hasDragTarget = false;
+                currentDropValid = false;
+                UpdateOutlineFocus();
+                DebugLog("External HUD drag could not intersect the drag plane.");
+                return;
+            }
+            pointerWorldPosition = ray.GetPoint(enter);
+        }
 
         dragOffset =
             closedFolder.transform.position -
@@ -780,6 +906,7 @@ public class CaseFolder3DDrag :
             closedFolder.transform.position;
 
         hasDragTarget = true;
+        UpdateOutlineFocus();
 
         closedFolder.SetActive(true);
         openFolder.SetActive(false);
@@ -798,6 +925,8 @@ public class CaseFolder3DDrag :
         {
             return;
         }
+
+        pointerPosition = screenPosition;
 
         lastPointerScreenPosition =
             screenPosition;
@@ -826,10 +955,23 @@ public class CaseFolder3DDrag :
             return false;
         }
 
+        pointerPosition = screenPosition;
+
         lastPointerScreenPosition =
             screenPosition;
 
         UpdateDragTarget(screenPosition);
+
+        if (!currentDropValid)
+        {
+            closedFolder.transform.position = hasDragTarget ? dragTargetPosition : dragStartPosition;
+            externalHUDDragging = false;
+            isDragging = false;
+            hasDragTarget = false;
+            isPointerOver = false;
+            UpdateOutlineFocus();
+            return false;
+        }
 
         if (hasDragTarget)
         {
@@ -846,6 +988,8 @@ public class CaseFolder3DDrag :
         externalHUDDragging = false;
         isDragging = false;
         hasDragTarget = false;
+        isPointerOver = false;
+        UpdateOutlineFocus();
 
         DebugLog(
             $"External HUD drag ended at: " +
@@ -872,6 +1016,8 @@ public class CaseFolder3DDrag :
         externalHUDDragging = false;
         allowDragging = false;
         allowExternalHUDDragging = false;
+        isPointerOver = false;
+        SetOutlineFocused(false);
 
         if (closedFolder != null)
         {
@@ -899,6 +1045,8 @@ public class CaseFolder3DDrag :
     /// </summary>
     public void RestoreAndEnableFolder()
     {
+        isPointerOver = false;
+        SetOutlineFocused(false);
         allowDragging = true;
         allowExternalHUDDragging = true;
         enabled = true;
@@ -926,6 +1074,44 @@ public class CaseFolder3DDrag :
         }
 
         DebugLog("Folder restored and re-enabled after a failed audit retry.");
+    }
+
+    private void UpdateOutlineFocus()
+    {
+        bool pointerBlocked = isPointerOver &&
+            !isDragging &&
+            (DialogueUI.IsAnyDialogueActive ||
+             VirtualJoystick.BlocksWorldInput ||
+             MobileInputGuard.IsPointerOverUI(pointerPosition));
+
+        SetOutlineFocused(
+            isActiveAndEnabled &&
+            !isOpening &&
+            (externalHUDDragging && isDragging ||
+             allowDragging &&
+             (isDragging || isPointerOver && !pointerBlocked))
+        );
+    }
+
+    private void SetOutlineFocused(bool focused)
+    {
+        if (focused &&
+            (!isActiveAndEnabled ||
+             isOpening ||
+             !(allowDragging || externalHUDDragging)))
+        {
+            return;
+        }
+
+        if (focused && highlightEffect == null && closedFolder != null)
+        {
+            highlightEffect = HighlightEffect.For(closedFolder.transform);
+        }
+
+        if (highlightEffect != null)
+        {
+            highlightEffect.SetFocused(focused);
+        }
     }
 
 }

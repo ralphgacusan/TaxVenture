@@ -78,10 +78,19 @@ public class CameraController : MonoBehaviour
     private CursorLockMode profileViewerCursorLock;
     private bool profileViewerCursorVisible;
 
+    private enum DeferredControls { None, Locked, Unlocked }
+    private bool dialogueHoldsControls;
+    private int dialogueHoldVersion;
+    private DeferredControls controlsRequestedDuringDialogue;
+
     public bool TryBeginProfileViewer()
     {
         if (!isActiveAndEnabled || CurrentMode != CameraMode.FirstPerson || activeTransition != null ||
             profileViewerControls != null)
+            return false;
+        // T05: a conversation or popup already holds the controls. The viewer's
+        // snapshot would capture them locked and restore them locked on close.
+        if (dialogueHoldsControls || (firstPersonCamera != null && !firstPersonCamera.enabled))
             return false;
 
         profileViewerControls = new Behaviour[]
@@ -144,6 +153,7 @@ public class CameraController : MonoBehaviour
             if (lookJoystick != null) lookJoystick.SetVisible(profileViewerLookJoystickVisible);
             Cursor.lockState = profileViewerCursorLock;
             Cursor.visible = profileViewerCursorVisible;
+            MobileInputGuard.SuppressWorldTapsThisFrame();
         }
         profileViewerControls = null;
         profileViewerControlStates = null;
@@ -318,7 +328,7 @@ public class CameraController : MonoBehaviour
 
         // ---------------------------------------------------------
         // HIDE VIRTUAL JOYSTICK
-        // ---------------------------------------------------------
+        // -------------------------------------------------------------
 
         if (virtualJoystick != null)
         {
@@ -820,6 +830,9 @@ public class CameraController : MonoBehaviour
 
     public void LockPlayerControls()
     {
+        // T05: a popup opened during a conversation keeps its lock after the
+        // conversation releases (see AcquireDialogueControls).
+        if (dialogueHoldsControls) controlsRequestedDuringDialogue = DeferredControls.Locked;
         if (lookJoystick != null) lookJoystick.Hide();
         if (firstPersonCamera != null)
             firstPersonCamera.enabled = false;
@@ -919,23 +932,42 @@ public class CameraController : MonoBehaviour
             body.constraints = RigidbodyConstraints.FreezeAll;
         }
 
+        // T05: popups (tutorial, results) may lock/unlock while the conversation
+        // holds the controls; their last request is applied on release instead.
+        int holdVersion = ++dialogueHoldVersion;
+        dialogueHoldsControls = true;
+        controlsRequestedDuringDialogue = DeferredControls.None;
+
         bool released = false;
         return () =>
         {
             if (released) return;
             released = true;
+            DeferredControls requested = DeferredControls.None;
+            if (this != null && holdVersion == dialogueHoldVersion)
+            {
+                requested = controlsRequestedDuringDialogue;
+                dialogueHoldsControls = false;
+                controlsRequestedDuringDialogue = DeferredControls.None;
+            }
             // Body constraints belong to this conversation alone; restore them
             // even when another mode has since taken the camera.
             if (body != null) body.constraints = bodyConstraints;
             // A different mode/transition has taken ownership; its own exit
             // path decides when controls return, not this finished dialogue.
             if (this == null || !isActiveAndEnabled || CurrentMode != mode || activeTransition != null) return;
+            Cursor.lockState = cursorLock;
+            Cursor.visible = cursorVisible;
+            // A popup opened mid-conversation is still up; it unlocks on close.
+            if (requested == DeferredControls.Locked) return;
             for (int i = 0; i < controls.Length; i++)
                 if (controls[i] != null) controls[i].enabled = enabledStates[i];
             if (virtualJoystick != null) virtualJoystick.SetVisible(movementVisible);
             if (lookJoystick != null) lookJoystick.SetVisible(lookVisible);
-            Cursor.lockState = cursorLock;
-            Cursor.visible = cursorVisible;
+            // A popup that was open at the start closed mid-conversation.
+            if (requested == DeferredControls.Unlocked && mode == CameraMode.FirstPerson)
+                SetFirstPersonSystems(true);
+            MobileInputGuard.SuppressWorldTapsThisFrame();
         };
     }
 
@@ -943,6 +975,13 @@ public class CameraController : MonoBehaviour
     {
         if (CurrentMode != CameraMode.FirstPerson)
             return;
+
+        // T05: re-enabling look/movement now would fight the conversation camera.
+        if (dialogueHoldsControls)
+        {
+            controlsRequestedDuringDialogue = DeferredControls.Unlocked;
+            return;
+        }
 
         SetFirstPersonSystems(true);
     }
@@ -981,6 +1020,9 @@ public class CameraController : MonoBehaviour
                 + (enabled ? "shown." : "hidden.")
             );
         }
+
+        // The exit/close tap is released this frame over now-hidden UI.
+        if (enabled) MobileInputGuard.SuppressWorldTapsThisFrame();
     }
 
     // =============================================================

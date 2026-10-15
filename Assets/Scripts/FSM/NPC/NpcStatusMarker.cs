@@ -61,6 +61,7 @@ public class NpcStatusMarker : MonoBehaviour
 
     private INpcAvailabilitySource source;
     private NpcStateMachine stateMachine;
+    private HighlightEffect bodyOutline;
     private DialogueUI dialogueUI;
     private Transform markerRoot;
     private MeshFilter fillFilter, outlineFilter;
@@ -90,6 +91,7 @@ public class NpcStatusMarker : MonoBehaviour
             foreach (MonoBehaviour candidate in GetComponents<MonoBehaviour>())
                 if (candidate is INpcAvailabilitySource found) { source = found; break; }
         stateMachine = GetComponent<NpcStateMachine>();
+        bodyOutline = HighlightEffect.For(this);
         BuildMarker();
     }
 
@@ -110,6 +112,7 @@ public class NpcStatusMarker : MonoBehaviour
 
     private void OnDisable()
     {
+        if (bodyOutline != null) bodyOutline.SetAffordance(false);
         if (stateMachine != null) stateMachine.OnStateChanged -= HandleNpcStateChanged;
         if (dialogueUI != null)
         {
@@ -128,6 +131,14 @@ public class NpcStatusMarker : MonoBehaviour
     private void HandleDialogueChanged() => Refresh(false);
     private void HandleDialogueEnded(DialogueEndReason reason) => Refresh(false);
 
+    /// <summary>Keep the body outline and head marker attached to a newly spawned client model.</summary>
+    public void RefreshVisualTargets()
+    {
+        if (bodyOutline != null) bodyOutline.RefreshTargets();
+        anchored = false;
+        Refresh(true);
+    }
+
     private void LateUpdate()
     {
         float dt = Time.unscaledDeltaTime;
@@ -135,11 +146,17 @@ public class NpcStatusMarker : MonoBehaviour
         if (clock >= nextPoll) Refresh(true);
 
         Camera cam = MainCamera();
-        if (cam == null || markerRoot == null) return;
+        if (cam == null || markerRoot == null)
+        {
+            if (bodyOutline != null) bodyOutline.SetAffordance(false);
+            return;
+        }
 
         // Evaluate the shape every frame from cached availability/occlusion so
         // conversations and camera modes hide markers immediately.
         targetShape = ResolveShape(cam);
+        // A visible status marker identifies an interactive NPC even without pointer hover.
+        if (bodyOutline != null) bodyOutline.SetAffordance(targetShape != NpcMarkerShape.None);
 
         float target = targetShape == NpcMarkerShape.None ? 0f : 1f;
         if (targetShape != NpcMarkerShape.None && targetShape != drawnShape)

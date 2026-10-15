@@ -18,14 +18,23 @@ using UnityEngine;
 /// CONNECTS WITH:
 /// - Attached to the same GameObject as the NPC's *Interactable script
 ///   (e.g. ClientInteractable references GetComponent<NpcStateMachine>())
-/// - NpcVisualIndicator (this milestone): subscribes to OnStateChanged to
-///   change the NPC's color based on state, since we have no animations yet
+/// - NpcStatusMarker: subscribes to OnStateChanged to refresh the overhead
+///   conversation availability indicator
 /// </summary>
+[RequireComponent(typeof(NpcAnimationDriver))]
 public class NpcStateMachine : MonoBehaviour
 {
     public event Action<INpcState> OnStateChanged;
 
     public INpcState CurrentState { get; private set; }
+
+    private void Awake()
+    {
+        // Existing scene instances predate the animation adapter. Add it at
+        // runtime as well as requiring it for newly configured NPCs.
+        if (GetComponent<NpcAnimationDriver>() == null)
+            gameObject.AddComponent<NpcAnimationDriver>();
+    }
 
     private void Start()
     {

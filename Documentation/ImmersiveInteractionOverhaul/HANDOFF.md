@@ -6,7 +6,38 @@ Updated 2026-10-15. Root: `C:\Learn\Projects\TaxVenture\TaxVenture`; branch `fea
 
 The user authorized all of T03 at once and asked for internal tests only. Full detail, file list, evidence, manual matrix and risks are in `tickets/T03-dialogue-camera-and-ui.md`.
 
-## Latest unit — T04 NPC markers, 2026-10-15
+## Latest unit — T06 regression evidence, 2026-10-15
+
+All automated checks pass:
+
+- compile: 0 errors
+- dialogue: 796 assertions
+- controls: 5,734 assertions
+- progression
+- profile cards
+- the T03/T04 setup saved in `Office_Level1`
+- a clean diff scope
+
+The four Editor validations and every manual or device row are NOT RUN. The matrix and known issues are in `tickets/T06-regression-testing-and-handoff.md`. The overhaul is **not** declared complete until the user's manual results arrive.
+
+Agent: **STOP** for final user review. Any failure becomes a separately estimated fix.
+
+## Previous unit — T05 integration and safe input returns, 2026-10-15
+
+Implemented; see the "Delivery" section of `tickets/T05-integration-and-game-feel.md`.
+
+- **Changed:** `Assets/Scripts/Player/CameraController.cs` and `Assets/Scripts/Mobile/MobileInputGuard.cs` only. No scene, prefab or API changes.
+- **Fixes:**
+  - Popup lock/unlock requests are deferred while a conversation holds the controls.
+  - The profile viewer refuses to open during a conversation or under a popup lock.
+  - One-frame world-tap suppression whenever controls are restored (closing tap fall-through on touch).
+- **Evidence:** `Assembly-CSharp` compiles with 0 errors and the 2 baseline warnings. NOT RUN in Unity.
+
+User next: run the five T05 manual checks in the ticket (plus the outstanding T02/T03/T04 matrices), then commit with git.
+
+Agent: **STOP.** Next is **T06 regression evidence and handoff**, on explicit approval only. Estimate **8k–14k tokens**.
+
+## Previous unit — T04 NPC markers, 2026-10-15
 
 Implemented. See `tickets/T04-npc-interaction-indicators.md`.
 
@@ -20,7 +51,7 @@ User next:
 2. Run the T04 matrix, plus the outstanding T02 and T03 matrices.
 3. Commit with git; the new `.meta` files and `Assets/Materials/NpcStatusMarker.mat` must be included.
 
-Agent: **STOP.** Next is **T05 integration and safe input returns**, on explicit approval only.
+T05 has since been implemented (see above).
 
 ## Revision 1 (user feedback)
 

@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-[RequireComponent(typeof(HighlightEffect))]
+[RequireComponent(typeof(NpcStatusMarker))]
 [RequireComponent(typeof(NpcStateMachine))]
 public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilitySource
 {
@@ -9,7 +9,6 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     [SerializeField] private AuditSummaryPopupUI summaryPopupUI;
     [SerializeField] private AuditorSubmissionTray submissionTray;
 
-    private HighlightEffect highlight;
     private NpcStateMachine npcState;
     private bool dialogueSessionActive;
     private bool auditPending;
@@ -17,7 +16,6 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
 
     private void Awake()
     {
-        highlight = GetComponent<HighlightEffect>();
         npcState = GetComponent<NpcStateMachine>();
     }
 
@@ -31,13 +29,11 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
 
     public void OnFocus()
     {
-        highlight.Highlight();
         if (npcState.CurrentState is NpcIdleState) npcState.ChangeState(new NpcWaitingState());
     }
 
     public void OnUnfocus()
     {
-        highlight.Unhighlight();
         if (npcState.CurrentState is NpcWaitingState) npcState.ChangeState(new NpcIdleState());
     }
 

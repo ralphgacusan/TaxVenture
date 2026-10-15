@@ -8,19 +8,13 @@ using UnityEngine;
 /// - DialogueUI
 /// - NpcStateMachine (optional future expansion)
 /// </summary>
-[RequireComponent(typeof(HighlightEffect))]
+[RequireComponent(typeof(NpcStatusMarker))]
 public class ColleagueInteractable : MonoBehaviour, IInteractable, INpcAvailabilitySource
 {
     [SerializeField] private DialogueUI dialogueUI;
 
-    private HighlightEffect highlight;
     private bool hasSpoken = false;
     private bool dialogueSessionActive;
-
-    private void Awake()
-    {
-        highlight = GetComponent<HighlightEffect>();
-    }
 
     private void OnDisable()
     {
@@ -32,12 +26,10 @@ public class ColleagueInteractable : MonoBehaviour, IInteractable, INpcAvailabil
 
     public void OnFocus()
     {
-        highlight.Highlight();
     }
 
     public void OnUnfocus()
     {
-        highlight.Unhighlight();
     }
 
     public void OnInteract()

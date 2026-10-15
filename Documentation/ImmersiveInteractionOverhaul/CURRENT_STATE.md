@@ -87,6 +87,12 @@ Shared `Assets/Scripts/UI/DialogueUI.cs` uses `DialogueSession.cs` for admission
 
 Town flow: taxpayer conversation -> profile pickup -> HUD collection/all-profiles event -> tutorial NPC -> corkboard -> completion events/popup and office-return indicator. `TownToOfficeTransition.cs` only reveals an indicator; the office-start call is commented. This overhaul must not silently change level/quest gates.
 
+## T05 integration fixes — implemented
+
+- **Popup requests during a conversation.** `CameraController` tracks when a conversation holds the controls (`AcquireDialogueControls` to release). While it does, `LockPlayerControls`/`UnlockPlayerControls` from popups record a deferred request instead of re-enabling look and movement. On release, a pending Locked keeps controls locked for the still-open popup, and a pending Unlocked restores first-person systems.
+- **Profile viewer refusals.** `TryBeginProfileViewer` also refuses during a conversation or while `firstPersonCamera` is disabled by a popup lock.
+- **Closing-tap suppression.** `MobileInputGuard.SuppressWorldTapsThisFrame()` runs whenever first-person systems are restored, a conversation releases, or the viewer ends. `TryGetWorldTap` ignores that frame, so the closing UI tap cannot reach `Interactor`/`WorkstationInteractor`.
+
 ## T04 NPC markers — implemented, scene setup pending
 
 `NpcStatusMarker` (one per NPC, added by **Tools > TaxVenture > Configure NPC Markers**) draws an amber pulsing triangle for available and a green check for completed. It draws nothing when the NPC is unavailable, during any conversation, in non-first-person camera modes, outside 0.35–10 × NPC height, or when occluded. State comes only from each interactable's `INpcAvailabilitySource.Availability`, computed by pure `NpcAvailabilityRules`, and is refreshed on NPC FSM changes, dialogue start and end, and a 0.2 s poll. Markers are anchored above the measured head (`DialogueSpeakerFrames`) and billboarded, use shared procedural meshes, one material (`Assets/Materials/NpcStatusMarker.mat`, created by the tool) and property-block colours, and sit at the scene root on Ignore Raycast with no colliders. The existing `NpcVisualIndicator` body tint is unchanged.

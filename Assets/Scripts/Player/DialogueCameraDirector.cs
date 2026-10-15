@@ -420,14 +420,41 @@ public class DialogueCameraDirector : MonoBehaviour, IDialoguePresentation
             else placed.y = FindFloor(placed + lift, playerFloor.y).y;
         }
 
-        float yaw = DialogueShotMath.YawDegrees(ToN(npc.Floor - placed));
-        if (!playerVisual.Place(placed, yaw)) return false;
-        elijahHead = placed + Vector3.up * playerVisual.HeadHeight;
-
         DialogueShotSettings s = Settings();
-        bool npcOts = TryOverShoulder(true, s, out Pose npcPose);
-        bool playerOts = TryOverShoulder(false, s, out Pose playerPose);
-        bool two = TryTwoShot(s, out Pose twoPose);
+        Pose npcPose = default, playerPose = default, twoPose = default;
+        bool npcOts = false, playerOts = false, two = false;
+        // Props and walls on the approach side can block every shot. Try a few
+        // spots around the NPC before falling back to the first-person look;
+        // the first candidate is the original placement.
+        Vector3 fromNpc = placed - npc.Floor;
+        fromNpc.y = 0f;
+        Vector3 bodyLift = Vector3.up * (0.5f * scale);
+        for (int i = 0; i < PlacementYawOffsets.Length; i++)
+        {
+            Vector3 candidate = placed;
+            if (i > 0)
+            {
+                if (fromNpc.sqrMagnitude < 1e-4f) break;
+                candidate = npc.Floor + Quaternion.Euler(0f, PlacementYawOffsets[i], 0f) * fromNpc;
+                if (SegmentBlocked(npc.Floor + bodyLift, candidate + bodyLift) || IsOccupied(candidate + bodyLift)) continue;
+                candidate.y = FindFloor(candidate + bodyLift, placed.y).y;
+            }
+
+            float yaw = DialogueShotMath.YawDegrees(ToN(npc.Floor - candidate));
+            if (!playerVisual.Place(candidate, yaw)) return false;
+            elijahHead = candidate + Vector3.up * playerVisual.HeadHeight;
+            npcOts = TryOverShoulder(true, s, out npcPose);
+            playerOts = TryOverShoulder(false, s, out playerPose);
+            two = TryTwoShot(s, out twoPose);
+            if (npcOts || playerOts || two) break;
+        }
+        if (!npcOts && !playerOts && !two && PlacementYawOffsets.Length > 1)
+        {
+            // Nothing cinematic anywhere: keep the original placement.
+            float yaw = DialogueShotMath.YawDegrees(ToN(npc.Floor - placed));
+            if (!playerVisual.Place(placed, yaw)) return false;
+            elijahHead = placed + Vector3.up * playerVisual.HeadHeight;
+        }
         Pose firstPersonLook = LookPose(fpPosition, npc.Head);
 
         hasNpcCloseUp = TryCloseUp(true, s, out npcCloseUpPose);
@@ -543,6 +570,17 @@ public class DialogueCameraDirector : MonoBehaviour, IDialoguePresentation
         // The camera must not sit behind a wall relative to the foreground shoulder,
         // and must see the speaking face.
         return !SegmentBlocked(shoulder, cameraPosition) && !SegmentBlocked(cameraPosition, subject);
+    }
+
+    private static readonly float[] PlacementYawOffsets = { 0f, 40f, -40f, 80f, -80f, 120f, -120f };
+
+    /// <summary>True when a standing Elijah at this body point would intersect scene geometry.</summary>
+    private bool IsOccupied(Vector3 bodyPoint)
+    {
+        int count = Physics.OverlapSphereNonAlloc(bodyPoint, 0.3f * scale, overlaps, obstructionMask, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < count; i++)
+            if (!IsIgnored(overlaps[i])) return true;
+        return false;
     }
 
     private bool SegmentBlocked(Vector3 from, Vector3 to)

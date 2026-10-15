@@ -1,20 +1,18 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-[RequireComponent(typeof(HighlightEffect))]
+[RequireComponent(typeof(NpcStatusMarker))]
 [RequireComponent(typeof(NpcStateMachine))]
 public class ClientInteractable : MonoBehaviour, IInteractable, INpcAvailabilitySource
 {
     [SerializeField] private DialogueUI dialogueUI; // CHANGED: was InterviewClientUI
 
-    private HighlightEffect highlight;
     private NpcStateMachine npcState;
     private bool hasInterviewed = false;
     private bool dialogueSessionActive;
 
     private void Awake()
     {
-        highlight = GetComponent<HighlightEffect>();
         npcState = GetComponent<NpcStateMachine>();
     }
 
@@ -28,13 +26,11 @@ public class ClientInteractable : MonoBehaviour, IInteractable, INpcAvailability
 
     public void OnFocus()
     {
-        highlight.Highlight();
         if (npcState.CurrentState is NpcIdleState) npcState.ChangeState(new NpcWaitingState());
     }
 
     public void OnUnfocus()
     {
-        highlight.Unhighlight();
         if (npcState.CurrentState is NpcWaitingState) npcState.ChangeState(new NpcIdleState());
     }
 

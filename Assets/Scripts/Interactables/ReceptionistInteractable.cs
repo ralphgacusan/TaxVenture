@@ -1,12 +1,11 @@
 using UnityEngine;
 
-[RequireComponent(typeof(HighlightEffect))]
+[RequireComponent(typeof(NpcStatusMarker))]
 [RequireComponent(typeof(NpcStateMachine))]
 public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvailabilitySource
 {
     [SerializeField] private DialogueUI dialogueUI;
 
-    private HighlightEffect highlight;
     private NpcStateMachine npcState;
     private bool dialogueSessionActive;
 
@@ -16,7 +15,6 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
 
     private void Awake()
     {
-        highlight = GetComponent<HighlightEffect>();
         npcState = GetComponent<NpcStateMachine>();
     }
 
@@ -30,7 +28,6 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
 
     public void OnFocus()
     {
-        highlight.Highlight();
 
         if (npcState.CurrentState is NpcIdleState)
         {
@@ -40,7 +37,6 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
 
     public void OnUnfocus()
     {
-        highlight.Unhighlight();
 
         if (npcState.CurrentState is NpcWaitingState)
         {

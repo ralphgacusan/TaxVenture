@@ -48,12 +48,6 @@ public class CaseFolderInteractable :
 
     public void OnUnfocus()
     {
-        if (CameraController.Instance.CurrentMode ==
-            CameraController.CameraMode.Workstation)
-        {
-            return;
-        }
-
         highlight.Unhighlight();
     }
 

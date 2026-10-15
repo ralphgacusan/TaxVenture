@@ -46,12 +46,16 @@ public class Interactor : MonoBehaviour
     [SerializeField] private bool enableDebugLogs = false;
 
     private IInteractable currentFocus;
+    private HighlightEffect focusOutline;
+
+    private void OnDisable() => ClearFocus();
 
     private void Update()
     {
         if (CameraController.Instance != null &&
             CameraController.Instance.CurrentMode != CameraController.CameraMode.FirstPerson)
         {
+            ClearFocus();
             return;
         }
 
@@ -66,7 +70,11 @@ public class Interactor : MonoBehaviour
     /// </summary>
     private void HandleRaycastDetection()
     {
-        if (Camera.main == null) return;
+        if (Camera.main == null || MobileInputGuard.BlocksWorldInput() || DialogueUI.IsAnyDialogueActive)
+        {
+            ClearFocus();
+            return;
+        }
 
         Ray ray = Camera.main.ScreenPointToRay(
             new Vector3(Screen.width / 2f, Screen.height / 2f)
@@ -79,7 +87,7 @@ public class Interactor : MonoBehaviour
             // Debugging: log the name of the object hit by the raycast
             // Debug.Log("Hit: " + hit.collider.name);
 
-            hitInteractable = hit.collider.GetComponent<IInteractable>();
+            hitInteractable = hit.collider.GetComponentInParent<IInteractable>();
 
             if (hitInteractable != null)
             {
@@ -91,9 +99,12 @@ public class Interactor : MonoBehaviour
         // If the object we're looking at has changed, handle focus transitions.
         if (hitInteractable != currentFocus)
         {
-            currentFocus?.OnUnfocus();
+            if (focusOutline != null) focusOutline.SetFocused(false);
+            if (currentFocus is Component previous && previous != null) currentFocus.OnUnfocus();
             currentFocus = hitInteractable;
             currentFocus?.OnFocus();
+            focusOutline = HighlightEffect.For(currentFocus);
+            if (focusOutline != null) focusOutline.SetFocused(true);
 
             if (currentFocus != null && promptUI != null)
             {
@@ -151,7 +162,9 @@ public class Interactor : MonoBehaviour
 
     public void ClearFocus()
     {
-        currentFocus?.OnUnfocus();
+        if (focusOutline != null) focusOutline.SetFocused(false);
+        focusOutline = null;
+        if (currentFocus is Component previous && previous != null) currentFocus.OnUnfocus();
         currentFocus = null;
 
         promptUI?.HidePrompt();

@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class ProfileDragCard : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
+public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IDragHandler, IPointerUpHandler
 {
     [Header("References")]
     [SerializeField] private Camera mainCamera;
@@ -45,6 +45,9 @@ public class ProfileDragCard : MonoBehaviour, IPointerDownHandler, IDragHandler,
     private CorkboardSlot currentSlot;
     private CorkboardSlot pendingSlot;
     private MotionState state;
+    private HighlightEffect pointerHighlight;
+    private bool pointerHovered;
+    private Vector2 pointerPosition;
     private int activePointerId = NoPointer;
     private bool initialized;
     private Collider[] arrivalColliders;
@@ -69,6 +72,7 @@ public class ProfileDragCard : MonoBehaviour, IPointerDownHandler, IDragHandler,
     private void Awake()
     {
         materialBlock = new MaterialPropertyBlock();
+        pointerHighlight = HighlightEffect.For(this);
     }
 
     public void SetCardText(TaxpayerProfile data)
@@ -108,6 +112,48 @@ public class ProfileDragCard : MonoBehaviour, IPointerDownHandler, IDragHandler,
             case MotionState.Returning: UpdateTransition(); break;
             case MotionState.Placed: UpdateSway(); break;
         }
+
+        RefreshPointerHighlight();
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        pointerHovered = eventData != null && !DialogueUI.IsAnyDialogueActive &&
+                         !VirtualJoystick.BlocksWorldInput &&
+                         !MobileInputGuard.IsPointerOverUI(eventData.position);
+        if (eventData != null) pointerPosition = eventData.position;
+        RefreshPointerHighlight();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        pointerHovered = false;
+        RefreshPointerHighlight();
+    }
+
+    private void RefreshPointerHighlight()
+    {
+        bool dragging = state == MotionState.Dragging;
+        if (dragging)
+        {
+            if (pointerHighlight != null) pointerHighlight.SetFocused(true);
+            return;
+        }
+
+        bool canHover = initialized && (state == MotionState.Idle || state == MotionState.Placed) &&
+                        (manager == null || manager.CanInteract);
+        if (!pointerHovered || !canHover)
+        {
+            if (pointerHighlight != null) pointerHighlight.SetFocused(false);
+            return;
+        }
+
+        bool pointerBlocked = DialogueUI.IsAnyDialogueActive || VirtualJoystick.BlocksWorldInput ||
+                              MobileInputGuard.IsPointerOverUI(pointerPosition);
+        if (pointerHighlight != null)
+        {
+            pointerHighlight.SetFocused(!pointerBlocked);
+        }
     }
 
     public void OnPointerDown(PointerEventData eventData)
@@ -130,6 +176,7 @@ public class ProfileDragCard : MonoBehaviour, IPointerDownHandler, IDragHandler,
         dragVelocity = Vector3.zero;
         dragStartRotation = transform.rotation;
         state = MotionState.Dragging;
+        if (pointerHighlight != null) pointerHighlight.SetFocused(true);
         VacateCurrentSlot();
         HidePinMarker();
 
@@ -325,6 +372,7 @@ public class ProfileDragCard : MonoBehaviour, IPointerDownHandler, IDragHandler,
         transitionStartedAt = Time.unscaledTime;
         transitionDuration = duration;
         state = transition;
+        RefreshPointerHighlight();
     }
 
     private void UpdateTransition()
@@ -469,6 +517,8 @@ public class ProfileDragCard : MonoBehaviour, IPointerDownHandler, IDragHandler,
 
     private void OnDisable()
     {
+        pointerHovered = false;
+        if (pointerHighlight != null) pointerHighlight.SetFocused(false);
         activePointerId = NoPointer;
         ReleaseActiveCard();
         RestoreArrivalColliders();

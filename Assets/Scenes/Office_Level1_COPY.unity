@@ -3134,8 +3134,8 @@ GameObject:
   m_Component:
   - component: {fileID: 72836759}
   - component: {fileID: 72836760}
-  - component: {fileID: 72836764}
   - component: {fileID: 72836763}
+  - component: {fileID: 2100000000}
   m_Layer: 3
   m_Name: Colleague
   m_TagString: Untagged
@@ -3143,6 +3143,37 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &2100000000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 72836758}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 72836763}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!4 &72836759
 Transform:
   m_ObjectHideFlags: 0
@@ -3195,19 +3226,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ColleagueInteractable
   dialogueUI: {fileID: 1416291532}
---- !u!114 &72836764
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 72836758}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
 --- !u!1 &72948437 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1248801567619574, guid: 5f9e6d4b2005b0445b630830d867e2c8, type: 3}
@@ -32140,10 +32158,9 @@ GameObject:
   m_Component:
   - component: {fileID: 739575917}
   - component: {fileID: 739575918}
-  - component: {fileID: 739575922}
   - component: {fileID: 739575921}
   - component: {fileID: 739575923}
-  - component: {fileID: 739575924}
+  - component: {fileID: 2100000001}
   m_Layer: 3
   m_Name: Client
   m_TagString: Untagged
@@ -32151,6 +32168,37 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &2100000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 739575916}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 739575921}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!4 &739575917
 Transform:
   m_ObjectHideFlags: 0
@@ -32204,19 +32252,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ClientInteractable
   dialogueUI: {fileID: 1416291532}
---- !u!114 &739575922
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 739575916}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
 --- !u!114 &739575923
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -32229,24 +32264,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddaf1cece5e5b934a8a22cbcd68247b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NpcStateMachine
---- !u!114 &739575924
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 739575916}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 541b21b396cf7c84d8ed02d9331d0c28, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NpcVisualIndicator
-  visualRoot: {fileID: 1844997908}
-  idleColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  waitingColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  interactColor: {r: 1, g: 0.6, b: 0, a: 1}
-  dialogueColor: {r: 0, g: 1, b: 1, a: 1}
-  completedColor: {r: 0, g: 1, b: 0, a: 1}
 --- !u!1001 &742576000
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -43005,12 +43022,11 @@ GameObject:
   m_Component:
   - component: {fileID: 1016139813}
   - component: {fileID: 1016139814}
-  - component: {fileID: 1016139818}
   - component: {fileID: 1016139817}
   - component: {fileID: 1016139820}
-  - component: {fileID: 1016139819}
   - component: {fileID: 1016139822}
   - component: {fileID: 1016139821}
+  - component: {fileID: 2100000002}
   m_Layer: 3
   m_Name: Auditor
   m_TagString: Untagged
@@ -43018,6 +43034,37 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &2100000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1016139812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 1016139817}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!4 &1016139813
 Transform:
   m_ObjectHideFlags: 0
@@ -43073,37 +43120,6 @@ MonoBehaviour:
   dialogueUI: {fileID: 1416291532}
   summaryPopupUI: {fileID: 834182304}
   submissionTray: {fileID: 1016139822}
---- !u!114 &1016139818
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1016139812}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
---- !u!114 &1016139819
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1016139812}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 541b21b396cf7c84d8ed02d9331d0c28, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NpcVisualIndicator
-  visualRoot: {fileID: 2103741866}
-  idleColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  waitingColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  interactColor: {r: 1, g: 0.6, b: 0, a: 1}
-  dialogueColor: {r: 0, g: 1, b: 1, a: 1}
-  completedColor: {r: 0, g: 1, b: 0, a: 1}
 --- !u!114 &1016139820
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -62666,9 +62682,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1529582761}
-  - component: {fileID: 1529582763}
   - component: {fileID: 1529582767}
   - component: {fileID: 1529582768}
+  - component: {fileID: 2100000003}
   m_Layer: 3
   m_Name: Client1
   m_TagString: Untagged
@@ -62676,6 +62692,37 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &2100000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1529582760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 1529582767}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!4 &1529582761
 Transform:
   m_ObjectHideFlags: 0
@@ -62692,19 +62739,6 @@ Transform:
   - {fileID: 338189046}
   m_Father: {fileID: 397073992}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1529582763
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1529582760}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
 --- !u!114 &1529582767
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -71104,11 +71138,10 @@ GameObject:
   m_Component:
   - component: {fileID: 1742860999}
   - component: {fileID: 1742861000}
-  - component: {fileID: 1742861004}
   - component: {fileID: 1742861003}
   - component: {fileID: 1742861005}
   - component: {fileID: 1742861007}
-  - component: {fileID: 1742861006}
+  - component: {fileID: 2100000004}
   m_Layer: 3
   m_Name: Receptionist
   m_TagString: Untagged
@@ -71116,6 +71149,37 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &2100000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1742860998}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 1742861003}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!4 &1742860999
 Transform:
   m_ObjectHideFlags: 0
@@ -71168,19 +71232,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ReceptionistInteractable
   dialogueUI: {fileID: 1416291532}
---- !u!114 &1742861004
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1742860998}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
 --- !u!114 &1742861005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -71193,24 +71244,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ca6eb05854a0e54cb0a66d2b576b0c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameStateMachine
---- !u!114 &1742861006
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1742860998}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 541b21b396cf7c84d8ed02d9331d0c28, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NpcVisualIndicator
-  visualRoot: {fileID: 192683664}
-  idleColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  waitingColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  interactColor: {r: 1, g: 0.6, b: 0, a: 1}
-  dialogueColor: {r: 0, g: 1, b: 1, a: 1}
-  completedColor: {r: 0, g: 1, b: 0, a: 1}
 --- !u!114 &1742861007
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -86100,9 +86133,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2117401585}
-  - component: {fileID: 2117401587}
   - component: {fileID: 2117401591}
   - component: {fileID: 2117401592}
+  - component: {fileID: 2100000005}
   m_Layer: 3
   m_Name: Client2
   m_TagString: Untagged
@@ -86110,6 +86143,37 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &2100000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2117401584}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca78f34d6e8eb34587f6259d5cd3c6e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::NpcStatusMarker
+  availabilitySource: {fileID: 2117401591}
+  markerMaterial: {fileID: 2100000, guid: 0c4bd2541e2ff474b9221e8cadeea005, type: 2}
+  availableColor: {r: 1, g: 0.74, b: 0.18, a: 1}
+  completedColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
+  outlineColor: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  sizeFraction: 0.11
+  heightGapFraction: 0.12
+  bobAmplitude: 0.12
+  bobFrequency: 0.6
+  pulseAmount: 0.06
+  pulseFrequency: 1.1
+  appearSpeed: 8
+  maxDistanceFraction: 10
+  minDistanceFraction: 0.35
+  hideWhenOccluded: 1
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  pollInterval: 0.2
 --- !u!4 &2117401585
 Transform:
   m_ObjectHideFlags: 0
@@ -86126,19 +86190,6 @@ Transform:
   - {fileID: 143554020}
   m_Father: {fileID: 397073992}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2117401587
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2117401584}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700e03193b66ee949835715c612f427f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HighlightEffect
-  highlightMaterial: {fileID: 0}
 --- !u!114 &2117401591
 MonoBehaviour:
   m_ObjectHideFlags: 0

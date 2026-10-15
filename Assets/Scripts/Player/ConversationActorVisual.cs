@@ -55,11 +55,29 @@ public class ConversationActorVisual : MonoBehaviour
     [Header("Rendering")]
     [SerializeField] private bool castShadows = true;
 
+    [Header("Conversation motion (shared with NPCs)")]
+    [Tooltip("Talk/listen head, neck and spine motion layered on the idle pose, the same ConversationMotion NPCs use. Bones are found by name (Mixamo Head/Neck/Spine).")]
+    [SerializeField] private bool conversationMotion = true;
+    [SerializeField, Range(0f, 2f)] private float conversationStrength = 1f;
+    [SerializeField, Range(0f, 6f)] private float speechDegrees = 3.5f;
+    [Tooltip("How far the head turns toward the NPC being spoken to.")]
+    [SerializeField, Range(0f, 45f)] private float headTurnLimit = 25f;
+
     private Transform modelRoot;
     private bool shown;
     private float idleClock;
     private float nextSampleTime;
     private bool warnedMissingMeasure;
+
+    private DialogueUI dialogueUI;
+    private Transform[] motionBones; // spine, chest, neck, head
+    private Quaternion[] sampledRotations;
+    private bool poseCached;
+    private bool hasLine, speaking, revealed;
+    private int lineIndex;
+    private ConversationMotion.LineMood lineMood;
+    private float lineStart, revealTime, motionSeed;
+    private Vector3 smoothedHead, smoothedBody;
 
     public float StandingHeight => standingHeight > 0f ? standingHeight : 1.7f;
     public float HeadHeight => StandingHeight * headHeightFraction;
@@ -69,12 +87,33 @@ public class ConversationActorVisual : MonoBehaviour
 
     private void Awake()
     {
+        motionSeed = Random.Range(0f, 100f);
         EnsureModel();
         Hide();
     }
 
+    private void OnEnable()
+    {
+        if (dialogueUI == null)
+            dialogueUI = FindAnyObjectByType<DialogueUI>(FindObjectsInactive.Include);
+        if (dialogueUI == null) return;
+        dialogueUI.LineChanged += HandleLineChanged;
+        dialogueUI.LineRevealed += HandleLineRevealed;
+        dialogueUI.DialogueEnded += HandleDialogueEnded;
+        if (dialogueUI.IsDialogueActive && dialogueUI.CurrentLine != null)
+            HandleLineChanged(dialogueUI.CurrentLine);
+    }
+
     private void OnDisable()
     {
+        if (dialogueUI != null)
+        {
+            dialogueUI.LineChanged -= HandleLineChanged;
+            dialogueUI.LineRevealed -= HandleLineRevealed;
+            dialogueUI.DialogueEnded -= HandleDialogueEnded;
+        }
+        hasLine = false;
+
         // A disabled/unloaded visual must not stay visible in exploration.
         if (modelRoot != null) modelRoot.gameObject.SetActive(false);
         shown = false;
@@ -106,6 +145,7 @@ public class ConversationActorVisual : MonoBehaviour
             if (r is SkinnedMeshRenderer skinned) skinned.updateWhenOffscreen = true;
         }
 
+        CacheMotionBones();
         SamplePose(poseTime);
         ApplyFit();
         instance.SetActive(false);
@@ -134,6 +174,7 @@ public class ConversationActorVisual : MonoBehaviour
         if (!isActiveAndEnabled || modelRoot == null) return;
         modelRoot.gameObject.SetActive(true);
         SamplePose(poseTime);
+        smoothedHead = smoothedBody = Vector3.zero;
         shown = true;
     }
 
@@ -145,12 +186,116 @@ public class ConversationActorVisual : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (!shown || !animateIdle || poseClip == null || modelRoot == null) return;
-        idleClock += Time.unscaledDeltaTime;
-        if (idleClock < nextSampleTime) return;
-        nextSampleTime = idleClock + 1f / idleSampleRate;
-        float length = Mathf.Max(0.01f, poseClip.length);
-        SamplePose((poseTime + idleClock) % length);
+        if (!shown || modelRoot == null) return;
+        if (animateIdle && poseClip != null)
+        {
+            idleClock += Time.unscaledDeltaTime;
+            if (idleClock >= nextSampleTime)
+            {
+                nextSampleTime = idleClock + 1f / idleSampleRate;
+                float length = Mathf.Max(0.01f, poseClip.length);
+                SamplePose((poseTime + idleClock) % length);
+            }
+        }
+        ApplyConversationMotion();
+    }
+
+    // Elijah takes part in every admitted conversation: his own lines are
+    // speaking, the NPC's lines are listening.
+    private void HandleLineChanged(DialogueLine line)
+    {
+        hasLine = line != null;
+        if (!hasLine) return;
+        speaking = line.Speaker == DialogueSpeaker.Player;
+        lineIndex++;
+        lineStart = Time.time;
+        revealed = false;
+        lineMood = ConversationMotion.MoodOf(line.Text);
+    }
+
+    private void HandleLineRevealed(DialogueLine line)
+    {
+        if (!hasLine || revealed) return;
+        revealed = true;
+        revealTime = Time.time;
+    }
+
+    private void HandleDialogueEnded(DialogueEndReason reason)
+    {
+        hasLine = false;
+    }
+
+    private void CacheMotionBones()
+    {
+        Transform spine = null, chest = null, upperChest = null, neck = null, head = null;
+        foreach (Transform bone in modelRoot.GetComponentsInChildren<Transform>(true))
+        {
+            string boneName = bone.name;
+            int colon = boneName.LastIndexOf(':');
+            if (colon >= 0) boneName = boneName.Substring(colon + 1);
+            switch (boneName)
+            {
+                case "Spine": spine = bone; break;
+                case "Spine1": chest = bone; break;
+                case "Spine2": upperChest = bone; break;
+                case "Neck": neck = bone; break;
+                case "Head": head = bone; break;
+            }
+        }
+        if (head == null) return;
+        motionBones = new[] { spine, upperChest != null ? upperChest : chest, neck, head };
+        sampledRotations = new Quaternion[motionBones.Length];
+    }
+
+    /// <summary>
+    /// Layers the shared NPC talk/listen motion on the sampled idle pose.
+    /// The idle is sampled at a capped rate, so bones are reset to the last
+    /// sampled pose each frame before the offset; offsets never accumulate.
+    /// </summary>
+    private void ApplyConversationMotion()
+    {
+        if (!conversationMotion || motionBones == null) return;
+        for (int i = 0; i < motionBones.Length; i++)
+        {
+            Transform bone = motionBones[i];
+            if (bone == null) continue;
+            if (poseCached) bone.localRotation = sampledRotations[i];
+            else sampledRotations[i] = bone.localRotation;
+        }
+        poseCached = true;
+
+        float now = Time.time;
+        Vector3 head = new Vector3(Mathf.Sin(now * 1.1f) * 0.8f,
+            (Mathf.PerlinNoise(motionSeed, now * 0.15f) - 0.5f) * 6f, 0f);
+        Vector3 body = Vector3.zero;
+        head.y += Mathf.Clamp(PartnerYaw(), -headTurnLimit, headTurnLimit);
+        if (hasLine)
+            ConversationMotion.Apply(speaking, now, now - lineStart, revealed ? now - revealTime : -1f,
+                lineMood, lineIndex, motionSeed, speechDegrees, conversationStrength, ref head, ref body);
+
+        float k = 1f - Mathf.Exp(-10f * Time.deltaTime);
+        smoothedHead = Vector3.Lerp(smoothedHead, head, k);
+        smoothedBody = Vector3.Lerp(smoothedBody, body, k);
+
+        // This object faces +Z toward the partner; the model's yaw offset is
+        // already applied to modelRoot, so this is the character frame.
+        Quaternion character = transform.rotation;
+        float spineShare = motionBones[1] != null ? 0.5f : 1f;
+        ConversationMotion.RotateBone(motionBones[0], character, smoothedBody * spineShare);
+        ConversationMotion.RotateBone(motionBones[1], character, smoothedBody * (1f - spineShare));
+        float headShare = motionBones[2] != null ? 0.65f : 1f;
+        ConversationMotion.RotateBone(motionBones[2], character, smoothedHead * (1f - headShare));
+        ConversationMotion.RotateBone(motionBones[3], character, smoothedHead * headShare);
+    }
+
+    /// <summary>Yaw toward the NPC that owns the conversation, in this object's frame.</summary>
+    private float PartnerYaw()
+    {
+        Component owner = dialogueUI != null ? dialogueUI.CurrentOwner as Component : null;
+        if (owner == null) return 0f;
+        Vector3 local = transform.InverseTransformDirection(owner.transform.position - transform.position);
+        local.y = 0f;
+        return local.sqrMagnitude < 0.0001f ? 0f : Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg;
     }
 
     private void SamplePose(float time)
@@ -161,6 +306,7 @@ public class ConversationActorVisual : MonoBehaviour
         Quaternion r = modelRoot.localRotation;
         Vector3 s = modelRoot.localScale;
         poseClip.SampleAnimation(modelRoot.gameObject, time);
+        poseCached = false;
         modelRoot.localPosition = p;
         modelRoot.localRotation = r;
         modelRoot.localScale = s;

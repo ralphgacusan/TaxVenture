@@ -12,7 +12,7 @@ using UnityEngine.EventSystems;
 /// Place one of these inactive in the scene beside each of the 4 NPCs;
 /// TaxpayerNpcInteractable activates and initializes it after dialogue.
 /// </summary>
-public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerClickHandler
+public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     [Header("Idle Visual (optional)")]
     [SerializeField] private float bobHeight = 0.05f;
@@ -44,9 +44,17 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerClickHandler
     private Quaternion collectionStartRotation;
     private Vector3 collectionStartScale;
     private bool missingHudLogged;
+    private HighlightEffect pointerHighlight;
+    private bool pointerHovered;
+    private Vector2 pointerPosition;
 
     public bool IsDropping => isDropping;
     public bool IsCollecting => isCollecting;
+
+    private void Awake()
+    {
+        pointerHighlight = HighlightEffect.For(this);
+    }
 
     public void Initialize(TaxpayerProfile data)
     {
@@ -77,6 +85,7 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerClickHandler
             return;
         }
 
+        ClearPointerFocus();
         CacheBasePose();
 
         dropStartPosition = source;
@@ -87,6 +96,8 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerClickHandler
 
     private void Update()
     {
+        RefreshPointerHighlight();
+
         if (collected)
         {
             return;
@@ -246,6 +257,7 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerClickHandler
 
         collected = true;
         isCollecting = false;
+        ClearPointerFocus();
         collectElapsed = 0f;
         collectionHUD = null;
         collectionCamera = null;
@@ -272,8 +284,42 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerClickHandler
 
     private void OnDisable()
     {
+        ClearPointerFocus();
         CancelCollectionAndRestoreTarget();
         StopDropAndRestoreTarget();
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (eventData == null)
+        {
+            ClearPointerFocus();
+            return;
+        }
+
+        pointerPosition = eventData.position;
+        pointerHovered = !DialogueUI.IsAnyDialogueActive && !VirtualJoystick.BlocksWorldInput &&
+                         !MobileInputGuard.IsPointerOverUI(eventData.position);
+        RefreshPointerHighlight();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        ClearPointerFocus();
+    }
+
+    private void RefreshPointerHighlight()
+    {
+        bool focused = pointerHovered && profileData != null && !collected && !isDropping && !isCollecting &&
+                       !DialogueUI.IsAnyDialogueActive && !VirtualJoystick.BlocksWorldInput &&
+                       !MobileInputGuard.IsPointerOverUI(pointerPosition);
+        if (pointerHighlight != null) pointerHighlight.SetFocused(focused);
+    }
+
+    private void ClearPointerFocus()
+    {
+        pointerHovered = false;
+        if (pointerHighlight != null) pointerHighlight.SetFocused(false);
     }
 
     public void OnPointerClick(PointerEventData eventData)
@@ -308,6 +354,7 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerClickHandler
         }
 
         collectionHUD = hud;
+        ClearPointerFocus();
         collectionStartScreenPoint = new Vector2(startScreenPoint.x, startScreenPoint.y);
         collectionStartDepth = startScreenPoint.z;
         collectionTargetDepth = Mathf.Min(collectionStartDepth, collectionCamera.nearClipPlane + 0.4f);

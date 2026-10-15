@@ -28,13 +28,6 @@ public class StampSetInteractable : MonoBehaviour, IInteractable
 
     public void OnUnfocus()
     {
-        if (CameraController.Instance != null &&
-            CameraController.Instance.CurrentMode ==
-            CameraController.CameraMode.Workstation)
-        {
-            return;
-        }
-
         if (highlight != null)
         {
             highlight.Unhighlight();

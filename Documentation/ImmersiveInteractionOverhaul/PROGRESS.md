@@ -17,6 +17,16 @@ Code is complete, but the scene is not configured yet. The user runs **Tools > T
 
 Updated 2026-10-15. Current unit: **T03 implementation and internal verification — complete; user setup and Unity acceptance pending.** T02's own manual acceptance is also still pending.
 
+## T05 implemented — 2026-10-15
+
+A static audit of every interaction and return path found three reproducible input leaks, all now fixed in `CameraController` and `MobileInputGuard`:
+
+1. Popups (the tutorial on its 5 s timer, and results) could unlock look and movement mid-conversation, or leave controls stuck locked. Their lock/unlock requests are now deferred until the conversation releases.
+2. The HUD folder could open the profile viewer during a conversation or under a popup, leaving controls stuck off after it closed. The viewer now refuses to open in both cases.
+3. On touch, the tap that closes a view (last dialogue line, desk/board exit, viewer) could fall through as a world tap in the same frame and re-open the desk or restart an NPC conversation. World taps are now suppressed for that one frame.
+
+`Assembly-CSharp` compiles with 0 errors and the 2 baseline warnings. Not run in Unity. Details and manual checks are in the T05 ticket.
+
 ## T04 implemented — 2026-10-15
 
 NPC markers are in: an amber pulsing triangle for available, a green check for completed, and nothing when unavailable, during any conversation, in other camera modes, out of range or occluded. Every NPC interactable reports `Availability` through pure `NpcAvailabilityRules` that mirror its own rules: receptionist per case, client interview and later presentation, auditor resume, four independent taxpayers, guide phases. The user runs **Tools > TaxVenture > Configure NPC Markers** once and saves the scene. Unity compile 0 errors; 796 assertions pass. Not run in Unity. Details are in the T04 ticket.
@@ -33,8 +43,8 @@ On user request, camera changes are now instant cuts (the blends are commented o
 | T02 | Phases 1 and 2 implemented; internal checks passed; manual acceptance pending | User runs the T02 manual matrix |
 | T03 | **All four checkpoints implemented; internal checks passed; setup and manual acceptance pending** | User runs the setup menu, the preview and the T03 manual matrix |
 | T04 | **Implemented; internal checks passed; setup and manual acceptance pending** | User runs Configure NPC Markers and the T04 matrix |
-| T05 | Planned: integration and safe input returns | T01–T04 accepted and explicit approval |
-| T06 | Planned: regression/handoff | T05 accepted and approval |
+| T05 | **Implemented: 3 input-leak fixes; compile passed; manual acceptance pending** | User runs the T05 manual checks |
+| T06 | **Automated evidence recorded (all PASS); manual matrix NOT RUN** | User runs the T06 manual matrix |
 
 ## Retained T01
 

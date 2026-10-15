@@ -16,8 +16,8 @@ Project root: `C:\Learn\Projects\TaxVenture\TaxVenture`. Preserve quests, interv
 | [T02](tickets/T02-unified-dialogue-system.md) | Unified conversations and preserved outcomes | T01 and existing APIs | Phase 1 implemented/internal checks passed; manual acceptance and Phase 2 pending |
 | [T03](tickets/T03-dialogue-camera-and-ui.md) | Conversation-only Elijah, speaker camera shots, bottom UI and typewriter | T02 | Requirements clarified; implementation planned in gated phases |
 | [T04](tickets/T04-npc-interaction-indicators.md) | Availability/completion indicators | T02; coordinate T03 | Planned |
-| [T05](tickets/T05-integration-and-game-feel.md) | Integration, safe cancellation and control restoration | T01–T04 | Planned |
-| [T06](tickets/T06-regression-testing-and-handoff.md) | Regression evidence and handoff | T05 | Planned |
+| [T05](tickets/T05-integration-and-game-feel.md) | Integration, safe cancellation and control restoration | T01–T04 | Implemented (3 input-leak fixes); internal checks passed; manual acceptance pending |
+| [T06](tickets/T06-regression-testing-and-handoff.md) | Regression evidence and handoff | T05 | Automated checks PASS; manual matrix pending user |
 
 Order: **T01 → T02 → T03 → T04 → T05 → T06**. Work on one approved ticket/phase, verify, update documentation, report and stop. Ticket descriptions alone do not authorize gameplay implementation. Agents perform focused internal checks; the user performs manual Unity tests and Git writes.
 

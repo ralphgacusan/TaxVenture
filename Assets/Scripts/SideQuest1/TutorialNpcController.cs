@@ -19,7 +19,7 @@ using UnityEngine.EventSystems;
 /// and the final result panel runs at most once even if the side-quest
 /// completion event were raised again.
 /// </summary>
-public class TutorialNpcController : MonoBehaviour, IPointerClickHandler, INpcAvailabilitySource
+public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler, INpcAvailabilitySource
 {
     [Header("References")]
     [Tooltip("The NPC's model/visuals. Hidden until all profiles are collected.")]
@@ -34,6 +34,7 @@ public class TutorialNpcController : MonoBehaviour, IPointerClickHandler, INpcAv
     private bool hasCompletedSideQuest;
     private bool hasShownCompletionPanel;
     private bool dialogueSessionActive;
+    private HighlightEffect pointerHighlight;
 
     /// <summary>True once all four profiles are collected and this guide is visible.</summary>
     public bool HasAppeared => hasAppeared;
@@ -53,6 +54,8 @@ public class TutorialNpcController : MonoBehaviour, IPointerClickHandler, INpcAv
 
     private void Awake()
     {
+        pointerHighlight = HighlightEffect.For(this);
+
         if (visualRoot != null)
         {
             visualRoot.SetActive(false);
@@ -67,6 +70,8 @@ public class TutorialNpcController : MonoBehaviour, IPointerClickHandler, INpcAv
 
     private void OnDisable()
     {
+        ClearPointerFocus();
+
         if (dialogueSessionActive && dialogueUI != null)
         {
             dialogueUI.CancelDialogueFor(this);
@@ -120,6 +125,7 @@ public class TutorialNpcController : MonoBehaviour, IPointerClickHandler, INpcAv
         {
             pendingCompletionDialogue = false;
             dialogueSessionActive = true;
+            ClearPointerFocus();
         }
     }
 
@@ -224,6 +230,29 @@ public class TutorialNpcController : MonoBehaviour, IPointerClickHandler, INpcAv
         }
 
         dialogueSessionActive = true;
+        ClearPointerFocus();
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (pointerHighlight != null) pointerHighlight.SetFocused(CanFocusPointer(eventData));
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        ClearPointerFocus();
+    }
+
+    private bool CanFocusPointer(PointerEventData eventData)
+    {
+        return eventData != null && hasAppeared && !hasStartedSideQuest && !dialogueSessionActive &&
+               !DialogueUI.IsAnyDialogueActive && !VirtualJoystick.BlocksWorldInput &&
+               !MobileInputGuard.IsPointerOverUI(eventData.position);
+    }
+
+    private void ClearPointerFocus()
+    {
+        if (pointerHighlight != null) pointerHighlight.SetFocused(false);
     }
 
     private void OnGuideDialogueCancelled()

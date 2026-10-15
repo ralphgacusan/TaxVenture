@@ -29,7 +29,7 @@ using UnityEngine.EventSystems;
 /// without ever dropping its profile and strand the side quest.
 /// </summary>
 [RequireComponent(typeof(NpcStateMachine))]
-public class TaxpayerNpcInteractable : MonoBehaviour, IPointerClickHandler, INpcAvailabilitySource
+public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler, INpcAvailabilitySource
 {
     [Header("Identity")]
     [Tooltip("Must match a case in TownNpcDialogueLibrary and a NpcId in TaxpayerProfileDatabase.")]
@@ -44,6 +44,7 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerClickHandler, INpc
     [SerializeField] private TaxpayerProfileWorldPickup profilePickup;
 
     private NpcStateMachine stateMachine;
+    private HighlightEffect pointerHighlight;
     private bool hasBeenTalkedTo;
     private bool dialogueSessionActive;
 
@@ -70,6 +71,7 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerClickHandler, INpc
     private void Awake()
     {
         stateMachine = GetComponent<NpcStateMachine>();
+        pointerHighlight = HighlightEffect.For(this);
 
         if (dialogueUI == null)
         {
@@ -105,6 +107,32 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerClickHandler, INpc
         {
             stateMachine.ChangeState(new NpcIdleState());
         }
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        bool focused = CanFocusPointer(eventData);
+        if (pointerHighlight != null) pointerHighlight.SetFocused(focused);
+        if (focused) OnFocus();
+        else OnUnfocus();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        ClearPointerFocus();
+        OnUnfocus();
+    }
+
+    private bool CanFocusPointer(PointerEventData eventData)
+    {
+        return eventData != null && !hasBeenTalkedTo && !dialogueSessionActive &&
+               !DialogueUI.IsAnyDialogueActive && !VirtualJoystick.BlocksWorldInput &&
+               !MobileInputGuard.IsPointerOverUI(eventData.position);
+    }
+
+    private void ClearPointerFocus()
+    {
+        if (pointerHighlight != null) pointerHighlight.SetFocused(false);
     }
 
     public void OnPointerClick(PointerEventData eventData)
@@ -161,14 +189,18 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerClickHandler, INpc
         dialogueSessionActive = true;
         stateMachine.ChangeState(new NpcInteractState());
         stateMachine.ChangeState(new NpcDialogueState());
+        ClearPointerFocus();
     }
 
     private void OnDisable()
     {
+        ClearPointerFocus();
         if (dialogueSessionActive && dialogueUI != null)
         {
             dialogueUI.CancelDialogueFor(this);
         }
+
+        OnUnfocus();
     }
 
     private void OnDialogueFinished(INpcState priorNpcState)
