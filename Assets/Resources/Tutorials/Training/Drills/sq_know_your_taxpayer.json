@@ -1,0 +1,51 @@
+{
+  "_readme": "A Tutorial Hub drill. See basics_screen.json for the format and Documentation/TrainingHub/README.md for the reference.",
+  "id": "sq_know_your_taxpayer",
+  "title": "Know Your Taxpayer",
+  "start": "plaza",
+  "hide": [
+    "Environment/OfficeBuilding/Rooms/AuditOffice",
+    "Environment/OfficeBuilding/Rooms/ColleagueRoom",
+    "Environment/OfficeBuilding/Rooms/ConferenceRoom",
+    "Environment/OfficeBuilding/Rooms/ConsultantOffice",
+    "Environment/OfficeBuilding/Rooms/FileStorageRoom",
+    "Environment/OfficeBuilding/Inside/MiscProps"
+  ],
+  "guided": {
+    "goal": "Side Quest 1, step by step",
+    "steps": [
+      { "id": "intro", "title": "SIDE QUEST 1", "pages": [
+        { "mood": "wow", "text": "Side Quest 1, from the top! Talk to the four clients in the plaza and collect their profiles, then come find me." }
+      ] },
+      { "id": "collect", "title": "SIDE QUEST 1", "pages": [
+        { "style": "hint", "waitFor": "event:AllProfilesCollected", "text": "Collect all four profiles. Your tracker counts them for you." }
+      ] },
+      { "use": "guide-appears" },
+      { "use": "corkboard" },
+      { "use": "sidequest-card" },
+      { "id": "done", "title": "DRILL COMPLETE", "pages": [
+        { "mood": "wow", "text": "All four sorted! Now the mastery run: same quest, no hand. Aim for zero wrong corners!" }
+      ] }
+    ]
+  },
+  "mastery": {
+    "goal": "Sort all four, zero misses",
+    "steps": [
+      { "id": "intro", "title": "MASTERY RUN", "pages": [
+        { "text": "Mastery run! Collect, then sort. Listen to every client: where are they from, and where do they live?" }
+      ] },
+      { "id": "collect", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "event:AllProfilesCollected", "text": "Collect all four profiles in the plaza." }
+      ] },
+      { "id": "board", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "mode:CorkboardSideQuest", "text": "Find me in the plaza and talk to me to open the corkboard." }
+      ] },
+      { "id": "sort", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "event:SideQuestCompleted", "text": "Sort all four cards. Go for zero wrong corners!" }
+      ] },
+      { "id": "done", "title": "MASTERED", "duringResults": true, "pages": [
+        { "mood": "wow", "box": "bottom", "text": "You know your taxpayers! That's the heart of this job." }
+      ] }
+    ]
+  }
+}

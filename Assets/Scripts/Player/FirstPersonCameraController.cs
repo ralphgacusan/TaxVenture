@@ -46,6 +46,18 @@ public class FirstPersonCameraController : MonoBehaviour
 
     private int activeLookFingerId = -1;
 
+    // Re-locking the cursor (after a popup, conversation or tutorial page)
+    // reports one huge mouse delta in the Editor/PC, which snapped the view
+    // to the pitch limit. Ignore the mouse for a few frames after that.
+    private int ignoreMouseFrames;
+    private CursorLockMode lastLockState;
+
+    private void OnEnable()
+    {
+        ignoreMouseFrames = 3;
+        lastLockState = Cursor.lockState;
+    }
+
     private void Start()
     {
         if (player == null)
@@ -105,6 +117,17 @@ public class FirstPersonCameraController : MonoBehaviour
             return;
         if (VirtualJoystick.BlocksWorldInput || MobileInputGuard.HasTouchInput ||
             (Cursor.lockState != CursorLockMode.Locked && MobileInputGuard.IsPointerOverUI(Mouse.current.position.ReadValue()))) return;
+
+        if (Cursor.lockState != lastLockState)
+        {
+            lastLockState = Cursor.lockState;
+            ignoreMouseFrames = 3;
+        }
+        if (ignoreMouseFrames > 0)
+        {
+            ignoreMouseFrames--;
+            return;
+        }
 
         Vector2 mouseDelta =
             Mouse.current.delta.ReadValue();

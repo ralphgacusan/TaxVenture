@@ -16,6 +16,7 @@ public sealed class OfficeMinimap : MonoBehaviour
     private OfficeMinimapHUD hud;
     private float nextResolveTime;
     private OfficeMinimapMarkers markers;
+    private OfficeMinimapObjective objective;
     private SettingsUI settings;
     private CaseResultPopupUI results;
     private GameStateMachine gameState;
@@ -69,7 +70,7 @@ public sealed class OfficeMinimap : MonoBehaviour
                        (sceneCameraController.CanStartDialogue ||
                         sceneCameraController.CurrentMode == CameraController.CameraMode.ProfileViewer) &&
                        !DialogueUI.IsAnyDialogueActive && Time.timeScale > 0f &&
-                       (settings == null || !settings.IsVisible) &&
+                       !InGameSettings.IsOpen && (settings == null || !settings.IsVisible) &&
                        (results == null || !results.IsVisible) &&
                        !HudRewardScreen.AnyOpen &&
                        (gameState == null || !gameState.IsPaused) &&
@@ -92,6 +93,9 @@ public sealed class OfficeMinimap : MonoBehaviour
             markers = new OfficeMinimapMarkers(hud.MapRect, gameObject.scene);
         }
         markers.Tick(mapCamera, sceneCameraController);
+        if (objective == null || !objective.IsValid)
+            objective = new OfficeMinimapObjective(hud.MapRect, (RectTransform)hud.transform);
+        objective.Tick(mapCamera);
         SetVisible(true);
     }
 
@@ -111,6 +115,8 @@ public sealed class OfficeMinimap : MonoBehaviour
 
         markers?.Dispose();
         markers = null;
+        objective?.Dispose();
+        objective = null;
 
         if (hud != null)
         {
@@ -186,6 +192,8 @@ public sealed class OfficeMinimap : MonoBehaviour
         {
             markers?.Dispose();
             markers = null;
+            objective?.Dispose();
+            objective = null;
             hud = OfficeMinimapHUD.TryCreate(scene);
             if (hud != null) hud.SetMapTexture(mapTexture);
         }

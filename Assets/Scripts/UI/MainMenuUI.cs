@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,13 +7,15 @@ using UnityEngine.SceneManagement;
 ///
 /// CONNECTS WITH:
 /// - Progress scene: loaded when Start Game is pressed
-/// - Settings scene: loaded when Settings is pressed
+/// - SettingsBoard3D: Settings opens the 3D settings board in the 3D Menu.
+///   From any other scene it loads the 3D Menu with the board open
+///   (MenuEntry.OpenSettings); there is no separate Settings scene.
+///   Gameplay scenes with InGameSettings open the same board in place.
 /// - AudioManager: plays button click SFX
 /// </summary>
 public class MainMenuUI : MonoBehaviour
 {
     [SerializeField] private string progressSceneName = "Progress";
-    [SerializeField] private string settingsSceneName = "Settings";
 
     /// <summary>
     /// Wired to the Start Game button.
@@ -35,13 +36,24 @@ public class MainMenuUI : MonoBehaviour
     /// </summary>
     public void OnSettingsPressed()
     {
-        // Play button click sound before changing scenes.
+        // In a gameplay scene: the in-game settings board (pauses the game).
+        if (InGameSettings.TryOpen()) return;
+
+        // In the 3D Menu: drop the settings board in front of the main menu (it plays the click).
+        SettingsBoard3D board = FindAnyObjectByType<SettingsBoard3D>();
+        if (board != null)
+        {
+            board.Open();
+            return;
+        }
+
+        // Anywhere else: go to the 3D Menu and open settings there.
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.PlaySelectSFX();
         }
 
-        SceneManager.LoadScene(settingsSceneName);
+        MenuEntry.OpenSettings = true;
+        SceneManager.LoadScene(MenuEntry.MenuSceneName);
     }
 }
-

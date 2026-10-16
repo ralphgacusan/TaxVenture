@@ -149,6 +149,10 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
             return;
         }
 
+        // Office Hours: she adds that the Auditor leaves early today.
+        if (OfficeHours.Instance != null)
+            lines.AddRange(OfficeHours.Instance.AnnouncementLines("Receptionist"));
+
         INpcState priorNpcState = npcState.CurrentState;
         bool admitted = dialogueUI.TryStartDialogue(
             lines,

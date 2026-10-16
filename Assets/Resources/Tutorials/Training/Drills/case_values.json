@@ -1,0 +1,90 @@
+{
+  "_readme": [
+    "A Tutorial Hub drill. See basics_screen.json and case_desk.json for the format, and Documentation/TrainingHub/README.md.",
+    "practiceCase: this drill uses Level_01/cases/case_002.json (Marco Santos), so the answers are new. 'profile' is his card in Profiles.",
+    "case:correct = every graded field of the folder holds the right answer (the mastery goal)."
+  ],
+  "id": "case_values",
+  "title": "Moving Values",
+  "start": "office",
+  "spawn": "Environment/OfficeBuilding/Rooms/Reception/Doors",
+  "face": "Environment/OfficeBuilding/Rooms/Reception/Receptionist",
+  "practiceCase": "case_002",
+  "profile": {
+    "id": "profile_marco_practice",
+    "name": "Marco Santos",
+    "description": "Filipino designer in Makati; several clients pay him per project; no boss.",
+    "classification": "ResidentCitizen",
+    "npcId": "npc_marco_practice"
+  },
+  "objectivesDone": [
+    "event:AllProfilesCollected",
+    "event:TutorialGuideTalkedTo",
+    "event:SideQuestCompleted",
+    "area:Environment/OfficeBuilding/Rooms/Reception/Floor|Environment/OfficeBuilding/Rooms/Reception/Doors"
+  ],
+  "hide": [
+    "Env/Vegetation",
+    "Env/Rocks",
+    "Env/Props",
+    "Env/Buildings",
+    "Environment/Outside/Plaza/NPCS"
+  ],
+  "guided": {
+    "goal": "Move values into the folder",
+    "steps": [
+      { "id": "intro", "title": "MOVING VALUES", "pages": [
+        { "mood": "wow", "text": "Practice client today: Marco Santos. His profile is already in your Profiles. Grab the case and sit down!" }
+      ] },
+      { "id": "get-case", "title": "MOVING VALUES", "pages": [
+        { "style": "hint", "waitFor": "event:ReceptionistTalkedTo", "text": "Get the case from the receptionist." }
+      ] },
+      { "id": "sit", "title": "MOVING VALUES", "pages": [
+        { "style": "hint", "waitFor": "mode:Workstation", "text": "Follow the arrows to your desk and sit down." }
+      ] },
+      { "id": "open-folder", "title": "MOVING VALUES", "onlyIn": "mode:Workstation", "pages": [
+        { "style": "hint", "waitFor": "event:CaseFolderOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder", "text": "Drag the Case Folder off the pile to open it." }
+      ] },
+      { "id": "open-book", "title": "MOVING VALUES", "onlyIn": "mode:Workstation", "pages": [
+        { "style": "hint", "waitFor": "event:TaxCodeBookOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenTaxCodeBook", "text": "Drag the Tax Code Book toward you to open it." }
+      ] },
+      { "use": "value-transfer" },
+      { "use": "investigate" },
+      { "id": "fill", "title": "MOVING VALUES", "onlyIn": "mode:Workstation", "pages": [
+        { "style": "hint", "waitFor": "case:filled", "text": "Now fill all three fields for Marco: profile, book, folder." }
+      ] },
+      { "id": "done", "title": "DRILL COMPLETE", "onlyIn": "mode:Workstation", "pages": [
+        { "mood": "wow", "text": "All three filled! In the mastery run they have to be RIGHT, not just fit. Read Marco's profile closely." }
+      ] }
+    ],
+    "hints": [
+      { "use": "value-rejected" }
+    ]
+  },
+  "mastery": {
+    "goal": "Three fields, all correct",
+    "steps": [
+      { "id": "intro", "title": "MASTERY RUN", "pages": [
+        { "text": "Mastery run! Fill Marco's folder, and this time every answer must be correct. No hand from me." }
+      ] },
+      { "id": "get-case", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "event:ReceptionistTalkedTo", "text": "Get the case from the receptionist." }
+      ] },
+      { "id": "sit", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "mode:Workstation", "text": "Sit at your desk." }
+      ] },
+      { "id": "solve", "title": "GOAL", "onlyIn": "mode:Workstation", "pages": [
+        { "style": "hint", "waitFor": "case:correct", "text": "Fill all three fields correctly. Profile, book, folder!" }
+      ] },
+      { "id": "done", "title": "MASTERED", "onlyIn": "mode:Workstation", "pages": [
+        { "mood": "wow", "text": "Spot on, all three! You didn't just make them fit, you got them right." }
+      ] }
+    ],
+    "hints": [
+      { "id": "filled-not-right", "when": "case:filled", "onlyIn": "mode:Workstation", "pages": [
+        { "style": "hint", "mood": "confused", "waitFor": "seconds:6", "text": "All three are filled, but something's not right yet. Check Marco's profile again." }
+      ] },
+      { "use": "value-rejected" }
+    ]
+  }
+}

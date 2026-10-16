@@ -1,0 +1,53 @@
+{
+  "_readme": [
+    "A Tutorial Hub drill. Reference: Documentation/TrainingHub/README.md. Fields starting with '_' are notes.",
+    "guided / mastery: 'steps' play in order (each waits for the one before); 'hints' react whenever their 'when' happens.",
+    "A step with 'use' copies that lesson from the level's guide.json (Resources/Tutorials/Level_01/guide.json), so the in-game wording stays in one place.",
+    "Other steps are written here in the guide.json lesson format. Mastery steps have no 'point': no hand, no spotlight, just the goal.",
+    "The run ends when its LAST step ends. hide = scene parts switched off for this drill (lighter, quieter)."
+  ],
+  "id": "basics_screen",
+  "title": "Your Screen",
+  "start": "plaza",
+  "hide": [
+    "Environment/OfficeBuilding/Rooms/AuditOffice",
+    "Environment/OfficeBuilding/Rooms/ColleagueRoom",
+    "Environment/OfficeBuilding/Rooms/ConferenceRoom",
+    "Environment/OfficeBuilding/Rooms/ConsultantOffice",
+    "Environment/OfficeBuilding/Rooms/FileStorageRoom",
+    "Environment/OfficeBuilding/Inside/MiscProps"
+  ],
+  "guided": {
+    "goal": "Read your screen",
+    "steps": [
+      { "id": "intro", "title": "YOUR SCREEN", "pages": [
+        { "mood": "wow", "text": "Back for a refresher? Smart move. Let's walk through your screen again, piece by piece." }
+      ] },
+      { "use": "hud-tour" },
+      { "use": "notes" },
+      { "id": "done", "title": "DRILL COMPLETE", "pages": [
+        { "mood": "wow", "text": "That's your whole screen! Next time, try the mastery run: I'll only name things, and you find them." }
+      ] }
+    ]
+  },
+  "mastery": {
+    "goal": "Find it without help",
+    "steps": [
+      { "id": "intro", "title": "MASTERY RUN", "pages": [
+        { "text": "Mastery run! No hand, no spotlight. I name it, you find it. Ready?" }
+      ] },
+      { "id": "find-notes", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "open:notes", "text": "Open the paper that lists ALL of today's steps." }
+      ] },
+      { "id": "close-notes", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "not:open:notes", "text": "Good. Now put it away." }
+      ] },
+      { "id": "read-tracker", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "near:4:waypoint", "text": "Your tracker says what's next. Go there! The pin on your minimap shows the way." }
+      ] },
+      { "id": "done", "title": "MASTERED", "pages": [
+        { "mood": "wow", "text": "Sharp eyes! You read your screen like a pro." }
+      ] }
+    ]
+  }
+}

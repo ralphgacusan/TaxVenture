@@ -15,7 +15,7 @@ Added 2026-10-16 with the Phase 3 polish. All numbers live in **`Assets/Resource
 
 **Below passing:** the level still finishes and the result is saved, but the next level stays locked. The Level Complete screen says "Below passing… Replay this level".
 
-**Level order:** with `requireSideQuestBeforeOffice: true`, the receptionist, the office desk and the Case Folder (3D and HUD icon) stay locked until Side Quest 1 is finished. Trying them shows "Locked — Finish Side Quest 1 first". Walking into the reception area early shows the notice once.
+**Level order:** with `requireSideQuestBeforeOffice: true`, the receptionist, the office desk and the Case Folder (3D and HUD icon) stay locked until Side Quest 1 is finished. Trying them shows "Locked — Finish Side Quest 1 first". The office entrance doors (`officeDoors`, default `Office_Entrance_Door_1` and `_2`) are physically shut: `OfficeDoorGate` swings them closed toward each other and puts an invisible wall in the doorway, and walking up to it shows "The office is closed. Finish Side Quest 1 first". When the side quest completes, the doors swing back to their scene pose and the wall is removed. The closed pose is computed at run time; the scene is not changed.
 
 ## Save (PlayerProgressData, save version 2)
 

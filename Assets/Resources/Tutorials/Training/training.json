@@ -1,0 +1,98 @@
+{
+  "_readme": [
+    "TUTORIAL HUB (Arthur's tutorial binder): the tabs and the drill cards. Edit freely; changes apply on the next Play.",
+    "Full reference: Documentation/TrainingHub/README.md. Fields starting with '_' are notes and are ignored.",
+    "tabs: the divider tabs on the binder, top to bottom. alwaysOpen = the tab and all its cards are open from the first launch (Basics).",
+    "  Any other tab stays hidden until one of its cards is open.",
+    "cards: tab = the tab id. number = the big handwritten number. skills = the short lines on the card.",
+    "  lessons = the in-game lessons this card covers, as Level_01/<guide.json lesson id>. A card that is not in an alwaysOpen tab opens",
+    "  once the player has FINISHED one of these lessons in the level (or already completed that chapter). A lesson belongs to one card only.",
+    "  drill = the practice file in Resources/Tutorials/Training/Drills (without .json). lockedNote = the note on a locked card (no spoilers).",
+    "greetings: Arthur's line on the left page; one is picked at random."
+  ],
+
+  "title": "TUTORIAL BINDER",
+  "owner": "Arthur",
+  "greetings": [
+    "Back for a refresher, rookie? Pick a drill and show me what you've got!",
+    "Practice here is free. Nobody's watching the clock but you.",
+    "Do it once with my help, then once on your own. That's how it sticks!",
+    "Every senior consultant was a rookie once. Pick a drill!"
+  ],
+
+  "tabs": [
+    { "id": "basics", "title": "Basics", "color": "#4E8FD8", "alwaysOpen": true },
+    { "id": "sidequest", "title": "Side Quest", "color": "#E2903C" },
+    { "id": "case", "title": "Case", "color": "#4FA874" }
+  ],
+
+  "cards": [
+    {
+      "id": "basics.screen",
+      "tab": "basics",
+      "number": 1,
+      "title": "Your Screen",
+      "skills": ["Objective tracker", "Progress card", "Minimap", "Notes"],
+      "lessons": ["Level_01/hud-tour", "Level_01/notes"],
+      "drill": "basics_screen"
+    },
+    {
+      "id": "basics.moving",
+      "tab": "basics",
+      "number": 2,
+      "title": "Getting Around",
+      "skills": ["Walk with the joystick", "Look around", "Follow the arrows"],
+      "lessons": ["Level_01/move", "Level_01/look", "Level_01/follow"],
+      "drill": "basics_moving"
+    },
+    {
+      "id": "basics.people",
+      "tab": "basics",
+      "number": 3,
+      "title": "People & Papers",
+      "skills": ["Talk to people", "Pick up profiles", "Read your Profiles"],
+      "lessons": ["Level_01/talk", "Level_01/pickup", "Level_01/profiles-icon"],
+      "drill": "basics_people"
+    },
+    {
+      "id": "sidequest.1",
+      "tab": "sidequest",
+      "number": 1,
+      "title": "Know Your Taxpayer",
+      "skills": ["Collect four profiles", "Sort them on the corkboard"],
+      "lessons": ["Level_01/guide-appears", "Level_01/corkboard", "Level_01/sidequest-card"],
+      "drill": "sq_know_your_taxpayer",
+      "lockedNote": "Side Quest 1 waits for you in Chapter 1."
+    },
+    {
+      "id": "case.desk",
+      "tab": "case",
+      "number": 1,
+      "title": "Your Desk",
+      "skills": ["Get the case", "Open the folder and the book", "Turn the pages"],
+      "lessons": ["Level_01/reception", "Level_01/to-desk", "Level_01/desk", "Level_01/case-folder", "Level_01/book-pages"],
+      "drill": "case_desk",
+      "lockedNote": "You'll sit at your desk in Chapter 1."
+    },
+    {
+      "id": "case.values",
+      "tab": "case",
+      "number": 2,
+      "title": "Moving Values",
+      "skills": ["Tap or drag a value", "Green fits, red doesn't", "Profile, book, folder"],
+      "lessons": ["Level_01/value-transfer", "Level_01/investigate"],
+      "drill": "case_values",
+      "lockedNote": "You'll fill your first folder in Chapter 1."
+    },
+    {
+      "id": "case.handin",
+      "tab": "case",
+      "number": 3,
+      "title": "Hand It In",
+      "skills": ["Store the folder", "Beat office hours", "Give it to the Auditor"],
+      "lessons": ["Level_01/office-hours", "Level_01/store-folder", "Level_01/exit-desk", "Level_01/auditor", "Level_01/submit", "Level_01/audit-card"],
+      "drill": "case_handin",
+      "lockedNote": "You'll meet the Auditor in Chapter 1."
+    }
+  ]
+}

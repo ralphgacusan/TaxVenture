@@ -1,0 +1,7 @@
+{
+    "_help": "In-game settings board. scenes: gameplay scenes that get it. pauseGameWhenOpen: true pauses the game while settings are open, false keeps it running. pauseMode: FreezeTime (Time.timeScale 0: NPCs, physics, animations, the level timer and office hours all stop) or StoryOnly (only the game state machine and office hours pause; the world keeps moving). hideHudWhileOpen: hide the HUD while settings are open. Player controls are always held while settings are open.",
+    "scenes": ["Office_Level1", "Office_Level2"],
+    "pauseGameWhenOpen": true,
+    "pauseMode": "FreezeTime",
+    "hideHudWhileOpen": true
+}

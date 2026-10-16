@@ -24,6 +24,7 @@ public sealed class OfficeMinimapHUD : MonoBehaviour
     private Vector3 iconsOriginalPosition;
     private bool fits = true;
     private bool settingsPlaced;
+    private TextMeshProUGUI titleLabel;
 
     public RectTransform MapRect => mapRect;
 
@@ -82,7 +83,7 @@ public sealed class OfficeMinimapHUD : MonoBehaviour
         RectTransform bodyRect = bodyObject.GetComponent<RectTransform>();
         RectTransform header = CreateRect("Header", bodyRect).GetComponent<RectTransform>();
         AnchorTop(header, 26f);
-        AddLabel("Office", header, "OFFICE", 18f, TextAlignmentOptions.MidlineLeft,
+        TextMeshProUGUI title = AddLabel("Office", header, "OFFICE", 18f, TextAlignmentOptions.MidlineLeft,
             new Color32(245, 240, 226, 255), new Vector2(12f, 0f), new Vector2(92f, 0f));
         AddLabel("North", header, "N", 16f, TextAlignmentOptions.Midline,
             new Color32(221, 190, 126, 255), Vector2.zero, new Vector2(28f, 0f), true);
@@ -123,6 +124,7 @@ public sealed class OfficeMinimapHUD : MonoBehaviour
 
         OfficeMinimapHUD hud = panelObject.AddComponent<OfficeMinimapHUD>();
         hud.panelRect = panel;
+        hud.titleLabel = title;
         hud.hostCanvas = hudCanvas;
         hud.safeAreaRoot = safeAreaObject;
         hud.canvasGroup = group;
@@ -134,6 +136,12 @@ public sealed class OfficeMinimapHUD : MonoBehaviour
         if (hud.iconsRoot != null) hud.iconsOriginalPosition = hud.iconsRoot.localPosition;
         hud.UpdateSize();
         return hud;
+    }
+
+    /// <summary>Header text, left (Office Hours shows the time of day here).</summary>
+    public void SetTitle(string text)
+    {
+        if (titleLabel != null) titleLabel.text = string.IsNullOrEmpty(text) ? "OFFICE" : text;
     }
 
     public void SetMapTexture(Texture texture)

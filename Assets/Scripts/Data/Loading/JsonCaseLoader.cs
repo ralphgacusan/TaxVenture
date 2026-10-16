@@ -224,6 +224,18 @@ public static class JsonCaseLoader
                    $"(use an empty array [] if the case has no documents).";
         }
 
+        // Every graded field must exist and have a usable answer, otherwise
+        // the case could never be passed.
+        var seenKeys = new System.Collections.Generic.HashSet<string>();
+        foreach (RequiredFieldDefinition field in def.GradedFields())
+        {
+            if (!seenKeys.Add(field.key))
+                return $"Case '{def.caseId}' lists requiredFields '{field.key}' twice.";
+            string problem = CaseFieldRules.AnswerProblem(def.answerKey, field.key);
+            if (problem != null)
+                return $"Case '{def.caseId}': {problem}.";
+        }
+
         foreach (var doc in def.documents)
         {
             if (doc == null)

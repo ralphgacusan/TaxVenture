@@ -7,6 +7,9 @@ using System.Collections.Generic;
 /// </summary>
 public class LevelTotalResult
 {
+    /// <summary>Unique per finished run, so saving it twice applies it once.</summary>
+    public readonly string RunId = System.Guid.NewGuid().ToString("N");
+
     public string LevelId;
     public int TotalExp;
     public int TotalReputation;
@@ -25,6 +28,10 @@ public class LevelTotalResult
     public List<string> Badges = new List<string>();
     public List<string> BadgeNames = new List<string>();
     public List<BadgeTier> BadgeTiers = new List<BadgeTier>();
+
+    // Seconds spent on the whole level and on its side quest (0 = not measured).
+    public float RunSeconds;
+    public float SideQuestSeconds;
 
     /// <summary>
     /// Whole-level totals from the level score: every reward source against the
@@ -47,6 +54,8 @@ public class LevelTotalResult
         result.Badges = new List<string>(ledger.Badges);
         result.BadgeNames = new List<string>(ledger.BadgeNames);
         result.BadgeTiers = new List<BadgeTier>(ledger.BadgeTiers);
+        result.RunSeconds = ledger.ElapsedSeconds;
+        result.SideQuestSeconds = ledger.SideQuestScored ? ledger.SideQuestSeconds : 0f;
         return result;
     }
 

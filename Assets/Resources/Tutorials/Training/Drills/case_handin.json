@@ -1,0 +1,88 @@
+{
+  "_readme": [
+    "A Tutorial Hub drill. See basics_screen.json and case_desk.json for the format, and Documentation/TrainingHub/README.md.",
+    "The last step waits for event:CaseCompleted (the Auditor approved); a step's own 'when' is kept when it names no lesson."
+  ],
+  "id": "case_handin",
+  "title": "Hand It In",
+  "start": "office",
+  "spawn": "Environment/OfficeBuilding/Rooms/Reception/Doors",
+  "face": "Environment/OfficeBuilding/Rooms/Reception/Receptionist",
+  "practiceCase": "case_002",
+  "profile": {
+    "id": "profile_marco_practice",
+    "name": "Marco Santos",
+    "description": "Filipino designer in Makati; several clients pay him per project; no boss.",
+    "classification": "ResidentCitizen",
+    "npcId": "npc_marco_practice"
+  },
+  "objectivesDone": [
+    "event:AllProfilesCollected",
+    "event:TutorialGuideTalkedTo",
+    "event:SideQuestCompleted",
+    "area:Environment/OfficeBuilding/Rooms/Reception/Floor|Environment/OfficeBuilding/Rooms/Reception/Doors"
+  ],
+  "hide": [
+    "Env/Vegetation",
+    "Env/Rocks",
+    "Env/Props",
+    "Env/Buildings",
+    "Environment/Outside/Plaza/NPCS"
+  ],
+  "guided": {
+    "goal": "From folder to Auditor",
+    "steps": [
+      { "id": "intro", "title": "HAND IT IN", "pages": [
+        { "mood": "wow", "text": "This drill is about the finish line: filing your work and handing it to the Auditor before he leaves." }
+      ] },
+      { "id": "get-case", "title": "HAND IT IN", "pages": [
+        { "style": "hint", "waitFor": "event:ReceptionistTalkedTo", "text": "Get Marco's case from the receptionist." }
+      ] },
+      { "use": "office-hours" },
+      { "id": "fill", "title": "HAND IT IN", "onlyIn": "mode:Workstation|mode:FirstPerson", "pages": [
+        { "style": "hint", "waitFor": "case:filled", "text": "Sit at your desk, open the folder and the book, and fill all three fields." }
+      ] },
+      { "use": "store-folder" },
+      { "use": "exit-desk" },
+      { "use": "auditor" },
+      { "use": "submit" },
+      { "use": "audit-card" },
+      { "id": "done", "title": "DRILL COMPLETE", "when": "event:CaseCompleted", "duringResults": true, "pages": [
+        { "mood": "wow", "box": "bottom", "text": "Approved and filed! That's a whole case, start to finish. Try the mastery run next." }
+      ] }
+    ],
+    "hints": [
+      { "id": "send-back", "when": "event:CaseFolderReturned", "onlyIn": "mode:FirstPerson", "delay": 0.8, "pages": [
+        { "mood": "sad", "text": "The Auditor sent it back. No sweat! Fix what's wrong at your desk, store the folder again, then hand it in." }
+      ] }
+    ]
+  },
+  "mastery": {
+    "goal": "Approved before closing time",
+    "steps": [
+      { "id": "intro", "title": "MASTERY RUN", "pages": [
+        { "text": "Mastery run! Get Marco's case approved by the Auditor. No hand from me, and watch the clock." }
+      ] },
+      { "id": "get-case", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "event:ReceptionistTalkedTo", "text": "Get the case from the receptionist." }
+      ] },
+      { "id": "fill", "title": "GOAL", "onlyIn": "mode:Workstation|mode:FirstPerson", "pages": [
+        { "style": "hint", "waitFor": "case:filled", "text": "Fill all three fields at your desk." }
+      ] },
+      { "id": "store", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "event:CaseFolderStored", "text": "Keep the folder with you: drag it onto your folder icon." }
+      ] },
+      { "id": "submit", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "state:AuditSubmittedState", "text": "Hand it to the Auditor: drag your folder icon onto him." }
+      ] },
+      { "id": "done", "title": "MASTERED", "when": "event:CaseCompleted", "duringResults": true, "pages": [
+        { "mood": "wow", "box": "bottom", "text": "Approved! Filed, handed in and done. That's how a pro closes a case." }
+      ] }
+    ],
+    "hints": [
+      { "id": "send-back", "when": "event:CaseFolderReturned", "onlyIn": "mode:FirstPerson", "delay": 0.8, "pages": [
+        { "style": "hint", "mood": "sad", "waitFor": "seconds:6", "text": "Sent back! Fix the fields, store the folder again, then hand it in." }
+      ] }
+    ]
+  }
+}

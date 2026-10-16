@@ -331,6 +331,9 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
             return;
         }
 
+        // Only within reach (taps through the EventSystem have no distance limit).
+        if (eventData != null && !InteractionRange.PlayerCanReach(this)) return;
+
         TaxpayerProfileCollectionHUD hud = TaxpayerProfileCollectionHUD.Instance;
         if (hud == null)
         {

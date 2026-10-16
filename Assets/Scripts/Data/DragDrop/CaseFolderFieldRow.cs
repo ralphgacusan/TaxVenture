@@ -720,6 +720,23 @@ public class CaseFolderFieldRow :
     }
 
     // ---------------------------------------------------------
+    // Read-only accessors (level guide, drop indicator)
+    // ---------------------------------------------------------
+
+    /// <summary>True when this field can receive values.</summary>
+    public bool IsDestination => isDestination;
+
+    /// <summary>True when the field already holds a value.</summary>
+    public bool HasValue => hasValue && currentValue != null;
+
+    /// <summary>Same rule as CanAccept, without logging (safe to call every frame).</summary>
+    public bool WouldAccept(DataValue value)
+    {
+        return isDestination && value != null && value.Type == type &&
+               string.Equals(value.SemanticKey?.Trim(), semanticKey?.Trim(), System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ---------------------------------------------------------
     // Destination Validation
     // ---------------------------------------------------------
 

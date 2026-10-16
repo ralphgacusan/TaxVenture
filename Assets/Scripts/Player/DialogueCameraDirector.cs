@@ -90,6 +90,15 @@ public class DialogueCameraDirector : MonoBehaviour, IDialoguePresentation
     private Vector3 fpPosition;
     private Quaternion fpRotation;
     private float fpFov;
+    private float fpNear = -1f;
+
+    // Close-ups used to sit ~0.5 m from the head centre while the main camera
+    // clips everything nearer than 0.3 m, so low-poly heads were sliced open.
+    // During a conversation the near plane is pulled in, and a close-up never
+    // comes closer than this (fraction of character height) to the head.
+    private const float ConversationNearClip = 0.03f;
+    private const float MinCloseUpDistance = 0.55f;
+    private const float MinCameraToHead = 0.42f;
     private FirstPersonHands hands;
     private bool handsHidden;
     private bool handsWereShowing;
@@ -193,6 +202,8 @@ public class DialogueCameraDirector : MonoBehaviour, IDialoguePresentation
             fpRotation = cam.transform.rotation;
         }
         fpFov = cam.fieldOfView;
+        if (fpNear < 0f) fpNear = cam.nearClipPlane;
+        cam.nearClipPlane = Mathf.Min(fpNear, ConversationNearClip);
         hands = controller.Hands;
         playerRoot = controller.PlayerRoot;
         ownershipLost = false;
@@ -357,6 +368,7 @@ public class DialogueCameraDirector : MonoBehaviour, IDialoguePresentation
             cam.transform.SetPositionAndRotation(fpPosition, fpRotation);
             cam.fieldOfView = fpFov;
         }
+        RestoreNearClip();
         RestoreHandsAndVisual();
         Action callback = onReturned;
         ResetState();
@@ -371,8 +383,15 @@ public class DialogueCameraDirector : MonoBehaviour, IDialoguePresentation
             cam.transform.SetPositionAndRotation(fpPosition, fpRotation);
             cam.fieldOfView = fpFov;
         }
+        RestoreNearClip();
         RestoreHandsAndVisual();
         ResetState();
+    }
+
+    private void RestoreNearClip()
+    {
+        if (cam != null && fpNear >= 0f) cam.nearClipPlane = fpNear;
+        fpNear = -1f;
     }
 
     private void RestoreHandsAndVisual()
@@ -501,12 +520,18 @@ public class DialogueCameraDirector : MonoBehaviour, IDialoguePresentation
     // (behind the camera) and nothing blocks the speaker's face.
     private bool TryCloseUp(bool npcLine, DialogueShotSettings s, out Pose pose)
     {
+        s.CloseUpDistance = Mathf.Max(s.CloseUpDistance, MinCloseUpDistance);
         DialogueShotPose shot = npcLine
             ? DialogueShotMath.NpcCloseUp(ToN(elijahHead), ToN(npc.Head), scale, s)
             : DialogueShotMath.PlayerCloseUp(ToN(elijahHead), ToN(npc.Head), scale, s);
         Vector3 subject = npcLine ? npc.Head : elijahHead;
         Vector3 listener = npcLine ? elijahHead : npc.Head;
         Vector3 position = ToU(shot.Position);
+        // Never inside or right against the speaker's head.
+        Vector3 fromHead = position - subject;
+        float minDistance = MinCameraToHead * scale;
+        if (fromHead.sqrMagnitude < minDistance * minDistance)
+            position = subject + (fromHead.sqrMagnitude > 1e-6f ? fromHead.normalized : Vector3.back) * minDistance;
         if (!DialogueShotMath.IsBehindCamera(shot, ToN(listener), 0.08f * scale) ||
             !IsClear(position, subject, subject))
         {

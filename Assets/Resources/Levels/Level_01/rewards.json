@@ -2,16 +2,19 @@
   "_readme": [
     "Level 1 reward rules. Change any number here; it applies on the next Play.",
     "passingPercent: the share of the level's maximum EXP AND maximum hearts needed to pass (unlock the next level). 100 = perfect run required.",
-    "requireSideQuestBeforeOffice: true = the receptionist, desk and case cannot be used until the side quest is finished.",
+    "requireSideQuestBeforeOffice: true = the office entrance doors stay shut (and block the way in) until the side quest is finished, then swing open; the receptionist, desk and case cannot be used before that either.",
+    "officeDoors: scene names of the entrance door leaves that stay shut. They close toward each other and open back to the pose they have in the scene.",
     "conversation: hearts per finished plaza client conversation (bonus), and how many clients there are.",
     "sideQuest: full EXP and hearts for a perfect corkboard; expPerWrong is taken off per wrong placement; a heart is lost at each count in heartsLostAtWrong (e.g. 1, 3, 5 wrong).",
     "Badge tiers: finishing the side quest always earns the badge. Bronze = finished, Silver = side-quest EXP at or above passingPercent, Gold = perfect (no wrong placements). Replays keep the best tier.",
     "badgeEmblem: the medal's centre picture (taxpayer_id, receipt, star). badgeRibbon: the ribbon colour (#RRGGBB). Give each side quest its own.",
-    "caseFile: full EXP and hearts per case for a first-try, mistake-free audit; per mistake the Auditor finds, and per extra submission (going back to redo), the amounts below are taken off.",
+    "caseFile: full EXP and hearts per case for a first-try, mistake-free audit; per mistake the Auditor finds, and per extra submission (going back to redo), the amounts below are taken off. wrongVerdictExp: EXP for a case finished without an audit whose verdict was wrong.",
+    "The level score never goes above its maximum: bonuses (e.g. on time) only win back lost points. Out-of-range numbers are clamped when the level loads and the Console names each one.",
     "Fields starting with '_' are notes and are ignored by the game."
   ],
   "passingPercent": 80,
   "requireSideQuestBeforeOffice": true,
+  "officeDoors": ["Office_Entrance_Door_1", "Office_Entrance_Door_2"],
   "conversation": { "hearts": 1, "count": 4 },
   "sideQuest": {
     "exp": 50,
@@ -29,6 +32,7 @@
     "expPerMistake": 15,
     "heartsPerMistake": 1,
     "expPerRetry": 10,
-    "heartsPerRetry": 1
+    "heartsPerRetry": 1,
+    "wrongVerdictExp": 20
   }
 }

@@ -1,0 +1,48 @@
+{
+  "_readme": "A Tutorial Hub drill. See basics_screen.json for the format and Documentation/TrainingHub/README.md for the reference.",
+  "id": "basics_moving",
+  "title": "Getting Around",
+  "start": "plaza",
+  "hide": [
+    "Environment/OfficeBuilding/Rooms/AuditOffice",
+    "Environment/OfficeBuilding/Rooms/ColleagueRoom",
+    "Environment/OfficeBuilding/Rooms/ConferenceRoom",
+    "Environment/OfficeBuilding/Rooms/ConsultantOffice",
+    "Environment/OfficeBuilding/Rooms/FileStorageRoom",
+    "Environment/OfficeBuilding/Inside/MiscProps"
+  ],
+  "guided": {
+    "goal": "Walk, look, follow",
+    "steps": [
+      { "id": "intro", "title": "GETTING AROUND", "pages": [
+        { "mood": "wow", "text": "Let's get those thumbs warmed up! Walking, looking around, and following the arrows." }
+      ] },
+      { "use": "move" },
+      { "use": "look" },
+      { "use": "follow" },
+      { "id": "done", "title": "DRILL COMPLETE", "pages": [
+        { "mood": "wow", "text": "You're moving like a local! Now try the mastery run: same moves, no hand from me." }
+      ] }
+    ]
+  },
+  "mastery": {
+    "goal": "Move on your own",
+    "steps": [
+      { "id": "intro", "title": "MASTERY RUN", "pages": [
+        { "text": "Mastery run! Three goals, no hand. Show me you can get anywhere in town." }
+      ] },
+      { "id": "walk", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "move:6", "text": "Walk 6 metres in any direction." }
+      ] },
+      { "id": "turn", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "look:180", "text": "Turn all the way around and look behind you." }
+      ] },
+      { "id": "arrive", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "near:3:type:TaxpayerNpcInteractable", "text": "Follow the glowing arrows to a client in the plaza." }
+      ] },
+      { "id": "done", "title": "MASTERED", "pages": [
+        { "mood": "wow", "text": "Right on target! Nobody gets lost on your watch." }
+      ] }
+    ]
+  }
+}

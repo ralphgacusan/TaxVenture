@@ -320,20 +320,9 @@ Check(TaxpayerProfileDatabase.GetByNpcId("npc_missing") == null &&
 
 // The tutorial guide's two conversations are built in code rather than
 // from the library, so verify they are admissible and end once each.
-var guideIntroLines = new DialogueBuilder("Tutorial Guide")
-    .Npc("Good work collecting all four taxpayer profiles!")
-    .Npc("Before we head back to the office, let's sort them properly.")
-    .Npc("I have a small corkboard here. Each corner represents a taxpayer classification.")
-    .Player("Alright, what do I do?")
-    .Npc("Simple — drag each profile to the corner that matches how that taxpayer earns their income.")
-    .Npc("Don't worry about getting it wrong — you can keep trying until every corner is correct.")
-    .Build();
-
-var guideCompletionLines = new DialogueBuilder("Tutorial Guide")
-    .Npc("Excellent work! Every profile is in its correct spot.")
-    .Npc("You've completed your first side quest — and you're already learning how to tell your taxpayers apart!")
-    .Npc("That's exactly the kind of instinct you'll need in the office. Let's head back.")
-    .Build();
+// Arthur's corkboard talks come from production CorkboardTeaching.
+var guideIntroLines = CorkboardTeaching.BuildIntro("Arthur");
+var guideCompletionLines = CorkboardTeaching.BuildDone("Arthur");
 
 void CheckGuideConversation(List<DialogueLine> guideLines, string label, int expectedCount)
 {
@@ -373,8 +362,72 @@ void CheckGuideConversation(List<DialogueLine> guideLines, string label, int exp
         $"{label} must run its success outcome exactly once.");
 }
 
-CheckGuideConversation(guideIntroLines, "The guide intro conversation", 6);
+CheckGuideConversation(guideIntroLines, "The guide intro conversation", 8);
 CheckGuideConversation(guideCompletionLines, "The guide completion conversation", 3);
+
+// ---------------------------------------------------------------------
+// Level 1 teaching rules (Phase 1): tell the story, never the answer.
+// ---------------------------------------------------------------------
+string[] bannedLabels = { "resident", "citizen", "alien", "classification" };
+bool NamesALabel(string text)
+{
+    string lower = (text ?? "").ToLowerInvariant();
+    foreach (string word in bannedLabels)
+        if (lower.Contains(word)) return true;
+    return false;
+}
+
+foreach (string npcId in townNpcIds)
+{
+    List<DialogueLine> talk = TownNpcDialogueLibrary.GetDialogueFor(npcId, "Npc", out _);
+    Check(talk.Count >= 4 && talk.Count <= 7, $"'{npcId}' talk must stay short (4-7 lines), has {talk.Count}.");
+    foreach (DialogueLine line in talk)
+        Check(!NamesALabel(line.Text), $"'{npcId}' must not name a classification: \"{line.Text}\"");
+
+    TaxpayerProfile profile = TaxpayerProfileDatabase.GetByNpcId(npcId);
+    int words = profile.Description.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Length;
+    Check(words >= 9 && words <= 14, $"'{npcId}' profile must keep the card length (9-14 words), has {words}.");
+    Check(!NamesALabel(profile.Description), $"'{npcId}' profile must not name a classification.");
+
+    // Every corner gets a reaction: why for the right one, a hint for each wrong one.
+    var seen = new HashSet<string>();
+    foreach (TaxpayerClassification corner in Enum.GetValues(typeof(TaxpayerClassification)))
+    {
+        string reaction = CorkboardTeaching.ReactionFor(profile, corner);
+        Check(!string.IsNullOrWhiteSpace(reaction), $"'{npcId}' needs a reaction for {corner}.");
+        Check(!NamesALabel(reaction), $"'{npcId}' reaction for {corner} must not name a classification.");
+        seen.Add(reaction);
+    }
+    Check(seen.Count == 4, $"'{npcId}' right answer and the three kinds of miss must read differently.");
+}
+
+foreach (var line in CorkboardTeaching.IntroLines)
+    Check(!NamesALabel(line.Value), $"Arthur's intro must stay indirect: \"{line.Value}\"");
+Check(CorkboardTeaching.IntroLines.Count >= 6, "Arthur's intro needs a line for each of the four corners.");
+
+// The two hidden questions.
+Check(CorkboardTeaching.Compare(TaxpayerClassification.ResidentCitizen, TaxpayerClassification.ResidentCitizen) == CorkboardTeaching.Miss.None, "same corner = no miss");
+Check(CorkboardTeaching.Compare(TaxpayerClassification.ResidentCitizen, TaxpayerClassification.ResidentAlien) == CorkboardTeaching.Miss.Citizenship, "passport miss");
+Check(CorkboardTeaching.Compare(TaxpayerClassification.ResidentCitizen, TaxpayerClassification.NonResidentCitizen) == CorkboardTeaching.Miss.Residence, "home miss");
+Check(CorkboardTeaching.Compare(TaxpayerClassification.ResidentCitizen, TaxpayerClassification.NonResidentAlien) == CorkboardTeaching.Miss.Both, "both missed");
+Check(CorkboardTeaching.Compare(TaxpayerClassification.NonResidentAlien, TaxpayerClassification.ResidentAlien) == CorkboardTeaching.Miss.Residence, "visitor vs settled = home miss");
+
+// Overrides apply and clear (town.json path).
+TaxpayerProfile marieProfile = TaxpayerProfileDatabase.GetByNpcId("npc_marie");
+string marieBuiltIn = marieProfile.Description;
+TaxpayerProfileDatabase.SetDescription(marieProfile.ProfileId, "Edited note.");
+Check(marieProfile.Description == "Edited note.", "a description override applies");
+TaxpayerProfileDatabase.ClearOverrides();
+Check(marieProfile.Description == marieBuiltIn, "clearing restores the built-in description");
+TownNpcDialogueLibrary.SetOverride("npc_marie", new List<KeyValuePair<bool, string>>
+{
+    new KeyValuePair<bool, string>(true, "Hi."), new KeyValuePair<bool, string>(false, "Hello.")
+});
+Check(TownNpcDialogueLibrary.GetDialogueFor("npc_marie", "Marie", out bool overrideRecognized).Count == 2 && overrideRecognized, "a talk override applies");
+TownNpcDialogueLibrary.SetOverride("npc_missing", new List<KeyValuePair<bool, string>> { new KeyValuePair<bool, string>(false, "x") });
+Check(!TownNpcDialogueLibrary.HasDialogueFor("npc_missing"), "an override cannot make an unknown NPC look authored");
+TownNpcDialogueLibrary.ClearOverrides();
+Check(TownNpcDialogueLibrary.GetDialogueFor("npc_marie", "Marie").Count == 6, "clearing restores the built-in talk");
 
 // T03 presentation contracts (terminal handoff, gesture gate, typewriter, shots).
 int beforePresentation = checks;

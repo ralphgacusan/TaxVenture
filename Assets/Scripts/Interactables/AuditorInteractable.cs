@@ -100,6 +100,43 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     /// correctness + compliance issues, and always proceeds forward
     /// regardless of outcome. No "go back and fix it" path exists anymore.
     /// </summary>
+    // Brute-force guard (Level 1 Phase 3): the answers of the last failed
+    // audit, and how many audits have failed for this case.
+    private string lastFailedAnswers;
+    private int failedAudits;
+
+    /// <summary>How many audits of the current case failed (read-only; the case finale uses it).</summary>
+    public int FailedAudits => failedAudits;
+
+    /// <summary>The three required answers as one comparable string.</summary>
+    private static string AnswerSignature(CaseData data)
+    {
+        CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+        return CaseFieldRules.Signature(data, def != null ? def.GradedFields() : CaseFieldRules.Defaults());
+    }
+
+    /// <summary>
+    /// The same answers that already failed come back: the Auditor refuses
+    /// to re-check them and hands the folder back (it must be stored again).
+    /// </summary>
+    private void RefuseSameAnswers()
+    {
+        CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+        string line = def != null && !string.IsNullOrWhiteSpace(def.auditorSameAnswersLine)
+            ? def.auditorSameAnswersLine
+            : "These are the exact same answers you gave me last time. Change what's wrong, then come back.";
+        var lines = new DialogueBuilder("Auditor").Npc(line, "Auditor_Disappointed").Build();
+        System.Action handBack = () =>
+        {
+            dialogueSessionActive = false;
+            auditPending = false;
+            pendingAuditCase = null;
+            if (AuditorSubmissionTray.Instance != null) AuditorSubmissionTray.Instance.ResetForRetryWithoutNewCase();
+        };
+        if (dialogueUI.TryStartDialogue(lines, handBack, handBack, this)) dialogueSessionActive = true;
+        else handBack();
+    }
+
     public void BeginFinalAudit()
     {
         if (CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null ||
@@ -113,6 +150,11 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
         }
 
         CaseData data = CaseManager.Instance.CurrentCase;
+        if (lastFailedAnswers != null && AnswerSignature(data) == lastFailedAnswers)
+        {
+            if (!dialogueSessionActive && dialogueUI != null && !DialogueUI.IsAnyDialogueActive) RefuseSameAnswers();
+            return;
+        }
         // The tray has already accepted the folder. Keep a retry route on this
         // NPC when admission is rejected or the conversation is cancelled.
         pendingAuditCase = data;
@@ -172,13 +214,24 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
 
         if (result.MissedIssues == null || result.MissedIssues.Count == 0)
         {
-            builder.Npc(
-                "Excellent work! I've reviewed your case, and everything is correct.",
-                "Auditor_Happy");
+            // The case JSON may give its own approval lines.
+            CaseDefinition approvedDef = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+            List<string> approved = approvedDef != null ? approvedDef.auditorApprovedLines : null;
+            bool said = false;
+            if (approved != null)
+                foreach (string line in approved)
+                    if (!string.IsNullOrWhiteSpace(line)) { builder.Npc(line, "Auditor_Happy"); said = true; }
 
-            builder.Npc(
-                "Congratulations! You know your taxpayer. You correctly identified their residency, classification, and how they earn their income — that's the foundation every accurate filing is built on.",
-                "Auditor_Happy");
+            if (!said)
+            {
+                builder.Npc(
+                    "Excellent work! I've reviewed your case, and everything is correct.",
+                    "Auditor_Happy");
+
+                builder.Npc(
+                    "Congratulations! You know your taxpayer. You correctly identified their residency, classification, and how they earn their income — that's the foundation every accurate filing is built on.",
+                    "Auditor_Happy");
+            }
         }
         else
         {
@@ -188,9 +241,13 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
                 builder.Npc(issue.ShortLabel, "Auditor_Disappointed");
             }
 
-            builder.Npc(
-                "This case isn't quite ready yet. Take another look, and don't worry — you can go back and work through it again.",
-                "Auditor_Default");
+            // Gentle the first time, stricter on every later try.
+            CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+            List<string> retry = def != null ? def.auditorRetryLines : null;
+            string closing = retry != null && retry.Count > 0
+                ? retry[Mathf.Min(failedAudits, retry.Count - 1)]
+                : "This case isn't quite ready yet. Take another look, and don't worry — you can go back and work through it again.";
+            builder.Npc(closing, failedAudits == 0 ? "Auditor_Default" : "Auditor_Disappointed");
         }
 
         return builder.Build();
@@ -203,6 +260,12 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
         pendingAuditCase = null;
 
         CaseData data = CaseManager.Instance.CurrentCase;
+        if (result.MissedIssues.Count > 0)
+        {
+            // Remember what failed, before the retry clears the answers.
+            lastFailedAnswers = AnswerSignature(data);
+            failedAudits++;
+        }
         data.auditMistakeCount = result.MissedIssues.Count;
         data.auditPassed = result.VerdictWasCorrect;
         data.finalVerdictWasCorrect = result.VerdictWasCorrect;

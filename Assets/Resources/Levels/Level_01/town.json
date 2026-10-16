@@ -1,0 +1,112 @@
+{
+  "_readme": [
+    "LEVEL 1 TOWN TEXT: what the 4 plaza clients say, their profile notes, and what Arthur says at the corkboard.",
+    "Edit freely; changes apply on the next Play. Fields starting with '_' are notes and are ignored.",
+    "GOLDEN RULE: never name a classification (resident, non-resident, citizen, alien). Tell the STORY; the player works it out.",
+    "Every corner answers two questions: is the person Filipino? and do they live here most of the year?",
+    "talk: the conversation, top to bottom. who = \"you\" for the player, \"npc\" for the client. Keep it short (about 6 lines).",
+    "description: the profile card. A short summary of what they said (about 12-13 words) - clues, never the answer.",
+    "placedRight: Arthur when the card lands in the right corner (say WHY, without the label).",
+    "hintCitizenship / hintResidence / hintBoth: Arthur when the card is wrong because of where they're FROM / where they LIVE / both. Hint, never the answer.",
+    "arthurBoardIntro / arthurBoardDone: Arthur's talk when the corkboard opens, and when every card is right.",
+    "Marie is also the office client: her talk and profile hint how she earns her money (for the Case Folder) without naming the answer.",
+    "Invalid entries are skipped with a Console warning and the built-in text is used instead."
+  ],
+
+  "taxpayers": [
+    {
+      "npcId": "npc_marie",
+      "_corner": "Filipino, lives here (her case: employee earning a salary)",
+      "description": "Born and raised here, never lived abroad; salaried employee at a local BPO.",
+      "talk": [
+        { "who": "you", "text": "Hi! I'm the new tax consultant in town. Mind telling me a bit about yourself?" },
+        { "who": "npc", "text": "Not at all! Born and raised right here. My Filipino passport has never even been stamped!" },
+        { "who": "you", "text": "Ha! So what keeps you busy these days?" },
+        { "who": "npc", "text": "I work the night shift at the BPO office downtown. Same company for five years, and my pay comes in every payday." },
+        { "who": "you", "text": "No side business or anything?" },
+        { "who": "npc", "text": "Just my salary! Work, sleep, and weekend karaoke with the family. Good luck on your first day!" }
+      ],
+      "placedRight": "Yes! Born here, never left. Her home and her paycheck are both right here.",
+      "hintCitizenship": "Hmm. Where was Marie born, and whose passport has never been stamped?",
+      "hintResidence": "Close! But has Marie ever actually lived anywhere else?",
+      "hintBoth": "Not quite. Think about where Marie is from, and where she spends her days."
+    },
+    {
+      "npcId": "npc_jhunjhun",
+      "_corner": "Filipino, lives abroad",
+      "description": "Pinoy engineer on a Qatar contract; lives abroad, home only weeks a year.",
+      "talk": [
+        { "who": "you", "text": "Hi there! Waiting for someone?" },
+        { "who": "npc", "text": "My ride to the airport. Vacation's over, so it's back to Qatar tomorrow." },
+        { "who": "you", "text": "Back to Qatar? What do you do there?" },
+        { "who": "npc", "text": "I'm an engineer on a five-year contract. My apartment and my whole work life are over there now." },
+        { "who": "you", "text": "You must miss home." },
+        { "who": "npc", "text": "Every day! I'm Pinoy to the bone, but I only get to come home for a few weeks a year." }
+      ],
+      "placedRight": "That's it! Filipino through and through, but his work keeps him abroad most of the year.",
+      "hintCitizenship": "Listen again: Jhun-jhun called himself Pinoy to the bone.",
+      "hintResidence": "Almost! Where does Jhun-jhun spend most of his year?",
+      "hintBoth": "Not quite. Where is Jhun-jhun from, and where does he actually live?"
+    },
+    {
+      "npcId": "npc_milo",
+      "_corner": "Foreign, lives here",
+      "description": "From very far away; settled here six years with family; runs his restaurant.",
+      "talk": [
+        { "who": "you", "text": "Hello! Is this your restaurant?" },
+        { "who": "npc", "text": "It is! Six years now. You can probably tell from my accent: I'm from somewhere... very far away." },
+        { "who": "you", "text": "And you've stayed all this time?" },
+        { "who": "npc", "text": "I came for a short visit, fell in love with the food, and never left. My house and my family are all here now." },
+        { "who": "you", "text": "So the restaurant is how you make a living?" },
+        { "who": "npc", "text": "My pride and joy! I run it myself, every single day. Come try the adobo sometime!" }
+      ],
+      "placedRight": "Exactly! He came from far away, but this town is truly his home now.",
+      "hintCitizenship": "Did Milo grow up here? Remember where he said he's from.",
+      "hintResidence": "Close! Six years, a house and a family here. Is Milo just visiting?",
+      "hintBoth": "Not quite. Think about where Milo is from, and where he has made his home."
+    },
+    {
+      "npcId": "npc_zorbix",
+      "_corner": "Foreign, only visiting",
+      "description": "Visitor from another planet on a paid 27-day job; flight home booked.",
+      "talk": [
+        { "who": "you", "text": "Good afternoon! What brings you to town?" },
+        { "who": "npc", "text": "BUSINESS. A TEMPORARY COMMERCIAL PROJECT FOR MY HOME PLANET." },
+        { "who": "you", "text": "...Right. How long are you staying?" },
+        { "who": "npc", "text": "TWENTY-SEVEN DAYS. MY RETURN FLIGHT IS ALREADY BOOKED." },
+        { "who": "you", "text": "And you're paid for the work you do here?" },
+        { "who": "npc", "text": "AFFIRMATIVE. THEN I GO HOME. YOUR PLANET IS... NICE TO VISIT." }
+      ],
+      "placedRight": "Spot on! A visitor from far, far away, here only for a short paid project.",
+      "hintCitizenship": "Hmm. Does a visitor from another planet carry a Filipino passport?",
+      "hintResidence": "Almost! Twenty-seven days and a flight home booked. Does Zorbix live here?",
+      "hintBoth": "Not quite. Where is Zorbix from, and how long is he staying?"
+    }
+  ],
+
+  "arthurBoardIntro": [
+    { "who": "npc", "text": "Great work collecting all four profiles! Now let's sort them on my corkboard." },
+    { "who": "npc", "text": "Every taxpayer comes down to two clues: where their passport is from, and where they spend most of their year." },
+    { "who": "npc", "text": "Some were born Filipino and never really left. Their whole life, and their paycheck, is right here." },
+    { "who": "npc", "text": "Some are Filipino to the bone, but work keeps them overseas most of the year. Home is just for visits." },
+    { "who": "npc", "text": "Some came from another country, fell for this place, and stayed. They live and do business here now." },
+    { "who": "npc", "text": "And some are only passing through: foreign visitors on a short job, with a ticket home already booked." },
+    { "who": "you", "text": "So I listen for where they're from, and where they actually live." },
+    { "who": "npc", "text": "Exactly! Drag each profile to the corner where it belongs. Wrong guesses bounce back, so think it through." }
+  ],
+
+  "_sideQuestSplash": "The title card shown right after Arthur's corkboard talk (tap to continue). Keep the description short.",
+  "sideQuestSplash": {
+    "kicker": "SIDE QUEST 1",
+    "title": "Know Your Taxpayer",
+    "description": "Four townsfolk, four different stories. Sort each profile onto the corner of Arthur's corkboard where it belongs.",
+    "instruction": "Drag a profile onto a corner  ·  Wrong guesses bounce back",
+    "button": "TAP TO CONTINUE"
+  },
+
+  "arthurBoardDone": [
+    { "who": "npc", "text": "Excellent work! Every profile is in its right spot." },
+    { "who": "npc", "text": "You listened for the two clues: where they're from and where they live. That instinct will serve you well in the office." },
+    { "who": "npc", "text": "Now, let's head there. Your first real case is waiting!" }
+  ]
+}

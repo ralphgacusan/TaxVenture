@@ -29,26 +29,28 @@ public class CaseData
 
 
     // ---------- Page 1: Case Overview ----------
-    public string caseNumber = "ITR-2026-0101";
-    public string taxYear = "2026";
-    public string dateReceived = "June 20, 2026";
+    // Every case value below is filled in from the case JSON by CaseFactory;
+    // the defaults are deliberately empty so no old case can leak through.
+    public string caseNumber = "";
+    public string taxYear = "";
+    public string dateReceived = "";
     public string assignedConsultant = "Player";
-    public string caseTitle = "Marie Bautista Annual Income Tax Filing";
-    public string caseSummary = "Marie Bautista, a local BPO employee, needs her taxpayer classification confirmed before her annual income tax return can be processed. She has lived and worked in the Philippines her entire life and earns income solely from her employer.";
+    public string caseTitle = "";
+    public string caseSummary = "";
     public CaseAssessment caseAssessment = CaseAssessment.NotReadyForFiling;
 
     public bool assessmentStamped = false;
 
     // ---------- Page 2: Taxpayer Information ----------
-    public string fullName = "Marie Bautista";
-    public string tin = "123-456-789-000";
-    public string birthdate = "March 14, 1997";
-    public string address = "Poblacion, Town Proper";
-    public string contactNumber = "0917-123-4567";
+    public string fullName = "";
+    public string tin = "";
+    public string birthdate = "";
+    public string address = "";
+    public string contactNumber = "";
     public CivilStatus civilStatus = CivilStatus.Single;
     public string spouseName = "";
     public string spouseTin = "";
-    public string citizenship = "Filipino";
+    public string citizenship = "";
 
     // Unknown at case start — filled in during Interview (Milestone 7)
     public ResidencyStatus? residencyStatus = null;
@@ -82,12 +84,7 @@ public class CaseData
     public List<SupportingDocument> supportingDocuments = new List<SupportingDocument>();
 
     // ---------- Page 7: Consultant Findings ----------
-    public List<string> potentialIssuesIdentified = new List<string>
-    {
-        "Marie's income comes entirely from a single local employer, with no other sources of income to account for.",
-        "Her taxpayer classification depends on confirming both her citizenship and her Philippine residency.",
-        "Tax was already properly withheld by her employer, so no additional tax should be payable once the classification is confirmed."
-    };
+    public List<string> potentialIssuesIdentified = new List<string>();
 
     // ---------- Compliance Audit (Milestone 13) ----------
     public int auditMistakeCount = 0;

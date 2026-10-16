@@ -43,8 +43,11 @@ public class TaxpayerProfile
 }
 
 /// <summary>
-/// Hardcoded set of the 4 Level 1 taxpayers. Edit the text here to
-/// change names/descriptions without touching any other script.
+/// The 4 Level 1 taxpayers. Each description is a short summary of what
+/// that person told the player: useful notes for the corkboard (and for
+/// Marie's office case), but never the classification itself.
+/// Resources/Levels/Level_01/town.json can replace the descriptions
+/// (TownContentLoader calls SetDescription at level load).
 /// </summary>
 public static class TaxpayerProfileDatabase
 {
@@ -53,7 +56,7 @@ public static class TaxpayerProfileDatabase
         new TaxpayerProfile(
             "profile_marie",
             "Marie Bautista",
-            "A Filipino citizen who works locally and has always lived in the Philippines.",
+            "Born and raised here, never lived abroad; salaried employee at a local BPO.",
             TaxpayerClassification.ResidentCitizen,
             "npc_marie"
         ),
@@ -61,7 +64,7 @@ public static class TaxpayerProfileDatabase
         new TaxpayerProfile(
             "profile_jhunjhun",
             "Jhun-jhun Templo",
-            "A Filipino citizen who works in Qatar and only visits home briefly.",
+            "Pinoy engineer on a Qatar contract; lives abroad, home only weeks a year.",
             TaxpayerClassification.NonResidentCitizen,
             "npc_jhunjhun"
         ),
@@ -69,7 +72,7 @@ public static class TaxpayerProfileDatabase
         new TaxpayerProfile(
             "profile_milo",
             "Milo Zenn",
-            "A foreign citizen who has settled in the Philippines and runs a local restaurant.",
+            "From very far away; settled here six years with family; runs his restaurant.",
             TaxpayerClassification.ResidentAlien,
             "npc_milo"
         ),
@@ -77,7 +80,7 @@ public static class TaxpayerProfileDatabase
         new TaxpayerProfile(
             "profile_zorbix",
             "Zorbix",
-            "A foreign visitor earning Philippine income during a short business stay.",
+            "Visitor from another planet on a paid 27-day job; flight home booked.",
             TaxpayerClassification.NonResidentAlien,
             "npc_zorbix"
         ),
@@ -93,5 +96,26 @@ public static class TaxpayerProfileDatabase
     public static TaxpayerProfile GetByNpcId(string npcId)
     {
         return profiles.Find(p => p.NpcId == npcId);
+    }
+
+    private static readonly Dictionary<string, string> builtInDescriptions = new Dictionary<string, string>();
+
+    /// <summary>Replaces a profile's description (null restores the built-in one).</summary>
+    public static void SetDescription(string profileId, string description)
+    {
+        TaxpayerProfile profile = GetById(profileId);
+        if (profile == null) return;
+        if (!builtInDescriptions.ContainsKey(profileId)) builtInDescriptions[profileId] = profile.Description;
+        profile.Description = string.IsNullOrWhiteSpace(description) ? builtInDescriptions[profileId] : description;
+    }
+
+    /// <summary>Back to the built-in descriptions.</summary>
+    public static void ClearOverrides()
+    {
+        foreach (var pair in builtInDescriptions)
+        {
+            TaxpayerProfile profile = GetById(pair.Key);
+            if (profile != null) profile.Description = pair.Value;
+        }
     }
 }

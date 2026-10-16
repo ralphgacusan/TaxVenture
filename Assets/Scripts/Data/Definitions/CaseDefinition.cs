@@ -67,6 +67,15 @@ public class CaseDefinition
     // ---------- Supporting Documents (may include deliberately WRONG values) ----------
     public List<DocumentDefinition> documents = new List<DocumentDefinition>();
 
+    // ---------- Grading (what the Auditor checks) ----------
+    // The fields the player must fill in correctly, in the order the Auditor
+    // reports them, each with its hint and real-world cost. Empty = the
+    // Level 1 rules (residencyStatus, taxpayerType, incomeSource).
+    public List<RequiredFieldDefinition> requiredFields = new List<RequiredFieldDefinition>();
+
+    // What the Auditor says when the case is approved. Empty = built-in lines.
+    public List<string> auditorApprovedLines = new List<string>();
+
     // ---------- Consultant Findings placeholder text ----------
     public List<string> potentialIssues = new List<string>();
 
@@ -96,6 +105,95 @@ public class CaseDefinition
 
     public List<DialogueLineDefinition> outcomeWrongVerdictWithIssues =
         new List<DialogueLineDefinition>();
+
+    // ---------- Consequences (Level 1 Phase 3) ----------
+    // What the client says when you visit her after a failed audit (clues
+    // again, never the answer). Empty = the client has nothing new to say.
+    public List<DialogueLineDefinition> clientAfterFailedAudit =
+        new List<DialogueLineDefinition>();
+
+    // One-line reactions shown in a bubble with the client's portrait.
+    public string clientFailedBubble;
+    public string clientFailedPortrait;
+    public string clientApprovedBubble;
+    public string clientApprovedPortrait;
+
+    // What each kind of mistake would mean in real life (Audit Summary).
+    public MistakeCostDefinition mistakeCosts = new MistakeCostDefinition();
+
+    // The Auditor's closing line after the 1st, 2nd, 3rd... failed audit
+    // (the last one repeats), and his line when the same answers come back.
+    public List<string> auditorRetryLines = new List<string>();
+    public string auditorSameAnswersLine;
+
+    // The end-of-level scene with the client (CaseFinale).
+    public ClientFinaleDefinition clientFinale = new ClientFinaleDefinition();
+
+    /// <summary>The fields this case grades (its requiredFields, or the Level 1 defaults).</summary>
+    public List<RequiredFieldDefinition> GradedFields()
+    {
+        var fields = new List<RequiredFieldDefinition>();
+        if (requiredFields != null)
+            foreach (RequiredFieldDefinition field in requiredFields)
+                if (field != null && !string.IsNullOrWhiteSpace(field.key))
+                    fields.Add(field);
+        return fields.Count > 0 ? fields : CaseFieldRules.Defaults();
+    }
+
+    /// <summary>Real-world cost of getting a field wrong (requiredFields first, then mistakeCosts).</summary>
+    public string MistakeCostFor(string fieldKey)
+    {
+        if (string.IsNullOrEmpty(fieldKey)) return null;
+        if (requiredFields != null)
+            foreach (RequiredFieldDefinition field in requiredFields)
+                if (field != null && field.key == fieldKey && !string.IsNullOrWhiteSpace(field.mistakeCost))
+                    return field.mistakeCost;
+        return mistakeCosts != null ? mistakeCosts.For(fieldKey) : null;
+    }
+}
+
+/// <summary>
+/// The client's end-of-level scene: which plaza model to show, where she
+/// stands, the shot, and her lines per result (great / good / okay).
+/// </summary>
+[Serializable]
+public class ClientFinaleDefinition
+{
+    public bool enabled = true;
+    public string name = "Marie";
+    public string modelPath = "Environment/Outside/Plaza/NPCS/NPC_Marie";
+    public string spotPath = "Environment/OfficeBuilding/Rooms/ConferenceRoom/Client";
+    public string roomPath = "Environment/OfficeBuilding/Rooms/ConferenceRoom";
+    /// <summary>The room's floor (she stands on its top surface).</summary>
+    public string floorPath = "Environment/OfficeBuilding/Rooms/ConferenceRoom/Floors";
+    /// <summary>1 = default distance; bigger = camera farther back.</summary>
+    public float distanceScale = 1f;
+    public float fieldOfView = 40f;
+    /// <summary>Where she stands across the screen, 0 = left edge, 0.5 = centre.</summary>
+    public float screenLeft = 0.25f;
+    public List<string> great = new List<string>();
+    public List<string> good = new List<string>();
+    public List<string> okay = new List<string>();
+}
+
+/// <summary>Real-world meaning of a mistake, per required field (never the answer).</summary>
+[Serializable]
+public class MistakeCostDefinition
+{
+    public string residencyStatus;
+    public string taxpayerType;
+    public string incomeSource;
+
+    public string For(string fieldKey)
+    {
+        switch (fieldKey)
+        {
+            case "residencyStatus": return residencyStatus;
+            case "taxpayerType": return taxpayerType;
+            case "incomeSource": return incomeSource;
+        }
+        return null;
+    }
 }
 
 /// <summary>

@@ -1,7 +1,7 @@
 /// <summary>
 /// PURPOSE:
 /// How the 3D Menu scene should open next time it loads. The main menu and
-/// the progress / level select live in one scene ("3D Menu"); a finished
+/// the progress / level select and the settings board live in one scene ("3D Menu"); a finished
 /// level asks it to open directly on the level select instead of the title
 /// view. ToggleCamera reads (and clears) the request in Start.
 /// </summary>
@@ -17,6 +17,17 @@ public static class MenuEntry
     {
         bool open = OpenLevelSelect;
         OpenLevelSelect = false;
+        return open;
+    }
+
+    /// <summary>True: the next 3D Menu load opens the settings board (settings live in the 3D Menu; there is no Settings scene).</summary>
+    public static bool OpenSettings;
+
+    /// <summary>Returns the pending settings request once, then clears it.</summary>
+    public static bool ConsumeOpenSettings()
+    {
+        bool open = OpenSettings;
+        OpenSettings = false;
         return open;
     }
 }

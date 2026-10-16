@@ -19,7 +19,7 @@ using UnityEngine;
 /// OBJECTIVES JSON:
 /// { "objectives": [
 ///     { "title": "Finish Side Quest 1",
-///       "steps": [ { "text": "Talk to the tutorial guide.",
+///       "steps": [ { "text": "Talk to Arthur, the tutorial guide.",
 ///                    "trigger": "event:TutorialGuideTalkedTo",
 ///                    "progress": "" } ] } ] }
 ///
@@ -216,7 +216,7 @@ public static class TaskListProvider
                 "Explore the plaza and talk to the 4 clients to get their taxpayer profiles.", false,
                 ObjectiveTriggers.ProfilesProgress),
             new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.TutorialGuideTalkedTo),
-                "Talk to the tutorial guide.", false, null),
+                "Talk to Arthur, the tutorial guide.", false, null),
             new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.SideQuestCompleted),
                 "Finish Side Quest 1 at the corkboard.", false, null),
 

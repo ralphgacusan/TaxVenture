@@ -11,6 +11,9 @@ public static class CaseFactory
 {
     public static CaseData CreateCaseData(CaseDefinition def)
     {
+        if (def == null)
+            throw new ArgumentNullException(nameof(def), "CaseFactory needs a case definition (CaseManager supplies a fallback).");
+
         var data = new CaseData
         {
             caseNumber = def.caseNumber,
@@ -72,8 +75,9 @@ public static class CaseFactory
             supportingDocuments = BuildSupportingDocumentList(def),
 
             // ---------- Findings ----------
-            potentialIssuesIdentified =
-                new List<string>(def.potentialIssues),
+            potentialIssuesIdentified = def.potentialIssues != null
+                ? new List<string>(def.potentialIssues)
+                : new List<string>(),
 
             // ---------- Audit ----------
             auditMistakeCount = 0,

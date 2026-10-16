@@ -2,14 +2,15 @@ using UnityEngine;
 
 /// <summary>
 /// PURPOSE:
-/// Placeholder for the upper-right Settings button. No functionality yet —
-/// exists purely so the HUD layout is complete and the button is wired to
-/// something, avoiding an empty/unwired button in the hierarchy.
+/// The upper-right Settings button in scenes without a SettingsUI (Office
+/// Level 2). Opens the in-game 3D settings board (InGameSettings), which
+/// pauses the game while it is open.
 /// </summary>
 public class SettingsButtonPlaceholder : MonoBehaviour
 {
     public void OnSettingsPressed()
     {
-        Debug.Log("[SettingsButtonPlaceholder] Settings clicked — no functionality implemented yet.");
+        if (InGameSettings.TryOpen()) return;
+        Debug.Log("[SettingsButtonPlaceholder] No in-game settings in this scene (add it to Resources/Settings/in_game_settings.json).");
     }
 }

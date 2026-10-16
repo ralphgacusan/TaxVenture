@@ -56,6 +56,9 @@ public class LevelCompleteUI : MonoBehaviour
         }
 
         currentResult = result;
+        // Saved even if the player never presses Continue (app paused or closed).
+        if (PlayerProgressManager.Instance != null && result != null)
+            PlayerProgressManager.Instance.SetPendingResult(result);
 
         Debug.Log($"[LevelCompleteUI] Time: {result.FormattedCompletionTime}");
         Debug.Log($"[LevelCompleteUI] Cases: {result.CasesCompleted}");
@@ -189,6 +192,12 @@ public class LevelCompleteUI : MonoBehaviour
 
         data.Fact("Time", result.FormattedCompletionTime);
         data.Fact("Cases", result.CasesCompleted.ToString());
+        OfficeHours hours = OfficeHours.Instance;
+        if (hours != null && hours.Announced)
+            data.Fact("Office hours", hours.BonusAwarded ? "On time ✓"
+                : hours.LateExpLost > 0 || hours.LateHeartsLost > 0
+                    ? $"Late (day {hours.Day})  -{hours.LateExpLost} EXP  -{hours.LateHeartsLost} hearts"
+                    : $"Finished on day {hours.Day}");
 
         PlayerProgressData career = PlayerProgressManager.Instance != null ? PlayerProgressManager.Instance.CurrentProgress : null;
         if (career != null)
@@ -213,8 +222,13 @@ public class LevelCompleteUI : MonoBehaviour
         Debug.Log("[LevelCompleteUI] Panel hidden.");
     }
 
+    private bool leaving;
+
     public void OnReturnToMainModulePressed()
     {
+        if (leaving) return;   // one press only (the screen fades out first)
+        leaving = true;
+
         if (PlayerProgressManager.Instance != null && currentResult != null)
         {
             PlayerProgressManager.Instance.ApplyLevelResult(currentResult);
@@ -232,6 +246,6 @@ public class LevelCompleteUI : MonoBehaviour
         // The main menu and the progress / level select are one scene now
         // ("3D Menu"); open it directly on the level select.
         MenuEntry.OpenLevelSelect = true;
-        SceneManager.LoadScene(MenuEntry.MenuSceneName);
+        SceneFade.FadeOutThenLoad(MenuEntry.MenuSceneName);
     }
 }

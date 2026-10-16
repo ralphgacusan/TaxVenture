@@ -2,16 +2,26 @@ using System.Collections.Generic;
 
 /// <summary>
 /// PURPOSE:
-/// Hardcoded dialogue for the 4 Level 1 town NPCs. Uses your existing
+/// Dialogue for the 4 Level 1 town NPCs. Uses the existing
 /// DialogueBuilder / DialogueLine data model, so it plugs straight into
 /// DialogueUI.StartDialogue() with no changes to that system.
 ///
-/// Player lines below are Elijah's (the tax consultant / player
-/// character). Edit the strings below to change what each NPC says.
+/// Each talk is a short life story (6 lines) that holds the clues for the
+/// corkboard (where they're from, where they spend their year) and, for
+/// Marie, for her office case (how she earns her money), WITHOUT naming any
+/// classification. The player has to put it together.
+///
+/// Player lines are Elijah's (the tax consultant / player character).
+/// Built-in lines below; Resources/Levels/Level_01/town.json can replace
+/// them per NPC (TownContentLoader calls SetOverride at level load).
 /// TaxpayerNpcInteractable just calls GetDialogueFor(npcId, ...).
 /// </summary>
 public static class TownNpcDialogueLibrary
 {
+    // npcId -> lines (Key true = player line)
+    private static readonly Dictionary<string, List<KeyValuePair<bool, string>>> overrides =
+        new Dictionary<string, List<KeyValuePair<bool, string>>>();
+
     public static List<DialogueLine> GetDialogueFor(string npcId, string npcDisplayName)
     {
         return GetDialogueFor(npcId, npcDisplayName, out _);
@@ -30,86 +40,77 @@ public static class TownNpcDialogueLibrary
         return recognized;
     }
 
+    /// <summary>Replaces one NPC's built-in lines (null or empty restores them).</summary>
+    public static void SetOverride(string npcId, List<KeyValuePair<bool, string>> lines)
+    {
+        if (string.IsNullOrEmpty(npcId)) return;
+        if (lines == null || lines.Count == 0) overrides.Remove(npcId);
+        else overrides[npcId] = lines;
+    }
+
+    public static void ClearOverrides() => overrides.Clear();
+
     public static List<DialogueLine> GetDialogueFor(string npcId, string npcDisplayName,
         out bool recognized)
     {
         var builder = new DialogueBuilder(npcDisplayName);
         recognized = true;
 
+        // Only authored NPCs may be overridden (unknown ids stay unrecognized).
+        if (npcId != null && overrides.TryGetValue(npcId, out List<KeyValuePair<bool, string>> custom) && IsAuthored(npcId))
+        {
+            for (int i = 0; i < custom.Count; i++)
+            {
+                if (custom[i].Key) builder.Player(custom[i].Value);
+                else builder.Npc(custom[i].Value);
+            }
+            return builder.Build();
+        }
+
         switch (npcId)
         {
-            // Client 1 — Resident Citizen — Marie Bautista
+            // Marie Bautista: born here, never left; salaried BPO employee.
             case "npc_marie":
                 builder
-                    .Player("Good afternoon. Mind if I ask you a few questions? I'm the new tax consultant assigned to the town.")
-                    .Npc("Oh, sure. Is there something I need to prepare?")
-                    .Player("Nothing serious. I'm getting familiar with the taxpayers around here. What do you do for a living?")
-                    .Npc("I work at the BPO office nearby. I've been there for a few years now.")
-                    .Player("I see. And have you been living here in the Philippines for most of your life?")
-                    .Npc("Yes. I was born here, actually. My family and I have always lived here.")
-                    .Player("And you're a Filipino citizen?")
-                    .Npc("Yes.")
-                    .Player("Got it. That gives me a better idea of your taxpayer status. Thanks for your time.")
-                    .Npc("No problem. Good luck with your new job!");
+                    .Player("Hi! I'm the new tax consultant in town. Mind telling me a bit about yourself?")
+                    .Npc("Not at all! Born and raised right here. My Filipino passport has never even been stamped!")
+                    .Player("Ha! So what keeps you busy these days?")
+                    .Npc("I work the night shift at the BPO office downtown. Same company for five years, and my pay comes in every payday.")
+                    .Player("No side business or anything?")
+                    .Npc("Just my salary! Work, sleep, and weekend karaoke with the family. Good luck on your first day!");
                 break;
 
-            // Client 2 — Non-Resident Citizen — Jhun-jhun Templo
+            // Jhun-jhun Templo: Filipino, works and lives in Qatar; home only for visits.
             case "npc_jhunjhun":
                 builder
-                    .Player("Excuse me. Are you waiting for someone?")
-                    .Npc("Actually, I'm waiting for my ride. I'm heading back to the airport tomorrow.")
-                    .Player("Ah, traveling?")
-                    .Npc("Yeah. I work in Qatar. I'm just here visiting my family.")
-                    .Player("I see. How long have you been working there?")
-                    .Npc("Almost five years now. I usually only come home for a few weeks.")
-                    .Player("And you're still a Filipino citizen?")
-                    .Npc("Of course.")
-                    .Player("So most of your time is spent living and working abroad?")
-                    .Npc("Yes. My job, apartment, and most of my life are there.")
-                    .Player("That distinction is important for your tax situation. Thanks, Jhun-jhun. I hope you have a safe trip back.")
-                    .Npc("Thanks. And good luck with the consulting job!");
+                    .Player("Hi there! Waiting for someone?")
+                    .Npc("My ride to the airport. Vacation's over, so it's back to Qatar tomorrow.")
+                    .Player("Back to Qatar? What do you do there?")
+                    .Npc("I'm an engineer on a five-year contract. My apartment and my whole work life are over there now.")
+                    .Player("You must miss home.")
+                    .Npc("Every day! I'm Pinoy to the bone, but I only get to come home for a few weeks a year.");
                 break;
 
-            // Client 3 — Resident Alien — "Milo Zenn"
+            // Milo Zenn: from very far away, settled here for six years; runs his own restaurant.
             case "npc_milo":
                 builder
-                    .Player("Good afternoon. Is this your restaurant?")
-                    .Npc("Yes. I've been running it for a few years now.")
-                    .Player("Nice. I'm Elijah, the new tax consultant assigned to the town.")
-                    .Npc("Ah, good to meet you.")
-                    .Player("I noticed you have quite a few customers. Have you been living here long?")
-                    .Npc("About six years now.")
-                    .Player("Six years? So you've settled here?")
-                    .Npc("Pretty much. I have a house nearby, and my family lives here too.")
-                    .Player("That's interesting. Are you a Filipino citizen?")
-                    .Npc("No. I'm from... somewhere a little farther away.")
-                    .Player("Farther away?")
-                    .Npc("Very far away.")
-                    .Player("...Right.")
-                    .Npc("Anyway, I've been residing here for years.")
-                    .Player("Then your residency and citizenship are both important when determining your tax classification.")
-                    .Npc("That's what I was hoping you could help me with.")
-                    .Player("That's the job.");
+                    .Player("Hello! Is this your restaurant?")
+                    .Npc("It is! Six years now. You can probably tell from my accent: I'm from somewhere... very far away.")
+                    .Player("And you've stayed all this time?")
+                    .Npc("I came for a short visit, fell in love with the food, and never left. My house and my family are all here now.")
+                    .Player("So the restaurant is how you make a living?")
+                    .Npc("My pride and joy! I run it myself, every single day. Come try the adobo sometime!");
                 break;
 
-            // Client 4 — Non-Resident Alien — "Zorbix"
+            // Zorbix: a visitor from another planet on a 27-day paid project.
             case "npc_zorbix":
                 builder
-                    .Player("Good afternoon. Can I ask what brings you to town?")
-                    .Npc("BUSINESS.")
-                    .Player("...Right. Business.")
-                    .Npc("I HAVE BEEN SENT TO THIS PLANET FOR A TEMPORARY COMMERCIAL PROJECT.")
-                    .Player("Okay. And how long are you staying?")
-                    .Npc("TWENTY-SEVEN DAYS.")
-                    .Player("Do you normally live here?")
-                    .Npc("NO. MY HOME IS VERY FAR FROM THIS PLANET.")
-                    .Player("I figured.")
-                    .Npc("I WILL RETURN HOME AFTER COMPLETING MY ASSIGNMENT.")
-                    .Player("And are you receiving income for the work you're performing here?")
-                    .Npc("YES.")
-                    .Player("Then we'll need to determine how your Philippine-source income is treated.")
-                    .Npc("THIS TAX SYSTEM IS MORE COMPLICATED THAN ANTICIPATED.")
-                    .Player("Welcome to the Philippines.");
+                    .Player("Good afternoon! What brings you to town?")
+                    .Npc("BUSINESS. A TEMPORARY COMMERCIAL PROJECT FOR MY HOME PLANET.")
+                    .Player("...Right. How long are you staying?")
+                    .Npc("TWENTY-SEVEN DAYS. MY RETURN FLIGHT IS ALREADY BOOKED.")
+                    .Player("And you're paid for the work you do here?")
+                    .Npc("AFFIRMATIVE. THEN I GO HOME. YOUR PLANET IS... NICE TO VISIT.");
                 break;
 
             default:
@@ -120,4 +121,7 @@ public static class TownNpcDialogueLibrary
 
         return builder.Build();
     }
+
+    private static bool IsAuthored(string npcId) =>
+        npcId == "npc_marie" || npcId == "npc_jhunjhun" || npcId == "npc_milo" || npcId == "npc_zorbix";
 }

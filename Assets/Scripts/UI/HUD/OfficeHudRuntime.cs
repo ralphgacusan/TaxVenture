@@ -165,8 +165,16 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         // Desk / corkboard exit button in the HUD style.
         SkinExitButton();
 
-        // Game-feel skin for the floating value while dragging.
-        DragGhostSkin.Attach(FindAnyObjectByType<DragVisualManager>(FindObjectsInactive.Include));
+        // Game-feel skin for the floating value while dragging, plus a frame on
+        // the field under the finger (green = it fits, red = it doesn't).
+        DragVisualManager dragVisuals = FindAnyObjectByType<DragVisualManager>(FindObjectsInactive.Include);
+        DragGhostSkin.Attach(dragVisuals);
+        DropAimIndicator aim = DropAimIndicator.Create(dragVisuals);
+        if (aim != null) addedObjects.Add(aim.gameObject);
+
+        // No walking or looking around while a reward/summary card is up.
+        PlayerControlHold.ResetForNewScene();
+        addedComponents.Add(gameObject.AddComponent<HudModalControlHold>());
 
         // Matching, distinct HUD icons (same buttons, same behaviour).
         ApplyIcon(canvasRoot, "PermanentHUD/Settings/SettingsButton", "settings");
@@ -411,7 +419,8 @@ public sealed class OfficeHudRuntime : MonoBehaviour
     /// <summary>Settings and the HUD icons step aside only for conversations and results.</summary>
     private bool SceneButtonsVisible()
     {
-        return !DialogueUI.IsAnyDialogueActive && (results == null || !results.IsVisible) && !HudRewardScreen.AnyOpen;
+        return !DialogueUI.IsAnyDialogueActive && (results == null || !results.IsVisible) && !HudRewardScreen.AnyOpen &&
+               !InGameSettings.IsOpen;
     }
 
     private void FadeSceneButtons()
@@ -485,7 +494,7 @@ public sealed class OfficeHudRuntime : MonoBehaviour
              cameraController.CurrentMode == CameraController.CameraMode.ProfileViewer);
         return freeOrReading &&
                !DialogueUI.IsAnyDialogueActive && Time.timeScale > 0f &&
-               (settings == null || !settings.IsVisible) &&
+               !InGameSettings.IsOpen && (settings == null || !settings.IsVisible) &&
                (results == null || !results.IsVisible) &&
                !HudRewardScreen.AnyOpen &&
                (gameState == null || !gameState.IsPaused);

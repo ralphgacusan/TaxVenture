@@ -11,13 +11,55 @@ public class ClientInteractable : MonoBehaviour, IInteractable, INpcAvailability
     private bool hasInterviewed = false;
     private bool dialogueSessionActive;
 
+    // Level 1 Phase 3: after a failed audit the case client is worried and
+    // has something to say again (her story, as clues). One talk per failure.
+    private bool worried;
+
     private void Awake()
     {
         npcState = GetComponent<NpcStateMachine>();
     }
 
+    private void OnEnable() => CaseProgressionManager.OnAuditFailed += HandleAuditFailed;
+
+    /// <summary>The conference-room client is the case client (the waiting-area ones are not).</summary>
+    public bool IsCaseClient
+    {
+        get
+        {
+            for (Transform t = transform; t != null; t = t.parent)
+                if (t.name.IndexOf("ConferenceRoom", System.StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            return false;
+        }
+    }
+
+    /// <summary>True while the case client is worried after a failed audit.</summary>
+    public bool IsWorried => worried;
+
+    private void HandleAuditFailed(int mistakes, LevelScoring.Award cost)
+    {
+        CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+        if (IsCaseClient && def != null && def.clientAfterFailedAudit != null && def.clientAfterFailedAudit.Count > 0)
+            worried = true;
+    }
+
+    private void RunWorriedTalk()
+    {
+        CaseDefinition def = CaseManager.Instance.CurrentDefinition;
+        List<DialogueLine> lines = CaseFactory.BuildDialogue(def.clientAfterFailedAudit, CaseManager.Instance.CurrentCase.fullName);
+        INpcState prior = npcState.CurrentState;
+        if (!dialogueUI.TryStartDialogue(lines,
+                () => { dialogueSessionActive = false; worried = false; npcState.ChangeState(new NpcCompletedState()); },
+                () => { dialogueSessionActive = false; RestoreNpcState(prior); },
+                this)) return;
+        dialogueSessionActive = true;
+        npcState.ChangeState(new NpcInteractState());
+        npcState.ChangeState(new NpcDialogueState());
+    }
+
     private void OnDisable()
     {
+        CaseProgressionManager.OnAuditFailed -= HandleAuditFailed;
         if (dialogueSessionActive && dialogueUI != null)
         {
             dialogueUI.CancelDialogueFor(this);
@@ -45,6 +87,13 @@ public class ClientInteractable : MonoBehaviour, IInteractable, INpcAvailability
                 CaseManager.Instance.CurrentCase.clientPresentationCompleted) return;
 
             PresentFindings();
+            return;
+        }
+
+        if (worried && CaseManager.Instance != null && CaseManager.Instance.CurrentDefinition != null &&
+            CaseManager.Instance.CurrentCase != null)
+        {
+            RunWorriedTalk();
             return;
         }
 
@@ -243,6 +292,7 @@ public class ClientInteractable : MonoBehaviour, IInteractable, INpcAvailability
             CaseManager cases = CaseManager.Instance;
             bool caseLoaded = cases != null && cases.CurrentDefinition != null && cases.CurrentCase != null;
             bool outcome = GameStateMachine.Instance != null && GameStateMachine.Instance.CurrentState is CaseOutcomeState;
+            if (worried && caseLoaded) return NpcAvailability.Available;
             return NpcAvailabilityRules.Client(caseLoaded, outcome,
                 caseLoaded && cases.CurrentCase.clientPresentationCompleted, hasInterviewed);
         }
