@@ -1,0 +1,54 @@
+{
+  "_readme": "A Tutorial Hub drill. See basics_screen.json for the format and Documentation/TrainingHub/README.md for the reference.",
+  "id": "basics_people",
+  "title": "People & Papers",
+  "start": "plaza",
+  "hide": [
+    "Environment/OfficeBuilding/Rooms/AuditOffice",
+    "Environment/OfficeBuilding/Rooms/ColleagueRoom",
+    "Environment/OfficeBuilding/Rooms/ConferenceRoom",
+    "Environment/OfficeBuilding/Rooms/ConsultantOffice",
+    "Environment/OfficeBuilding/Rooms/FileStorageRoom",
+    "Environment/OfficeBuilding/Inside/MiscProps"
+  ],
+  "guided": {
+    "goal": "Talk, collect, read",
+    "steps": [
+      { "id": "intro", "title": "PEOPLE & PAPERS", "pages": [
+        { "mood": "wow", "text": "Good tax work starts with a good chat! Follow the arrows to someone in the plaza and I'll show you the rest." }
+      ] },
+      { "use": "talk" },
+      { "use": "pickup" },
+      { "use": "profiles-icon" },
+      { "id": "done", "title": "DRILL COMPLETE", "pages": [
+        { "mood": "wow", "text": "That's how you get to know a client! Ready for the mastery run? No hand, just goals." }
+      ] }
+    ],
+    "hints": [
+      { "use": "dialogue-tip" }
+    ]
+  },
+  "mastery": {
+    "goal": "Meet two clients",
+    "steps": [
+      { "id": "intro", "title": "MASTERY RUN", "pages": [
+        { "text": "Mastery run! Talk, collect, read. Listen closely: what they say ends up on their profile." }
+      ] },
+      { "id": "first", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "event:ProfileCollected", "text": "Get a client's profile: talk to them, then pick up the paper they leave." }
+      ] },
+      { "id": "read", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "open:profiles", "text": "Open your Profiles and read what you learned." }
+      ] },
+      { "id": "close", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "not:open:profiles", "text": "Put the cards away." }
+      ] },
+      { "id": "second", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "event:ProfileCollected", "text": "One more! Find another client and collect their profile." }
+      ] },
+      { "id": "done", "title": "MASTERED", "pages": [
+        { "mood": "wow", "text": "Two new friends and two profiles. The town's going to love you!" }
+      ] }
+    ]
+  }
+}

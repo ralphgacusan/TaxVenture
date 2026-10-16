@@ -21,6 +21,10 @@ src = re.sub(r'<ProjectReference Include="([^"]+)"\s*/>', ref, src)
 src = re.sub(r'<ProjectReference Include="([^"]+)"\s*>.*?</ProjectReference>', ref, src, flags=re.S)
 src = src.replace('Include="Assets', 'Include="' + ROOT.replace('\\', '/') + '/Assets')
 
+# Scripts deleted since Unity last regenerated the csproj.
+src = re.sub(r'\s*<Compile Include="([^"]+)" />',
+             lambda m: m.group(0) if os.path.exists(m.group(1).replace('&amp;', '&')) else '', src)
+
 # Scripts created since Unity last regenerated the csproj (not imported yet):
 # every runtime .cs under Assets outside Editor folders and asmdef folders.
 known = set(m.replace('&amp;', '&').lower().replace('\\', '/')

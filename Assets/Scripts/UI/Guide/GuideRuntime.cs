@@ -11,7 +11,9 @@ using UnityEngine.UI;
 /// objective guide (ground arrows + minimap pin).
 ///
 /// Content lives in Resources/Tutorials/Level_01/guide.json. With the file
-/// missing or "enabled": false, nothing is built.
+/// missing or "enabled": false, nothing is built. During a Tutorial Hub
+/// practice run (TrainingSession) the drill's script plays instead, without
+/// the SKIP TUTORIAL button.
 /// </summary>
 [DefaultExecutionOrder(110)]
 public sealed class GuideRuntime : MonoBehaviour
@@ -27,6 +29,8 @@ public sealed class GuideRuntime : MonoBehaviour
 
     public GuideDirector Director { get; private set; }
     public ObjectiveGuide Objectives { get; private set; }
+    /// <summary>The practice drill being played (null in a normal run).</summary>
+    public TrainingDrillScript.Result Practice { get; private set; }
 
     private GameObject canvasObject;
     private GameObject objectiveCanvasObject;
@@ -59,7 +63,8 @@ public sealed class GuideRuntime : MonoBehaviour
     {
         Instance = this;
         string levelId = TaskListProvider.Level1Id;
-        GuideScript script = GuideScript.Load(levelId);
+        Practice = TrainingSession.ComposeFor(levelId);
+        GuideScript script = Practice != null ? Practice.Script : GuideScript.Load(levelId);
         if (script == null || !script.enabled)
         {
             enabled = false;
@@ -74,6 +79,7 @@ public sealed class GuideRuntime : MonoBehaviour
         canvasObject.AddComponent<HudKeepVisibleDuringRewards>();
         GuideCoachView view = GuideCoachView.Create(safe);
         Director = GuideDirector.Create(gameObject, script, levelId, safe, view);
+        if (Practice != null) view.SetSkipVisible(false);
     }
 
     private RectTransform CreateCanvas(string name, int order, bool raycasts, out GameObject host)

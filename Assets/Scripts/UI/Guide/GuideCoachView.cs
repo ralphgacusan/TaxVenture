@@ -335,6 +335,12 @@ public sealed class GuideCoachView : MonoBehaviour
 
     public void SetName(string guideName) => nameLabel.text = string.IsNullOrEmpty(guideName) ? "GUIDE" : guideName;
 
+    /// <summary>Shows or hides the two-tap SKIP TUTORIAL button (Training Hub practice hides it).</summary>
+    public void SetSkipVisible(bool visible)
+    {
+        if (skipLabel != null) skipLabel.transform.parent.gameObject.SetActive(visible);
+    }
+
     public void SetPortrait(Sprite sprite, bool bounce)
     {
         portrait.sprite = sprite;

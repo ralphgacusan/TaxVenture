@@ -119,6 +119,7 @@ public class PlayerProgressManager : MonoBehaviour
     public void SetPendingResult(LevelTotalResult levelTotal)
     {
         if (levelTotal == null || levelTotal.RunId == lastAppliedRunId) return;
+        if (IgnoredForPractice(levelTotal)) return;
         pendingResult = levelTotal;
     }
 
@@ -146,6 +147,8 @@ public class PlayerProgressManager : MonoBehaviour
             Debug.LogError("[PlayerProgressManager] ApplyLevelResult requires a level ID.");
             return;
         }
+
+        if (IgnoredForPractice(levelTotal)) return;
 
         if (levelTotal.RunId == lastAppliedRunId)
         {
@@ -207,6 +210,36 @@ public class PlayerProgressManager : MonoBehaviour
         );
 
         Save();
+    }
+
+    /// <summary>A Training Hub practice run never reaches the career (EXP, hearts, badges, levels).</summary>
+    private bool IgnoredForPractice(LevelTotalResult levelTotal)
+    {
+        if (!TrainingSession.IsPracticing) return false;
+        Debug.Log($"[PlayerProgressManager] Practice run of {levelTotal.LevelId}: not saved to the career.");
+        if (pendingResult == levelTotal) pendingResult = null;
+        return true;
+    }
+
+    // =========================================================
+    // TRAINING HUB
+    // =========================================================
+
+    /// <summary>Records an in-game tutorial lesson as seen ("Level_01/move") and saves when it is new.</summary>
+    public bool RecordTutorialSeen(string key)
+    {
+        if (progress == null || !progress.RecordTutorialSeen(key)) return false;
+        Save();
+        return true;
+    }
+
+    /// <summary>Counts a finished practice run and saves. True when the card just became mastered.</summary>
+    public bool RecordTrainingRun(string cardId, bool mastery, float seconds)
+    {
+        if (progress == null || string.IsNullOrWhiteSpace(cardId)) return false;
+        bool newlyMastered = progress.RecordTrainingRun(cardId, mastery, seconds);
+        Save();
+        return newlyMastered;
     }
 
     // =========================================================
@@ -320,7 +353,7 @@ public class PlayerProgressManager : MonoBehaviour
             // accepted this way; a plain file claiming the current version
             // can only be a hand-made one.
             data = JsonUtility.FromJson<PlayerProgressData>(text);
-            if (data == null || data.saveVersion >= PlayerProgressData.CurrentSaveVersion) return false;
+            if (data == null || data.saveVersion >= PlayerProgressData.SignedSinceVersion) return false;
             legacy = true;
             return true;
         }

@@ -30,6 +30,24 @@ public class BadgeRecord
 }
 
 /// <summary>
+/// Training Hub progress for one drill card (save version 4). practiceRuns =
+/// finished guided runs, masteryRuns = finished mastery runs; a card is
+/// MASTERED once masteryRuns > 0. Practice never touches EXP, hearts,
+/// badges or levels.
+/// </summary>
+[Serializable]
+public class TrainingRecord
+{
+    public string cardId;
+    public int practiceRuns;
+    public int masteryRuns;
+    /// <summary>Fastest finished mastery run in whole seconds (0 = none).</summary>
+    public int bestMasterySeconds;
+
+    public bool Mastered => masteryRuns > 0;
+}
+
+/// <summary>
 /// Saved progression. A level is COMPLETED when finished at any score, and
 /// PASSED when finished at or above its passing line; only a passed level
 /// unlocks the next one. Each level keeps its best result, and the career
@@ -37,7 +55,9 @@ public class BadgeRecord
 ///
 /// VERSIONS: 1 had no pass line (every completed level counts as passed);
 /// 2 added best-result records and badges; 3 is written signed and
-/// crash-safe by PlayerProgressManager (same fields). Normalize() upgrades
+/// crash-safe by PlayerProgressManager (same fields); 4 added the Training
+/// Hub lists (tutorialsSeen, trainingRecords), which never
+/// affect career totals. Normalize() upgrades
 /// any older save in place and repairs impossible values (negative totals,
 /// a best above its maximum, duplicate ids, badge tiers out of range), so
 /// whatever is on disk always loads as a consistent save.
@@ -45,7 +65,9 @@ public class BadgeRecord
 [Serializable]
 public class PlayerProgressData
 {
-    public const int CurrentSaveVersion = 3;
+    public const int CurrentSaveVersion = 4;
+    /// <summary>First version written signed; a plain (unsigned) file claiming this or later is hand-made.</summary>
+    public const int SignedSinceVersion = 3;
     /// <summary>Highest badge tier (gold).</summary>
     public const int MaxBadgeTier = 3;
 
@@ -57,6 +79,69 @@ public class PlayerProgressData
     public List<string> passedLevelIds = new List<string>();
     public List<LevelRecord> levelRecords = new List<LevelRecord>();
     public List<BadgeRecord> badgeRecords = new List<BadgeRecord>();
+    /// <summary>In-game tutorial lessons the player has seen, as "Level_01/move" (version 4).</summary>
+    public List<string> tutorialsSeen = new List<string>();
+    public List<TrainingRecord> trainingRecords = new List<TrainingRecord>();
+
+    // =========================================================
+    // TRAINING HUB (version 4): never touches EXP, hearts, badges or levels
+    // =========================================================
+
+    /// <summary>"Level_01" + "move" -> "Level_01/move".</summary>
+    public static string TutorialKey(string levelId, string lessonId) =>
+        string.IsNullOrWhiteSpace(levelId) || string.IsNullOrWhiteSpace(lessonId)
+            ? null : levelId.Trim() + "/" + lessonId.Trim();
+
+    public bool HasSeenTutorial(string key) =>
+        !string.IsNullOrWhiteSpace(key) && tutorialsSeen != null && tutorialsSeen.Contains(key.Trim());
+
+    /// <summary>Marks a lesson seen. True when it is new.</summary>
+    public bool RecordTutorialSeen(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return false;
+        if (tutorialsSeen == null) tutorialsSeen = new List<string>();
+        string id = key.Trim();
+        if (tutorialsSeen.Contains(id)) return false;
+        tutorialsSeen.Add(id);
+        return true;
+    }
+
+    public TrainingRecord GetTrainingRecord(string cardId)
+    {
+        if (string.IsNullOrWhiteSpace(cardId) || trainingRecords == null) return null;
+        string id = cardId.Trim();
+        foreach (TrainingRecord record in trainingRecords)
+            if (record != null && record.cardId == id) return record;
+        return null;
+    }
+
+    /// <summary>
+    /// Counts a finished practice run of a drill card (mastery = the run without
+    /// the guide's hand). Returns true when this run made the card mastered.
+    /// </summary>
+    public bool RecordTrainingRun(string cardId, bool mastery, float seconds)
+    {
+        if (string.IsNullOrWhiteSpace(cardId)) return false;
+        if (trainingRecords == null) trainingRecords = new List<TrainingRecord>();
+        TrainingRecord record = GetTrainingRecord(cardId);
+        if (record == null)
+        {
+            record = new TrainingRecord { cardId = cardId.Trim() };
+            trainingRecords.Add(record);
+        }
+        bool wasMastered = record.Mastered;
+        if (mastery)
+        {
+            if (record.masteryRuns < int.MaxValue) record.masteryRuns++;
+            int run = ToSeconds(seconds);
+            if (run > 0) record.bestMasterySeconds = MinPositive(record.bestMasterySeconds, run);
+        }
+        else if (record.practiceRuns < int.MaxValue)
+        {
+            record.practiceRuns++;
+        }
+        return !wasMastered && record.Mastered;
+    }
 
     /// <summary>Best tier collected for a badge (0 = not collected).</summary>
     public int GetBadgeTier(string badgeId)
@@ -237,6 +322,9 @@ public class PlayerProgressData
             changed = true;
         }
 
+        if (tutorialsSeen == null) { tutorialsSeen = new List<string>(); changed = true; }
+        if (trainingRecords == null) { trainingRecords = new List<TrainingRecord>(); changed = true; }
+
         if (saveVersion == 0 && levelsCompleted > 0 && completedLevelIds.Count == 0)
         {
             completedLevelIds.Add("Level_01");
@@ -274,6 +362,7 @@ public class PlayerProgressData
             changed = true;
         changed |= RepairRecords();
         changed |= RepairBadges();
+        changed |= RepairTraining();
 
         if (totalExp < 0) { totalExp = 0; changed = true; }
         if (totalReputation < 0) { totalReputation = 0; changed = true; }
@@ -373,6 +462,37 @@ public class PlayerProgressData
             kept.Add(badge);
         }
         badgeRecords = kept;
+        return changed;
+    }
+
+    /// <summary>A clean lesson list and one record per card with sane counts.</summary>
+    private bool RepairTraining()
+    {
+        bool changed = false;
+        tutorialsSeen = CleanIds(tutorialsSeen, ref changed);
+
+        var best = new Dictionary<string, TrainingRecord>(StringComparer.Ordinal);
+        var kept = new List<TrainingRecord>(trainingRecords.Count);
+        foreach (TrainingRecord record in trainingRecords)
+        {
+            if (record == null || string.IsNullOrWhiteSpace(record.cardId)) { changed = true; continue; }
+            string id = record.cardId.Trim();
+            if (id != record.cardId) { record.cardId = id; changed = true; }
+            if (record.practiceRuns < 0) { record.practiceRuns = 0; changed = true; }
+            if (record.masteryRuns < 0) { record.masteryRuns = 0; changed = true; }
+            if (record.bestMasterySeconds < 0) { record.bestMasterySeconds = 0; changed = true; }
+            if (best.TryGetValue(id, out TrainingRecord first))
+            {
+                first.practiceRuns = (int)Math.Min(int.MaxValue, (long)first.practiceRuns + record.practiceRuns);
+                first.masteryRuns = (int)Math.Min(int.MaxValue, (long)first.masteryRuns + record.masteryRuns);
+                first.bestMasterySeconds = MinPositive(first.bestMasterySeconds, record.bestMasterySeconds);
+                changed = true;
+                continue;
+            }
+            best[id] = record;
+            kept.Add(record);
+        }
+        trainingRecords = kept;
         return changed;
     }
 

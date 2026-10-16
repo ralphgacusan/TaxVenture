@@ -171,6 +171,14 @@ public sealed class OfficeObjectives : MonoBehaviour
 
     public bool IsDone(TaskDefinition task) => log.IsDone(task);
 
+    /// <summary>
+    /// Marks a step's trigger as happened (Tutorial Hub practice: a drill that
+    /// starts in the office marks the side quest steps done, so the tracker
+    /// and arrows point at the drill). True when anything changed.
+    /// </summary>
+    public bool MarkDone(string trigger) =>
+        !string.IsNullOrWhiteSpace(trigger) && Record(ObjectiveTriggers.Normalize(trigger.Trim()));
+
     private void Reevaluate(bool notify)
     {
         Snapshot = TaskProgress.Evaluate(tasks, IsDone);

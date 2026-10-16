@@ -1,0 +1,64 @@
+{
+  "_readme": [
+    "A Tutorial Hub drill. See basics_screen.json for the format and Documentation/TrainingHub/README.md for the reference.",
+    "start 'office': Side Quest 1 counts as done (the office door opens), the objectivesDone steps are ticked so the tracker",
+    "and arrows point at the case, and the player stands in the reception between 'spawn' and 'face', looking at 'face'."
+  ],
+  "id": "case_desk",
+  "title": "Your Desk",
+  "start": "office",
+  "spawn": "Environment/OfficeBuilding/Rooms/Reception/Doors",
+  "face": "Environment/OfficeBuilding/Rooms/Reception/Receptionist",
+  "objectivesDone": [
+    "event:AllProfilesCollected",
+    "event:TutorialGuideTalkedTo",
+    "event:SideQuestCompleted",
+    "area:Environment/OfficeBuilding/Rooms/Reception/Floor|Environment/OfficeBuilding/Rooms/Reception/Doors"
+  ],
+  "hide": [
+    "Env/Vegetation",
+    "Env/Rocks",
+    "Env/Props",
+    "Env/Buildings",
+    "Environment/Outside/Plaza/NPCS"
+  ],
+  "guided": {
+    "goal": "Get set up at your desk",
+    "steps": [
+      { "id": "intro", "title": "YOUR DESK", "pages": [
+        { "mood": "wow", "text": "Welcome back to the office! Let's set up your desk again, one step at a time." }
+      ] },
+      { "use": "reception" },
+      { "use": "to-desk" },
+      { "use": "desk" },
+      { "use": "case-folder" },
+      { "use": "book-pages" },
+      { "id": "done", "title": "DRILL COMPLETE", "onlyIn": "mode:Workstation", "pages": [
+        { "mood": "wow", "text": "Folder open, book open, pages turning. Your desk is ready! Try the mastery run next." }
+      ] }
+    ]
+  },
+  "mastery": {
+    "goal": "Desk ready, no help",
+    "steps": [
+      { "id": "intro", "title": "MASTERY RUN", "pages": [
+        { "text": "Mastery run! From the front door to an open folder and book. No hand from me." }
+      ] },
+      { "id": "get-case", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "event:ReceptionistTalkedTo", "text": "Get today's case from the receptionist." }
+      ] },
+      { "id": "sit", "title": "GOAL", "pages": [
+        { "style": "hint", "waitFor": "mode:Workstation", "text": "Find your desk and sit down." }
+      ] },
+      { "id": "open-folder", "title": "GOAL", "onlyIn": "mode:Workstation", "pages": [
+        { "style": "hint", "waitFor": "event:CaseFolderOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder", "text": "Open the Case Folder." }
+      ] },
+      { "id": "open-book", "title": "GOAL", "onlyIn": "mode:Workstation", "pages": [
+        { "style": "hint", "waitFor": "event:TaxCodeBookOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenTaxCodeBook", "text": "Open the Tax Code Book." }
+      ] },
+      { "id": "done", "title": "MASTERED", "onlyIn": "mode:Workstation", "pages": [
+        { "mood": "wow", "text": "Set up in no time. That desk is all yours!" }
+      ] }
+    ]
+  }
+}

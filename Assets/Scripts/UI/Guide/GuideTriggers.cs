@@ -25,6 +25,7 @@ using System.Globalization;
 ///   visible:&lt;target&gt;            the target exists, is active and is on screen
 ///   profiles:&lt;n&gt;                at least n taxpayer profiles collected
 ///   case:filled                 the three case-folder answers are filled in
+///   case:correct                every graded case-folder field holds the right answer (Tutorial Hub mastery)
 ///   dialogue:active             a conversation is on screen right now
 ///   open:&lt;notes|profiles|folder&gt;  that HUD window is open right now
 ///   active:&lt;target&gt;             the target object exists and is switched on
@@ -72,6 +73,7 @@ public static class GuideTriggers
     public const string VisiblePrefix = "visible:";
     public const string ProfilesPrefix = "profiles:";
     public const string CaseFilled = "case:filled";
+    public const string CaseCorrect = "case:correct";
     public const string DialogueActive = "dialogue:active";
     public const string OpenPrefix = "open:";
     public const string ActivePrefix = "active:";
@@ -325,10 +327,10 @@ public static class GuideTriggers
             trigger.Key = DialogueActive;
             return true;
         }
-        if (text == CaseFilled)
+        if (text == CaseFilled || text == CaseCorrect)
         {
             trigger.Kind = Kind.Condition;
-            trigger.Key = CaseFilled;
+            trigger.Key = text;
             return true;
         }
 

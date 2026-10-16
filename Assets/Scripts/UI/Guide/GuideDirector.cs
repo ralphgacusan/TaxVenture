@@ -74,6 +74,18 @@ public sealed class GuideDirector : MonoBehaviour
     public bool IsShowingLesson => lesson != null && !suspended;
     public bool IsBlocking { get; private set; }
 
+    /// <summary>
+    /// A lesson finished (level id, lesson id). Observation only: the Training
+    /// Hub records the lessons the player has seen from it.
+    /// </summary>
+    public static event Action<string, string> LessonFinished;
+
+    /// <summary>The coach view (Training Hub practice hides its skip button).</summary>
+    public GuideCoachView View => view;
+
+    /// <summary>True when the lesson with this id has finished in this run.</summary>
+    public bool HasFinished(string lessonId) => !string.IsNullOrEmpty(lessonId) && finished.Contains(lessonId);
+
     public static GuideDirector Create(GameObject host, GuideScript script, string levelId, RectTransform canvasRoot,
         GuideCoachView view)
     {
@@ -395,6 +407,17 @@ public sealed class GuideDirector : MonoBehaviour
                 return CardOpen(t.Arg);
             case GuideTriggers.DialogueActive:
                 return DialogueUI.IsAnyDialogueActive;
+            case GuideTriggers.CaseCorrect:
+            {
+                CaseManager cases = CaseManager.Instance;
+                CaseDefinition definition = cases != null ? cases.CurrentDefinition : null;
+                if (definition == null || cases.CurrentCase == null) return false;
+                List<RequiredFieldDefinition> graded = definition.GradedFields();
+                if (graded.Count == 0) return false;
+                foreach (RequiredFieldDefinition field in graded)
+                    if (!CaseFieldRules.IsCorrect(cases.CurrentCase, definition.answerKey, field.key)) return false;
+                return true;
+            }
             case GuideTriggers.CaseFilled:
             {
                 CaseData data = CaseManager.Instance != null ? CaseManager.Instance.CurrentCase : null;
@@ -769,8 +792,10 @@ public sealed class GuideDirector : MonoBehaviour
 
     private void EndLesson()
     {
+        string ended = null;
         if (lesson != null)
         {
+            ended = lesson.id;
             finished.Add(lesson.id);
             Fire(GuideTriggers.LessonKey(lesson.id));
             SaveFinished();
@@ -783,6 +808,7 @@ public sealed class GuideDirector : MonoBehaviour
         view.Hand.Hide();
         view.SetHole(false, default);
         SetBlocking(false, dim: false);
+        if (ended != null) Notify(() => LessonFinished?.Invoke(levelId, ended));
     }
 
     /// <summary>Ends the whole tutorial for this run (the objective arrows stay).</summary>
@@ -797,6 +823,13 @@ public sealed class GuideDirector : MonoBehaviour
         skippedAll = true;
         Suspend();
         suspended = false;
+    }
+
+    /// <summary>Listeners never break the tutorial.</summary>
+    private static void Notify(Action raise)
+    {
+        try { raise(); }
+        catch (Exception e) { Debug.LogException(e); }
     }
 
     // =========================================================
