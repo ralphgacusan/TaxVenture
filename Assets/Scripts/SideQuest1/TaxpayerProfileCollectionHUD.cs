@@ -133,6 +133,13 @@ public class TaxpayerProfileCollectionHUD : MonoBehaviour
     /// </summary>
     public void OnHudIconClicked()
     {
+        // Office HUD: the profiles open as paper windows instead of the 3D
+        // viewer, so they layer with Notes and the Case Folder.
+        if (IconClickOverride != null && IconClickOverride())
+        {
+            return;
+        }
+
         if (CollectedProfilesWorldPanel.Instance != null)
         {
             CollectedProfilesWorldPanel.Instance.OnHudIconClicked();
@@ -161,7 +168,16 @@ public class TaxpayerProfileCollectionHUD : MonoBehaviour
 
     public IReadOnlyList<TaxpayerProfile> CollectedProfiles => collectedProfiles;
 
+    /// <summary>
+    /// Optional handler for the HUD icon tap (set by the Office HUD).
+    /// Returns true when it handled the tap.
+    /// </summary>
+    public static System.Func<bool> IconClickOverride;
+
     public bool AllProfilesCollected => collectedProfiles.Count >= totalProfilesRequired;
+
+    /// <summary>How many profiles the plaza step needs (read-only, for HUD objectives).</summary>
+    public int RequiredProfiles => totalProfilesRequired;
 
     /// <summary>Call this after the side quest locks to a single profile, to refresh the "n/4" text into "1/1".</summary>
     public void RefreshCountDisplay()

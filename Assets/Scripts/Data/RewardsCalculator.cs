@@ -15,8 +15,9 @@ using UnityEngine;
 /// </summary>
 public static class RewardsCalculator
 {
-    private const int MaxExp = 100;
-    private const int MaxReputation = 5;
+    // Public so HUD presentation can show progress out of the maximum; values unchanged.
+    public const int MaxExp = 100;
+    public const int MaxReputation = 5;
     private const int ExpPenaltyPerIssue = 15;
     private const int ReputationPenaltyPerIssue = 1;
     private const int WrongVerdictSmallExp = 20;

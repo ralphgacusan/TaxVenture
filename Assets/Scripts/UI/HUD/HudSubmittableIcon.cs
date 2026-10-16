@@ -129,6 +129,26 @@ public class HudSubmittableIcon :
 
     private DragGhostIcon activeGhost;
 
+    // A drag that was refused (Case Folder not stored yet). Swallows the
+    // release so it neither submits nor opens the window.
+    private bool dragRefused;
+
+
+    // =========================================================
+    // OFFICE HUD OVERRIDES (optional, set at runtime)
+    // =========================================================
+
+    /// <summary>Handles a plain tap instead of toggling the FloatingWindow. Return true when handled.</summary>
+    public System.Func<bool> ClickOverride;
+
+    /// <summary>Opens at the drop point instead of the FloatingWindow. Return true when handled.</summary>
+    public System.Func<Vector2, bool> DropOpenOverride;
+
+    /// <summary>Item shown under the finger instead of the ghost icon.</summary>
+    public IHudDragVisual DragVisual;
+
+    private bool dragVisualActive;
+
     private Image iconImage;
 
 
@@ -150,6 +170,12 @@ public class HudSubmittableIcon :
     private void OnDisable()
     {
         DestroyGhost();
+
+        if (dragVisualActive)
+        {
+            dragVisualActive = false;
+            DragVisual.Drop(pointerDownScreenPos, HudDragOutcome.Returned);
+        }
 
         pointerIsDown = false;
 
@@ -244,6 +270,9 @@ public class HudSubmittableIcon :
         isDragging =
             false;
 
+        dragRefused =
+            false;
+
         pointerDownScreenPos =
             eventData.position;
 
@@ -282,17 +311,36 @@ public class HudSubmittableIcon :
         // -----------------------------------------------------
 
         if (!isDragging &&
+            !dragRefused &&
             moved >= dragThresholdPixels)
         {
-            BeginDrag(
-                eventData
-            );
+            if (CanDragOut())
+            {
+                BeginDrag(
+                    eventData
+                );
+            }
+            else
+            {
+                dragRefused = true;
+
+                Debug.Log(
+                    $"[HudSubmittableIcon] " +
+                    $"{name}: drag refused — no case folder stored in the icon (count 0)."
+                );
+            }
         }
 
 
         // -----------------------------------------------------
         // FOLLOW GHOST
         // -----------------------------------------------------
+
+        if (isDragging &&
+            dragVisualActive)
+        {
+            DragVisual.Move(eventData.position);
+        }
 
         if (isDragging &&
             activeGhost != null)
@@ -302,6 +350,22 @@ public class HudSubmittableIcon :
                 rootCanvas
             );
         }
+    }
+
+
+    // =========================================================
+    // DRAG GATE
+    // =========================================================
+
+    /// <summary>
+    /// The Case Folder can only be dragged out (e.g. to the Auditor) once
+    /// the desk folder has been stored in this icon (count 1). Other kinds
+    /// are unchanged.
+    /// </summary>
+    private bool CanDragOut()
+    {
+        return kind != SubmittableKind.CaseFolder ||
+               FolderToHUDIcon.GetStoredFolderCount() > 0;
     }
 
 
@@ -327,7 +391,12 @@ public class HudSubmittableIcon :
         // CREATE GHOST
         // -----------------------------------------------------
 
-        if (ghostPrefab != null &&
+        if (DragVisual != null)
+        {
+            DragVisual.Begin(eventData.position);
+            dragVisualActive = true;
+        }
+        else if (ghostPrefab != null &&
             rootCanvas != null)
         {
             activeGhost =
@@ -397,6 +466,19 @@ public class HudSubmittableIcon :
             false;
 
 
+        // -----------------------------------------------------
+        // REFUSED DRAG: nothing happens (no ghost, no submit,
+        // no window).
+        // -----------------------------------------------------
+
+        if (dragRefused)
+        {
+            ResetInteraction();
+
+            return;
+        }
+
+
         // =====================================================
         // NORMAL CLICK
         // =====================================================
@@ -433,6 +515,33 @@ public class HudSubmittableIcon :
             ResolveDragDrop(
                 eventData
             );
+
+
+        // Dropped back on its own icon: a cancelled drag, nothing opens.
+        bool backOnIcon = !submitted &&
+            RectTransformUtility.RectangleContainsScreenPoint(
+                (RectTransform)transform,
+                eventData.position,
+                null
+            );
+
+        if (dragVisualActive)
+        {
+            dragVisualActive = false;
+            DragVisual.Drop(
+                eventData.position,
+                submitted ? HudDragOutcome.Consumed
+                    : backOnIcon ? HudDragOutcome.Returned
+                    : HudDragOutcome.Opened
+            );
+        }
+
+        if (backOnIcon)
+        {
+            ResetInteraction();
+
+            return;
+        }
 
 
         // -----------------------------------------------------
@@ -485,6 +594,12 @@ public class HudSubmittableIcon :
         Vector2 screenPosition
     )
     {
+        if (DropOpenOverride != null &&
+            DropOpenOverride(screenPosition))
+        {
+            return;
+        }
+
         if (floatingWindow == null)
         {
             Debug.LogError(
@@ -515,6 +630,12 @@ public class HudSubmittableIcon :
 
     private void ToggleFloatingWindow()
     {
+        if (ClickOverride != null &&
+            ClickOverride())
+        {
+            return;
+        }
+
         if (floatingWindow == null)
         {
             Debug.LogError(
@@ -835,6 +956,9 @@ public class HudSubmittableIcon :
     private void ResetInteraction()
     {
         isDragging =
+            false;
+
+        dragRefused =
             false;
 
         pointerIsDown =

@@ -13,7 +13,10 @@ using System.Collections.Generic;
 /// 5. Stamp returns to its workspace position.
 /// </summary>
 [RequireComponent(typeof(Collider))]
-public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
+public class Stamp3DDrag : MonoBehaviour,
+    IPointerDownHandler,
+    IPointerEnterHandler,
+    IPointerExitHandler
 {
     [Header("Identity")]
     [SerializeField] private StampType stampType;
@@ -43,6 +46,10 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
     private bool draggingEnabled;
     private bool isDragging;
     private bool isSnappingBack;
+    private bool isPointerOver;
+    private Vector2 pointerPosition;
+
+    private HighlightEffect highlightEffect;
 
     private Vector3 originalPosition;
     private Quaternion originalRotation;
@@ -75,7 +82,7 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (!draggingEnabled)
+        if (!isActiveAndEnabled || !draggingEnabled)
             return;
 
         if (mainCamera == null)
@@ -85,7 +92,32 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
             $"[Stamp3DDrag] Drag started: {name} | Type: {stampType}"
         );
 
+        pointerPosition = eventData.position;
         BeginDrag(eventData.position);
+        UpdateOutlineFocus();
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (!isActiveAndEnabled || !draggingEnabled)
+            return;
+
+        if (eventData != null)
+            pointerPosition = eventData.position;
+        isPointerOver = true;
+        UpdateOutlineFocus();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        isPointerOver = false;
+        UpdateOutlineFocus();
+    }
+
+    private void OnDisable()
+    {
+        isPointerOver = false;
+        SetOutlineFocused(false);
     }
 
     // =========================================================
@@ -100,6 +132,8 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
         {
             isDragging = false;
             isSnappingBack = false;
+            isPointerOver = false;
+            SetOutlineFocused(false);
         }
 
         Debug.Log(
@@ -134,6 +168,14 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
 
     private void Update()
     {
+        if (isPointerOver || isDragging)
+        {
+            if (isDragging)
+                pointerPosition = GetPointerScreenPosition();
+
+            UpdateOutlineFocus();
+        }
+
         if (isSnappingBack)
         {
             SnapBackTowardOrigin();
@@ -143,16 +185,16 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
         if (!isDragging)
             return;
 
-        Vector2 pointerPosition =
+        Vector2 currentPointerPosition =
             GetPointerScreenPosition();
 
-        UpdateStampWorldPosition(pointerPosition);
+        UpdateStampWorldPosition(currentPointerPosition);
 
-        UpdateDropZoneHighlight(pointerPosition);
+        UpdateDropZoneHighlight(currentPointerPosition);
 
         if (WasReleasedThisFrame())
         {
-            EndDrag(pointerPosition);
+            EndDrag(currentPointerPosition);
         }
     }
 
@@ -291,6 +333,8 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
         Vector2 screenPosition)
     {
         isDragging = false;
+        isPointerOver = false;
+        UpdateOutlineFocus();
 
         if (dropZoneHighlightGraphic != null)
         {
@@ -411,5 +455,32 @@ public class Stamp3DDrag : MonoBehaviour, IPointerDownHandler
         Debug.Log(
             $"[Stamp3DDrag] Origin updated for {name}"
         );
+    }
+
+    private void UpdateOutlineFocus()
+    {
+        bool pointerBlocked = isPointerOver &&
+            !isDragging &&
+            (DialogueUI.IsAnyDialogueActive ||
+             VirtualJoystick.BlocksWorldInput ||
+             MobileInputGuard.IsPointerOverUI(pointerPosition));
+
+        SetOutlineFocused(
+            isActiveAndEnabled &&
+            draggingEnabled &&
+            (isDragging || isPointerOver && !pointerBlocked)
+        );
+    }
+
+    private void SetOutlineFocused(bool focused)
+    {
+        if (focused && (!isActiveAndEnabled || !draggingEnabled))
+            return;
+
+        if (focused && highlightEffect == null)
+            highlightEffect = HighlightEffect.For(this);
+
+        if (highlightEffect != null)
+            highlightEffect.SetFocused(focused);
     }
 }

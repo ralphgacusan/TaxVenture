@@ -180,6 +180,7 @@ public class ConferenceRoomClient : MonoBehaviour
                 "[ConferenceRoomClient] Removing previous client."
             );
 
+            currentClient.SetActive(false);
             Destroy(currentClient);
             currentClient = null;
         }
@@ -195,6 +196,8 @@ public class ConferenceRoomClient : MonoBehaviour
             modelRoot.rotation,
             modelRoot
         );
+
+        GetComponentInParent<NpcStatusMarker>()?.RefreshVisualTargets();
 
 
         Debug.Log(

@@ -17,6 +17,8 @@ public class PlayerMovement : MonoBehaviour
 
     private Rigidbody rb;
     private Vector3 moveDirection;
+    private bool hasFocus = true;
+    private bool isPaused;
 
     [Header("Footstep Audio")]
     [SerializeField] private float footstepInterval = 0.7f;
@@ -57,7 +59,7 @@ public class PlayerMovement : MonoBehaviour
 
             moveDirection =
                 (camForward * inputDir.z +
-                 camRight * inputDir.x).normalized;
+                 camRight * inputDir.x).normalized * inputDir.magnitude;
         }
         else
         {
@@ -90,16 +92,18 @@ public class PlayerMovement : MonoBehaviour
 
     private Vector2 GetMovementInput()
     {
+        if (!hasFocus || isPaused) return Vector2.zero;
         // Mobile joystick takes priority when it exists.
         if (mobileJoystick != null)
         {
             Vector2 joystickInput = mobileJoystick.Input;
 
-            if (joystickInput.sqrMagnitude > 0.001f)
+            if (mobileJoystick.IsHeld || joystickInput.sqrMagnitude > 0f)
                 return joystickInput;
         }
 
         // Keep keyboard input temporarily for editor testing.
+#if UNITY_EDITOR || UNITY_STANDALONE
         if (useKeyboardInEditor)
         {
             return new Vector2(
@@ -107,8 +111,29 @@ public class PlayerMovement : MonoBehaviour
                 Input.GetAxisRaw("Vertical")
             );
         }
+#endif
 
         return Vector2.zero;
+    }
+
+    private void OnDisable()
+    {
+        moveDirection = Vector3.zero;
+        footstepTimer = 0f;
+        if (rb != null && !rb.isKinematic)
+            rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+    }
+
+    private void OnApplicationFocus(bool focused)
+    {
+        hasFocus = focused;
+        if (!focused) OnDisable();
+    }
+
+    private void OnApplicationPause(bool paused)
+    {
+        isPaused = paused;
+        if (paused) OnDisable();
     }
 
     private void FixedUpdate()

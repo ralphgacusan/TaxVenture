@@ -18,6 +18,9 @@ public class CaseResultPopupUI : MonoBehaviour
 
     [SerializeField] private GameObject popupRoot;
 
+    /// <summary>Read-only visibility for noninteractive HUD presentation.</summary>
+    public bool IsVisible => popupRoot != null && popupRoot.activeInHierarchy;
+
     [Header("Result Fields")]
     [SerializeField] private TextMeshProUGUI completionTimeText; // add this back
     [SerializeField] private TextMeshProUGUI verdictText;
@@ -45,8 +48,15 @@ public class CaseResultPopupUI : MonoBehaviour
             : $"Verdict: Incorrect (You said {EnumDisplayFormatter.Format(result.PlayerVerdict.ToString())})";
 
         issuesFoundText.text = $"Issues Found: {result.IssuesFound}";
-        expText.text = $"EXP Earned: {result.ExpEarned}";
-        reputationText.text = $"Reputation Earned: {result.ReputationEarned}";
+        LevelRewardRules rules = CaseProgressionManager.Instance != null
+            ? CaseProgressionManager.Instance.Score.Rules
+            : null;
+        expText.text = rules != null
+            ? $"EXP Earned: {result.ExpEarned} / {rules.caseFile.exp}"
+            : $"EXP Earned: {result.ExpEarned}";
+        reputationText.text = rules != null
+            ? $"Hearts Earned: {result.ReputationEarned} / {rules.caseFile.hearts}"
+            : $"Reputation Earned: {result.ReputationEarned}";
         summaryText.text = result.SummaryText;
 
         if (AudioManager.Instance != null)
@@ -57,6 +67,31 @@ public class CaseResultPopupUI : MonoBehaviour
         CameraController.Instance?.LockPlayerControls();
 
         popupRoot.SetActive(true);
+        HudRewardScreen.Present(popupRoot, BuildScreen(result, caseFormattedTime, rules));
+    }
+
+    /// <summary>The reward card for this case (Office HUD); same values as the text fields.</summary>
+    private static RewardScreenData BuildScreen(LevelResultData result, string time, LevelRewardRules rules)
+    {
+        CaseProgressionManager progression = CaseProgressionManager.Instance;
+        var data = new RewardScreenData
+        {
+            Title = "Case Results",
+            Subtitle = progression != null ? $"Case {progression.CurrentCaseNumber} of {progression.TotalCasesInLevel}" : null,
+            Exp = result.ExpEarned,
+            MaxExp = rules != null ? rules.caseFile.exp : RewardsCalculator.MaxExp,
+            Hearts = result.ReputationEarned,
+            MaxHearts = rules != null ? rules.caseFile.hearts : RewardsCalculator.MaxReputation,
+            HasVerdict = true,
+            VerdictCorrect = result.VerdictWasCorrect,
+            VerdictText = EnumDisplayFormatter.Format(result.PlayerVerdict.ToString()),
+            Flawless = result.Branch == ClientOutcomeBranch.CorrectNoIssues,
+            Accent = result.VerdictWasCorrect ? new Color32(110, 201, 140, 255) : new Color32(226, 112, 96, 255),
+            Summary = result.SummaryText
+        };
+        data.Fact("Time", time);
+        data.Fact("Issues", result.IssuesFound.ToString());
+        return data;
     }
 
     public void OnClosePressed()

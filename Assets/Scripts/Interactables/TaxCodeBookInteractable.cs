@@ -26,10 +26,6 @@ public class TaxCodeBookInteractable : MonoBehaviour, IInteractable
     public void OnFocus() => highlight.Highlight();
     public void OnUnfocus()
     {
-        if (CameraController.Instance.CurrentMode ==
-            CameraController.CameraMode.Workstation)
-            return;
-
         highlight.Unhighlight();
     }
     public void OnInteract()

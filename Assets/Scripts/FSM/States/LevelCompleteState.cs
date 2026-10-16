@@ -23,7 +23,8 @@ public class LevelCompleteState : IGameState
         Debug.Log("[LevelCompleteState] LevelCompleteUI.Instance FOUND.");
 
         LevelTotalResult levelTotal =
-            LevelTotalResult.FromAccumulator(
+            LevelTotalResult.FromLedger(
+                CaseProgressionManager.Instance.Score,
                 CaseProgressionManager.Instance.RewardAccumulator
             );
         levelTotal.LevelId = CaseProgressionManager.Instance.CurrentLevelId;

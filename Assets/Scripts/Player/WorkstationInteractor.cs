@@ -19,6 +19,7 @@ public class WorkstationInteractor : MonoBehaviour
     [SerializeField] private LayerMask interactableLayer;
 
     private IInteractable currentFocus;
+    private HighlightEffect focusOutline;
 
     private void OnDisable()
     {
@@ -35,46 +36,55 @@ public class WorkstationInteractor : MonoBehaviour
 
     private void HandleHoverDetection()
     {
-        if (Camera.main == null) return;
+        if (Camera.main == null || DialogueUI.IsAnyDialogueActive)
+        {
+            ClearFocus();
+            return;
+        }
 
         IInteractable hitInteractable = null;
 
-        bool cursorOverUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+        bool cursorOverUI = MobileInputGuard.BlocksWorldInput();
 
         if (!cursorOverUI)
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out RaycastHit hit, interactRange, interactableLayer))
             {
-                hitInteractable = hit.collider.GetComponent<IInteractable>();
+                hitInteractable = hit.collider.GetComponentInParent<IInteractable>();
 
             }
         }
 
         if (hitInteractable != currentFocus)
         {
-            currentFocus?.OnUnfocus();
+            if (focusOutline != null) focusOutline.SetFocused(false);
+            if (currentFocus is Component previous && previous != null) currentFocus.OnUnfocus();
             currentFocus = hitInteractable;
             currentFocus?.OnFocus();
+            focusOutline = HighlightEffect.For(currentFocus);
+            if (focusOutline != null) focusOutline.SetFocused(true);
         }
     }
 
     private void HandleClick()
     {
-        if (currentFocus == null) return;
+        bool cursorOverUI = MobileInputGuard.BlocksWorldInput();
+        if (cursorOverUI || DialogueUI.IsAnyDialogueActive) return; // don't double-trigger world objects through UI clicks
 
-        bool cursorOverUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-        if (cursorOverUI) return; // don't double-trigger world objects through UI clicks
-
-        if (Input.GetMouseButtonDown(0))
+        if (MobileInputGuard.TryGetWorldTap(out Vector2 position) && Camera.main != null)
         {
-            currentFocus.OnInteract();
+            Ray ray = Camera.main.ScreenPointToRay(position);
+            if (Physics.Raycast(ray, out RaycastHit hit, interactRange, interactableLayer))
+                hit.collider.GetComponentInParent<IInteractable>()?.OnInteract();
         }
     }
 
     public void ClearFocus()
     {
-        currentFocus?.OnUnfocus();
+        if (focusOutline != null) focusOutline.SetFocused(false);
+        focusOutline = null;
+        if (currentFocus is Component previous && previous != null) currentFocus.OnUnfocus();
         currentFocus = null;
     }
 }

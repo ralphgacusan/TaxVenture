@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
@@ -19,6 +20,10 @@ public class TaxCodeValueChip : MonoBehaviour, IDataValueSource
         chipText.text = value.displayText;
         clickSource.Initialize(this, this);
         dragSource.Initialize(this, this);
+
+        // Printed highlighter-mark presentation; transfer data is unchanged.
+        PaperInkStyle.StyleValueChip(GetComponent<Image>(), chipText,
+            GetComponent<ValueSelectionHighlighter>());
     }
 
     public DataValue GetDataValue()

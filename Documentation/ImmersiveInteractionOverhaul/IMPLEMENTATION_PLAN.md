@@ -1,91 +1,45 @@
 # Implementation plan
 
-Status: proposed implementation, awaiting user approval. No proposed new API, state, component, or configuration below exists merely because it is named here. See CURRENT_STATE.md for implemented facts.
+Updated 2026-10-15. Preserve current first-person exploration and T01 controls. Use existing viewpoint, control-lock and interaction APIs. Scope: consistent conversations, conversation-only Elijah visual and cinematic shots, readable dialogue UI/typewriter, truthful NPC markers and focused integration. Exploration stays first person. No exploration camera overhaul, NPC animation or player locomotion work is assigned.
 
-## Player stories
+## Architecture
 
-1. As a mobile player, I want separate, responsive movement and look sticks so I can explore while looking around without accidental taps.
-2. As a player, I want a visible, style-matched character with idle/walk transitions so movement feels grounded and readable.
-3. As a player, I want a third-person camera that handles confined rooms and outdoor space so walls and furniture do not obscure navigation.
-4. As a player, I want close viewpoints for conversations, desk work, board tasks, notes and profiles so interactions feel intentional and readable.
-5. As a player, I want safe cancel/close and interruption recovery so I return to exploration with control and the same progress.
-6. As a player, I want a consistent conversation flow for all relevant NPCs so skip, advance, end and conditional content behave predictably.
-7. As a player, I want readable dialogue and speaker framing so I can follow who is talking without camera or UI obstruction.
-8. As a player, I want distinct available/completed NPC markers so I can identify useful conversations without losing later interactions.
-9. As a player, I want profile collection, paper viewing/dragging, matching, interviews and objectives preserved so presentation changes do not change quest rules.
-10. As a player, I want UI and input to recover after pauses, multi-touch, rapid taps, scene changes and unavailable interactions so no action leaks or gets stuck.
+- **T02: unify dialogue flow.** Build on existing DialogueUI and NPC adapters with one active conversation, reliable start/advance/end/cancel handling and preserved callbacks. Reuse CameraController's current control APIs. Preserve dialogue data, conditional outcomes, question choices, tutorial events, rewards and replay rules. Completion, cancellation, interview progress and exhausted content are distinct states. No prerequisite camera framework is needed.
+- **T03: cinematic conversation presentation consumes T02 events.** Configure an existing Elijah standing/idle visual that is hidden outside conversations; inspect actual mesh units/pose/feet and native rendering, not filenames or imported animation/culling bounds. Fit the visual independently without resizing/teleporting the player root/capsule or editing shared NPC importers. Inspect compatible existing rig/idle assets; no walking/running setup.
+- **T03 camera shots:** NPC lines use an over-Elijah-shoulder view of the NPC; player lines use the reciprocal view of Elijah with the NPC shoulder/side in frame. Freeze actual player motion and look; use one pose writer under the current camera owner, appropriate head/shoulder anchors, smooth speaker/entry/return blends and safe two-shot fallback. Verify walls, furniture, different heights, and model intersections. Do not reuse the abandoned exploration setup or global body fitting.
+- **T03 UI/input:** compact safe-area bottom panel, speaker name/text/Continue and no large foreground portrait. Reveal via TMP visible-character count, rich-text-aware pacing and punctuation pauses. Dialogue-box taps and Continue share one gesture gate: while typing reveal only; after reveal a distinct next tap advances. Final-line close also needs a distinct tap. Opening click, held touch, duplicate submit/button events and gameplay taps must not skip lines.
+- **T03 end ordering:** coordinate presentation completion with the existing T02 session rather than create a competing dialogue manager. On the final line or cancellation, finish camera return, hide/restore the conversation visual and hands, restore captured first-person orientation/FOV/controls, then release the conversation and dispatch its outcome. Keep locks through the return; do not fire success on cancellation. If disable/unload prevents a blend, clean up immediately using valid owned references, without restoring over another owner or touching destroyed scene objects. Current T02 releases immediately on terminal cleanup, so this ordering is a planned integration seam, not an existing capability.
+- **T03 delivery checkpoints:** (1) standing Elijah visual and grounding preview, (2) speaker shots plus reliable first-person return, (3) bottom UI/typewriter and tap arbitration, (4) conversation integration/regression. Require explicit continuation and update evidence after each checkpoint.
+- **T04: indicators read actual state.** Adapt NPC availability, interviews, profile and remaining-action data. Require initial synchronization, event cleanup, distinct shape plus color, restrained animation, configurable range and conversation suppression. Avoid click-stealing colliders and per-frame material allocation.
+- **T05: verify existing interactions together.** Check safe cancellation, failed starts, repeated close and return to the prior input state across conversations, desk, notes, board and profile viewer. Preserve locks through final paper return. Fix only reproduced scoped failures; do not introduce a shared camera framework or redesign working transitions/notes policy as a prerequisite.
+- **Preserve papers/tools.** Current profile opening/drag/layering/closing, readable layout, task refresh, callbacks, free paper placement and delayed input restoration remain authoritative.
 
-## Architecture decisions
+## Dependencies and sequence
 
-### A01: Evolve the existing camera/control owner
+T01 (retained) → T02 (conversation lifecycle) → T03 (dialogue presentation) → T04 (NPC indicators) → T05 (integration) → T06 (regression/handoff). T04 consumes T02 status and coordinates visibility with T03. All future units need explicit approval.
 
-Use `CameraController` as the shared interaction entry/exit owner; do not introduce a parallel manager that independently enables controls or writes the same camera pose. Evolve `ThirdPersonCameraFollow` for exploration and retain existing first-person/anchored views as appropriate. Define explicit exploration, entering, active interaction and returning behavior; these can be a small extension of the existing controller rather than a general framework.
+Use one writer per CameraController, DialogueUI and scene. Read-only content mapping or test preparation can be delegated; shared scene/script writes must be serialized.
 
-Preserve existing public call sites and serialized UnityEvents through adapters until callers migrate. Append new serialized enum values or migrate deliberately; do not silently renumber them. Audit every `FirstPerson` guard, reset, unlock and startup assumption, especially `TryBeginProfileViewer/EndProfileViewer`, dialogue and board entry/exit.
+## Risks and acceptance
 
-The active camera has exactly one transform writer at any time. A successful interaction owns its lock until its return transition finishes; rejection never acquires a lock or fires completion. Snapshot or explicitly manage movement/look/interactors, touch IDs, joystick visibility/input, Rigidbody motion/constraints, cursor, player visual/hands, camera pose/FOV and any raycast ownership changed by that interaction. Restore only what this owner changed; closing one overlay must not unlock another active interaction.
-
-T02 establishes the minimum exploration compatibility bridge: default third-person owner, legacy interaction entry still accepted, return routed back to exploration, existing paper-viewer API still functional. T03 completes shared close-viewpoint blending and interruption handling for every designated interaction. T02 is not accepted if basic existing interactions break while awaiting T03.
-
-### A02: Reuse the present camera before adding packages
-
-No Cinemachine setup is wired in the inspected Level 1 scene and it is not a manifest dependency. Prefer extending the current follow script with a configurable orbit pivot, pitch/distance bounds, damping and collision resolution. A new package requires an evidence-based reason and an explicit plan change, not automatic installation.
-
-Separate preferred orbit distance from obstruction-limited distance. Query a camera volume from a safe player/shoulder pivot toward the desired pose; use appropriate radius/skin/near-plane clearance and layer/trigger filtering. Check initial overlap and ceiling/corner cases, not just a center ray. Retract promptly to avoid clipping; restore outward smoothly with stable damping/hysteresis. Prevent the smoothing path from interpolating through a wall. Exclude player/self, irrelevant triggers, markers and held/viewer papers. Reuse this collision safety for interaction blends and dialogue shots; use fallback close framing where a desired shoulder position is obstructed.
-
-### A03: One owner per pointer and input context
-
-Reuse VirtualJoystick for movement and a matching look-stick instance/role; MobileLookArea may be adapted or retired only after checking its references. Do not run raw touch swipe and look-stick rotation simultaneously. Reuse the Input System already installed without migrating the whole game to new action maps unnecessarily. Keep desktop input and serialized bindings working.
-
-Capture pointer identity on press and release only that pointer; reset on cancel, focus loss, disable and mode changes. UI-started touches remain UI-owned even when dragged away; joystick touches cannot interact with NPCs/world objects. Move/look can use two separate fingers; a third HUD tap cannot steal either. Normalize only above unit magnitude and remap an adjustable dead zone while retaining analog movement strength. Input should reset immediately on release while the handle visual may ease home; visual smoothing must not produce residual movement.
-
-### A04: Reuse DialogueUI and its data; normalize lifecycle
-
-The project already shares a renderer/queue. Improve its session arbitration, one-action-per-gesture routing, cancellation and outcomes rather than inventing a second dialogue controller. Office IInteractable and town pointer handlers become small adapters to the same lifecycle. Preserve current JSON/builder content and conditional outcome branches; verify legacy question UI before modifying it. Add branch/choice support only where an actual current content path requires it, not a new graph editor.
-
-Distinguish completed, cancelled, rejected and invalid sessions. Emit completion side effects once only after successful conclusion. An empty list must follow a documented, safe outcome without leaving pre-acquired locks or silently duplicating a reward/drop. A busy start is rejected or explicitly queued according to the final contract; never overwrite an active queue/callback. Presentation completion is not the same as interview completion or an exhausted NPC.
-
-### A05: Dialogue presentation consumes session events
-
-Expose current line/speaker and lifecycle signals for camera, UI and indicators without letting them mutate quest state. Build bottom safe-area dialogue UI using existing Canvas/TMP/portraits; Continue at bottom-right and tapping the dialogue box share one advance path. Typewriter uses visible-character count/rich-text-aware character handling, configurable pacing and punctuation pauses. First tap reveals the line; only a subsequent gesture advances. Cancel/line replacement clears stale routines, and closing/paused UI cannot leak the same touch into gameplay.
-
-Use supplied shoulder/reverse-shot references to guide composition, not to copy assets. Frame the NPC when NPC speaks and player when player speaks, using validated player model/head targets. Provide obstruction-safe alternatives when no safe shoulder shot fits; support different heights and tight office spaces. Hide/reposition the player mesh only where first-person clipping requires it; preserve shoulders for dialogue when feasible. No new NPC animations.
-
-### A06: Indicators read real availability and completion
-
-Evolve NpcVisualIndicator and NPC adapters. Use availability/exhaustion/interview/profile/quest data as the authority, with initial state synchronization and change notifications. Do not infer completion merely from closing DialogueUI or from a color/string alone. For the client, completed interview can coexist with a later available presentation conversation. Ordinary colleague/tutorial NPCs need adapters because they lack the same FSM.
-
-Use distinct shape plus color for available/completed; hide or change markers for active conversation/unavailable/out-of-range NPCs. Anchor above character bounds or assigned head point, face the camera, use restrained unscaled/appropriate-time bob/pulse, and configurable distance/occlusion rules. Avoid adding colliders that steal clicks or per-NPC material clones every frame.
-
-## Dependencies and scope boundaries
-
-Default serial order is T01 -> T02 -> T03 -> T04 -> T05 -> T06 -> T07 -> T08. T01 defines pointer/input contracts needed by T02. T02's minimal compatibility changes are supporting scope, not full T03 delivery. T03 defines common ownership for T04/T05. T06 uses T04's actual conversation status; coordinate marker suppression with T05. T07 integrates all; T08 records final evidence.
-
-Safe parallel preparation: model/clip inventory, NPC/content mapping, UI safe-area mock layout, and test case preparation can be read-only and independent. Do not concurrently edit CameraController, DialogueUI, NPC completion callbacks, or Office_Level1. Sequential approval still applies even when read-only work is delegated.
-
-Out of scope: unrelated case grading, tax calculations, level unlocking/rewards, save format redesign, repaired level routing, new NPC animation, imported environment art, new quests, and a full narrative authoring package. A discovered issue that blocks an assigned ticket must be documented with a minimal supporting fix proposal; do not absorb the whole historical audit.
-
-## Risks and decisions still needing evidence
-
-| Risk | Mitigation / decision checkpoint |
+| Risk | Required behavior/evidence |
 |---|---|
-| No visible humanoid player in Level 1 | User selected Elijah. T02 validates `Assets/3D Models/npc_elijah/` and integrates a player-specific visual/prefab/controller using the existing model/texture. No substitute model is authorized. |
-| Elijah static/idle Generic imports versus Humanoid walking import | Verify skeleton/avatar compatibility and non-looping walking clip configuration in Unity. Inspect shared references before importer changes; avoid altering NPCs while configuring the player. |
-| Existing rig/controller/license uncertainty | Inspect Animator references in Unity, humanoid avatar validity, root motion, triangles/skinning/materials, license entitlement and clip permissions. Record actual findings, not guessed metrics. External candidate only if needed, with exact source URL before import. |
-| Root player rotation competes with camera/model | Keep movement facing, orbit yaw, and visual animation separate; camera should not force a second player rotation. Retain Rigidbody/capsule behavior. |
-| Mixed input, default pointer-over checks, inactive look area | T01 owns pointer routing and dead zones; verify two sticks plus HUD on actual touch input. Asset presence is not working wiring. |
-| Old FirstPerson guards and multiple camera scripts | T02 audits startup/exit compatibility; T03 completes ownership migration and guarantees one writer. Preserve serialized enum/API callers. |
-| Notes currently permit walking/look | T03 explicitly migrates notes into close reading mode while preserving task refresh and swipe close. |
-| UI overlay/GraphicRaycaster and raw paper hit tests | Preserve icon priority, camera pixelRect projection, viewer layering and disabled world raycasts. Lock through both paper close and camera return. |
-| Multiple dialogue start paths/empty receptionist content | T04 adds arbitration and once-only outcome handling; test busy/empty/cancelled flows and caller locks. |
-| Historical duplicate FSM/startup and live duplicate audit calls | Record baseline; reproduce separately. Do not label new behavior broken solely from old audit text. Minimal blocking fixes require explicit scope/evidence. |
-| Inconsistent completion semantics and later client content | Record interview/profile/exhaustion separately; T06 markers must use current available actions. |
-| Device/collision tuning cannot be proven by compilation | Require indoor/outdoor and Android/manual evidence at ticket acceptance; static inspection and numeric checks stay separately labeled. |
+| Mixed input and multiple touch routes | Retain T01 pointer ownership, swipe/UI isolation and tap discrimination; user tests multi-touch |
+| Empty/busy dialogue and synchronous callbacks | Reject overlap, clean failed starts and invoke progression callbacks once after valid completion |
+| Interview completion versus later actions | Preserve case/presentation, profile, tutorial and replay rules; truthful markers |
+| Cancellation or incorrect input return | T02 cleans its conversation state; T05 tests all existing interaction paths and fixes demonstrated leaks without a camera overhaul |
+| Model fit and camera framing | Validate actual standing geometry, grounded feet, shoulder visibility, obstruction fallback and hiding outside conversation; preserve player physics dimensions |
+| Typewriter input duplication | Rich text stays intact; opening/reveal/advance/close are distinct gestures; pauses/disable clean owned routines |
+| Conversation return ordering | Do not unlock or run success callbacks before return finishes; cancel restores state without quest completion |
+| Paper/UI conflicts | Preserve raycast priority, readable layouts and locks through final closing |
+| Notes currently allow walking/look | Preserve existing policy, task refresh and swipe close; T05 tests current behavior |
+| Legacy scene references | Inspect Office_Level2 before claiming cross-scene acceptance |
+| Historical progression warnings | Reproduce and document; no unrelated tax/reward/save/routing fixes |
 
-## Validation and release gate
+## Verification and stop gate
 
-For every implemented ticket: C# compile and diff checks; focused state/input/data checks; relevant Unity EditMode/PlayMode checks where runnable; user manual/device checklist with actual results. Do not repeatedly run unrelated checks or count old Library reports as fresh passes. Existing PlayerProgressData tests do not validate conversations.
+Compile affected runtime/Editor code and inspect references. Run the smallest relevant production checks; existing paper/progression tests cover only their stated scope. Never suppress assertions or edit reports to claim success.
 
-T08 must cover indoor/outdoor movement, analog strength and both sticks, character idle/walk/lock, wall/ceiling/corner/furniture collision and obstruction recovery, every interaction entry/exit/cancel, indoor/outdoor/four target conversations, typewriter/skip/advance, repeated/busy/empty conversations, correct progress/indicators, corkboard/tray/pinning, complete profile open/drag/close, objective notes/desk, pause/focus loss, scene transitions, and supported resolutions/safe areas. Record real device and performance measurements; do not invent an FPS/triangle budget without a target-device baseline.
+User manually tests first-person exploration before/after conversation, standing Elijah and both speaker compositions, tight-space fallbacks, typewriter and dialogue-box/Continue reveal/advance/close, office/town NPCs and interview outcomes, desk/notes/board/profile, pause/focus and supported resolutions/safe areas. T06 records actual results and unrun cases. Compilation/math/source inspection are not gameplay acceptance.
 
-Manual acceptance includes readable framing, unobstructed faces/papers, stable movement/camera, no stuck locks, no lost/duplicated callbacks or changed quest outcomes, and no new Console errors. Initial documentation delivery requires complete files/links/ticket dependencies and unchanged gameplay files; it does not require a gameplay build.
+After each approved unit update CURRENT_STATE, ticket status, PROGRESS and HANDOFF; report changed files, checks, limits and next-unit token range. Stop for explicit continuation. User handles Git write actions. No gameplay work starts from this documentation revision.

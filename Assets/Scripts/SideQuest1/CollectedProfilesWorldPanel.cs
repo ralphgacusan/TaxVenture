@@ -41,6 +41,7 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
     private readonly List<GameObject> spawnedPapers = new List<GameObject>();
 
     private CameraController viewerCameraController;
+    private HighlightEffect highlightedPaper;
     private bool isOpen;
     private bool isClosing;
     private bool isLockedToSingleProfile;
@@ -91,6 +92,7 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
     {
         if (draggedPaper != null)
         {
+            SetHighlightedPaper(draggedPaper);
             bool held = dragTouch != null ? dragTouch.press.isPressed :
                 Mouse.current != null && Mouse.current.leftButton.isPressed;
             if (!held)
@@ -106,6 +108,8 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
             KeepPaperOnScreen(draggedPaper);
             return;
         }
+
+        UpdatePaperHover();
 
         if (Touchscreen.current != null)
         {
@@ -131,18 +135,73 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
                 if (hit.module is GraphicRaycaster) return;
         }
 
+        GameObject paper = GetTopmostPaperAt(pointer);
+        if (paper == null) return;
+
+        spawnedPapers.Remove(paper);
+        spawnedPapers.Add(paper);
+        RefreshPaperDepths();
+        draggedPaper = paper.transform;
+        dragTouch = touch;
+        grabOffset = (Vector2)mainCamera.WorldToScreenPoint(draggedPaper.position) - pointer;
+        SetHighlightedPaper(draggedPaper);
+    }
+
+    private void UpdatePaperHover()
+    {
+        if (!TryGetPaperPointerPosition(out Vector2 pointer) || DialogueUI.IsAnyDialogueActive ||
+            VirtualJoystick.BlocksWorldInput || MobileInputGuard.IsPointerOverUI(pointer))
+        {
+            SetHighlightedPaper(null);
+            return;
+        }
+
+        GameObject paper = GetTopmostPaperAt(pointer);
+        SetHighlightedPaper(paper != null ? paper.transform : null);
+    }
+
+    private bool TryGetPaperPointerPosition(out Vector2 pointer)
+    {
+        if (Touchscreen.current != null)
+        {
+            foreach (TouchControl touch in Touchscreen.current.touches)
+            {
+                if (!touch.press.isPressed && !touch.press.wasPressedThisFrame) continue;
+                pointer = touch.position.ReadValue();
+                return true;
+            }
+        }
+
+        if (Mouse.current != null)
+        {
+            pointer = Mouse.current.position.ReadValue();
+            return true;
+        }
+
+        pointer = default;
+        return false;
+    }
+
+    private GameObject GetTopmostPaperAt(Vector2 pointer)
+    {
         for (int i = spawnedPapers.Count - 1; i >= 0; i--)
         {
             GameObject paper = spawnedPapers[i];
-            if (paper == null || !GetPaperScreenRect(paper.transform).Contains(pointer)) continue;
-            spawnedPapers.RemoveAt(i);
-            spawnedPapers.Add(paper);
-            RefreshPaperDepths();
-            draggedPaper = paper.transform;
-            dragTouch = touch;
-            grabOffset = (Vector2)mainCamera.WorldToScreenPoint(draggedPaper.position) - pointer;
-            return;
+            if (paper != null && paper.activeInHierarchy && GetPaperScreenRect(paper.transform).Contains(pointer))
+                return paper;
         }
+
+        return null;
+    }
+
+    private void SetHighlightedPaper(Transform paper)
+    {
+        HighlightEffect next = paper != null ? HighlightEffect.For(paper) : null;
+        if (highlightedPaper == next) return;
+
+        if (highlightedPaper != null) highlightedPaper.SetFocused(false);
+        highlightedPaper = next;
+        if (highlightedPaper != null) highlightedPaper.SetFocused(true);
     }
 
     private Rect GetPaperScreenRect(Transform paper)
@@ -206,6 +265,7 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
 
     private void ReleasePaper()
     {
+        SetHighlightedPaper(null);
         draggedPaper = null;
         dragTouch = null;
     }
@@ -238,6 +298,15 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
     /// <summary>Wire this to the same HUD icon Button's onClick.</summary>
     public void OnHudIconClicked()
     {
+        // The scene's profile icon calls this directly. In Office_Level1 the
+        // Office HUD shows the profiles as paper windows instead (they layer
+        // with Notes and the Case Folder), so let it handle the tap first.
+        if (!isOpen && TaxpayerProfileCollectionHUD.IconClickOverride != null &&
+            TaxpayerProfileCollectionHUD.IconClickOverride())
+        {
+            return;
+        }
+
         if (!isActiveAndEnabled || isClosing) return;
         if (isOpen)
         {
@@ -363,6 +432,8 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
                 }
             }
 
+            HighlightEffect.For(paper.transform).SetFocused(false);
+
             Vector3 authoredScale = paper.transform.localScale;
             GetPaperDimensions(paper, authoredScale, out float authoredHeight, out float paperAspect);
             GetViewportLayout(i, count, paperAspect, out Vector2 viewportCenter, out float heightFraction);
@@ -476,7 +547,8 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
         }
     }
 
-    private List<TaxpayerProfile> GetProfilesToShow()
+    /// <summary>The profiles the viewer would show (read-only use by the Office HUD profile cards).</summary>
+    public List<TaxpayerProfile> GetProfilesToShow()
     {
         if (isLockedToSingleProfile)
         {
@@ -601,6 +673,7 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
 
     private void OnDisable()
     {
+        ReleasePaper();
         if (isOpen || viewerCameraController != null)
         {
             CloseViewer();

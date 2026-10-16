@@ -6,7 +6,7 @@ using UnityEngine;
 /// with by the player. Matches design brief's NPC FSM "Idle" state.
 ///
 /// TRANSITIONS TO:
-/// - NpcWaitingState, when the player focuses/highlights this NPC
+/// - NpcWaitingState, when the player focuses this NPC
 ///   (triggered by the NPC's *Interactable script's OnFocus())
 /// </summary>
 public class NpcIdleState : INpcState

@@ -104,14 +104,41 @@ public class LevelCompleteUI : MonoBehaviour
         casesCompletedText.text =
             $"Cases Completed: {result.CasesCompleted}";
 
-        expText.text =
-            $"Total EXP Earned: {result.TotalExp}";
+        if (result.HasScore)
+        {
+            expText.text =
+                $"EXP: {result.TotalExp} / {result.MaxExp} ({result.ExpPercent}%)";
 
-        reputationText.text =
-            $"Total Reputation Earned: {result.TotalReputation}";
+            reputationText.text =
+                $"Hearts: {result.TotalReputation} / {result.MaxReputation} ({result.ReputationPercent}%)";
 
-        congratsText.text =
-            "Congratulations! You've completed the level.";
+            string badges = string.Empty;
+            if (result.BadgeNames != null)
+            {
+                var names = new System.Collections.Generic.List<string>();
+                for (int i = 0; i < result.BadgeNames.Count; i++)
+                {
+                    BadgeTier tier = result.BadgeTiers != null && i < result.BadgeTiers.Count ? result.BadgeTiers[i] : BadgeTier.None;
+                    names.Add(tier == BadgeTier.None ? result.BadgeNames[i] : $"{result.BadgeNames[i]} ({tier})");
+                }
+                if (names.Count > 0) badges = $"\nBadge: {string.Join(", ", names)}";
+            }
+
+            congratsText.text = result.Passed
+                ? $"PASSED! You reached the {result.PassingPercent}% passing line. The next level is unlocked.{badges}"
+                : $"Below passing: you need {result.PassingPercent}% of the EXP and hearts. Replay this level to unlock the next one.{badges}";
+        }
+        else
+        {
+            expText.text =
+                $"Total EXP Earned: {result.TotalExp}";
+
+            reputationText.text =
+                $"Total Reputation Earned: {result.TotalReputation}";
+
+            congratsText.text =
+                "Congratulations! You've completed the level.";
+        }
 
         Debug.Log("[LevelCompleteUI] All text fields updated.");
 
@@ -121,8 +148,57 @@ public class LevelCompleteUI : MonoBehaviour
         }
 
         panelRoot.SetActive(true);
+        HudRewardScreen.Present(panelRoot, BuildScreen(result));
 
         Debug.Log("[LevelCompleteUI] panelRoot activated successfully.");
+    }
+
+    /// <summary>The reward card for the level (Office HUD); same values as the text fields.</summary>
+    private static RewardScreenData BuildScreen(LevelTotalResult result)
+    {
+        CaseProgressionManager progression = CaseProgressionManager.Instance;
+        LevelRewardRules rules = progression != null ? progression.Score.Rules : null;
+        var data = new RewardScreenData
+        {
+            Title = "Level Complete",
+            Subtitle = progression != null ? progression.CurrentLevelName : null,
+            Exp = result.TotalExp,
+            MaxExp = result.HasScore ? result.MaxExp : 0,
+            Hearts = result.TotalReputation,
+            MaxHearts = result.HasScore ? result.MaxReputation : 0,
+            PassingPercent = result.HasScore ? result.PassingPercent : 0
+        };
+
+        if (result.HasScore)
+        {
+            data.HasStatus = true;
+            data.StatusGood = result.Passed;
+            data.Accent = result.Passed ? new Color32(241, 194, 108, 255) : new Color32(150, 160, 175, 255);
+            data.StatusText = result.Passed ? "PASSED" : "BELOW PASSING";
+            data.StatusDetail = $"{result.ExpPercent}% EXP  ·  {result.ReputationPercent}% hearts  ·  {result.PassingPercent}% needed";
+            data.Summary = result.Passed
+                ? "Great work! The next level is unlocked."
+                : $"You need {result.PassingPercent}% of the EXP and the hearts. Replay this level to unlock the next one.";
+            for (int i = 0; i < result.BadgeTiers.Count; i++)
+                if (result.BadgeTiers[i] != BadgeTier.None) data.Medals.Add(HudBadgeArt.For(rules, result.BadgeTiers[i]));
+        }
+        else
+        {
+            data.Summary = "Congratulations! You've completed the level.";
+        }
+
+        data.Fact("Time", result.FormattedCompletionTime);
+        data.Fact("Cases", result.CasesCompleted.ToString());
+
+        PlayerProgressData career = PlayerProgressManager.Instance != null ? PlayerProgressManager.Instance.CurrentProgress : null;
+        if (career != null)
+        {
+            LevelRecord best = career.GetRecord(result.LevelId);
+            data.Footer = best != null
+                ? $"Career {career.totalExp} EXP  ·  Best on this level {best.bestExp} / {best.maxExp} EXP"
+                : $"Career {career.totalExp} EXP";
+        }
+        return data;
     }
 
     private void Hide()
@@ -152,6 +228,10 @@ public class LevelCompleteUI : MonoBehaviour
             );
         }
 
-        SceneManager.LoadScene(mainModuleSceneName);
+        Debug.Log($"[LevelCompleteUI] Returning to the level select in {MenuEntry.MenuSceneName} (was '{mainModuleSceneName}').");
+        // The main menu and the progress / level select are one scene now
+        // ("3D Menu"); open it directly on the level select.
+        MenuEntry.OpenLevelSelect = true;
+        SceneManager.LoadScene(MenuEntry.MenuSceneName);
     }
 }

@@ -47,6 +47,9 @@ public class DragVisualManager : MonoBehaviour
 
     private TextMeshProUGUI dragVisualText;
 
+    /// <summary>The floating visual (read-only; the Office HUD restyles it).</summary>
+    public GameObject Visual => dragVisual;
+
     private RectTransform dragVisualRect;
     private RectTransform dragVisualTextRect;
 

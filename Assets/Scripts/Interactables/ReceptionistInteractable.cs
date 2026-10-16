@@ -1,13 +1,13 @@
 using UnityEngine;
 
-[RequireComponent(typeof(HighlightEffect))]
+[RequireComponent(typeof(NpcStatusMarker))]
 [RequireComponent(typeof(NpcStateMachine))]
-public class ReceptionistInteractable : MonoBehaviour, IInteractable
+public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvailabilitySource
 {
     [SerializeField] private DialogueUI dialogueUI;
 
-    private HighlightEffect highlight;
     private NpcStateMachine npcState;
+    private bool dialogueSessionActive;
 
     // Stores which case this receptionist has already spoken to.
     // This automatically allows interaction again when a new case loads.
@@ -15,13 +15,19 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
 
     private void Awake()
     {
-        highlight = GetComponent<HighlightEffect>();
         npcState = GetComponent<NpcStateMachine>();
+    }
+
+    private void OnDisable()
+    {
+        if (dialogueSessionActive && dialogueUI != null)
+        {
+            dialogueUI.CancelDialogueFor(this);
+        }
     }
 
     public void OnFocus()
     {
-        highlight.Highlight();
 
         if (npcState.CurrentState is NpcIdleState)
         {
@@ -31,7 +37,6 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
 
     public void OnUnfocus()
     {
-        highlight.Unhighlight();
 
         if (npcState.CurrentState is NpcWaitingState)
         {
@@ -41,6 +46,11 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract()
     {
+        if (dialogueSessionActive) return;
+
+        // Level order: the case starts only after the side quest (rewards.json).
+        if (!LevelGate.TryCase()) return;
+
         Debug.Log("[Receptionist] OnInteract started.");
 
         // ---------------------------------------------------------
@@ -121,19 +131,6 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
         );
 
         // ---------------------------------------------------------
-        // NPC STATE
-        // ---------------------------------------------------------
-
-        npcState.ChangeState(new NpcInteractState());
-        npcState.ChangeState(new NpcDialogueState());
-
-        // ---------------------------------------------------------
-        // LOCK PLAYER CONTROLS DURING CONVERSATION
-        // ---------------------------------------------------------
-
-        CameraController.Instance.LockPlayerControls();
-
-        // ---------------------------------------------------------
         // BUILD DIALOGUE
         // ---------------------------------------------------------
 
@@ -149,18 +146,28 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
                 $"for case '{def.caseId}'."
             );
 
-            OnConversationConcluded(def.caseId);
             return;
         }
 
-        dialogueUI.StartDialogue(
+        INpcState priorNpcState = npcState.CurrentState;
+        bool admitted = dialogueUI.TryStartDialogue(
             lines,
-            () => OnConversationConcluded(def.caseId)
+            () => OnConversationConcluded(def.caseId),
+            () => OnConversationCancelled(priorNpcState),
+            this
         );
+
+        if (!admitted) return;
+
+        dialogueSessionActive = true;
+        npcState.ChangeState(new NpcInteractState());
+        npcState.ChangeState(new NpcDialogueState());
     }
 
     private void OnConversationConcluded(string caseId)
     {
+        dialogueSessionActive = false;
+
         // Mark receptionist as spoken to for THIS case only.
         spokenForCaseId = caseId;
 
@@ -184,8 +191,34 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable
         }
     }
 
+    private void OnConversationCancelled(INpcState priorNpcState)
+    {
+        dialogueSessionActive = false;
+
+        if (npcState == null) return;
+
+        npcState.ChangeState(priorNpcState is NpcCompletedState
+            ? priorNpcState
+            : new NpcIdleState());
+    }
+
+    /// <summary>T04 marker state: greets once per loaded case.</summary>
+    public NpcAvailability Availability
+    {
+        get
+        {
+            CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+            return NpcAvailabilityRules.Receptionist(
+                def != null,
+                def != null && def.receptionistGreeting != null && def.receptionistGreeting.Count > 0,
+                def != null && spokenForCaseId == def.caseId);
+        }
+    }
+
     public string GetPromptText()
     {
+        if (!LevelGate.CaseAllowed) return LevelGate.SideQuestFirstMessage;
+
         // Determine whether the receptionist has already been
         // spoken to for the CURRENT case.
         if (CaseManager.Instance == null ||

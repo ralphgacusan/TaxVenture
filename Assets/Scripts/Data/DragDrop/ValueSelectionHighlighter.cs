@@ -14,10 +14,23 @@ public class ValueSelectionHighlighter : MonoBehaviour
 
     private object ownerComponent;
     private bool subscribed;
+    private bool isSelected;
 
     public void SetOwner(object owner)
     {
         ownerComponent = owner;
+        RefreshSelection();
+    }
+
+    /// <summary>
+    /// Replaces the resting/selected tints (e.g. a restyled row) and
+    /// re-applies the current state.
+    /// </summary>
+    public void SetColors(Color normal, Color selected)
+    {
+        normalColor = normal;
+        selectedColor = selected;
+        ApplyColor();
     }
 
     private void OnEnable()
@@ -35,6 +48,8 @@ public class ValueSelectionHighlighter : MonoBehaviour
     private void OnDisable()
     {
         Unsubscribe();
+        isSelected = false;
+        ApplyColor();
     }
 
     private void TrySubscribe()
@@ -55,6 +70,7 @@ public class ValueSelectionHighlighter : MonoBehaviour
 
         ValueTransferManager.Instance.OnSelectionChanged += HandleSelectionChanged;
         subscribed = true;
+        RefreshSelection();
 
         Debug.Log(
             $"[ValueSelectionHighlighter] " +
@@ -80,10 +96,29 @@ public class ValueSelectionHighlighter : MonoBehaviour
         if (targetImage == null)
             return;
 
-        targetImage.color =
+        isSelected =
             selectedComponent != null &&
-            selectedComponent == ownerComponent
-                ? selectedColor
-                : normalColor;
+            selectedComponent == ownerComponent;
+
+        ApplyColor();
     }
+
+    public Color RestingColor(Image image, Color fallback)
+    {
+        return image == targetImage ? (isSelected ? selectedColor : normalColor) : fallback;
+    }
+
+    private void RefreshSelection()
+    {
+        HandleSelectionChanged(ValueTransferManager.Instance != null
+            ? ValueTransferManager.Instance.SelectedSourceComponent : null);
+    }
+
+    private void ApplyColor()
+    {
+        ValueTypeValidationFeedback feedback = GetComponent<ValueTypeValidationFeedback>();
+        if (targetImage != null && (feedback == null || !feedback.IsPlaying))
+            targetImage.color = isSelected ? selectedColor : normalColor;
+    }
+
 }

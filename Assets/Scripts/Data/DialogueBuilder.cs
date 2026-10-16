@@ -39,5 +39,17 @@ public class DialogueBuilder
         return this;
     }
 
+    /// <summary>Marks the previous line for a solo close-up of its speaker.</summary>
+    public DialogueBuilder CloseUp() => Hint(DialogueCameraHint.CloseUp);
+
+    /// <summary>Keeps the previous line on the over-the-shoulder shot (never a close-up).</summary>
+    public DialogueBuilder OverShoulder() => Hint(DialogueCameraHint.OverShoulder);
+
+    private DialogueBuilder Hint(DialogueCameraHint hint)
+    {
+        if (lines.Count > 0) lines[lines.Count - 1].CameraHint = hint;
+        return this;
+    }
+
     public List<DialogueLine> Build() => lines;
 }

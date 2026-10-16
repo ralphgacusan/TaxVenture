@@ -1,90 +1,112 @@
 # Current implementation
 
-Inspected 2026-10-14 from scripts, package/project settings, scene serialization, and imported asset metadata. This is **static inspection**, not a Unity Editor or Android playthrough. Future agents must update this as tickets land.
+Updated 2026-10-15. Retain existing first-person exploration and T01 controls (`74d53caf`) on `feat/immersive-interaction-overhaul`. Source/scene inspection and compilation are not Unity gameplay acceptance. T02 (both phases) and T03 (all four checkpoints) are code-complete; user scene setup and manual acceptance are pending for both.
 
-## Baseline and existing work
+## T03 conversation presentation — implemented, scene setup pending
 
-- Root: `C:\Learn\Projects\TaxVenture\TaxVenture`; branch `bug-fixes`, tracking `origin/bug-fixes` at inspection.
-- Unity `6000.4.5f1`; URP `17.4.0`; Input System `1.19.0`; UGUI `2.0.0`; Test Framework `1.6.0`; Timeline `1.8.12`. Source: `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json`.
-- Cinemachine is not a direct dependency in the manifest. No assumption that it must be installed: inspect existing camera reuse first.
-- `ProjectSettings/ProjectSettings.asset` has `activeInputHandler: 2`; current code mixes legacy Input and the newer Input System.
-- Prior uncommitted changes: `Assets/Scripts/Player/CameraController.cs` and `Assets/Scripts/SideQuest1/CollectedProfilesWorldPanel.cs`. They implement the recent paper viewer and must survive this overhaul.
-- `docs/GAME_FLOW_CURRENT.md` correctly describes first-person exploration; the root README's third-person description is historical intent. `docs/LOGIC_AUDIT.md` contains older risks requiring live verification before fixes.
+Exploration stays first person. During an admitted NPC conversation only:
 
-## Controls, camera, and scene wiring
+- **`ConversationActorVisual`** (scene object `ConversationElijahVisual`, created by the setup tool).
+  - A standing Elijah built at runtime from `Assets/3D Models/npc_elijah/npc_elijah_Idle.fbx`, with colliders stripped and the Animator disabled. Its pose is sampled from the 7.57 s idle clip, held on one frame or looped at no more than 30 Hz.
+  - Scale = `standingHeight` (world units, proposed as the median measured NPC height) / measured posed height, and the lowest posed point sits on the floor.
+  - Measured facts: the FBX files are in centimetres, Y up, an armless/legless figure whose coat reaches the floor, about 6.7 m tall at import scale. The rig is Generic with no avatar. The walking model is not used.
+  - Hidden outside conversations and while the camera is within 0.3 × height of his head.
+  - Never touches the player root, collider, NPC transforms or importers. Two inactive leftover Elijah instances from the abandoned third-person setup remain untouched in `Office_Level1`.
+- **`DialogueCameraDirector`** (on the CameraController object). It implements `IDialoguePresentation` and is the single camera writer while `DialogueUI` holds the controls.
+  - NPC lines frame over Elijah's right shoulder; player lines over the NPC's left shoulder, on the same side of the axis.
+  - Distances are fractions of character height. Pure geometry lives in `DialogueShotMath` (`System.Numerics`).
+  - Obstruction tests (clearance sphere, shoulder→camera and camera→face lines, ignoring the NPC, player and visual) drive the fallback chain: pull-back 100/75/50%, a two-shot on the same side, then the other side, then a first-person look-at.
+  - Elijah is placed visually at the player's floor point, clamped to 0.5–0.85 × height from the NPC.
+  - NPCs are resolved by `DialogueSpeakerFrames`: an optional `DialogueSpeakerAnchor` (head and feet), otherwise visible renderer bounds (up to two parents; pickups, UI, particles and the visual excluded), otherwise colliders.
+- **Return**:
+  - The logical first-person pose comes from `FirstPersonCameraController.TryGetViewPose` (correct even when a conversation starts in the frame a corkboard exit handed the camera back), together with the FOV, hands and carried document.
+  - End or cancel: panel hidden → blend back (0.45 s, unscaled) → hands and document restored and Elijah hidden → `DialogueUI` releases the controls → completion or cancellation callback.
+  - Disable or unload restores immediately and completes any pending return. The director never restores over another camera mode.
+- **Panel and typewriter**:
+  - `DialogueRevealSchedule` (TMP visible characters, 40 cps, 0.22 s sentence and 0.08 s clause pauses at real breaks).
+  - `DialogueAdvanceGate` (0.15 s opening grace, 0.12 s minimum gesture interval, reveal-before-advance).
+  - `DialogueBoxTapRelay`, added at runtime if missing; it ignores drags and long presses.
+  - The setup tool restyles the panel: an invisible full-width tap-absorbing strip with `SafeAreaBottomPanel`, a dark box 76% wide and 250 high on the 1920×1080 reference, an amber speaker name, auto-sized 22–32 white text and a Continue button. The oversized portrait object is hidden but kept.
+- **Editor**: **Tools > TaxVenture > Configure Dialogue Presentation** (Undo; CPU-skins the posed model to measure it, measures NPCs and logs a report) and **Toggle Conversation Visual Preview** (an unsaved Edit-mode Elijah by the player facing the selected or nearest NPC).
 
-| System | Inspected behavior and dependency |
-|---|---|
-| `Assets/Scripts/Mobile/VirtualJoystick.cs` | UGUI pointer down/drag/up; clamps vector to unit circle, moves handle immediately, resets immediately on release/disable/hide. No explicit dead zone, easing, or active-pointer ownership. One movement reference is wired in Office_Level1. |
-| `Assets/Scripts/Mobile/MobileLookArea.cs` | Drag area accumulating `LookDelta` with `ConsumeDelta()`. No joystick visual or pointer-ID ownership. Scene object exists but is inactive; its existence does not mean look input uses it. |
-| `Assets/Scripts/Player/PlayerMovement.cs` | Rigidbody velocity in FixedUpdate, camera-relative movement, rotates player toward travel, footstep timing. Uses VirtualJoystick then legacy axis fallback. Normalizing the camera-relative direction discards analog stick magnitude, an important T01 defect. No Animator driving here. |
-| `Assets/Scripts/Player/FirstPersonCameraController.cs` | Enabled on active main camera in Office_Level1. Mouse delta + touch swipe, guards against camera mode other than FirstPerson; owns pose in LateUpdate. Touches starting over UI are rejected. Camera position follows player at fixed height. |
-| `Assets/Scripts/Player/ThirdPersonCameraFollow.cs` | Existing orbit/follow code with distance/height/smoothing, mouse/swipe input, pitch limits and debug first-person toggle. No environmental collision queries or shared mode guard in inspected LateUpdate. Do not enable alongside another pose writer. |
-| `Assets/Scripts/Player/CameraController.cs` | Central existing owner for FirstPerson, Workstation, Interview, CorkboardSideQuest and ProfileViewer modes. Start explicitly enables first-person exploration. Several mode exit/reset paths assume FirstPerson. Movement/look/interactor/joystick visibility is toggled here. |
-| `CameraController.MoveCameraToViewpoint` | SmoothStep position/rotation interpolation with final-pose assignment and one active transition. No obstacle sweep in inspected transition. Several exit paths immediately hand pose control back; T03 must reconcile them with third-person restoration. |
-| `Assets/Scripts/Player/FirstPersonHands.cs` | Shows/hides placeholder hands and carried document; does not animate the humanoid player. Preserve carried-document presentation. |
-| `Assets/Scripts/Player/Interactor.cs` | Center-screen ray + legacy mouse click, `IInteractable` focus/prompt/highlight; UI exclusion uses default pointer-over query. Range/focus assumptions must be reassessed when camera is behind player. |
-| `Assets/Scripts/Player/WorkstationInteractor.cs` | Cursor-position ray and legacy click in desk mode; independently checks UI and clears focus on disable. CameraController owns enable/disable. |
-| `Assets/Scripts/ToggleCamera.cs` | Menu/level-selector camera transition code; not the exploration controller. Keep menu navigation outside runtime overhaul unless an actual dependency is found. |
+Until the user runs the setup menu and saves the scene, conversations behave as T02 plus the typewriter. `Office_Level2` is unconfigured.
 
-`Assets/Scenes/Office_Level1.unity` contains active Player with Rigidbody, CapsuleCollider, PlayerMovement, Interactor, and an active Visual child. PlayerMovement references the active movement joystick. One tagged Main Camera is active with FirstPersonCameraController; another tagged Main Camera is inactive. Do not infer two active cameras from duplicated names. Scene serialized references, not asset presence alone, decide the active setup.
+## Project and current camera
 
-The active Visual child contains an inactive Capsule: no enabled visible humanoid player mesh was found in this scene. `ThirdPersonCameraFollow` is absent from Office_Level1; it appears in Office_Level2 with `firstPersonMode: 1`. Merely enabling that script does not deliver the requested third-person experience.
+Unity 6000.4.5f1, URP 17.4.0, Input System 1.19.0, UGUI 2.0.0; verify live package files before API changes. Mixed legacy/Input System paths are enabled (`activeInputHandler: 2`). Main scene: `Assets/Scenes/Office_Level1.unity`. Office_Level2 configuration remains unverified.
 
-`HUD_Canvas` uses Screen Space Overlay (`m_RenderMode: 0`), a GraphicRaycaster, and CanvasScaler Scale With Screen Size (`m_UiScaleMode: 1`), reference 1920x1080, Match Width Or Height 0.5. Safe-area behavior is not certified by this serialized configuration. `Assets/InputSystem_Actions.inputactions` defines Player Move/Look/Interact and other actions, but PlayerMovement currently reads its custom joystick/legacy axes directly; no shared action-map ownership should be presumed.
+`Assets/Scripts/Player/FirstPersonCameraController.cs` controls normal exploration. `CameraController.cs` owns existing FirstPerson, Workstation, Interview, CorkboardSideQuest and ProfileViewer modes. Preserve serialized enum values, public callers, original player Rigidbody/capsule and scene transforms. `MoveCameraToViewpoint` already interpolates scripted position/rotation with one active transition. These viewpoint APIs remain in place. T02 reuses current control APIs for conversations; T05 verifies existing interaction cancellation and return behavior without requiring a new camera system.
 
-## Player model and animation assets
+## Retained T01 controls
 
-- **User decision during planning: use Elijah as the main character.** Existing files: `Assets/3D Models/npc_elijah/npc_elijah_static.fbx`, `npc_elijah_Idle.fbx`, `Elijah_Walking.fbx`, and `npc_elijah_static.fbm/elijah_texture.png`. `TownNpcDialogueLibrary.cs` already identifies the player as Elijah.
-- Static/idle importer metadata currently uses `animationType: 2` (Generic), `avatarSetup: 0`. Walking metadata uses `animationType: 3` (Humanoid), `avatarSetup: 1`; its explicit clip is named `walking_idle` with `loopTime: 0`. This mismatch needs T02 rig/avatar/clip inspection; filenames alone do not establish compatible looping idle/walk.
-- Do not mutate shared NPC importers blindly. Determine whether the chosen FBXs are used by any NPC/scene and whether animation-bearing Elijah mesh can provide a valid player avatar. Prefer a player-specific prefab/controller and reference existing textures/clips; coordinate any necessary importer changes. No rig conversion was performed in planning.
-- Alternative discovered before the Elijah decision: `Assets/Synty/PolygonOffice/Prefabs/Characters/SM_Chr_Business_Male_01.prefab`, using `Assets/Synty/PolygonOffice/Models/Character.fbx`. This is not the selected player and must not replace Elijah without the user's approval.
-- `Character.fbx.meta`: Humanoid (`animationType: 3`), animations not imported (`importAnimation: 0`). Prefab has Animator/Avatar references; its controller GUID did not resolve during inspection. Validate these in Unity before considering it ready.
-- Existing animation candidates are in `Assets/3D Models/npc_tutorial_static/`, `npc_jhun_static/`, and other npc folders, with idle/walking FBXs and some controllers/clips. They are not currently player locomotion wiring. Retarget only after checking avatar validity, root motion, clip permissions, and actual animation quality.
-- Synty importer `licenseType: Store` does not establish purchase/redistribution entitlement. Custom NPC licenses, triangle counts, skinning/bone cost, avatar validity, foot contact and Android cost remain unverified.
-- Use the selected Elijah assets first. If a verified rig defect blocks them, report it with a repair proposal before considering substitution; any external asset requires exact source URL, license and rig/performance assessment before importing. No external download or model change occurred in this session.
+- `Assets/Scripts/Mobile/VirtualJoystick.cs`: one MOVE pointer, dead zone/sensitivity, analog magnitude, immediate logical release, eased thumb return/press feedback and capture/release/focus reset.
+- `Assets/Scripts/Mobile/JoystickInputMath.cs`: production response math; `Tests/ControlsRegression` exercises it with 5,734 assertions.
+- `Assets/Scripts/Player/PlayerMovement.cs`: camera-relative Rigidbody motion retains analog strength, desktop keyboard fallback and horizontal stop on disable/focus loss.
+- `FirstPersonCameraController.cs`: UI-excluded single-finger swipe originating in the right 75%, resolution-normalized delta, desktop mouse fallback and existing mode guards.
+- `Assets/Scripts/Mobile/MobileInputGuard.cs`: fresh GraphicRaycaster UI hits, touch/joystick capture and native tap discrimination, reused by interaction/NPC/pickup routes.
+- `Assets/Scripts/Mobile/MobileControlsSafeArea.cs`: insets only its configured controls root.
+- `Assets/Editor/MobileControlsSetup.cs`: **Tools > TaxVenture > Configure Mobile Controls**, outside Play; uses Undo and marks scene dirty for user save. MOVE base/handle 280/112, center (260,240), travel 80, dead zone .12, sensitivity 1. No visible LOOK joystick or full-screen blocking overlay.
 
-## Interaction adapters and protected paper behavior
+Runtime and the setup tool compiled; production math regression passed. Touch routing, feel, setup/Undo, safe areas and gameplay remain user-run manual checks. Do not repeat already confirmed user work unnecessarily.
 
-- `Assets/Scripts/Interactables/IInteractable.cs`, `HighlightEffect.cs`, and `Assets/Scripts/UI/InteractionPromptUI.cs` supply existing focus/feedback seams.
-- `DeskInteractable.cs` uses a serialized desk viewpoint and `CameraController.EnterFirstPerson`. `CorkboardInteractable.cs` uses its viewpoint and game/tutorial callbacks. Side-quest board camera entry is separately managed by `CorkboardSideQuestManager.cs` and the camera's CorkboardSideQuest API; preserve both board uses.
-- `Assets/Scripts/UI/NotesPanelUI.cs` reuses `FloatingWindow`/`SwipeDownToClose`, refreshes tasks, and intentionally **does not** lock movement/camera today. The requested close reading mode changes that policy and belongs to T03, not a replacement notes/task implementation.
-- `Assets/Scripts/SideQuest1/TaxpayerProfileWorldPickup.cs`: existing paper drop/flutter/bob and collection-to-HUD flight.
-- `TaxpayerProfileCollectionHUD.cs`: collection/count/events and `TryGetCollectionScreenPoint()` resolving icon center for overlay/camera Canvas; reuse this anchor.
-- `CollectedProfilesWorldPanel.cs`: camera-local readable layout, icon-to-paper opening, mouse/touch dragging, frontmost selection with perspective compensation, viewport bounds, and staggered shrink/return closing. It cancels opening when closing early, rejects repeated closing clicks, and retains its lock through closing.
-- `CameraController.TryBeginProfileViewer/EndProfileViewer`: snapshot enabled states, hide/reset joystick, freeze player Rigidbody, unlock cursor, guard world raycasting, restore on exit/cleanup. These currently assume FirstPerson as exploration; T02/T03 must migrate them deliberately.
-- `ProfileDragCard.cs`, `ProfileCardTextLayout.cs`, `CorkboardSlot.cs`, `CorkboardSideQuestManager.cs`: separate side-quest cards, text fitting, free placement, tray entrance and pin feedback. Do not confuse viewer dragging with board placement.
-- `Assets/Prefabs/ProfileWorldPickup_TEMP.prefab` is reused for viewer visuals. Existing viewer papers disable pickup/legacy drag/colliders. No paper prefab/size/material redesign is authorized here.
+## Existing interactions and papers
+
+- `Assets/Scripts/Player/Interactor.cs`: current first-person center-ray interaction; `WorkstationInteractor.cs`: desk pointer route. Shared seams: `Assets/Scripts/Interactables/IInteractable.cs`, `HighlightEffect.cs`, `Assets/Scripts/UI/InteractionPromptUI.cs`.
+- `DeskInteractable.cs`, `CorkboardInteractable.cs`, `CorkboardSideQuestManager.cs`: separate viewpoint/callback routes; preserve both board uses and progression/tutorial events.
+- `Assets/Scripts/UI/NotesPanelUI.cs`: FloatingWindow/SwipeDownToClose and task refresh; currently permits movement/look. Preserve this existing policy; T05 checks notes closing and input behavior without redesigning it.
+- `Assets/Scripts/Player/FirstPersonHands.cs`: existing hands/carried-document presentation; preserve it.
+- `Assets/Scripts/SideQuest1/TaxpayerProfileWorldPickup.cs`: paper drop/bob and collection-to-HUD flight. `TaxpayerProfileCollectionHUD.cs`: count/events and `TryGetCollectionScreenPoint()` icon anchor; `CollectProfile` ignores duplicates and raises `OnAllProfilesCollected` once the count reaches its configured total of 4.
+- `CollectedProfilesWorldPanel.cs`: readable camera-local layout, folder opening, paper dragging/frontmost selection, viewport bounds and staggered return closing. Preserve early-close/repeated-click handling and locks through the final return.
+- `CameraController.TryBeginProfileViewer/EndProfileViewer`: enabled-state snapshot, Rigidbody freeze, joystick reset, cursor/world-raycast management and restoration. Reuse rather than add a competing lock owner.
+- `ProfileDragCard.cs`, `ProfileCardTextLayout.cs`, `CorkboardSlot.cs`, `CorkboardSideQuestManager.cs`: side-quest text, free placement, tray entrance and pin feedback, separate from viewer dragging.
+- `Assets/Prefabs/ProfileWorldPickup_TEMP.prefab`: shared viewer visuals with pickup/legacy drag/colliders disabled for viewer instances. Preserve paper sizes/materials and quest behavior.
+- `CorkboardSideQuestManager` exposes `CanInteract` (`sideQuestActive && !sideQuestCompleted`), guards its completion raise with `completionEventRaised`, and `BeginSideQuest` refuses to open without its camera, viewpoint, four valid slots, card prefab, tray and four collected profiles. Callers must treat a refused open as a failure, not a start.
 
 ## Dialogue data, paths, and outcomes
 
-Shared UI already exists: `Assets/Scripts/UI/DialogueUI.cs` accepts `List<DialogueLine>` and one completion callback, displays the full line immediately, advances through Continue, hides/unlocks at the end, clears state, then invokes the callback. No typewriter was found. Empty lists call completion synchronously. A second start can replace the first queue/callback: there is no active-session rejection guard.
+Shared `Assets/Scripts/UI/DialogueUI.cs` uses `DialogueSession.cs` for admission, line snapshots/sequencing and once-only terminal claims. `TryStartDialogue(lines, completed, cancelled, owner)` returns false for invalid, empty, busy or unavailable starts without calling success; `StartDialogue` remains a compatible bool wrapper. One active UI is admitted globally. UI is attached to its own panelRoot and supports starting while that panel is inactive. Serialized fields and Continue binding are retained. Disable/owner loss cancels, never completes. Terminal order (T03): session claim → panel hidden → optional presentation return → control release → completion or cancellation callback → `DialogueEnded`; `IsDialogueActive`/`IsAnyDialogueActive` stay true until release. CurrentLine/CurrentOwner, `IsLineTyping`, `IsReturning` and the start/line/line-revealed/end events are available to later tickets. `AdvanceDialogue()` now means one gesture (reveal while typing, otherwise advance/close); it had no external callers.
 
-`Assets/Scripts/Data/DialogueLine.cs` stores NPC/player speaker, text, portrait ID and speaker name; `DialogueBuilder.cs` builds linear sequences. `CaseFactory.BuildDialogue` converts JSON case dialogue; only the exact Npc speaker value maps to NPC. Existing data is not a generalized branch-node graph. Preserve current conditional outcome selection and any live question UI; do not invent a new dialogue-authoring engine.
+`CameraController.AcquireDialogueControls` snapshots existing controls (including actual main-camera input), joystick visibility and cursor, and (T03) freezes the player Rigidbody's constraints and velocity, restoring them on release regardless of mode; it changes no viewpoint/mode. Read-only T03 accessors: `MainCamera`, `PlayerRoot`, `Hands`, `TryGetFirstPersonView`. Release is idempotent and does not restore over a changed mode/active transition. Dialogue starts require an available normal exploration state, not a profile viewer or paused game. Native overlay/ownership behavior remains a user-run check.
+
+**All relevant office and town callers now use explicit admission.** Every one admits before FSM/progression changes, cancels owner-scoped, restores NPC eligibility on cancellation, and keeps success once-only. Office admission occurs before FSM/success changes. Client presentation has an explicit existing-case completion guard. Audit evaluation does not commit case fields until successful conversation; a rejected/cancelled consumed submission is kept pending on the auditor for click-to-resume. The existing duplicate `BeginFinalAudit` call in `AuditorSubmissionTray.cs` is neutralized by admission/state guards, not silently removed.
+
+`Assets/Scripts/Data/DialogueLine.cs` stores NPC/player speaker, text, portrait ID and speaker name; `DialogueBuilder.cs` builds linear sequences, attributing NPC lines to its configured name and player lines to "You". `CaseFactory.BuildDialogue` converts JSON case dialogue; only the exact Npc speaker value maps to NPC. Existing data is not a generalized branch-node graph. Preserve current conditional outcome selection and any live question UI; do not invent a new dialogue-authoring engine.
+
+`TownNpcDialogueLibrary` holds the four hardcoded town conversations. Its placeholder fallback for an unknown id is a **valid** one-line conversation, so callers that advance quest progress must gate on the `recognized` flag from `GetDialogueFor(npcId, displayName, out bool recognized)` or on `HasDialogueFor(npcId)`. The single-argument `GetDialogueFor` signature is unchanged; `TaxpayerNpcInteractable` is its only live caller.
 
 | Caller | Activation/content | Completion side effects to preserve |
 |---|---|---|
-| `Assets/Scripts/Interactables/ReceptionistInteractable.cs` | IInteractable, highlight, NPC FSM; case JSON greeting | Case-specific spoken flag, Completed NPC state, ReceiveCase game state, notes unlock, tutorial report. It pre-locks controls; its direct empty-content branch can bypass the UI's unlock. |
+| `Assets/Scripts/Interactables/ReceptionistInteractable.cs` | IInteractable, highlight, NPC FSM; case JSON greeting | Case-specific spoken flag, Completed NPC state, ReceiveCase game state, notes unlock, tutorial report. Admission precedes locks/progression; empty data does not complete the greeting. |
 | `ClientInteractable.cs` in same folder | IInteractable/NPC FSM; case interview lines and conditionally selected findings outcomes | Interview flag/tutorial report; presentation flag, outcome routing and guarded reward/result path. Completed interview does not mean all later client interaction is unavailable. |
 | `AuditorInteractable.cs` in same folder | IInteractable/NPC FSM; reminder/audit builder lines | Submission -> audit dialogue -> summary -> successful reward/case completion or retry/reset. Reminder returns Idle; success Completed; failure returns Idle. |
 | `ColleagueInteractable.cs` in same folder | IInteractable/highlight; builder text; local one-shot flag | Local completion rather than a shared NPC FSM. |
-| `Assets/Scripts/SideQuest1/TaxpayerNpcInteractable.cs` | Pointer clicks/NPC FSM; `TownNpcDialogueLibrary.cs` | Conversation completion marks Completed and drops that NPC's profile. Four taxpayer targets are separate from the office client's case interview. |
-| `TutorialNpcController.cs` in same folder | Pointer click and TownEvents, no NPC FSM | Collection enables guide; dialogue completion starts board; side-quest completion drives final dialogue/panel. |
+| `Assets/Scripts/SideQuest1/TaxpayerNpcInteractable.cs` | Pointer clicks/NPC FSM; `TownNpcDialogueLibrary` | Conversation completion drops that NPC's profile **then** marks Completed; a failed drop restores the prior state instead of retiring the NPC. The start is refused when the pickup is unassigned or `npcId` resolves to no profile or no authored dialogue, because completion is one-shot and gates the four-profile collection. Four taxpayer targets are separate from the office client's case interview. Exposes `HasBeenTalkedTo`/`IsInConversation`. |
+| `TutorialNpcController.cs` in same folder | Pointer click and TownEvents, no NPC FSM | Collection enables guide; intro completion opens the board, but the guide is retired only once `CorkboardSideQuestManager.CanInteract` confirms it opened; side-quest completion drives the final dialogue/panel once only, with the interrupted-final-guide retry retained. Exposes `HasAppeared`/`IsInConversation`/`HasStartedSideQuest`. |
 
-`Assets/Scripts/UI/InterviewClientUI.cs` still contains selectable questions/answer application. Current ClientInteractable uses DialogueUI and fixed interviewLines; Inspector wiring of legacy question UI remains to be confirmed before removing/adapting anything.
+`Assets/Scripts/UI/InterviewClientUI.cs` still contains selectable questions/answer application and is deliberately untouched. One serialized instance remains in the built scene with all bindings intact; its only two UnityEvent references are its own in-panel buttons calling `OnPresentationContinuePressed` and `OnFinishInterviewPressed`, which are not openers. No C# calls `Show()` or `ShowPresentation()`, and `ClientInteractable` uses the shared `DialogueUI`. Keep the component, its public method names and its question/answer code unless a later verified live caller requires adaptation.
 
 Town flow: taxpayer conversation -> profile pickup -> HUD collection/all-profiles event -> tutorial NPC -> corkboard -> completion events/popup and office-return indicator. `TownToOfficeTransition.cs` only reveals an indicator; the office-start call is commented. This overhaul must not silently change level/quest gates.
 
+## T05 integration fixes — implemented
+
+- **Popup requests during a conversation.** `CameraController` tracks when a conversation holds the controls (`AcquireDialogueControls` to release). While it does, `LockPlayerControls`/`UnlockPlayerControls` from popups record a deferred request instead of re-enabling look and movement. On release, a pending Locked keeps controls locked for the still-open popup, and a pending Unlocked restores first-person systems.
+- **Profile viewer refusals.** `TryBeginProfileViewer` also refuses during a conversation or while `firstPersonCamera` is disabled by a popup lock.
+- **Closing-tap suppression.** `MobileInputGuard.SuppressWorldTapsThisFrame()` runs whenever first-person systems are restored, a conversation releases, or the viewer ends. `TryGetWorldTap` ignores that frame, so the closing UI tap cannot reach `Interactor`/`WorkstationInteractor`.
+
+## T04 NPC markers — implemented, scene setup pending
+
+`NpcStatusMarker` (one per NPC, added by **Tools > TaxVenture > Configure NPC Markers**) draws an amber pulsing triangle for available and a green check for completed. It draws nothing when the NPC is unavailable, during any conversation, in non-first-person camera modes, outside 0.35–10 × NPC height, or when occluded. State comes only from each interactable's `INpcAvailabilitySource.Availability`, computed by pure `NpcAvailabilityRules`, and is refreshed on NPC FSM changes, dialogue start and end, and a 0.2 s poll. Markers are anchored above the measured head (`DialogueSpeakerFrames`) and billboarded, use shared procedural meshes, one material (`Assets/Materials/NpcStatusMarker.mat`, created by the tool) and property-block colours, and sit at the scene root on Ignore Raycast with no colliders. The existing `NpcVisualIndicator` body tint is unchanged.
+
 ## NPC indicators and progress dependencies
 
-`Assets/Scripts/FSM/NPC/NpcStateMachine.cs` initializes Idle in Start and emits changes. `NpcVisualIndicator.cs` subscribes and maps StateName strings to material colors. Existing color changes are not the requested overhead available/completed marker. Interactables own completion changes; DialogueUI does not mark NPCs complete itself.
+`Assets/Scripts/FSM/NPC/NpcStateMachine.cs` initializes Idle in Start and emits changes. `NpcVisualIndicator.cs` subscribes and maps StateName strings to material colors. Existing color changes are not the requested overhead available/completed marker. Interactables own completion changes; DialogueUI does not mark NPCs complete itself. T04 can read the status properties the town callers now expose instead of inferring availability from colors.
 
-Progression depends on `Assets/Scripts/FSM/GameStateMachine.cs`, `Assets/Scripts/Data/CaseProgressionManager.cs`, case data/loading, `TaskListProvider.cs`, `Assets/Scripts/RewardsSystem/PlayerProgressManager.cs`, and town events. Read-only historical audit reports duplicate global FSM/startup races and retry issues. A current source inspection confirmed two BeginFinalAudit calls in `AuditorSubmissionTray.cs`; runtime impact was not tested. Track these as integration risks, not permission to repair the entire progression system.
+Progression depends on `Assets/Scripts/FSM/GameStateMachine.cs`, `Assets/Scripts/Data/CaseProgressionManager.cs`, case data/loading, `TaskListProvider.cs`, `Assets/Scripts/RewardsSystem/PlayerProgressManager.cs`, and town events. Read-only historical audit reports duplicate global FSM/startup races and retry issues. Track these as integration risks, not permission to repair the entire progression system.
 
-## Evidence and testing limits
+## Evidence and test limits
 
-- This planning session performed source/scene/package/metadata inspection and documentation integrity checks only; no new gameplay, PlayMode, device, camera-collision, or model animation pass is claimed.
-- In the preceding paper work, direct C# compilation and numeric geometry/timing checks passed. User reported Phase 3 working. Phase 4/5 full manual acceptance has not been recorded; do not label them fully playtested.
-- Existing `Tests/VerifyProfileCards.ps1` checks paper assets/layout/material references. `Tests/ProgressionRegression/ProgressionRegression.csproj` checks PlayerProgressData, not dialogue/interview behavior.
-- Existing `Assets/Editor/CorkboardRegressionValidation.cs`, `PaperDropValidation.cs`, `PaperCollectionValidation.cs`, `PaperTrayValidation.cs` provide Unity preview/Editor checks; inspect their scope/version before using reports under Library as evidence.
-- Character asset/Canvas inspection details and outstanding measurements are recorded above and in IMPLEMENTATION_PLAN.md. Elijah is selected; exact rig validity, appearance fidelity, licenses, triangle counts, on-device performance and live safe-area/framing checks require T02/T05 verification.
+Full-project compilation (runtime and Editor) against the installed Unity 6000.4.5f1 `Managed` and `NetStandard` assemblies, using the project's generated `.csproj` source lists, defines and package references: baseline 0 errors, with T03 0 errors (2 pre-existing warnings). 610 production dialogue contract assertions passed (311 T02 + 299 T03); 5,734 production controls assertions passed. Actual Unity/device acceptance remains user-run. These are not gameplay passes.
+
+Existing targeted checks: `Tests/DialogueRegression/DialogueRegression.csproj` (DialogueSession, DialogueLine, DialogueBuilder, TownNpcDialogueLibrary, TaxpayerProfileDatabase, DialogueTerminalHandoff, DialogueAdvanceGate, DialogueRevealSchedule, DialogueShotMath); `Tests/ControlsRegression`; `Tests/VerifyProfileCards.ps1`; `Tests/ProgressionRegression/ProgressionRegression.csproj` (PlayerProgressData only); `Assets/Editor/CorkboardRegressionValidation.cs`, `PaperDropValidation.cs`, `PaperCollectionValidation.cs`, `PaperTrayValidation.cs`. Inspect scope/timestamps before using reports. Pending manual coverage includes the T03 setup and preview, shots per NPC route, tight spaces, typewriter and tap arbitration, cancel/return and input restoration, movement/swipe, all four taxpayer conversations and drops, guide/board flow, supported aspects/safe areas and Android multi-touch.
+
+Repository file conventions: HEAD stores LF; working-tree endings vary per file (e.g. `DialogueUI.cs`, `FirstPersonHands.cs` and `Documentation/**` are CRLF on disk). Preserve each file's existing endings and check from non-Windows shells with `git diff --ignore-cr-at-eol --numstat`.

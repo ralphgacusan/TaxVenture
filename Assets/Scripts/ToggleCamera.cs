@@ -28,9 +28,27 @@ public class ToggleCamera : MonoBehaviour
         mainCameraStartPosition = mainCam.transform.position;
         mainCameraStartRotation = mainCam.transform.rotation;
 
+        // Coming back from a finished level: open straight on the level select.
+        if (MenuEntry.ConsumeOpenLevelSelect())
+        {
+            ShowLevelSelectorImmediately();
+            return;
+        }
+
         // Start with Main Camera
         mainCam.gameObject.SetActive(true);
         levelSelectorCam.gameObject.SetActive(false);
+    }
+
+    /// <summary>Places both cameras at the level-select end pose with no transition.</summary>
+    public void ShowLevelSelectorImmediately()
+    {
+        mainCam.transform.position = mainCameraEndPoint.position;
+        mainCam.transform.rotation = mainCameraEndPoint.rotation;
+        levelSelectorCam.transform.position = levelSelectorEndPoint.position;
+        levelSelectorCam.transform.rotation = levelSelectorEndPoint.rotation;
+        mainCam.gameObject.SetActive(false);
+        levelSelectorCam.gameObject.SetActive(true);
     }
 
     // ==========================================

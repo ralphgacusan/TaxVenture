@@ -15,7 +15,9 @@ public class TaxCodeBookFloatingModel3D :
     MonoBehaviour,
     IPointerDownHandler,
     IDragHandler,
-    IPointerUpHandler
+    IPointerUpHandler,
+    IPointerEnterHandler,
+    IPointerExitHandler
 {
     [Header("Tax Code Book")]
 
@@ -77,6 +79,12 @@ public class TaxCodeBookFloatingModel3D :
 
     private bool isDragging;
     private bool hasDragTarget;
+
+    private bool isPointerOver;
+
+    private Vector2 pointerPosition;
+
+    private HighlightEffect highlightEffect;
 
     private Camera eventCamera;
 
@@ -145,8 +153,20 @@ public class TaxCodeBookFloatingModel3D :
     }
 
 
+    private void OnDisable()
+    {
+        isPointerOver = false;
+        SetOutlineFocused(false);
+    }
+
+
     private void Update()
     {
+        if (isPointerOver || isDragging)
+        {
+            UpdateOutlineFocus();
+        }
+
         if (!isDragging ||
             !hasDragTarget ||
             taxCodeBook == null)
@@ -181,12 +201,15 @@ public class TaxCodeBookFloatingModel3D :
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (!allowDragging ||
+        if (!isActiveAndEnabled ||
+            !allowDragging ||
             taxCodeBook == null ||
             mainCamera == null)
         {
             return;
         }
+
+        pointerPosition = eventData.position;
 
         eventCamera =
             eventData.pressEventCamera != null
@@ -250,6 +273,7 @@ public class TaxCodeBookFloatingModel3D :
 
         isDragging = true;
         hasDragTarget = true;
+        UpdateOutlineFocus();
 
         RestoreBookAppearance();
 
@@ -274,6 +298,27 @@ public class TaxCodeBookFloatingModel3D :
     }
 
 
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (!isActiveAndEnabled || !allowDragging)
+        {
+            return;
+        }
+
+        if (eventData != null)
+            pointerPosition = eventData.position;
+        isPointerOver = true;
+        UpdateOutlineFocus();
+    }
+
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        isPointerOver = false;
+        UpdateOutlineFocus();
+    }
+
+
     public void OnDrag(PointerEventData eventData)
     {
         if (!isDragging ||
@@ -281,6 +326,8 @@ public class TaxCodeBookFloatingModel3D :
         {
             return;
         }
+
+        pointerPosition = eventData.position;
 
         UpdateDragTarget(
             eventData.position
@@ -354,6 +401,8 @@ public class TaxCodeBookFloatingModel3D :
 
         isDragging = false;
         hasDragTarget = false;
+        isPointerOver = false;
+        UpdateOutlineFocus();
 
         DebugLog(
             "Tax code book dragging finished."
@@ -391,6 +440,12 @@ public class TaxCodeBookFloatingModel3D :
     {
         allowDragging = enabled;
 
+        if (!enabled)
+        {
+            isPointerOver = false;
+            SetOutlineFocused(false);
+        }
+
         DebugLog(
             "Dragging enabled: " +
             allowDragging
@@ -413,6 +468,8 @@ public class TaxCodeBookFloatingModel3D :
 
         isDragging = false;
         hasDragTarget = false;
+        isPointerOver = false;
+        SetOutlineFocused(false);
 
         RestoreBookAppearance();
 
@@ -430,6 +487,41 @@ public class TaxCodeBookFloatingModel3D :
                 "[TaxCodeBookFloatingModel3D] " +
                 message
             );
+        }
+    }
+
+
+    private void UpdateOutlineFocus()
+    {
+        bool pointerBlocked = isPointerOver &&
+            !isDragging &&
+            (DialogueUI.IsAnyDialogueActive ||
+             VirtualJoystick.BlocksWorldInput ||
+             MobileInputGuard.IsPointerOverUI(pointerPosition));
+
+        SetOutlineFocused(
+            isActiveAndEnabled &&
+            allowDragging &&
+            (isDragging || isPointerOver && !pointerBlocked)
+        );
+    }
+
+
+    private void SetOutlineFocused(bool focused)
+    {
+        if (focused && (!isActiveAndEnabled || !allowDragging))
+        {
+            return;
+        }
+
+        if (focused && highlightEffect == null && taxCodeBook != null)
+        {
+            highlightEffect = HighlightEffect.For(taxCodeBook);
+        }
+
+        if (highlightEffect != null)
+        {
+            highlightEffect.SetFocused(focused);
         }
     }
 }

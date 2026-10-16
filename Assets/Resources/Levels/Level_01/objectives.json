@@ -1,0 +1,46 @@
+{
+  "_readme": [
+    "Level 1 objectives: shown one step at a time in the HUD tracker (top center) and in full on the Notes paper.",
+    "Each objective is a main objective (big checkbox) with ordered steps (small checkboxes). Order = the order the player should do them.",
+    "A step is DONE when its 'trigger' happens. The current step is the first step that is not done.",
+    "'progress' (optional): \"profiles\" shows the live taxpayer-profile counter, e.g. (2/4).",
+    "'undoneBy' (optional): a trigger that unchecks the step again, e.g. the case folder coming back after a failed audit.",
+    "Edit text, order, steps or objectives freely; changes apply on the next Play. Invalid steps are skipped with a Console warning; if nothing is valid, a built-in copy of this list is used.",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "_triggers": [
+    "event:ProfileCollected        any taxpayer profile was collected",
+    "event:AllProfilesCollected    all taxpayer profiles collected (4)",
+    "event:TutorialGuideAppeared   the tutorial guide appeared in the plaza",
+    "event:TutorialGuideTalkedTo   the guide's talk finished and the corkboard side quest opened",
+    "event:SideQuestCompleted      the corkboard side quest was solved",
+    "event:ReceptionistTalkedTo    the receptionist conversation finished",
+    "event:CaseFolderOpened        the case folder was opened",
+    "event:TaxCodeBookOpened       the Tax Code Book was opened for the first time",
+    "event:TaxReturnCollected      the printed tax return was collected",
+    "event:CaseCompleted           the case was completed (Auditor approved)",
+    "event:CaseFolderStored        the desk case folder was dragged into the HUD folder icon (count 0 -> 1)",
+    "event:CaseFolderReturned      the case folder came back out of the HUD icon (failed audit / new case)",
+    "area:<scene path>             the player is inside that object's area; only checked while it is the current step; join several paths with |",
+    "state:<game state>            the game entered that state, e.g. state:ReviewDocumentsState, state:AnalyzeEvidenceState, state:StampAssessmentState, state:ComplianceAuditState, state:AuditSubmittedState, state:CaseCompleteState"
+  ],
+  "objectives": [
+    {
+      "title": "Finish Side Quest 1",
+      "steps": [
+        { "text": "Explore the plaza and talk to the 4 clients to get their taxpayer profiles.", "trigger": "event:AllProfilesCollected", "progress": "profiles" },
+        { "text": "Talk to the tutorial guide.", "trigger": "event:TutorialGuideTalkedTo" },
+        { "text": "Finish Side Quest 1 at the corkboard.", "trigger": "event:SideQuestCompleted" }
+      ]
+    },
+    {
+      "title": "Finish a Tax Case",
+      "steps": [
+        { "text": "Go to the office.", "trigger": "area:Environment/OfficeBuilding/Rooms/Reception/Floor|Environment/OfficeBuilding/Rooms/Reception/Doors" },
+        { "text": "Talk to the receptionist.", "trigger": "event:ReceptionistTalkedTo" },
+        { "text": "Go to the main office room, finish the tax case and drag the case folder to your folder icon.", "trigger": "event:CaseFolderStored", "undoneBy": "event:CaseFolderReturned" },
+        { "text": "Submit the case folder to the Auditor in his office.", "trigger": "state:CaseCompleteState" }
+      ]
+    }
+  ]
+}

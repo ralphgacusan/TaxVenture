@@ -8,32 +8,34 @@ using UnityEngine;
 /// - DialogueUI
 /// - NpcStateMachine (optional future expansion)
 /// </summary>
-[RequireComponent(typeof(HighlightEffect))]
-public class ColleagueInteractable : MonoBehaviour, IInteractable
+[RequireComponent(typeof(NpcStatusMarker))]
+public class ColleagueInteractable : MonoBehaviour, IInteractable, INpcAvailabilitySource
 {
     [SerializeField] private DialogueUI dialogueUI;
 
-    private HighlightEffect highlight;
     private bool hasSpoken = false;
+    private bool dialogueSessionActive;
 
-    private void Awake()
+    private void OnDisable()
     {
-        highlight = GetComponent<HighlightEffect>();
+        if (dialogueSessionActive && dialogueUI != null)
+        {
+            dialogueUI.CancelDialogueFor(this);
+        }
     }
 
     public void OnFocus()
     {
-        highlight.Highlight();
     }
 
     public void OnUnfocus()
     {
-        highlight.Unhighlight();
     }
 
     public void OnInteract()
     {
-        if (hasSpoken) return;
+        if (hasSpoken || dialogueSessionActive || dialogueUI == null) return;
+
         var lines = new DialogueBuilder("Colleague")
             .Npc(
                 "Hey! How's your workload today?",
@@ -51,13 +53,29 @@ public class ColleagueInteractable : MonoBehaviour, IInteractable
                 "Good luck with your cases!",
                 "Tutorial_NPC_Wow")
             .Build();
-        dialogueUI.StartDialogue(lines, OnDialogueFinished);
+
+        if (!dialogueUI.TryStartDialogue(
+            lines,
+            OnDialogueFinished,
+            OnDialogueCancelled,
+            this)) return;
+
+        dialogueSessionActive = true;
     }
 
     private void OnDialogueFinished()
     {
+        dialogueSessionActive = false;
         hasSpoken = true;
     }
+
+    private void OnDialogueCancelled()
+    {
+        dialogueSessionActive = false;
+    }
+
+    /// <summary>T04 marker state: one-shot small talk.</summary>
+    public NpcAvailability Availability => NpcAvailabilityRules.Colleague(hasSpoken);
 
     public string GetPromptText()
     {

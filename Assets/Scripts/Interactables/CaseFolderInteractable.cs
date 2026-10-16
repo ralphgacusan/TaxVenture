@@ -48,18 +48,15 @@ public class CaseFolderInteractable :
 
     public void OnUnfocus()
     {
-        if (CameraController.Instance.CurrentMode ==
-            CameraController.CameraMode.Workstation)
-        {
-            return;
-        }
-
         highlight.Unhighlight();
     }
 
 
     public void OnInteract()
     {
+        // Level order: the case starts only after the side quest (rewards.json).
+        if (!LevelGate.TryCase()) return;
+
         Debug.Log(
             "[CaseFolderInteractable] " +
             "Case Folder opened."
@@ -110,6 +107,7 @@ public class CaseFolderInteractable :
 
     public string GetPromptText()
     {
+        if (!LevelGate.CaseAllowed) return LevelGate.SideQuestFirstMessage;
         return "Click to open Case Folder";
     }
 }

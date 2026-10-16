@@ -53,6 +53,7 @@ public class OpenTaxCodeBookReturnToDesk :
 
 
     private Collider deskDropCollider;
+    private DeskDocumentAnimator deskAnimator;
 
 
     private void Awake()
@@ -75,6 +76,11 @@ public class OpenTaxCodeBookReturnToDesk :
                 "[OpenTaxCodeBookReturnToDesk] " +
                 "Closed tax code book is missing."
             );
+        }
+        else
+        {
+            deskAnimator =
+                closedTaxCodeBook.GetComponentInParent<DeskDocumentAnimator>(true);
         }
 
         if (deskDropBook == null)
@@ -138,36 +144,50 @@ public class OpenTaxCodeBookReturnToDesk :
 
     private void ReturnTaxCodeBookToDesk()
     {
-        Vector3 targetPosition =
-            originalPosition +
-            Vector3.up * dropHeightOffset;
-
         Quaternion targetRotation =
             Quaternion.Euler(originalRotation);
 
-        /*
-         * Restore the exact configured position,
-         * rotation, and scale.
-         */
-        closedTaxCodeBook.transform.localPosition =
-            originalPosition +
-            Vector3.up * dropHeightOffset;
+        void Finish()
+        {
+            /*
+             * Restore the exact configured position,
+             * rotation, and scale.
+             */
+            closedTaxCodeBook.transform.localPosition =
+                originalPosition +
+                Vector3.up * dropHeightOffset;
 
-        closedTaxCodeBook.transform.localRotation =
-            targetRotation;
+            closedTaxCodeBook.transform.localRotation =
+                targetRotation;
 
-        closedTaxCodeBook.transform.localScale =
-            originalScale;
-        /*
-         * Show the closed book and hide the open book.
-         */
-        closedTaxCodeBook.SetActive(true);
-        gameObject.SetActive(false);
+            closedTaxCodeBook.transform.localScale =
+                originalScale;
+            /*
+             * Show the closed book and hide the open book.
+             */
+            closedTaxCodeBook.SetActive(true);
+            gameObject.SetActive(false);
+
+            if (deskAnimator != null)
+                deskAnimator.PlaySettle(closedTaxCodeBook.transform);
+        }
 
         // Play paper sound when the open book closes.
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.PlayPaperSFX();
+        }
+
+        if (deskAnimator != null)
+        {
+            Transform parent = closedTaxCodeBook.transform.parent;
+            Vector3 localTarget = originalPosition + Vector3.up * dropHeightOffset;
+            Vector3 worldTarget = parent != null ? parent.TransformPoint(localTarget) : localTarget;
+            deskAnimator.PlayClose(transform, worldTarget, Finish);
+        }
+        else
+        {
+            Finish();
         }
 
         DebugLog(
@@ -196,6 +216,12 @@ public class OpenTaxCodeBookReturnToDesk :
         if (closedTaxCodeBook == null)
         {
             return;
+        }
+
+        if (deskAnimator != null)
+        {
+            deskAnimator.Complete(transform);
+            deskAnimator.Complete(closedTaxCodeBook.transform);
         }
 
         closedTaxCodeBook.transform.localPosition =

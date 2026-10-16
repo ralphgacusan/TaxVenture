@@ -7,6 +7,7 @@ using UnityEngine;
 public class DeskItemHighlight : MonoBehaviour
 {
     private HighlightEffect highlight;
+    private bool showRequested;
 
     private void Awake()
     {
@@ -22,8 +23,17 @@ public class DeskItemHighlight : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        if (showRequested)
+            ShowHighlight();
+    }
+
     public void ShowHighlight()
     {
+        showRequested = true;
+        highlight = HighlightEffect.For(this);
+
         if (highlight == null)
         {
             Debug.LogWarning(
@@ -36,11 +46,14 @@ public class DeskItemHighlight : MonoBehaviour
             return;
         }
 
-        highlight.Highlight();
+        highlight.RefreshTargets();
+        highlight.SetAffordance(true);
     }
 
     public void HideHighlight()
     {
+        showRequested = false;
+
         if (highlight == null)
         {
             Debug.LogWarning(
@@ -53,6 +66,6 @@ public class DeskItemHighlight : MonoBehaviour
             return;
         }
 
-        highlight.Unhighlight();
+        highlight.SetAffordance(false);
     }
 }

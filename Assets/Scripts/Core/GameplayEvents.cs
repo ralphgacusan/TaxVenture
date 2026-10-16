@@ -35,6 +35,12 @@ public static class GameplayEvents
     // Raised whenever the current case is fully completed.
     public static event Action OnCaseCompleted;
 
+    // Raised when the desk case folder is stored in the HUD folder icon
+    // (count 0 -> 1), and when it comes back out (failed audit / new case).
+    // Notification only: the HUD objectives listen.
+    public static event Action OnCaseFolderStored;
+    public static event Action OnCaseFolderReturned;
+
 
     public static void RaiseCaseFolderOpened()
         => OnCaseFolderOpened?.Invoke();
@@ -50,4 +56,10 @@ public static class GameplayEvents
 
     public static void RaiseCaseCompleted()
         => OnCaseCompleted?.Invoke();
+
+    public static void RaiseCaseFolderStored()
+        => OnCaseFolderStored?.Invoke();
+
+    public static void RaiseCaseFolderReturned()
+        => OnCaseFolderReturned?.Invoke();
 }

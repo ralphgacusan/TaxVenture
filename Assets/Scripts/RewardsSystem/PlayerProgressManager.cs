@@ -82,9 +82,35 @@ public class PlayerProgressManager : MonoBehaviour
             return;
         }
 
-        progress.totalExp += levelTotal.TotalExp;
-        progress.totalReputation += levelTotal.TotalReputation;
-        progress.RecordLevelCompletion(levelTotal.LevelId);
+        if (levelTotal.HasScore)
+        {
+            // Best result per level; only a passing run unlocks the next level,
+            // and the career totals grow only by improvements on the best.
+            var gain = progress.RecordLevelResult(
+                levelTotal.LevelId,
+                levelTotal.TotalExp,
+                levelTotal.TotalReputation,
+                levelTotal.MaxExp,
+                levelTotal.MaxReputation,
+                levelTotal.Passed,
+                levelTotal.Badges);
+
+            // Collected badges keep their best tier (bronze / silver / gold).
+            for (int i = 0; i < levelTotal.Badges.Count && i < levelTotal.BadgeTiers.Count; i++)
+                progress.RecordBadge(levelTotal.Badges[i], (int)levelTotal.BadgeTiers[i]);
+
+            Debug.Log(
+                $"[PlayerProgressManager] {levelTotal.LevelId}: {levelTotal.TotalExp}/{levelTotal.MaxExp} EXP, " +
+                $"{levelTotal.TotalReputation}/{levelTotal.MaxReputation} hearts, passed: {levelTotal.Passed}, " +
+                $"new best: {gain.newBest} (+{gain.expGain} EXP, +{gain.heartsGain} hearts to totals)."
+            );
+        }
+        else
+        {
+            progress.totalExp += levelTotal.TotalExp;
+            progress.totalReputation += levelTotal.TotalReputation;
+            progress.RecordLevelCompletion(levelTotal.LevelId);
+        }
 
         Debug.Log(
             $"[PlayerProgressManager] Applied level result. " +

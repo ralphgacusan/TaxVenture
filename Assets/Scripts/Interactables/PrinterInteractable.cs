@@ -9,7 +9,7 @@ using UnityEngine;
 ///
 /// RESPONSIBILITIES:
 /// - Track print-ready state
-/// - Swap to a distinct "ready" color, overriding normal highlight cues
+/// - Show a distinct "ready" color while preserving the focus outline
 /// - On interact (only when ready): mark the form picked up, show it in
 ///   FirstPersonHands' left hand, exit first-person automatically since
 ///   picking up paper happens standing at the printer (not seated)
@@ -49,15 +49,12 @@ public class PrinterInteractable : MonoBehaviour, IInteractable
 
     public void OnFocus()
     {
-        if (!isReady) highlight.Highlight();
-        // While ready, we skip the normal highlight material swap so the
-        // green "ready" color stays clearly visible rather than being
-        // overridden by Mat_Highlight.
+        highlight.Highlight();
     }
 
     public void OnUnfocus()
     {
-        if (!isReady) highlight.Unhighlight();
+        highlight.Unhighlight();
     }
 
     public void OnInteract()

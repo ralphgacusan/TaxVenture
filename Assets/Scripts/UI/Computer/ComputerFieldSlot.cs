@@ -183,6 +183,8 @@ public class ComputerFieldSlot :
         // Store value
         // -----------------------------------------------------
 
+        GetComponent<ValueTypeValidationFeedback>()?.ForceRestore();
+
         CurrentValue =
             value.AsFloat();
 

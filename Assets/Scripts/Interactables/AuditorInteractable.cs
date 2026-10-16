@@ -1,32 +1,39 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-[RequireComponent(typeof(HighlightEffect))]
+[RequireComponent(typeof(NpcStatusMarker))]
 [RequireComponent(typeof(NpcStateMachine))]
-public class AuditorInteractable : MonoBehaviour, IInteractable
+public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilitySource
 {
     [SerializeField] private DialogueUI dialogueUI;
     [SerializeField] private AuditSummaryPopupUI summaryPopupUI;
     [SerializeField] private AuditorSubmissionTray submissionTray;
 
-    private HighlightEffect highlight;
     private NpcStateMachine npcState;
+    private bool dialogueSessionActive;
+    private bool auditPending;
+    private CaseData pendingAuditCase;
 
     private void Awake()
     {
-        highlight = GetComponent<HighlightEffect>();
         npcState = GetComponent<NpcStateMachine>();
+    }
+
+    private void OnDisable()
+    {
+        if (dialogueSessionActive && dialogueUI != null)
+        {
+            dialogueUI.CancelDialogueFor(this);
+        }
     }
 
     public void OnFocus()
     {
-        highlight.Highlight();
         if (npcState.CurrentState is NpcIdleState) npcState.ChangeState(new NpcWaitingState());
     }
 
     public void OnUnfocus()
     {
-        highlight.Unhighlight();
         if (npcState.CurrentState is NpcWaitingState) npcState.ChangeState(new NpcIdleState());
     }
 
@@ -39,7 +46,15 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
     /// </summary>
     public void OnInteract()
     {
+        if (dialogueSessionActive || dialogueUI == null) return;
+
         CaseData data = CaseManager.Instance.CurrentCase;
+        if (auditPending && System.Object.ReferenceEquals(pendingAuditCase, data))
+        {
+            BeginFinalAudit();
+            return;
+        }
+        auditPending = false;
 
         bool requiresTaxReturn = data.filingStatus == FilingStatus.ReadyForFiling;
         bool alreadySubmitted = GameStateMachine.Instance.CurrentState is AuditSubmittedState
@@ -52,9 +67,6 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
             return; // audit already happened, nothing further to say here
         }
 
-        npcState.ChangeState(new NpcInteractState());
-        npcState.ChangeState(new NpcDialogueState());
-
         string reminder = requiresTaxReturn
             ? "Please submit both the Case Folder and the Tax Return when you're ready."
             : "Please submit the Case Folder when you're ready.";
@@ -63,7 +75,22 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
             .Npc(reminder, "Auditor_Default")
             .Build();
 
-        dialogueUI.StartDialogue(builder, () => npcState.ChangeState(new NpcIdleState()));
+        INpcState priorNpcState = npcState.CurrentState;
+        if (!dialogueUI.TryStartDialogue(
+            builder,
+            OnReminderConcluded,
+            () => OnDialogueCancelled(priorNpcState),
+            this)) return;
+
+        dialogueSessionActive = true;
+        npcState.ChangeState(new NpcInteractState());
+        npcState.ChangeState(new NpcDialogueState());
+    }
+
+    private void OnReminderConcluded()
+    {
+        dialogueSessionActive = false;
+        npcState.ChangeState(new NpcIdleState());
     }
 
     /// <summary>
@@ -75,23 +102,51 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
     /// </summary>
     public void BeginFinalAudit()
     {
+        if (CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null ||
+            GameStateMachine.Instance == null ||
+            GameStateMachine.Instance.CurrentState is AuditSubmittedState ||
+            GameStateMachine.Instance.CurrentState is CaseOutcomeState ||
+            GameStateMachine.Instance.CurrentState is ArchiveCaseState ||
+            GameStateMachine.Instance.CurrentState is CaseCompleteState)
+        {
+            return;
+        }
+
         CaseData data = CaseManager.Instance.CurrentCase;
+        // The tray has already accepted the folder. Keep a retry route on this
+        // NPC when admission is rejected or the conversation is cancelled.
+        pendingAuditCase = data;
+        auditPending = true;
+        if (dialogueSessionActive || dialogueUI == null || DialogueUI.IsAnyDialogueActive) return;
+        SubmissionResult result = EvaluateSubmission(data);
+        List<DialogueLine> lines = BuildAuditDialogue(result);
 
-        GameStateMachine.Instance.ChangeState(new AuditSubmittedState());
+        GameStateMachine gameStateMachine = GameStateMachine.Instance;
+        IGameState priorGameState = gameStateMachine.CurrentState;
+        INpcState priorNpcState = npcState.CurrentState;
+        var submittedState = new AuditSubmittedState();
 
+        if (!dialogueUI.TryStartDialogue(
+            lines,
+            () => OnDialogueConcluded(result),
+            () => OnAuditCancelled(
+                priorNpcState,
+                gameStateMachine,
+                priorGameState,
+                submittedState
+            ),
+            this)) return;
+
+        dialogueSessionActive = true;
         npcState.ChangeState(new NpcInteractState());
         npcState.ChangeState(new NpcDialogueState());
-
-        SubmissionResult result = EvaluateSubmission(data);
-        RunAuditDialogue(result);
+        gameStateMachine.ChangeState(submittedState);
     }
 
     private SubmissionResult EvaluateSubmission(CaseData data)
     {
         CaseAssessment correctVerdict = CaseVerdictEvaluator.DetermineCorrectVerdict(data);
         List<ComplianceIssue> issues = ComplianceChecker.RunCheck(data);
-
-        data.auditMistakeCount = issues.Count;
 
         // Single source of truth: zero issues == pass. This also implies the
         // verdict is correct in Level 1 since both checks key off the same
@@ -108,14 +163,10 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
             FalseIssues = new List<ComplianceIssue>()
         };
 
-        data.auditPassed = passed;
-        data.finalVerdictWasCorrect = passed;
-        data.finalMissedIssueCount = issues.Count;
-
         return result;
     }
 
-    private void RunAuditDialogue(SubmissionResult result)
+    private List<DialogueLine> BuildAuditDialogue(SubmissionResult result)
     {
         var builder = new DialogueBuilder("Auditor");
 
@@ -142,17 +193,69 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
                 "Auditor_Default");
         }
 
-        dialogueUI.StartDialogue(builder.Build(), () => OnDialogueConcluded(result));
+        return builder.Build();
     }
 
     private void OnDialogueConcluded(SubmissionResult result)
     {
+        dialogueSessionActive = false;
+        auditPending = false;
+        pendingAuditCase = null;
+
+        CaseData data = CaseManager.Instance.CurrentCase;
+        data.auditMistakeCount = result.MissedIssues.Count;
+        data.auditPassed = result.VerdictWasCorrect;
+        data.finalVerdictWasCorrect = result.VerdictWasCorrect;
+        data.finalMissedIssueCount = result.MissedIssues.Count;
+
+        // The Audit Summary card always shows the outcome: an APPROVED card
+        // that continues by itself (tap to skip), or the findings to fix.
         summaryPopupUI.Show(result.MissedIssues, () => OnSummaryClosed(result));
+    }
+
+    private void OnAuditCancelled(
+        INpcState priorNpcState,
+        GameStateMachine gameStateMachine,
+        IGameState priorGameState,
+        IGameState submittedState)
+    {
+        dialogueSessionActive = false;
+        RestoreNpcState(priorNpcState);
+
+        if (gameStateMachine != null &&
+            System.Object.ReferenceEquals(
+                gameStateMachine.CurrentState,
+                submittedState
+            ))
+        {
+            gameStateMachine.UnlockProgression();
+            gameStateMachine.ChangeState(priorGameState);
+        }
+    }
+
+    private void OnDialogueCancelled(INpcState priorNpcState)
+    {
+        dialogueSessionActive = false;
+        RestoreNpcState(priorNpcState);
+    }
+
+    private void RestoreNpcState(INpcState priorNpcState)
+    {
+        if (npcState == null) return;
+
+        npcState.ChangeState(priorNpcState is NpcCompletedState
+            ? priorNpcState
+            : new NpcIdleState());
     }
 
     private void OnSummaryClosed(SubmissionResult result)
     {
         bool passed = result.VerdictWasCorrect && result.MissedIssues.Count == 0;
+
+        // Level score: every audit counts; a failed one costs the case reward
+        // (mistakes found + one more submission, per rewards.json).
+        if (CaseProgressionManager.Instance != null)
+            CaseProgressionManager.Instance.RecordAuditAttempt(result.MissedIssues.Count, passed);
 
         if (passed)
         {
@@ -200,5 +303,22 @@ public class AuditorInteractable : MonoBehaviour, IInteractable
 
 
 
-    public string GetPromptText() => "Click to talk to the Auditor";
+    /// <summary>
+    /// T04 marker state: no marker for the pre-submission reminder; available
+    /// to resume an interrupted audit; completed once the audit is submitted.
+    /// </summary>
+    public NpcAvailability Availability
+    {
+        get
+        {
+            CaseData data = CaseManager.Instance != null ? CaseManager.Instance.CurrentCase : null;
+            IGameState state = GameStateMachine.Instance != null ? GameStateMachine.Instance.CurrentState : null;
+            bool submitted = state is AuditSubmittedState || state is CaseOutcomeState ||
+                             state is ArchiveCaseState || state is CaseCompleteState;
+            return NpcAvailabilityRules.Auditor(data != null,
+                auditPending && System.Object.ReferenceEquals(pendingAuditCase, data), submitted);
+        }
+    }
+
+    public string GetPromptText() => auditPending ? "Click to resume the audit" : "Click to talk to the Auditor";
 }

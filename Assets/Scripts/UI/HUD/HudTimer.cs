@@ -13,11 +13,21 @@ public class HudTimer : MonoBehaviour
     [SerializeField] private TextMeshProUGUI timerText;
 
     private float elapsedSeconds = 0f;
+    private int shownSeconds = -1;
+
+    /// <summary>Read-only elapsed time, used by the HUD objective tracker's clock.</summary>
+    public float ElapsedSeconds => elapsedSeconds;
 
     private void Update()
     {
         elapsedSeconds += Time.deltaTime;
-        var ts = System.TimeSpan.FromSeconds(elapsedSeconds);
-        timerText.text = $"{ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
+
+        // Only rebuild the text when the displayed second changes.
+        int whole = Mathf.FloorToInt(elapsedSeconds);
+        if (whole == shownSeconds) return;
+        shownSeconds = whole;
+        timerText.SetCharArray(clockBuffer, 0, HudTheme.FormatClock(clockBuffer, whole));
     }
+
+    private readonly char[] clockBuffer = new char[10];
 }

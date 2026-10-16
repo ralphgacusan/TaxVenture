@@ -77,6 +77,22 @@ public class NotesPanelUI : MonoBehaviour
 
 
     // =========================================================
+    // PAPER VIEW (Office HUD)
+    // =========================================================
+
+    /// <summary>
+    /// When set (Office_Level1, by OfficeHudRuntime), Notes renders as a
+    /// paper page of the level objectives and, like the taxpayer profile
+    /// viewer, locks walking/looking and hides the joysticks while open.
+    /// Other scenes keep the original text list and free movement.
+    /// </summary>
+    private NotesPaperView paperView;
+
+    // Set by ShowAt(): open where a dragged Notes paper was dropped.
+    private Vector2? pendingOpenAt;
+
+
+    // =========================================================
     // COMPLETED STATES
     // =========================================================
 
@@ -219,6 +235,10 @@ public class NotesPanelUI : MonoBehaviour
             GameStateMachine.Instance.OnStateChanged -=
                 HandleStateChanged;
         }
+
+        // The panel deactivates itself on Hide (panelRoot is this object),
+        // so this also covers any other way the panel gets disabled.
+        ReleaseViewerLock();
     }
 
 
@@ -353,6 +373,19 @@ public class NotesPanelUI : MonoBehaviour
 
 
         // -----------------------------------------------------
+        // Paper view: hold the player still while reading,
+        // exactly like the taxpayer profile viewer (movement,
+        // look and interaction off, joysticks hidden).
+        // At the desk/computer the player is already still.
+        // -----------------------------------------------------
+
+        if (paperView != null)
+        {
+            HudWindowLock.Acquire(this);
+        }
+
+
+        // -----------------------------------------------------
         // Open the existing FloatingWindow.
         //
         // No new FloatingWindow is created.
@@ -360,7 +393,15 @@ public class NotesPanelUI : MonoBehaviour
 
         if (floatingWindow != null)
         {
-            floatingWindow.OpenWindow();
+            if (pendingOpenAt.HasValue)
+            {
+                floatingWindow.SetPaperOpenOrigin(pendingOpenAt.Value);
+                floatingWindow.OpenWindowAtScreenPosition(pendingOpenAt.Value);
+            }
+            else
+            {
+                floatingWindow.OpenWindow();
+            }
         }
         else
         {
@@ -373,6 +414,8 @@ public class NotesPanelUI : MonoBehaviour
                 panelRoot.SetActive(true);
             }
         }
+
+        pendingOpenAt = null;
 
 
         // -----------------------------------------------------
@@ -389,17 +432,8 @@ public class NotesPanelUI : MonoBehaviour
 
 
         // -----------------------------------------------------
-        // IMPORTANT:
-        //
-        // NO CameraController.LockPlayerControls() HERE.
-        //
-        // The player is now allowed to:
-        // - Walk
-        // - Look around
-        // - Move the camera
-        // - Continue normal gameplay
-        //
-        // Notes is only a floating UI window.
+        // Without the paper view (other scenes), Notes is only a
+        // floating UI window: the player can keep walking.
         // -----------------------------------------------------
 
 
@@ -438,23 +472,56 @@ public class NotesPanelUI : MonoBehaviour
 
 
         // -----------------------------------------------------
-        // Hide the visual panel.
+        // Hide the visual panel. The paper view lets the
+        // FloatingWindow animate out and deactivate itself.
         // -----------------------------------------------------
 
-        if (panelRoot != null)
+        if (panelRoot != null && (paperView == null || floatingWindow == null))
         {
             panelRoot.SetActive(false);
         }
 
 
         // -----------------------------------------------------
-        // IMPORTANT:
-        //
-        // NO CameraController.UnlockPlayerControls() HERE.
-        //
-        // Notes never locked the player, so Notes should never
-        // be responsible for unlocking the player either.
+        // Give back only the hold Notes itself took (paper view).
         // -----------------------------------------------------
+
+        ReleaseViewerLock();
+    }
+
+
+    private void ReleaseViewerLock()
+    {
+        HudWindowLock.Release(this);
+    }
+
+
+    /// <summary>True while Notes is open (a closing paper counts as closed).</summary>
+    public bool IsOpen =>
+        floatingWindow != null ? floatingWindow.IsOpen() : panelRoot != null && panelRoot.activeSelf;
+
+    /// <summary>
+    /// Opens Notes where a Notes paper dragged out of its HUD icon was
+    /// dropped. Returns false when Notes is already open.
+    /// </summary>
+    public bool ShowAt(Vector2 screenPosition)
+    {
+        if (IsOpen)
+        {
+            return false;
+        }
+
+        pendingOpenAt = screenPosition;
+        Show();
+        return true;
+    }
+
+    /// <summary>
+    /// Switches Notes to the paper objectives page (called by OfficeHudRuntime).
+    /// </summary>
+    public void UsePaperView(NotesPaperView view)
+    {
+        paperView = view;
     }
 
 
@@ -475,8 +542,9 @@ public class NotesPanelUI : MonoBehaviour
         // -----------------------------------------------------
 
         bool isOpen =
-            panelRoot != null &&
-            panelRoot.activeSelf;
+            paperView != null && floatingWindow != null
+                ? floatingWindow.IsOpen()
+                : panelRoot != null && panelRoot.activeSelf;
 
 
         // -----------------------------------------------------
@@ -500,6 +568,13 @@ public class NotesPanelUI : MonoBehaviour
 
     private void RenderTasks()
     {
+        // Paper view renders the level objectives itself.
+        if (paperView != null)
+        {
+            paperView.Render();
+            return;
+        }
+
         if (objectivesText == null)
         {
             return;
@@ -518,17 +593,28 @@ public class NotesPanelUI : MonoBehaviour
         sb.AppendLine();
 
 
-        foreach (TaskDefinition task in tasks)
+        // Shared presentation rule (TaskProgress): a task is done once the
+        // game has entered its state; the first unfinished task is "now".
+        TaskProgressSnapshot progress = TaskProgress.Evaluate(
+            tasks,
+            task => task.StateType != null && completedStates.Contains(task.StateType)
+        );
+
+
+        for (int i = 0; i < tasks.Count; i++)
         {
-            string marker =
-                completedStates.Contains(task.StateType)
-                    ? "[DONE]"
-                    : "[ ]";
+            TaskDefinition task = tasks[i];
 
+            if (task.IsHeader)
+            {
+                sb.AppendLine(
+                    $"<b><color=#7A5A1E>{task.TaskDescription}</color></b>"
+                );
+                sb.AppendLine();
+                continue;
+            }
 
-            sb.AppendLine(
-                $"{marker} {task.TaskDescription}"
-            );
+            sb.AppendLine(FormatTaskRow(progress.Status[i], task.TaskDescription));
         }
 
 
@@ -540,6 +626,26 @@ public class NotesPanelUI : MonoBehaviour
             $"[NotesPanelUI] {name}: " +
             "Task contents refreshed."
         );
+    }
+
+
+    /// <summary>
+    /// One Notes row: a small coloured status tag, then the task text.
+    /// Colours are dark enough to read on the white Notes paper.
+    /// </summary>
+    private static string FormatTaskRow(TaskRowStatus status, string text)
+    {
+        switch (status)
+        {
+            case TaskRowStatus.Done:
+                return $"<size=70%><b><color=#2E8B57>DONE</color></b></size><pos=150><color=#8A8A8A><s>{text}</s></color>";
+
+            case TaskRowStatus.Active:
+                return $"<size=70%><b><color=#1F6FB2>NOW</color></b></size><pos=150><b>{text}</b>";
+
+            default:
+                return $"<size=70%><b><color=#8A8A8A>TO DO</color></b></size><pos=150>{text}";
+        }
     }
 
 
@@ -569,6 +675,7 @@ public class NotesPanelUI : MonoBehaviour
     {
         completedStates.Clear();
     }
+
 
 
     // =========================================================

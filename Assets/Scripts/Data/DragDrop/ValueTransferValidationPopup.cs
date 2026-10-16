@@ -2,34 +2,84 @@ using UnityEngine;
 using TMPro;
 
 /// <summary>
-/// PURPOSE:
-/// Small placeholder popup shown when a placement is rejected. Does NOT
-/// clear the current selection — player can immediately try a different
-/// destination.
+/// Optional rejection text. A single unscaled deadline replaces earlier messages.
+/// Does not change selection or lock input; local badges own the drop animation.
 /// </summary>
 public class ValueTransferValidationPopup : MonoBehaviour
 {
     [SerializeField] private GameObject popupRoot;
     [SerializeField] private TextMeshProUGUI messageText;
 
-    private void OnEnable()
+    private ValueTransferManager subscribedManager;
+    private CanvasGroup visibility;
+    private bool showing;
+    private float hideAt;
+
+    private void Awake()
     {
-        ValueTransferManager.Instance.OnTransferFailed += HandleTransferFailed;
+        if (popupRoot == null)
+            return;
+        visibility = popupRoot.GetComponent<CanvasGroup>();
+        if (visibility == null)
+            visibility = popupRoot.AddComponent<CanvasGroup>();
+        visibility.blocksRaycasts = false;
+        visibility.interactable = false;
+        Hide();
+    }
+
+    private void OnEnable() => TrySubscribe();
+    private void Start() => TrySubscribe();
+
+    private void TrySubscribe()
+    {
+        if (subscribedManager != null || ValueTransferManager.Instance == null)
+            return;
+        subscribedManager = ValueTransferManager.Instance;
+        subscribedManager.OnTransferFailed += HandleTransferFailed;
+        subscribedManager.OnTransferSucceeded += HandleTransferSucceeded;
+        subscribedManager.OnSelectionChanged += HandleSelectionChanged;
     }
 
     private void OnDisable()
     {
-        if (ValueTransferManager.Instance != null)
-            ValueTransferManager.Instance.OnTransferFailed -= HandleTransferFailed;
+        if (subscribedManager != null)
+        {
+            subscribedManager.OnTransferFailed -= HandleTransferFailed;
+            subscribedManager.OnTransferSucceeded -= HandleTransferSucceeded;
+            subscribedManager.OnSelectionChanged -= HandleSelectionChanged;
+        }
+        subscribedManager = null;
+        Hide();
     }
 
     private void HandleTransferFailed(DataValue attempted, string reason)
     {
-        messageText.text = reason;
+        if (visibility == null || messageText == null)
+            return;
+        // Manager reasons describe the incoming type, not the destination's rule.
+        // Keep this text accurate without duplicating validation here.
+        messageText.text = "This value could not be placed here. Try another value or field.";
         popupRoot.SetActive(true);
-        CancelInvoke(nameof(Hide));
-        Invoke(nameof(Hide), 2f);
+        visibility.alpha = 1f;
+        showing = true;
+        hideAt = Time.unscaledTime + 2f;
     }
 
-    private void Hide() => popupRoot.SetActive(false);
+    private void HandleTransferSucceeded(DataValue value) => Hide();
+    private void HandleSelectionChanged(object source) => Hide();
+
+    private void Update()
+    {
+        if (showing && Time.unscaledTime >= hideAt)
+            Hide();
+    }
+
+    private void Hide()
+    {
+        showing = false;
+        // The scene puts this listener on popupRoot itself. Hiding by alpha
+        // keeps its subscriptions alive for the next failure.
+        if (visibility != null)
+            visibility.alpha = 0f;
+    }
 }
