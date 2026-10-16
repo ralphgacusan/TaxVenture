@@ -67,6 +67,15 @@ public class CaseDefinition
     // ---------- Supporting Documents (may include deliberately WRONG values) ----------
     public List<DocumentDefinition> documents = new List<DocumentDefinition>();
 
+    // ---------- Grading (what the Auditor checks) ----------
+    // The fields the player must fill in correctly, in the order the Auditor
+    // reports them, each with its hint and real-world cost. Empty = the
+    // Level 1 rules (residencyStatus, taxpayerType, incomeSource).
+    public List<RequiredFieldDefinition> requiredFields = new List<RequiredFieldDefinition>();
+
+    // What the Auditor says when the case is approved. Empty = built-in lines.
+    public List<string> auditorApprovedLines = new List<string>();
+
     // ---------- Consultant Findings placeholder text ----------
     public List<string> potentialIssues = new List<string>();
 
@@ -119,6 +128,28 @@ public class CaseDefinition
 
     // The end-of-level scene with the client (CaseFinale).
     public ClientFinaleDefinition clientFinale = new ClientFinaleDefinition();
+
+    /// <summary>The fields this case grades (its requiredFields, or the Level 1 defaults).</summary>
+    public List<RequiredFieldDefinition> GradedFields()
+    {
+        var fields = new List<RequiredFieldDefinition>();
+        if (requiredFields != null)
+            foreach (RequiredFieldDefinition field in requiredFields)
+                if (field != null && !string.IsNullOrWhiteSpace(field.key))
+                    fields.Add(field);
+        return fields.Count > 0 ? fields : CaseFieldRules.Defaults();
+    }
+
+    /// <summary>Real-world cost of getting a field wrong (requiredFields first, then mistakeCosts).</summary>
+    public string MistakeCostFor(string fieldKey)
+    {
+        if (string.IsNullOrEmpty(fieldKey)) return null;
+        if (requiredFields != null)
+            foreach (RequiredFieldDefinition field in requiredFields)
+                if (field != null && field.key == fieldKey && !string.IsNullOrWhiteSpace(field.mistakeCost))
+                    return field.mistakeCost;
+        return mistakeCosts != null ? mistakeCosts.For(fieldKey) : null;
+    }
 }
 
 /// <summary>

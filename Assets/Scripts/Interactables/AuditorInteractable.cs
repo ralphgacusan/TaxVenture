@@ -109,8 +109,11 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     public int FailedAudits => failedAudits;
 
     /// <summary>The three required answers as one comparable string.</summary>
-    private static string AnswerSignature(CaseData data) =>
-        data == null ? "" : $"{data.residencyStatus}|{data.taxpayerType}|{data.incomeSource}";
+    private static string AnswerSignature(CaseData data)
+    {
+        CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+        return CaseFieldRules.Signature(data, def != null ? def.GradedFields() : CaseFieldRules.Defaults());
+    }
 
     /// <summary>
     /// The same answers that already failed come back: the Auditor refuses
@@ -211,13 +214,24 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
 
         if (result.MissedIssues == null || result.MissedIssues.Count == 0)
         {
-            builder.Npc(
-                "Excellent work! I've reviewed your case, and everything is correct.",
-                "Auditor_Happy");
+            // The case JSON may give its own approval lines.
+            CaseDefinition approvedDef = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+            List<string> approved = approvedDef != null ? approvedDef.auditorApprovedLines : null;
+            bool said = false;
+            if (approved != null)
+                foreach (string line in approved)
+                    if (!string.IsNullOrWhiteSpace(line)) { builder.Npc(line, "Auditor_Happy"); said = true; }
 
-            builder.Npc(
-                "Congratulations! You know your taxpayer. You correctly identified their residency, classification, and how they earn their income — that's the foundation every accurate filing is built on.",
-                "Auditor_Happy");
+            if (!said)
+            {
+                builder.Npc(
+                    "Excellent work! I've reviewed your case, and everything is correct.",
+                    "Auditor_Happy");
+
+                builder.Npc(
+                    "Congratulations! You know your taxpayer. You correctly identified their residency, classification, and how they earn their income — that's the foundation every accurate filing is built on.",
+                    "Auditor_Happy");
+            }
         }
         else
         {

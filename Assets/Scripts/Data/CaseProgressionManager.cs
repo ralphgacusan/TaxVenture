@@ -1,6 +1,21 @@
 
 using UnityEngine;
 
+/// <summary>Where the level's case flow is (CaseProgressionManager.Phase).</summary>
+public enum LevelFlowPhase
+{
+    /// <summary>No level loaded yet.</summary>
+    NotStarted,
+    /// <summary>The level or a case could not be loaded (see the Console).</summary>
+    LoadFailed,
+    /// <summary>A case is being played.</summary>
+    CaseActive,
+    /// <summary>A case is finished and the Continue prompt for the next one is up.</summary>
+    AwaitingNextCase,
+    /// <summary>Every case is finished; the level result is showing.</summary>
+    LevelComplete
+}
+
 /// <summary>
 /// Drives case-to-case progression within a JSON-defined level.
 ///
@@ -31,6 +46,13 @@ using UnityEngine;
 /// │                               │
 /// │ NO  → LevelCompleteState      │
 /// └───────────────────────────────┘
+///
+/// The level's own phase is a small finite state machine (Phase, an
+/// EnumStateMachine&lt;LevelFlowPhase&gt;): NotStarted -> CaseActive ->
+/// (AwaitingNextCase -> CaseActive)* -> LevelComplete, with LoadFailed when
+/// JSON can't be loaded. Illegal steps (finishing a case twice, advancing
+/// when nothing is waiting, finishing after the level is complete) are
+/// refused by the machine instead of being guarded by loose flags.
 /// </summary>
 public class CaseProgressionManager : MonoBehaviour
 {
@@ -42,8 +64,35 @@ public class CaseProgressionManager : MonoBehaviour
 
     [SerializeField] private string startingLevelId = "Level_01";
 
-    private bool levelStarted = false;
-    private bool waitingForNextCase = false;
+    private readonly EnumStateMachine<LevelFlowPhase> flow = CreateFlow();
+
+    private static EnumStateMachine<LevelFlowPhase> CreateFlow()
+    {
+        var machine = new EnumStateMachine<LevelFlowPhase>("LevelFlow", LevelFlowPhase.NotStarted)
+            .Allow(LevelFlowPhase.NotStarted, LevelFlowPhase.CaseActive, LevelFlowPhase.LoadFailed)
+            .Allow(LevelFlowPhase.CaseActive, LevelFlowPhase.AwaitingNextCase, LevelFlowPhase.LevelComplete, LevelFlowPhase.LoadFailed)
+            .Allow(LevelFlowPhase.AwaitingNextCase, LevelFlowPhase.CaseActive, LevelFlowPhase.LoadFailed);
+        machine.Log = Debug.LogWarning;
+        return machine;
+    }
+
+    /// <summary>Where the level's case flow is.</summary>
+    public LevelFlowPhase Phase => flow.State;
+
+    /// <summary>(from, to) whenever the level phase changes.</summary>
+    public event System.Action<LevelFlowPhase, LevelFlowPhase> PhaseChanged
+    {
+        add => flow.Changed += value;
+        remove => flow.Changed -= value;
+    }
+
+    /// <summary>True once the level loaded and its first case started.</summary>
+    public bool LevelStarted =>
+        flow.State == LevelFlowPhase.CaseActive ||
+        flow.State == LevelFlowPhase.AwaitingNextCase ||
+        flow.State == LevelFlowPhase.LevelComplete;
+
+    private bool levelStarted => LevelStarted;
 
     // Add near your other private fields:
     private readonly LevelRewardAccumulator rewardAccumulator = new LevelRewardAccumulator();
@@ -122,8 +171,7 @@ public class CaseProgressionManager : MonoBehaviour
 
         levelId = levelIdToLoad;
 
-        levelStarted = false;
-        waitingForNextCase = false;
+        flow.Reset(LevelFlowPhase.NotStarted);
 
         var levelResult = JsonCaseLoader.LoadLevel(levelId);
 
@@ -134,6 +182,7 @@ public class CaseProgressionManager : MonoBehaviour
                 $"'{levelId}': {levelResult.ErrorMessage}"
             );
 
+            flow.TryChange(LevelFlowPhase.LoadFailed);
             return;
         }
 
@@ -146,6 +195,7 @@ public class CaseProgressionManager : MonoBehaviour
                 "but LevelDefinition is NULL."
             );
 
+            flow.TryChange(LevelFlowPhase.LoadFailed);
             return;
         }
 
@@ -157,12 +207,12 @@ public class CaseProgressionManager : MonoBehaviour
                 "contains no case IDs."
             );
 
+            flow.TryChange(LevelFlowPhase.LoadFailed);
             return;
         }
 
         currentCaseIndex = 0;
-        levelStarted = true;
-        rewardAccumulator.Reset(); // <-- add this line
+        rewardAccumulator.Reset();
 
         LevelRewardRules rules = LevelRewardRules.Load(levelId);
         Score.Reset(rules, currentLevel.caseIds.Count);
@@ -180,20 +230,21 @@ public class CaseProgressionManager : MonoBehaviour
             $"{currentLevel.caseIds.Count}"
         );
 
-        LoadCurrentCase();
+        flow.TryChange(LoadCurrentCase() ? LevelFlowPhase.CaseActive : LevelFlowPhase.LoadFailed);
     }
 
 
-    private void LoadCurrentCase()
+    /// <summary>Loads the case at currentCaseIndex and starts it. False when it could not.</summary>
+    private bool LoadCurrentCase()
     {
-        if (!levelStarted || currentLevel == null)
+        if (currentLevel == null)
         {
             Debug.LogError(
                 "[CaseProgressionManager] Cannot load case: " +
                 "level not initialized."
             );
 
-            return;
+            return false;
         }
 
         if (currentLevel.caseIds == null ||
@@ -204,7 +255,7 @@ public class CaseProgressionManager : MonoBehaviour
                 "no case IDs."
             );
 
-            return;
+            return false;
         }
 
         if (currentCaseIndex < 0 ||
@@ -215,7 +266,7 @@ public class CaseProgressionManager : MonoBehaviour
                 $"{currentCaseIndex}"
             );
 
-            return;
+            return false;
         }
 
         if (CaseManager.Instance == null)
@@ -224,7 +275,7 @@ public class CaseProgressionManager : MonoBehaviour
                 "[CaseProgressionManager] CaseManager.Instance is NULL."
             );
 
-            return;
+            return false;
         }
 
         if (GameStateMachine.Instance == null)
@@ -233,7 +284,7 @@ public class CaseProgressionManager : MonoBehaviour
                 "[CaseProgressionManager] GameStateMachine.Instance is NULL."
             );
 
-            return;
+            return false;
         }
 
         string caseId =
@@ -268,7 +319,7 @@ public class CaseProgressionManager : MonoBehaviour
                 "NULL CurrentCase."
             );
 
-            return;
+            return false;
         }
 
 
@@ -349,9 +400,6 @@ public class CaseProgressionManager : MonoBehaviour
         );
 
 
-        waitingForNextCase = false;
-
-
         // =========================================================
         // START NEW CASE
         // =========================================================
@@ -366,6 +414,7 @@ public class CaseProgressionManager : MonoBehaviour
             $"[CaseProgressionManager] Case " +
             $"{currentCaseIndex + 1} is now active."
         );
+        return true;
     }
 
     /// <summary>
@@ -407,6 +456,15 @@ public class CaseProgressionManager : MonoBehaviour
             return;
         }
 
+        if (flow.State != LevelFlowPhase.CaseActive)
+        {
+            Debug.LogWarning(
+                $"[CaseProgressionManager] Ignoring case completion while the level is {flow.State}."
+            );
+
+            return;
+        }
+
 
         if (currentLevel == null)
         {
@@ -424,17 +482,6 @@ public class CaseProgressionManager : MonoBehaviour
             Debug.LogError(
                 "[CaseProgressionManager] No cases exist " +
                 "in current level."
-            );
-
-            return;
-        }
-
-
-        if (waitingForNextCase)
-        {
-            Debug.LogWarning(
-                "[CaseProgressionManager] Already waiting for " +
-                "next case. Ignoring duplicate completion call."
             );
 
             return;
@@ -469,6 +516,7 @@ public class CaseProgressionManager : MonoBehaviour
                 "LevelCompleteState"
             );
 
+            flow.TryChange(LevelFlowPhase.LevelComplete);
             GameStateMachine.Instance.ChangeState(
                 new LevelCompleteState()
             );
@@ -481,7 +529,7 @@ public class CaseProgressionManager : MonoBehaviour
         // MORE CASES REMAIN
         // =========================================================
 
-        waitingForNextCase = true;
+        flow.TryChange(LevelFlowPhase.AwaitingNextCase);
 
         Debug.Log(
             "[CaseProgressionManager] More cases remain → " +
@@ -493,10 +541,10 @@ public class CaseProgressionManager : MonoBehaviour
         {
             Debug.LogError(
                 "[CaseProgressionManager] " +
-                "CaseCompletionUI.Instance is NULL."
+                "CaseCompletionUI.Instance is NULL. Starting the next case directly."
             );
 
-            waitingForNextCase = false;
+            AdvanceToNextCase();
 
             return;
         }
@@ -515,7 +563,7 @@ public class CaseProgressionManager : MonoBehaviour
         );
 
 
-        if (!waitingForNextCase)
+        if (flow.State != LevelFlowPhase.AwaitingNextCase)
         {
             Debug.LogWarning(
                 "[CaseProgressionManager] AdvanceToNextCase called " +
@@ -534,7 +582,7 @@ public class CaseProgressionManager : MonoBehaviour
                 "level data is NULL."
             );
 
-            waitingForNextCase = false;
+            flow.TryChange(LevelFlowPhase.LoadFailed);
 
             return;
         }
@@ -547,7 +595,7 @@ public class CaseProgressionManager : MonoBehaviour
                 "[CaseProgressionManager] Cannot advance past last case."
             );
 
-            waitingForNextCase = false;
+            flow.TryChange(LevelFlowPhase.CaseActive);
 
             return;
         }
@@ -563,7 +611,7 @@ public class CaseProgressionManager : MonoBehaviour
         );
 
 
-        LoadCurrentCase();
+        flow.TryChange(LoadCurrentCase() ? LevelFlowPhase.CaseActive : LevelFlowPhase.LoadFailed);
     }
 
 

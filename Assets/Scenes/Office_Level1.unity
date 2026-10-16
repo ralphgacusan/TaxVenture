@@ -24104,7 +24104,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 100000, guid: 1e040f4d7f4605842969aef342fe7b7c, type: 3}
       propertyPath: m_Name
-      value: SM_Bld_Door_Large_01_R
+      value: Office_Entrance_Door_2
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 1e040f4d7f4605842969aef342fe7b7c, type: 3}
       propertyPath: m_LocalPosition.x
@@ -49747,7 +49747,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 300.00003}
+  m_AnchoredPosition: {x: 0, y: 300.00015}
   m_SizeDelta: {x: 0, y: 800}
   m_Pivot: {x: 0, y: 1}
 --- !u!4 &819781689 stripped
@@ -67139,7 +67139,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 100000, guid: 2839c923b2adcc540b4f897effba5608, type: 3}
       propertyPath: m_Name
-      value: SM_Bld_Door_Large_01_L
+      value: Office_Entrance_Door_1
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 2839c923b2adcc540b4f897effba5608, type: 3}
       propertyPath: m_LocalPosition.x
@@ -111653,8 +111653,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 515171271}
   m_HandleRect: {fileID: 515171270}
   m_Direction: 2
-  m_Value: 0
-  m_Size: 0.625
+  m_Value: -0.00000040690105
+  m_Size: 0.62252927
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

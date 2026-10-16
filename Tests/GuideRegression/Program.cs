@@ -274,7 +274,9 @@ Check(worry.Count >= 3 && worry.Any(l => Str(l, "speaker") == "Npc") && worry.An
 foreach (var l in worry) Check(!GivesAway(Str(l, "text")) && !Labelled(Str(l, "text")), "Marie's after-audit talk gives clues, not answers");
 foreach (string key in new[] { "residencyStatus", "taxpayerType", "incomeSource" })
 {
-    string costLine = Str(caseFile.GetProperty("mistakeCosts"), key);
+    // The costs now live with each graded field (requiredFields[].mistakeCost).
+    string costLine = caseFile.GetProperty("requiredFields").EnumerateArray()
+        .Where(f => Str(f, "key") == key).Select(f => Str(f, "mistakeCost")).FirstOrDefault();
     Check(!string.IsNullOrWhiteSpace(costLine) && !GivesAway(costLine), "real-world cost for " + key + " exists and never gives the answer");
 }
 Check(!string.IsNullOrWhiteSpace(Str(caseFile, "clientFailedBubble")) && !string.IsNullOrWhiteSpace(Str(caseFile, "clientApprovedBubble")), "Marie reacts to both outcomes");
@@ -324,6 +326,115 @@ Check(oh.GetProperty("baseSeconds").GetSingle() == 300 && oh.GetProperty("minSec
 // The progressive order: the first lesson starts the level, the tour follows it.
 var lessonList = guide.GetProperty("lessons").EnumerateArray().ToList();
 Check(Str(lessonList[0], "when") == "start" && Str(lessonList[0].GetProperty("pages")[0], "show") == "welcome", "level opens with the welcome card");
+
+
+// ================= Backend polish: score cap, rules, cases, FSM, saves =================
+var capRules = new LevelRewardRules();
+var cap = new LevelScoreLedger();
+cap.Reset(capRules, 1);
+cap.AddSideQuest(0, null);
+cap.AddCase("Case 1", 0, 0);
+Check(cap.TotalExp == cap.MaxExp && cap.MaxExp == 150, "a perfect run fills the level exactly (150 / 150)");
+Check(cap.AddBonus("On-time bonus", 20, 0) == null && cap.TotalExp == 150, "an on-time bonus never lifts a full score above its maximum");
+var dented = new LevelScoreLedger();
+dented.Reset(capRules, 1);
+dented.AddSideQuest(0, null);
+dented.AddCase("Case 1", 2, 0);
+int dentedExp = dented.TotalExp;
+var bonus = dented.AddBonus("On-time bonus", 20, 0);
+Check(bonus != null && bonus.Exp == 20 && dented.TotalExp == dentedExp + 20, "a bonus wins back lost points");
+var topUp = dented.AddBonus("Again", 50, 0);
+Check(topUp != null && dented.TotalExp == dented.MaxExp && topUp.Exp == dented.MaxExp - dentedExp - 20, "a bonus only fills the room left");
+Check(dented.ExpPercent <= 100 && dented.HeartsPercent <= 100, "percentages never pass 100");
+var talks = new LevelScoreLedger();
+talks.Reset(capRules, 1);
+for (int i = 0; i < 9; i++) talks.AddConversation("npc_" + i, "Talk", null);
+Check(talks.TotalHearts == capRules.conversation.count * capRules.conversation.hearts, "client-talk hearts stop at conversation.count");
+
+var badRules = new LevelRewardRules { passingPercent = 0 };
+badRules.caseFile.exp = -5;
+badRules.sideQuest.heartsLostAtWrong = new[] { 5, 0, 3, 3 };
+var fixes = badRules.Sanitize();
+Check(badRules.passingPercent == 1 && badRules.caseFile.exp == 0 && fixes.Count >= 3, "bad rewards.json values are clamped and reported");
+Check(string.Join(",", badRules.sideQuest.heartsLostAtWrong) == "3,5", "heart thresholds are cleaned and sorted");
+
+var tuned = new LevelRewardRules.CaseRules { exp = 77, hearts = 4, wrongVerdictExp = 9 };
+var perfectCase = new CaseData { finalVerdictWasCorrect = true, finalMissedIssueCount = 0 };
+Check(RewardsCalculator.BuildResult(perfectCase, tuned).ExpEarned == 77, "case rewards come from rewards.json, not code");
+Check(RewardsCalculator.BuildResult(new CaseData(), tuned).ExpEarned == 9, "a wrong verdict earns wrongVerdictExp");
+
+var machine = new EnumStateMachine<LevelFlowPhase>("Test", LevelFlowPhase.NotStarted)
+    .Allow(LevelFlowPhase.NotStarted, LevelFlowPhase.CaseActive)
+    .Allow(LevelFlowPhase.CaseActive, LevelFlowPhase.AwaitingNextCase, LevelFlowPhase.LevelComplete)
+    .Allow(LevelFlowPhase.AwaitingNextCase, LevelFlowPhase.CaseActive);
+Check(!machine.TryChange(LevelFlowPhase.LevelComplete) && machine.Is(LevelFlowPhase.NotStarted), "an illegal level step is refused");
+var heard = new List<string>();
+machine.Changed += (from, to) =>
+{
+    heard.Add(to.ToString());
+    if (to == LevelFlowPhase.CaseActive && heard.Count == 1) machine.TryChange(LevelFlowPhase.LevelComplete);
+};
+machine.TryChange(LevelFlowPhase.CaseActive);
+Check(string.Join(">", heard) == "CaseActive>LevelComplete" && machine.Is(LevelFlowPhase.LevelComplete),
+      "a change asked for inside a listener runs after, in order");
+
+string saveDir = Path.Combine(Path.GetTempPath(), "tv_save_" + Guid.NewGuid().ToString("N"));
+var store = new SaveFileStore(Path.Combine(saveDir, "progress.json"));
+store.Write("first");
+store.Write("second");
+Check(File.ReadAllText(store.FilePath) == "second" && File.ReadAllText(store.BackupPath) == "first" && !File.Exists(store.TempPath),
+      "saves are written atomically and keep the previous one as a backup");
+File.WriteAllText(store.FilePath, "garbage");
+string read = store.Read(t => t != "garbage", out bool fromBackup, out _);
+Check(read == "first" && fromBackup && File.Exists(store.RejectedPath), "a bad save falls back to the backup and is kept aside");
+Check(SaveFileStore.SignatureMatches("payload", SaveFileStore.Sign("payload")) &&
+      !SaveFileStore.SignatureMatches("payload!", SaveFileStore.Sign("payload")), "edited saves fail the signature check");
+Directory.Delete(saveDir, true);
+
+var repaired = new PlayerProgressData
+{
+    saveVersion = 2,
+    totalExp = -40,
+    levelRecords = new List<LevelRecord>
+    {
+        new LevelRecord { levelId = "Level_01", bestExp = 999, maxExp = 150, bestHearts = 3, maxHearts = 12, passed = true },
+        new LevelRecord { levelId = "Level_01", bestExp = 10, maxExp = 150, attempts = 2 }
+    },
+    badgeRecords = new List<BadgeRecord> { new BadgeRecord { badgeId = "b", tier = 9 }, new BadgeRecord { badgeId = "b", tier = 1 } }
+};
+repaired.Normalize();
+Check(repaired.levelRecords.Count == 1 && repaired.GetRecord("Level_01").bestExp == 150 && repaired.totalExp == 0,
+      "impossible save values are repaired (best above maximum, negative totals, duplicates)");
+Check(repaired.IsLevelPassed("Level_01") && repaired.IsLevelUnlocked(2) && repaired.GetBadgeTier("b") == 3,
+      "a passed record keeps its level passed; badge tiers stay 0..3");
+Check(repaired.saveVersion == PlayerProgressData.CurrentSaveVersion, "old saves are upgraded to the current version");
+
+var fieldsJson = caseFile.GetProperty("requiredFields").EnumerateArray().ToList();
+var answerJson = caseFile.GetProperty("answerKey");
+Check(fieldsJson.Count == 3, "case_001 lists its three graded fields in JSON");
+foreach (var f in fieldsJson)
+{
+    string key = Str(f, "key");
+    Type enumType = CaseFieldRules.EnumType(key);
+    Check(enumType != null && Enum.IsDefined(enumType, answerJson.GetProperty(key).GetString()) &&
+          !string.IsNullOrWhiteSpace(Str(f, "hint")) && !string.IsNullOrWhiteSpace(Str(f, "mistakeCost")),
+          "graded field " + key + " has a valid answer, a hint and a cost");
+}
+var customCase = new CaseDefinition
+{
+    answerKey = new AnswerKeyDefinition { numberOfEmployers = "MultipleEmployers" },
+    requiredFields = new List<RequiredFieldDefinition> { new RequiredFieldDefinition { key = "numberOfEmployers", hint = "Count the employers." } }
+};
+var customData = new CaseData { numberOfEmployers = EmployerCount.OneEmployer };
+var customIssues = ComplianceChecker.RunCheck(customData, customCase);
+Check(customIssues.Count == 1 && customIssues[0].FieldKey == "numberOfEmployers", "the Auditor grades what the case JSON lists");
+customData.numberOfEmployers = EmployerCount.MultipleEmployers;
+Check(ComplianceChecker.RunCheck(customData, customCase).Count == 0 &&
+      CaseVerdictEvaluator.DetermineCorrectVerdict(customData, customCase) == CaseAssessment.ReadyForFiling,
+      "a JSON-defined field passes once it is right");
+Check(CaseFieldRules.AnswerProblem(new AnswerKeyDefinition { taxOption = "GraduatedIncomeTax" }, "taxOption") != null,
+      "a misspelt answer is caught when the case loads");
+Check(new CaseData().fullName == "" && new CaseData().potentialIssuesIdentified.Count == 0, "CaseData has no built-in case content");
 
 Console.WriteLine(fails == 0 ? $"GuideRegression: {checks} checks PASS" : $"GuideRegression: {fails} of {checks} FAILED");
 return fails == 0 ? 0 : 1;

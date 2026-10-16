@@ -10,7 +10,7 @@
     "  (the side quest stays done); the player starts outside the office front door, ready to walk in,",
     "  and a new deadline of (time allowed x nextMorningExtraFactor). Only the on-time bonus is lost.",
     "warnMinutes: Arthur warns when this many in-game minutes are left. amberRealSeconds / redRealSeconds: when the countdown turns amber / red.",
-    "onTimeBonusExp / onTimeBonusHearts: extra reward for handing the case in before the first deadline (on top of the level maximum).",
+    "onTimeBonusExp / onTimeBonusHearts: extra reward for handing the case in before the first deadline. It can win back points lost elsewhere, but the level score never goes above its maximum (a perfect run is already full).",
     "arthur...: what Arthur says ({minutes} = minutes left, {deadline} = leaving time). Fields starting with '_' are notes."
   ],
   "enabled": true,

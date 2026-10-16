@@ -462,11 +462,29 @@
   "clientApprovedBubble": "My file's approved? Thank you so much! Karaoke is on me this weekend!",
   "clientApprovedPortrait": "Client1_Marie_Happy",
 
-  "mistakeCosts": {
-    "residencyStatus": "get where Marie belongs and lives wrong, and she could be taxed on the wrong income, or miss what she's owed.",
-    "taxpayerType": "the wrong taxpayer type puts Marie's return under the wrong rules and forms, and that can mean penalties she doesn't deserve.",
-    "incomeSource": "mix up how Marie earns her money, and her return reports the wrong income, with surcharges and interest to follow."
-  },
+  "_requiredFields": "What the Auditor grades, in this order. key = residencyStatus, taxpayerType, incomeSource, numberOfEmployers, businessRegistration, taxOption or requiredForm (its answer comes from answerKey and must be a valid value, or the case will not load). hint = the Auditor's line when it is missing or wrong (never the answer). mistakeCost = what it would mean in real life (Audit Summary). Leave the list out to use the Level 1 three.",
+  "requiredFields": [
+    {
+      "key": "residencyStatus",
+      "hint": "Review the taxpayer's background and living situation.",
+      "mistakeCost": "get where Marie belongs and lives wrong, and she could be taxed on the wrong income, or miss what she's owed."
+    },
+    {
+      "key": "taxpayerType",
+      "hint": "Look for details that help identify the taxpayer's classification.",
+      "mistakeCost": "the wrong taxpayer type puts Marie's return under the wrong rules and forms, and that can mean penalties she doesn't deserve."
+    },
+    {
+      "key": "incomeSource",
+      "hint": "Review how the taxpayer earns income.",
+      "mistakeCost": "mix up how Marie earns her money, and her return reports the wrong income, with surcharges and interest to follow."
+    }
+  ],
+  "_auditorApprovedLines": "What the Auditor says when the case is approved (in order). Leave empty for the built-in lines.",
+  "auditorApprovedLines": [
+    "Excellent work! I've reviewed your case, and everything is correct.",
+    "Congratulations! You know your taxpayer. You correctly identified their residency, classification, and how they earn their income — that's the foundation every accurate filing is built on."
+  ],
 
   "auditorRetryLines": [
     "This case isn't quite ready yet. Take another look, and don't worry: you can go back and work through it again.",

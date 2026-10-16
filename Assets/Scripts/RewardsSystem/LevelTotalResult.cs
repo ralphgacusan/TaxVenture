@@ -7,6 +7,9 @@ using System.Collections.Generic;
 /// </summary>
 public class LevelTotalResult
 {
+    /// <summary>Unique per finished run, so saving it twice applies it once.</summary>
+    public readonly string RunId = System.Guid.NewGuid().ToString("N");
+
     public string LevelId;
     public int TotalExp;
     public int TotalReputation;

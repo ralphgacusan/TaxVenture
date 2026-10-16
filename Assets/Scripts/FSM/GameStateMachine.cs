@@ -45,6 +45,15 @@ public class GameStateMachine : MonoBehaviour
 
     public IGameState CurrentState { get; private set; }
 
+    // A state's Enter (or an OnStateChanged listener) may ask for the next
+    // state, e.g. CaseCompleteState -> LevelCompleteState. Those requests
+    // wait here until the current transition has fully finished, so
+    // listeners always hear the states in order and the last event they
+    // hear is always CurrentState.
+    private readonly System.Collections.Generic.Queue<IGameState> pendingStates =
+        new System.Collections.Generic.Queue<IGameState>();
+    private bool transitioning;
+
     private void Awake()
     {
         Instance = this;
@@ -52,11 +61,16 @@ public class GameStateMachine : MonoBehaviour
 
     private void Start()
     {
-        // The game always begins at ReceiveCaseState, per the design document's
-        // gameplay loop starting point. This is the ONLY place a state is
-        // hardcoded — every subsequent transition is requested by the states
-        // themselves or by interactables, never hardcoded here.
-        ChangeState(new IdleGameState());
+        // The machine waits in Idle until the level starts the first case.
+        // CaseProgressionManager may already have done that in its own Start
+        // (Start order between objects is not fixed), so never overwrite a
+        // state that is already set.
+        if (CurrentState == null) ChangeState(new IdleGameState());
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
     }
 
     /// <summary>
@@ -84,13 +98,46 @@ public class GameStateMachine : MonoBehaviour
             return;
         }
 
+        if (transitioning)
+        {
+            pendingStates.Enqueue(newState);
+            return;
+        }
+
+        Transition(newState);
+        while (pendingStates.Count > 0)
+        {
+            IGameState next = pendingStates.Dequeue();
+            if (progressionLocked && !IsForwardLockedState(next))
+            {
+                Debug.LogWarning($"[GameStateMachine] Ignored queued ChangeState({next.StateName}) — progression is locked.");
+                continue;
+            }
+            Transition(next);
+        }
+    }
+
+    private void Transition(IGameState newState)
+    {
         Debug.Log($"[GameStateMachine] {CurrentState?.StateName ?? "None"} -> {newState.StateName}");
 
-        CurrentState?.Exit();
-        CurrentState = newState;
-        CurrentState.Enter();
-
-        OnStateChanged?.Invoke(CurrentState);
+        transitioning = true;
+        try
+        {
+            CurrentState?.Exit();
+            CurrentState = newState;
+            CurrentState.Enter();
+            OnStateChanged?.Invoke(CurrentState);
+        }
+        catch (Exception e)
+        {
+            // A broken state or listener must not wedge the machine.
+            Debug.LogException(e);
+        }
+        finally
+        {
+            transitioning = false;
+        }
     }
     /// <summary>
     /// True while the machine is paused (CurrentState is retained but not ticked,

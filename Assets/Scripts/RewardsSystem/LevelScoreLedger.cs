@@ -8,7 +8,10 @@ public enum ScoreSource
     Conversation,
     SideQuest,
     Case,
-    /// <summary>Extra reward on top of the level maximum (e.g. on-time bonus).</summary>
+    /// <summary>
+    /// Extra reward (e.g. on-time bonus). It can win back points lost
+    /// elsewhere but never lifts the level score above its maximum.
+    /// </summary>
     Bonus,
     /// <summary>A deduction (e.g. a late case); never takes the totals below zero.</summary>
     Penalty
@@ -40,6 +43,14 @@ public sealed class ScoreEntry
 ///
 /// EntryAdded is a presentation hook (HUD notices / effects); listeners must
 /// not change rewards.
+///
+/// LIMITS (the score can never read like 170 / 150):
+/// - TotalExp / TotalHearts always stay between 0 and MaxExp / MaxHearts.
+/// - A bonus only fills the room left below the maximum; when there is no
+///   room it adds nothing (no entry, no notice).
+/// - Client-talk hearts stop after conversation.count different clients.
+/// - Every amount is clamped to a sane range, so a broken rewards.json or
+///   a bad caller can't overflow the totals.
 /// </summary>
 public sealed class LevelScoreLedger
 {
@@ -51,11 +62,17 @@ public sealed class LevelScoreLedger
     private readonly List<string> badgeNames = new List<string>();
     private readonly List<BadgeTier> badgeTiers = new List<BadgeTier>();
 
+    /// <summary>Largest amount any single reward may carry (guards int overflow).</summary>
+    public const int MaxSingleAmount = 1000000;
+
     public LevelRewardRules Rules { get; private set; } = new LevelRewardRules();
     public int TotalExp { get; private set; }
     public int TotalHearts { get; private set; }
     public int MaxExp { get; private set; }
     public int MaxHearts { get; private set; }
+    /// <summary>EXP / hearts that bonuses actually added (after the cap).</summary>
+    public int BonusExp { get; private set; }
+    public int BonusHearts { get; private set; }
     public IReadOnlyList<ScoreEntry> Entries => entries;
     public IReadOnlyList<string> Badges => badges;
     public IReadOnlyList<string> BadgeNames => badgeNames;
@@ -77,6 +94,8 @@ public sealed class LevelScoreLedger
         badgeTiers.Clear();
         TotalExp = 0;
         TotalHearts = 0;
+        BonusExp = 0;
+        BonusHearts = 0;
         SideQuestScored = false;
         MaxExp = LevelScoring.MaxExp(Rules, cases);
         MaxHearts = LevelScoring.MaxHearts(Rules, cases);
@@ -85,7 +104,10 @@ public sealed class LevelScoreLedger
     /// <summary>+hearts for finishing a client conversation (once per client).</summary>
     public ScoreEntry AddConversation(string npcId, string label, Vector3? origin)
     {
-        if (string.IsNullOrEmpty(npcId) || !talkedTo.Add(npcId)) return null;
+        if (string.IsNullOrEmpty(npcId) || talkedTo.Contains(npcId)) return null;
+        // Only as many clients as the level counts toward its maximum.
+        if (talkedTo.Count >= Rules.conversation.count) return null;
+        talkedTo.Add(npcId);
         return Add(new ScoreEntry
         {
             Source = ScoreSource.Conversation,
@@ -140,23 +162,31 @@ public sealed class LevelScoreLedger
         });
     }
 
-    /// <summary>A bonus on top of the level maximum (the maximum is not raised).</summary>
+    /// <summary>
+    /// A bonus that fills only the room left below the level maximum (the
+    /// maximum is not raised). Returns null when it adds nothing.
+    /// </summary>
     public ScoreEntry AddBonus(string label, int exp, int hearts)
     {
+        int addExp = Math.Min(Clamp(exp), Math.Max(0, MaxExp - TotalExp));
+        int addHearts = Math.Min(Clamp(hearts), Math.Max(0, MaxHearts - TotalHearts));
+        if (addExp == 0 && addHearts == 0) return null;
+        BonusExp += addExp;
+        BonusHearts += addHearts;
         return Add(new ScoreEntry
         {
             Source = ScoreSource.Bonus,
             Label = label,
-            Exp = Math.Max(0, exp),
-            Hearts = Math.Max(0, hearts)
+            Exp = addExp,
+            Hearts = addHearts
         });
     }
 
     /// <summary>A deduction, capped so the totals never go below zero. Exp/Hearts are stored negative.</summary>
     public ScoreEntry AddPenalty(string label, int exp, int hearts)
     {
-        int lostExp = Math.Min(Math.Max(0, exp), TotalExp);
-        int lostHearts = Math.Min(Math.Max(0, hearts), TotalHearts);
+        int lostExp = Math.Min(Clamp(exp), TotalExp);
+        int lostHearts = Math.Min(Clamp(hearts), TotalHearts);
         if (lostExp == 0 && lostHearts == 0) return null;
         return Add(new ScoreEntry
         {
@@ -174,8 +204,8 @@ public sealed class LevelScoreLedger
         {
             Source = ScoreSource.Case,
             Label = label,
-            Exp = Math.Max(0, exp),
-            Hearts = Math.Max(0, hearts),
+            Exp = Math.Min(Clamp(exp), Rules.caseFile.exp),
+            Hearts = Math.Min(Clamp(hearts), Rules.caseFile.hearts),
             MaxExp = Rules.caseFile.exp,
             MaxHearts = Rules.caseFile.hearts
         });
@@ -184,9 +214,20 @@ public sealed class LevelScoreLedger
     private ScoreEntry Add(ScoreEntry entry)
     {
         entries.Add(entry);
-        TotalExp += entry.Exp;
-        TotalHearts += entry.Hearts;
-        EntryAdded?.Invoke(entry);
+        // Totals never leave 0..max, whatever order rewards arrive in.
+        TotalExp = Math.Max(0, Math.Min(MaxExp, TotalExp + entry.Exp));
+        TotalHearts = Math.Max(0, Math.Min(MaxHearts, TotalHearts + entry.Hearts));
+        try
+        {
+            EntryAdded?.Invoke(entry);
+        }
+        catch (Exception e)
+        {
+            // Presentation must never break scoring.
+            Debug.LogException(e);
+        }
         return entry;
     }
+
+    private static int Clamp(int amount) => Math.Max(0, Math.Min(MaxSingleAmount, amount));
 }

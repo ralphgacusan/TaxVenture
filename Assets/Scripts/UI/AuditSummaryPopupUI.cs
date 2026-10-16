@@ -108,9 +108,9 @@ public class AuditSummaryPopupUI : MonoBehaviour
         // Why it matters: the real-world cost of the first mistake (case JSON).
         CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
         string meaning = null;
-        if (def != null && def.mistakeCosts != null)
+        if (def != null)
             foreach (var issue in issues)
-                if (issue != null && string.IsNullOrEmpty(meaning)) meaning = def.mistakeCosts.For(issue.FieldKey);
+                if (issue != null && string.IsNullOrEmpty(meaning)) meaning = def.MistakeCostFor(issue.FieldKey);
         if (!string.IsNullOrWhiteSpace(meaning))
         {
             data.Summary = "Why it matters: " + meaning;

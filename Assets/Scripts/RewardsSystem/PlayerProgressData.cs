@@ -24,16 +24,24 @@ public class BadgeRecord
 }
 
 /// <summary>
-/// Saved progression. Save version 2: a level is COMPLETED when finished at
-/// any score, and PASSED when finished at or above its passing line; only a
-/// passed level unlocks the next one. Each level keeps its best result, and
-/// the career totals grow only by improvements on that best (replays never
-/// farm EXP). Saves from version 1 treat every completed level as passed.
+/// Saved progression. A level is COMPLETED when finished at any score, and
+/// PASSED when finished at or above its passing line; only a passed level
+/// unlocks the next one. Each level keeps its best result, and the career
+/// totals grow only by improvements on that best (replays never farm EXP).
+///
+/// VERSIONS: 1 had no pass line (every completed level counts as passed);
+/// 2 added best-result records and badges; 3 is written signed and
+/// crash-safe by PlayerProgressManager (same fields). Normalize() upgrades
+/// any older save in place and repairs impossible values (negative totals,
+/// a best above its maximum, duplicate ids, badge tiers out of range), so
+/// whatever is on disk always loads as a consistent save.
 /// </summary>
 [Serializable]
 public class PlayerProgressData
 {
-    public const int CurrentSaveVersion = 2;
+    public const int CurrentSaveVersion = 3;
+    /// <summary>Highest badge tier (gold).</summary>
+    public const int MaxBadgeTier = 3;
 
     public int saveVersion;
     public int totalExp;
@@ -57,6 +65,7 @@ public class PlayerProgressData
     public bool RecordBadge(string badgeId, int tier)
     {
         if (string.IsNullOrWhiteSpace(badgeId) || tier <= 0) return false;
+        tier = Math.Min(tier, MaxBadgeTier);
         if (badgeRecords == null) badgeRecords = new List<BadgeRecord>();
         string id = badgeId.Trim();
         foreach (BadgeRecord record in badgeRecords)
@@ -106,6 +115,12 @@ public class PlayerProgressData
 
         Normalize();
         string id = levelId.Trim();
+
+        // A run can't score above its own maximum (bad caller or bad data).
+        maxExp = Math.Max(0, maxExp);
+        maxHearts = Math.Max(0, maxHearts);
+        exp = Math.Max(0, maxExp > 0 ? Math.Min(exp, maxExp) : exp);
+        hearts = Math.Max(0, maxHearts > 0 ? Math.Min(hearts, maxHearts) : hearts);
 
         if (!completedLevelIds.Contains(id))
             completedLevelIds.Add(id);
@@ -210,8 +225,24 @@ public class PlayerProgressData
         }
 
         passedLevelIds = CleanIds(passedLevelIds, ref changed);
+
+        // A passed level is always a completed one.
+        foreach (string levelId in passedLevelIds)
+        {
+            if (!completedLevelIds.Contains(levelId))
+            {
+                completedLevelIds.Add(levelId);
+                changed = true;
+            }
+        }
+
         if (levelRecords.RemoveAll(r => r == null || string.IsNullOrWhiteSpace(r.levelId)) > 0)
             changed = true;
+        changed |= RepairRecords();
+        changed |= RepairBadges();
+
+        if (totalExp < 0) { totalExp = 0; changed = true; }
+        if (totalReputation < 0) { totalReputation = 0; changed = true; }
 
         int uniqueLevelCount = completedLevelIds.Count;
         if (levelsCompleted != uniqueLevelCount)
@@ -226,6 +257,78 @@ public class PlayerProgressData
             changed = true;
         }
 
+        return changed;
+    }
+
+    /// <summary>One record per level, values inside their own maximum.</summary>
+    private bool RepairRecords()
+    {
+        bool changed = false;
+        var seen = new Dictionary<string, LevelRecord>(StringComparer.Ordinal);
+        var kept = new List<LevelRecord>(levelRecords.Count);
+        foreach (LevelRecord record in levelRecords)
+        {
+            string id = record.levelId.Trim();
+            if (id != record.levelId) { record.levelId = id; changed = true; }
+
+            if (record.maxExp < 0) { record.maxExp = 0; changed = true; }
+            if (record.maxHearts < 0) { record.maxHearts = 0; changed = true; }
+            int exp = Math.Max(0, record.maxExp > 0 ? Math.Min(record.bestExp, record.maxExp) : record.bestExp);
+            int hearts = Math.Max(0, record.maxHearts > 0 ? Math.Min(record.bestHearts, record.maxHearts) : record.bestHearts);
+            if (exp != record.bestExp || hearts != record.bestHearts)
+            {
+                record.bestExp = exp;
+                record.bestHearts = hearts;
+                changed = true;
+            }
+            if (record.attempts < 0) { record.attempts = 0; changed = true; }
+            if (record.badges == null) { record.badges = new List<string>(); changed = true; }
+            record.badges = CleanIds(record.badges, ref changed);
+
+            if (seen.TryGetValue(id, out LevelRecord first))
+            {
+                // Duplicate entries for one level merge into the best of both.
+                first.bestExp = Math.Max(first.bestExp, record.bestExp);
+                first.bestHearts = Math.Max(first.bestHearts, record.bestHearts);
+                first.passed |= record.passed;
+                first.attempts += record.attempts;
+                foreach (string badge in record.badges)
+                    if (!first.badges.Contains(badge)) first.badges.Add(badge);
+                changed = true;
+                continue;
+            }
+            seen[id] = record;
+            kept.Add(record);
+
+            if (record.passed && !passedLevelIds.Contains(id)) { passedLevelIds.Add(id); changed = true; }
+            if (!completedLevelIds.Contains(id)) { completedLevelIds.Add(id); changed = true; }
+        }
+        levelRecords = kept;
+        return changed;
+    }
+
+    /// <summary>One entry per badge, tier 0..MaxBadgeTier; empty ids removed.</summary>
+    private bool RepairBadges()
+    {
+        bool changed = false;
+        var best = new Dictionary<string, BadgeRecord>(StringComparer.Ordinal);
+        var kept = new List<BadgeRecord>(badgeRecords.Count);
+        foreach (BadgeRecord badge in badgeRecords)
+        {
+            if (badge == null || string.IsNullOrWhiteSpace(badge.badgeId)) { changed = true; continue; }
+            string id = badge.badgeId.Trim();
+            int tier = Math.Max(0, Math.Min(MaxBadgeTier, badge.tier));
+            if (id != badge.badgeId || tier != badge.tier) { badge.badgeId = id; badge.tier = tier; changed = true; }
+            if (best.TryGetValue(id, out BadgeRecord first))
+            {
+                first.tier = Math.Max(first.tier, tier);
+                changed = true;
+                continue;
+            }
+            best[id] = badge;
+            kept.Add(badge);
+        }
+        badgeRecords = kept;
         return changed;
     }
 

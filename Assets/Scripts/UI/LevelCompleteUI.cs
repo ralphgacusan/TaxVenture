@@ -56,6 +56,9 @@ public class LevelCompleteUI : MonoBehaviour
         }
 
         currentResult = result;
+        // Saved even if the player never presses Continue (app paused or closed).
+        if (PlayerProgressManager.Instance != null && result != null)
+            PlayerProgressManager.Instance.SetPendingResult(result);
 
         Debug.Log($"[LevelCompleteUI] Time: {result.FormattedCompletionTime}");
         Debug.Log($"[LevelCompleteUI] Cases: {result.CasesCompleted}");

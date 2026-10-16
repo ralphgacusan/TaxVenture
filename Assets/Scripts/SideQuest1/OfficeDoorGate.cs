@@ -18,6 +18,9 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public sealed class OfficeDoorGate : MonoBehaviour
 {
+    /// <summary>Waiting = the level has not said yet whether the office is locked.</summary>
+    public enum DoorPhase { Waiting, Closed, Open }
+
     private const string TargetSceneName = "Office_Level1";
     private const string FallbackDoorsPath = "Environment/OfficeBuilding/Rooms/Reception/Doors";
     private const string InsidePath = "Environment/OfficeBuilding/Rooms/Reception/Floor";
@@ -36,8 +39,11 @@ public sealed class OfficeDoorGate : MonoBehaviour
 
     private readonly List<Leaf> leaves = new List<Leaf>();
     private BoxCollider barrier;
-    private bool decided;
-    private bool closed;
+    private readonly EnumStateMachine<DoorPhase> phase = new EnumStateMachine<DoorPhase>("OfficeDoorGate", DoorPhase.Waiting)
+        .Allow(DoorPhase.Waiting, DoorPhase.Closed, DoorPhase.Open)
+        .Allow(DoorPhase.Closed, DoorPhase.Open)
+        .Allow(DoorPhase.Open, DoorPhase.Closed);
+    private bool closed => phase.Is(DoorPhase.Closed);
     private float swing = 1f;          // 0..1 progress of the current swing
     private float nextWarn;
     private float startTime;
@@ -79,24 +85,20 @@ public sealed class OfficeDoorGate : MonoBehaviour
 
     private void Update()
     {
-        if (!decided)
+        if (phase.Is(DoorPhase.Waiting))
         {
             // Wait for the level to read rewards.json (CaseProgressionManager.StartLevel).
             if (!LevelGate.Configured && Time.unscaledTime - startTime < WaitForLevelSeconds) return;
-            decided = true;
             Setup();
-            closed = !LevelGate.CaseAllowed;
+            phase.TryChange(LevelGate.CaseAllowed ? DoorPhase.Open : DoorPhase.Closed);
             swing = 1f;
             Apply(1f);
             return;
         }
 
-        bool wantClosed = !LevelGate.CaseAllowed;
-        if (wantClosed != closed)
-        {
-            closed = wantClosed;
+        DoorPhase wanted = LevelGate.CaseAllowed ? DoorPhase.Open : DoorPhase.Closed;
+        if (!phase.Is(wanted) && phase.TryChange(wanted))
             swing = 1f - swing;   // reverse smoothly from wherever it is
-        }
 
         if (swing < 1f)
         {

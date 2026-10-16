@@ -1,61 +1,90 @@
-using UnityEngine;
+using System;
 using System.IO;
+using UnityEngine;
 
 /// <summary>
 /// PURPOSE:
 /// Owns the player's permanent, whole-game progression (total EXP,
-/// total Reputation, levels completed) and persists it to disk as JSON.
+/// total Reputation, levels completed, best results, badges) and persists
+/// it to Application.persistentDataPath/Save/progress.json (Resources is
+/// read-only on device).
 ///
-/// This is the project's first WRITE path. JsonCaseLoader reads level/case
-/// data from Resources (read-only at runtime, bundled into the build).
-/// Progress cannot live there — Resources cannot be written to on device.
-/// Instead this reads/writes Application.persistentDataPath, which is
-/// writable on every platform (PC, Mac, Android, iOS).
+/// LIFETIME: created automatically before the first scene loads and kept
+/// across scenes (DontDestroyOnLoad), so every scene, including a level
+/// opened directly in the editor, can use PlayerProgressManager.Instance.
+/// Copies placed in scenes remove themselves.
 ///
-/// Follows the same "never guess information" principle as
-/// CaseValidationResult<T>: Load() always produces a valid, non-null
-/// PlayerProgressData, and failures are logged rather than silently
-/// producing bad state.
+/// SAVING (SaveFileStore):
+/// - Atomic write with the previous save kept as progress.json.bak.
+/// - The file is a small envelope { format, payload, signature }: payload
+///   is the PlayerProgressData JSON and signature its HMAC, so a hand-edited
+///   save is noticed. A save that fails the check is kept aside as
+///   progress.json.rejected and the backup is used instead.
+/// - Older plain saves (version 1 and 2) still load and are upgraded.
+/// - Whatever loads is passed through PlayerProgressData.Normalize(), which
+///   repairs impossible values.
 ///
-/// PERSISTENCE:
-/// This GameObject survives scene loads via DontDestroyOnLoad, so it
-/// only needs to exist once — place it in the MainMenu scene. Progress,
-/// gameplay, and any other scene can then safely call
-/// PlayerProgressManager.Instance without re-loading from disk.
+/// APPLYING A LEVEL: LevelCompleteUI registers the finished level with
+/// SetPendingResult as soon as the Level Complete card shows, and applies it
+/// on Continue. If the game is paused (sent to the background on mobile) or
+/// closed before Continue, the pending result is applied and saved then, so
+/// a finished level is never lost. Each result is applied at most once
+/// (LevelTotalResult.RunId).
 /// </summary>
 public class PlayerProgressManager : MonoBehaviour
 {
+    [Serializable]
+    private class SaveEnvelope
+    {
+        public int format;
+        public string payload;
+        public string signature;
+    }
+
+    private const int EnvelopeFormat = 1;
+
     public static PlayerProgressManager Instance { get; private set; }
 
+    /// <summary>Raised after progress changed and was saved (menus refresh from it).</summary>
+    public static event Action<PlayerProgressData> ProgressChanged;
+
     private PlayerProgressData progress;
+    private SaveFileStore store;
+    private LevelTotalResult pendingResult;
+    private string lastAppliedRunId;
 
     private string SaveDirectory => Path.Combine(Application.persistentDataPath, "Save");
     private string SavePath => Path.Combine(SaveDirectory, "progress.json");
-    private string LegacyBackupPath => SavePath + ".legacy.bak";
 
     public PlayerProgressData CurrentProgress => progress;
+
+    /// <summary>True when a finished level is waiting to be saved.</summary>
+    public bool HasPendingResult => pendingResult != null;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void Bootstrap()
+    {
+        if (Instance != null) return;
+        var host = new GameObject("PlayerProgressManager");
+        host.AddComponent<PlayerProgressManager>();
+    }
 
     private void Awake()
     {
         if (Instance != null && Instance != this)
         {
-            Debug.LogWarning(
-                "[PlayerProgressManager] Duplicate instance detected. Destroying duplicate."
-            );
-
-            Destroy(gameObject);
+            // A scene copy: remove just this component when the object holds
+            // anything else, otherwise the whole (empty) object.
+            if (GetComponents<Component>().Length <= 2) Destroy(gameObject);
+            else Destroy(this);
             return;
         }
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        var loadResult = Load();
-
-        progress = loadResult.IsSuccess
-            ? loadResult.Data
-            : new PlayerProgressData();
-        progress.Normalize();
+        store = new SaveFileStore(SavePath);
+        progress = LoadOrCreate();
 
         Debug.Log(
             $"[PlayerProgressManager] Ready. " +
@@ -64,9 +93,45 @@ public class PlayerProgressManager : MonoBehaviour
         );
     }
 
+    private void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
+    }
+
+    private void OnApplicationPause(bool paused)
+    {
+        if (paused) FlushPending("app paused");
+    }
+
+    private void OnApplicationQuit()
+    {
+        FlushPending("app closing");
+    }
+
+    // =========================================================
+    // LEVEL RESULTS
+    // =========================================================
+
+    /// <summary>
+    /// Remembers a finished level so it is saved even if the player never
+    /// presses Continue (app paused or closed). Apply it with ApplyLevelResult.
+    /// </summary>
+    public void SetPendingResult(LevelTotalResult levelTotal)
+    {
+        if (levelTotal == null || levelTotal.RunId == lastAppliedRunId) return;
+        pendingResult = levelTotal;
+    }
+
+    private void FlushPending(string reason)
+    {
+        if (pendingResult == null) return;
+        Debug.Log($"[PlayerProgressManager] Saving the finished level ({reason}).");
+        ApplyLevelResult(pendingResult);
+    }
+
     /// <summary>
     /// Folds a completed level's totals into permanent progression and saves.
-    /// Call this once, when the player closes the Level Result popup.
+    /// Safe to call more than once for the same result: it applies once.
     /// </summary>
     public void ApplyLevelResult(LevelTotalResult levelTotal)
     {
@@ -81,6 +146,16 @@ public class PlayerProgressManager : MonoBehaviour
             Debug.LogError("[PlayerProgressManager] ApplyLevelResult requires a level ID.");
             return;
         }
+
+        if (levelTotal.RunId == lastAppliedRunId)
+        {
+            Debug.Log("[PlayerProgressManager] This level result was already saved.");
+            if (pendingResult == levelTotal) pendingResult = null;
+            return;
+        }
+
+        lastAppliedRunId = levelTotal.RunId;
+        if (pendingResult == levelTotal) pendingResult = null;
 
         if (levelTotal.HasScore)
         {
@@ -107,9 +182,18 @@ public class PlayerProgressManager : MonoBehaviour
         }
         else
         {
-            progress.totalExp += levelTotal.TotalExp;
-            progress.totalReputation += levelTotal.TotalReputation;
+            // No level score (no rewards.json ledger): counts as a completion,
+            // and its rewards are kept as that level's best like any other run,
+            // so replaying never adds them again.
             progress.RecordLevelCompletion(levelTotal.LevelId);
+            progress.RecordLevelResult(
+                levelTotal.LevelId,
+                levelTotal.TotalExp,
+                levelTotal.TotalReputation,
+                0,
+                0,
+                true,
+                levelTotal.Badges);
         }
 
         Debug.Log(
@@ -119,94 +203,129 @@ public class PlayerProgressManager : MonoBehaviour
             $"Levels: {progress.levelsCompleted}"
         );
 
-        var saveResult = Save(progress);
-
-        if (!saveResult.IsSuccess)
-        {
-            Debug.LogError($"[PlayerProgressManager] Save failed: {saveResult.ErrorMessage}");
-        }
+        Save();
     }
 
-    private CaseValidationResult<bool> Save(PlayerProgressData data)
+    // =========================================================
+    // SAVE / LOAD
+    // =========================================================
+
+    /// <summary>Writes the current progress (signed, atomic). Returns false on failure.</summary>
+    public bool Save()
     {
         try
         {
-            if (!Directory.Exists(SaveDirectory))
-            {
-                Directory.CreateDirectory(SaveDirectory);
-            }
-
-            string json = JsonUtility.ToJson(data, true);
-            File.WriteAllText(SavePath, json);
-
+            progress.Normalize();
+            store.Write(Encode(progress));
             Debug.Log($"[PlayerProgressManager] Progress saved to {SavePath}");
-
-            return CaseValidationResult<bool>.Success(true);
         }
-        catch (System.Exception e)
+        catch (Exception e)
         {
-            return CaseValidationResult<bool>.Fail($"Exception while saving progress: {e.Message}");
+            Debug.LogError($"[PlayerProgressManager] Save failed: {e.Message}");
+            return false;
         }
-    }
 
-    private CaseValidationResult<PlayerProgressData> Load()
-    {
         try
         {
-            if (!File.Exists(SavePath))
-            {
-                Debug.Log(
-                    $"[PlayerProgressManager] No save file found at {SavePath}. Starting fresh."
-                );
-
-                return CaseValidationResult<PlayerProgressData>.Fail("No save file found.");
-            }
-
-            string json = File.ReadAllText(SavePath);
-            PlayerProgressData data = JsonUtility.FromJson<PlayerProgressData>(json);
-
-            if (data == null)
-            {
-                return CaseValidationResult<PlayerProgressData>.Fail(
-                    $"progress.json at {SavePath} could not be parsed."
-                );
-            }
-
-            Debug.Log($"[PlayerProgressManager] Progress loaded from {SavePath}.");
-
-            if (data.Normalize())
-            {
-                try
-                {
-                    if (!File.Exists(LegacyBackupPath))
-                        File.Copy(SavePath, LegacyBackupPath);
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogError(
-                        $"[PlayerProgressManager] Could not back up progress before migration: {e.Message}. " +
-                        "The original save was preserved and the migration was not written."
-                    );
-
-                    return CaseValidationResult<PlayerProgressData>.Success(data);
-                }
-
-                var saveResult = Save(data);
-                if (!saveResult.IsSuccess)
-                {
-                    Debug.LogError(
-                        $"[PlayerProgressManager] Could not write normalized progress: {saveResult.ErrorMessage}"
-                    );
-                }
-            }
-
-            return CaseValidationResult<PlayerProgressData>.Success(data);
+            ProgressChanged?.Invoke(progress);
         }
-        catch (System.Exception e)
+        catch (Exception e)
         {
-            return CaseValidationResult<PlayerProgressData>.Fail(
-                $"Exception while loading progress: {e.Message}"
-            );
+            Debug.LogException(e);
+        }
+        return true;
+    }
+
+    private PlayerProgressData LoadOrCreate()
+    {
+        if (!store.Exists)
+        {
+            Debug.Log($"[PlayerProgressManager] No save file found at {SavePath}. Starting fresh.");
+            var fresh = new PlayerProgressData();
+            fresh.Normalize();
+            return fresh;
+        }
+
+        string text = store.Read(t => TryDecode(t, out _, out _), out bool fromBackup, out string problem);
+        if (text == null || !TryDecode(text, out PlayerProgressData data, out bool legacy))
+        {
+            Debug.LogError(
+                $"[PlayerProgressManager] No usable save at {SavePath} ({problem ?? "unreadable"}). " +
+                "Starting fresh; the old files were kept (.bak / .rejected).");
+            var fresh = new PlayerProgressData();
+            fresh.Normalize();
+            return fresh;
+        }
+
+        if (fromBackup)
+            Debug.LogWarning($"[PlayerProgressManager] The save was not usable ({problem}); loaded the backup instead.");
+
+        bool repaired = data.Normalize();
+        Debug.Log($"[PlayerProgressManager] Progress loaded from {(fromBackup ? store.BackupPath : SavePath)}.");
+
+        // Upgrade old or repaired saves on disk right away (the old file
+        // becomes the .bak, so nothing is lost).
+        if (legacy || repaired || fromBackup)
+        {
+            try
+            {
+                store.Write(Encode(data));
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[PlayerProgressManager] Could not write the upgraded save: {e.Message}");
+            }
+        }
+        return data;
+    }
+
+    private static string Encode(PlayerProgressData data)
+    {
+        string payload = JsonUtility.ToJson(data, true);
+        var envelope = new SaveEnvelope
+        {
+            format = EnvelopeFormat,
+            payload = payload,
+            signature = SaveFileStore.Sign(payload)
+        };
+        return JsonUtility.ToJson(envelope, true);
+    }
+
+    /// <summary>
+    /// Reads a save: a signed envelope (signature must match) or, for saves
+    /// written before version 3, the plain PlayerProgressData JSON.
+    /// </summary>
+    private static bool TryDecode(string text, out PlayerProgressData data, out bool legacy)
+    {
+        data = null;
+        legacy = false;
+        try
+        {
+            SaveEnvelope envelope = JsonUtility.FromJson<SaveEnvelope>(text);
+            if (envelope != null && envelope.format > 0 && !string.IsNullOrEmpty(envelope.payload))
+            {
+                if (!SaveFileStore.SignatureMatches(envelope.payload, envelope.signature))
+                {
+                    Debug.LogWarning("[PlayerProgressManager] The save's signature does not match (edited or damaged).");
+                    return false;
+                }
+                data = JsonUtility.FromJson<PlayerProgressData>(envelope.payload);
+                return data != null;
+            }
+
+            // Plain save from before signing. Only genuine old versions are
+            // accepted this way; a plain file claiming the current version
+            // can only be a hand-made one.
+            data = JsonUtility.FromJson<PlayerProgressData>(text);
+            if (data == null || data.saveVersion >= PlayerProgressData.CurrentSaveVersion) return false;
+            legacy = true;
+            return true;
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[PlayerProgressManager] The save could not be parsed: {e.Message}");
+            data = null;
+            return false;
         }
     }
 }
