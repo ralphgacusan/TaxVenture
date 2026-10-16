@@ -1,6 +1,5 @@
 # Known issues and risks: 3D Menu career board
 
-- **Corkboard orientation not yet seen.** `CareerBoardKit.Prop` assumes Synty wall props face +Z, as `SM_Prop_CorkBoard_03` does in this scene, and fits the prop by its mesh bounds. If CorkBoard_01 shows its back or sits sideways, change the facing rule in `Prop`, or set `corkboardPrefab` to `SM_Prop_CorkBoard_03` (guid `b2dbf2a4efde3374c8277fb2afc1572b`).
 - **Content margins vs. frame.** Cards on the CAREER board are 340 px wide, leaving about 30 px on each side. A thick prop frame could overlap them; if so, tweak `ProgressBoardSize` or `CardWidth`.
 - **Chapter 2 maximum before the first run** uses `cases: 3` from chapters.json, but `Levels/Level_02/level.json` currently lists 2 case ids. Once a result is saved, the recorded maximum is used instead.
 - World TextMeshPro uses `isOrthographic` (1 font size = 1 board pixel), as the previous version did. Under a perspective camera the SDF edges can look slightly soft at steep angles.

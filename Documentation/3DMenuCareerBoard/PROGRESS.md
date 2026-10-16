@@ -53,3 +53,13 @@ Verification: scratch compile 0 errors / 29 warnings; editor script 0 errors; Ca
 - Chapter 1 hangs a little higher (pin y 268 → 282).
 - Secondary text on the career cards (headings, captions, units, goal hint) uses `CareerBoardKit.InkCard` (38, 41, 50), close to black.
 - CareerBoardRegression 63/63. Scratch compile 0 errors; the editor script and the other suites pass. Play Mode: NOT RUN (user).
+
+## 2026-10-16: plain, bigger corkboards
+- Both boards now use the plain `SM_Prop_CorkBoard_03`. CorkBoard_01 had baked-in papers that hung off and overlapped the real ones.
+- Boards are bigger: CAREER 420 × 790 (was 400 × 700) and STORY 1110 × 840 (was 1060 × 770), side by side with a 20 px gap. BACK moved up above the CAREER plate. Papers and cards keep their positions.
+- CareerBoardRegression 67/67 (new checks: plain prop, sizes, no overlap, on-screen at 16:9, BACK clear of the plate). Scratch compile 0 errors. Play Mode: NOT RUN (user).
+
+## 2026-10-16: boards lower, contents higher, always plain
+- The boards now take their mesh from the scene's own plain level board (`Corkboard Levels`, SM_Prop_CorkBoard_03 — only its renderer, not the old notes), then fall back to `corkboardPrefab`. This fixes stray baked-in papers even when the open scene still points at CorkBoard_01 (an unreloaded scene).
+- Both boards moved down 25 px; every card, paper, badge space and the badge title moved up 10 px.
+- CareerBoardRegression 69/69 (new: cards inside the CAREER board, plain mesh used first). Scratch compile 0 errors. Play Mode: NOT RUN (user).

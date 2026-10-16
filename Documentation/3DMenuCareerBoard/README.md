@@ -17,7 +17,7 @@ Motion and feedback:
 
 ## Reused from Office Level 1
 
-- **Corkboard**: `SM_Prop_CorkBoard_01` (the side-quest board in `Office_Level1`), assigned to `corkboardPrefab`. It is fitted to each board size and faces the camera. Without it, a simple frame and cork panel is built instead.
+- **Corkboard**: `SM_Prop_CorkBoard_03`, the plain cork board the original level select used, assigned to `corkboardPrefab`. `SM_Prop_CorkBoard_01` (the Office Level 1 board) has papers baked into its mesh, which showed up as stray, overlapping sheets, so it is no longer used. It is fitted to each board size and faces the camera. Without it, a simple frame and cork panel is built instead.
 - **Papers and pins**: white cards on red pushpins with the same sway as the profile cards.
 - **Medals**: `HudBadgeArt.Get(emblem, tier, ribbon)`, the same sprite the HUD and reward screen use, drawn as a world sprite with depth layers and a tier glow.
 - **Look**: `HudTheme` palette, fonts (`HudFontSet` UI font and handwriting font), star and heart icons, bar style, easing.

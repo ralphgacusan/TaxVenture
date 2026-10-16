@@ -16,6 +16,6 @@ Read `README.md`, `PROGRESS.md` and `KNOWN_ISSUES.md` first.
 ## Checks after every change
 1. Scratch compile: `python Tests/make_scratch_build.py`, then `dotnet build Temp/ScratchBuild/Scratch.csproj`. If Python is missing (as on 2026-10-16), copy `Temp/ScratchBuild/Scratch.csproj` and swap in the new files, as `Temp/ScratchBuild/Career.csproj` does. Baseline: 0 errors, about 29 warnings, none from Career files.
 2. Editor script: `Temp/ScratchBuild/Editor/Editor.csproj` builds `CareerBoardSetup.cs` against the scratch runtime DLL.
-3. `cd Tests/CareerBoardRegression && dotnet run` (63 checks, including a layout check that no papers overlap), and the other suites in `Tests/`.
+3. `cd Tests/CareerBoardRegression && dotnet run` (69 checks, including a layout check that no papers overlap), and the other suites in `Tests/`.
 4. Visual: in the Unity editor, run **Tools > TaxVenture > 3D Menu > Capture Career Board**, or create `Library/CareerBoardSetup.request`; the open editor runs it on its next update, which needs the editor to be focused. Review `Library/CareerBoardPreview/*.png`, and read `interaction-checks.txt` or `error.txt`.
 5. Update `PROGRESS.md`.

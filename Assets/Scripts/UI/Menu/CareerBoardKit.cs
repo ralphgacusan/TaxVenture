@@ -112,6 +112,24 @@ internal static class CareerBoardKit
         Transform wrapper = Node(name, parent, center);
         GameObject instance = Object.Instantiate(prefab, wrapper, false);
         instance.name = prefab.name;
+        return Fit(instance, wrapper, parent, width, height, depth);
+    }
+
+    /// <summary>Like Prop, from a bare mesh and its materials (no children, no colliders).</summary>
+    internal static Transform MeshProp(Mesh mesh, Material[] sharedMaterials, Transform parent, string name, Vector3 center,
+        float width, float height, float depth)
+    {
+        if (mesh == null) return null;
+        Transform wrapper = Node(name, parent, center);
+        var instance = new GameObject(mesh.name, typeof(MeshFilter), typeof(MeshRenderer));
+        instance.transform.SetParent(wrapper, false);
+        instance.GetComponent<MeshFilter>().sharedMesh = mesh;
+        instance.GetComponent<MeshRenderer>().sharedMaterials = sharedMaterials;
+        return Fit(instance, wrapper, parent, width, height, depth);
+    }
+
+    private static Transform Fit(GameObject instance, Transform wrapper, Transform parent, float width, float height, float depth)
+    {
         foreach (Collider collider in instance.GetComponentsInChildren<Collider>(true)) Dispose(collider);
         foreach (Renderer renderer in instance.GetComponentsInChildren<Renderer>(true))
         {

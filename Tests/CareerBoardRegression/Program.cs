@@ -180,7 +180,7 @@ Check(service.Contains("\"Level1_Character_Intro_Cutscene\"") && service.Contain
 
 // The scene board points at the Office Level 1 corkboard prop.
 string sceneText = File.ReadAllText(Path.Combine(root, "Assets", "Scenes", "3D Menu.unity"));
-Check(Regex.IsMatch(sceneText, @"corkboardPrefab: \{fileID: \d+, guid: dc93c1371b25a3f41be9b77daf61961c"), "3D Menu board uses SM_Prop_CorkBoard_01");
+Check(Regex.IsMatch(sceneText, @"corkboardPrefab: \{fileID: \d+, guid: b2dbf2a4efde3374c8277fb2afc1572b"), "3D Menu boards use the plain SM_Prop_CorkBoard_03 (no baked-in papers)");
 
 // ---------- story board layout: papers never overlap and stay on the cork ----------
 string presenter = File.ReadAllText(Path.Combine(root, "Assets", "Scripts", "UI", "Menu", "CareerBoardPresenter.cs"));
@@ -218,6 +218,32 @@ Check(rects.All(r => r[0] >= storyCenter[0] - storySize[0] / 2 + inset && r[2] <
                      r[1] >= storyCenter[1] - storySize[1] / 2 + inset && r[3] <= storyCenter[1] + storySize[1] / 2 - inset),
     "layout: every paper stays inside the story corkboard");
 Check(badgeSize[0] >= 116 && Regex.IsMatch(presenter, @"CareerBadgeMedal.Create\(body, ""Medal"", [^;]*, 8\d+f\)"), "layout: badge papers and medals are the larger size");
+
+// The two boards: bigger, side by side without touching, fully on a 16:9 screen (about 1707 x 960 layout px).
+var progressCenter = Vec("ProgressBoardCenter");
+var progressSize = Vec("ProgressBoardSize");
+float[] Board(float[] c, float[] s) => new[] { c[0] - s[0] / 2, c[1] - s[1] / 2, c[0] + s[0] / 2, c[1] + s[1] / 2 };
+var progressRect = Board(progressCenter, progressSize);
+var storyRect = Board(storyCenter, storySize);
+Check(progressSize[1] >= 780 && storySize[0] >= 1100 && storySize[1] >= 830, "both corkboards are the larger size");
+Check(progressRect[2] + 10 <= storyRect[0], "the CAREER and STORY boards do not overlap");
+Check(new[] { progressRect, storyRect }.All(r => r[0] >= -853 && r[2] <= 853 && r[1] >= -480 && r[3] + 26 <= 480),
+    "both boards and their name plates fit on a 16:9 screen");
+float Const(string name) => float.Parse(Regex.Match(presenter, name + @" = (-?[\d.]+)f;").Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+bool cardsInside = true;
+foreach (var (card, height) in new[] { ("Career Card", "CareerCardHeight"), ("Goal Card", "GoalCardHeight"), ("Badges Card", "BadgeCardHeight") })
+{
+    float pinY = float.Parse(Regex.Match(presenter, "Card\\(\"" + card + "\", new Vector2\\([^,]+, (-?[\\d.]+)f\\)").Groups[1].Value,
+        System.Globalization.CultureInfo.InvariantCulture);
+    float top = pinY + 18, bottom = top - Const(height);
+    if (top > progressRect[3] - 26 - 4 || bottom < progressRect[1] + 22) { cardsInside = false; Console.WriteLine($"  {card} leaves the board ({bottom}..{top})"); }
+}
+Check(cardsInside, "every CAREER card sits fully on its board, below the name plate");
+Check(presenter.IndexOf("OriginalBoardMesh(out Mesh mesh", StringComparison.Ordinal) > 0 && presenter.IndexOf("OriginalBoardMesh(out Mesh mesh", StringComparison.Ordinal) < presenter.IndexOf("CareerBoardKit.Prop(corkboardPrefab", StringComparison.Ordinal),
+    "the boards use the scene's plain board mesh first (no papered prop even if the scene field is stale)");
+Match back = Regex.Match(presenter, @"""Back Button"", ""<  BACK"", new Vector3\((-?[\d.]+)f, (-?[\d.]+)f");
+float backBottom = float.Parse(back.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture) - 28;
+Check(backBottom > progressRect[3] + 27, "BACK sits above the CAREER plate, not on it");
 
 // Every paper flies out the same way: a negative tilt must not read as ~356 degrees (that spun Chapters 1, 3 and 5).
 Check(presenter.Contains("Mathf.DeltaAngle(0f, sourcePaper.transform.localEulerAngles.z)"), "sheet fly-out uses the paper tilt in -180..180");

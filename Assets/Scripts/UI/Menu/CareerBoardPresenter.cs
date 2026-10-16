@@ -30,10 +30,10 @@ public sealed class CareerBoardPresenter : MonoBehaviour
 {
     private const float DesignAspect = 16f / 9f;
 
-    private static readonly Vector2 ProgressBoardCenter = new Vector2(-555f, -50f);
-    private static readonly Vector2 ProgressBoardSize = new Vector2(400f, 700f);
-    private static readonly Vector2 StoryBoardCenter = new Vector2(215f, -10f);
-    private static readonly Vector2 StoryBoardSize = new Vector2(1060f, 770f);
+    private static readonly Vector2 ProgressBoardCenter = new Vector2(-560f, -65f);
+    private static readonly Vector2 ProgressBoardSize = new Vector2(420f, 790f);
+    private static readonly Vector2 StoryBoardCenter = new Vector2(225f, -40f);
+    private static readonly Vector2 StoryBoardSize = new Vector2(1110f, 840f);
     private static readonly Vector2 ChapterPaperSize = new Vector2(200f, 240f);
     private static readonly Vector2 BadgePaperSize = new Vector2(116f, 168f);
     private const float CardWidth = 340f;
@@ -44,16 +44,16 @@ public sealed class CareerBoardPresenter : MonoBehaviour
     // Pin positions keep the 3 + 2 arrangement, nudged up and down so the board looks hand-pinned.
     private static readonly Vector2[] ChapterPins =
     {
-        new Vector2(-115f, 282f), new Vector2(240f, 250f), new Vector2(560f, 264f),
-        new Vector2(250f, -28f), new Vector2(555f, -62f)
+        new Vector2(-115f, 292f), new Vector2(240f, 260f), new Vector2(560f, 274f),
+        new Vector2(250f, -18f), new Vector2(555f, -52f)
     };
     private static readonly float[] ChapterTilts = { -4f, 2.5f, -2f, 3f, -3.5f };
 
     // Side-quest badge spaces (bottom left of the story board): 3 + 2.
     private static readonly Vector2[] BadgePins =
     {
-        new Vector2(-216f, -12f), new Vector2(-82f, -24f), new Vector2(52f, -10f),
-        new Vector2(-149f, -192f), new Vector2(-15f, -202f)
+        new Vector2(-216f, -2f), new Vector2(-82f, -14f), new Vector2(52f, 0f),
+        new Vector2(-149f, -182f), new Vector2(-15f, -192f)
     };
     private static readonly float[] BadgeTilts = { -1.5f, 1.2f, -1f, 1.5f, -1.2f };
 
@@ -66,7 +66,7 @@ public sealed class CareerBoardPresenter : MonoBehaviour
     [SerializeField] private GameObject[] legacyObjects;
 
     [Header("Art (reused from Office Level 1)")]
-    [Tooltip("Corkboard prop (Synty SM_Prop_CorkBoard_01, the Office Level 1 side-quest board). Empty = simple built-in board.")]
+    [Tooltip("Plain corkboard prop (Synty SM_Prop_CorkBoard_03, the original level-select board; CorkBoard_01 has papers baked into its mesh). Empty = simple built-in board.")]
     [SerializeField] private GameObject corkboardPrefab;
     [Tooltip("Name of the old level board in this scene; hidden once the new boards are built.")]
     [SerializeField] private string originalBoardName = "Corkboard Levels";
@@ -218,7 +218,7 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         yarnMaterial = CareerBoardKit.Lit(new Color32(176, 36, 44, 255), materials, 0.1f);
         BuildProgressBoard();
         BuildStoryBoard();
-        backButton = CareerBoardButton.Create(boardRoot, "Back Button", "<  BACK", new Vector3(-690f, 372f, -10f),
+        backButton = CareerBoardButton.Create(boardRoot, "Back Button", "<  BACK", new Vector3(-690f, 420f, -10f),
             new Vector2(150f, 56f), HudTheme.Brass, new Color32(40, 30, 14, 255), 22f);
         backButton.Tapped += _ => GoBack();
         sheet = CareerChapterSheet.Create(boardRoot);
@@ -260,7 +260,7 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         const float right = CardWidth * 0.5f - 20f;
 
         // CAREER (the big card): totals with bars against every open chapter's maximum, and chapters passed.
-        CareerPinnedPaper career = Card("Career Card", new Vector2(c.x, 236f), CareerCardHeight, -1.2f, "CAREER");
+        CareerPinnedPaper career = Card("Career Card", new Vector2(c.x, 246f), CareerCardHeight, -1.2f, "CAREER");
         Transform a = career.Body;
         CareerBoardKit.Sprite(a, "EXP icon", HudTheme.Star, new Vector3(left + 18f, 92f, z), 36f, HudTheme.Exp, 5);
         expTotalLabel = InkText(a, "EXP total", "", 40f, new Vector3(left + 46f + 130f, 92f, z), 260f, 46f, TextAlignmentOptions.MidlineLeft);
@@ -286,7 +286,7 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         }
 
         // NEXT GOAL (smaller): the chapter to play next and the EXP / hearts it needs, as counts.
-        CareerPinnedPaper goal = Card("Goal Card", new Vector2(c.x + 4f, -70f), GoalCardHeight, 1.2f, "NEXT GOAL");
+        CareerPinnedPaper goal = Card("Goal Card", new Vector2(c.x + 4f, -60f), GoalCardHeight, 1.2f, "NEXT GOAL");
         Transform b = goal.Body;
         float top = GoalCardHeight * 0.5f;
         goalTitle = InkText(b, "Goal title", "", 22f, new Vector3(0f, top - 50f, z), right - left, 30f, TextAlignmentOptions.MidlineLeft);
@@ -298,7 +298,7 @@ public sealed class CareerBoardPresenter : MonoBehaviour
             CareerBoardKit.InkCard, FontStyles.Normal);
 
         // BADGES (smallest): a plain sample coin (not any real side-quest badge) and the count, centred.
-        CareerPinnedPaper badges = Card("Badges Card", new Vector2(c.x - 3f, -266f), BadgeCardHeight, -0.8f, "BADGES");
+        CareerPinnedPaper badges = Card("Badges Card", new Vector2(c.x - 3f, -256f), BadgeCardHeight, -0.8f, "BADGES");
         Transform d = badges.Body;
         BuildSampleMedal(d, new Vector3(-26f, -12f, z), 56f);
         badgeCountLabel = InkText(d, "Badge count", "", 44f, new Vector3(48f, -12f, z), 90f, 52f, TextAlignmentOptions.MidlineLeft);
@@ -350,7 +350,7 @@ public sealed class CareerBoardPresenter : MonoBehaviour
             chapterViews.Add(BuildChapterFace(paper));
         }
 
-        badgeAreaTitle = CareerBoardKit.Text(boardRoot, "Badge area title", "SIDE QUEST BADGES", 16f, new Vector3(-155f, 26f, -4f),
+        badgeAreaTitle = CareerBoardKit.Text(boardRoot, "Badge area title", "SIDE QUEST BADGES", 16f, new Vector3(-155f, 36f, -4f),
             260f, 24f, CareerBoardKit.Cream, TextAlignmentOptions.MidlineLeft, FontStyles.Bold, null, embossed);
         badgeAreaTitle.characterSpacing = 3f;
         for (int i = 0; i < BadgePins.Length; i++) badgeSlots.Add(BuildBadgeSlot(i));
@@ -430,7 +430,13 @@ public sealed class CareerBoardPresenter : MonoBehaviour
     private void BuildCorkboard(string name, Vector2 center, Vector2 size)
     {
         Vector3 position = new Vector3(center.x, center.y, 18f);
-        Transform board = CareerBoardKit.Prop(corkboardPrefab, boardRoot, name, position, size.x, size.y, 34f);
+        // 1. The scene's own plain level board (SM_Prop_CorkBoard_03): just its mesh, without the old notes
+        //    pinned to it. This keeps the boards plain even if the scene still points at a papered prop.
+        Transform board = OriginalBoardMesh(out Mesh mesh, out Material[] sharedMaterials)
+            ? CareerBoardKit.MeshProp(mesh, sharedMaterials, boardRoot, name, position, size.x, size.y, 34f)
+            : null;
+        // 2. The corkboard prefab.
+        if (board == null) board = CareerBoardKit.Prop(corkboardPrefab, boardRoot, name, position, size.x, size.y, 34f);
         if (board != null) return;
 
         // Built-in fallback: aluminium frame around a cork panel.
@@ -438,6 +444,25 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         CareerBoardKit.Box(root, "Frame", Vector3.zero, new Vector3(size.x, size.y, 34f), new Color32(128, 132, 136, 255), materials);
         CareerBoardKit.Box(root, "Cork", new Vector3(0f, 0f, -14f), new Vector3(size.x - 44f, size.y - 44f, 10f),
             new Color32(150, 112, 70, 255), materials);
+    }
+
+    /// <summary>The mesh of the scene's original level board (its own renderer only, not its child notes).</summary>
+    private bool OriginalBoardMesh(out Mesh mesh, out Material[] sharedMaterials)
+    {
+        mesh = null;
+        sharedMaterials = null;
+        if (string.IsNullOrEmpty(originalBoardName) || transform.parent == null) return false;
+        foreach (Transform child in transform.parent.GetComponentsInChildren<Transform>(true))
+        {
+            if (child.name != originalBoardName) continue;
+            MeshFilter filter = child.GetComponent<MeshFilter>();
+            Renderer renderer = child.GetComponent<Renderer>();
+            if (filter == null || filter.sharedMesh == null || renderer == null) continue;
+            mesh = filter.sharedMesh;
+            sharedMaterials = renderer.sharedMaterials;
+            return true;
+        }
+        return false;
     }
 
     /// <summary>Navy name plate with a brass rim (the Level 1 HUD panel look) sitting on a board's top edge.</summary>
