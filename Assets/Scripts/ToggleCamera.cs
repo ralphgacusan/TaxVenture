@@ -15,7 +15,8 @@ public class ToggleCamera : MonoBehaviour
     public Transform levelSelectorEndPoint;
 
     [Header("Transition Settings")]
-    public float transitionDuration = 2f;
+    [Tooltip("Seconds for the camera pan between the main menu and the level select (both directions). Lower = faster.")]
+    public float transitionDuration = 1.4f;
 
     private Vector3 mainCameraStartPosition;
     private Quaternion mainCameraStartRotation;

@@ -1980,7 +1980,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenu
   cameraManager: {fileID: 1431406759}
-  settingsSceneName: Settings
+  settingsBoard: {fileID: 2300000012}
 --- !u!1 &363386738
 GameObject:
   m_ObjectHideFlags: 0
@@ -8154,7 +8154,7 @@ MonoBehaviour:
   mainCameraEndPoint: {fileID: 833904869}
   levelSelectorStartPoint: {fileID: 2017562515}
   levelSelectorEndPoint: {fileID: 2105837672}
-  transitionDuration: 2
+  transitionDuration: 1.4
 --- !u!4 &1431406760
 Transform:
   m_ObjectHideFlags: 0
@@ -8824,7 +8824,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuUI
   progressSceneName: Progress
-  settingsSceneName: Settings
 --- !u!4 &1595178638
 Transform:
   m_ObjectHideFlags: 0
@@ -11876,7 +11875,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 38720a1159ac4f0eb3e99ea541756ff1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CareerBoardPresenter
   cameraManager: {fileID: 1431406759}
   viewCamera: {fileID: 958861315}
@@ -11885,9 +11884,61 @@ MonoBehaviour:
   - {fileID: 1799062546}
   - {fileID: 826159955}
   - {fileID: 1131671731}
-  corkboardPrefab: {fileID: 1147220461484906, guid: dc93c1371b25a3f41be9b77daf61961c, type: 3}
+  corkboardPrefab: {fileID: 5738279092658420498, guid: b2dbf2a4efde3374c8277fb2afc1572b, type: 3}
   originalBoardName: Corkboard Levels
   boardScale: 0.0058
+--- !u!1 &2300000010
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2300000011}
+  - component: {fileID: 2300000012}
+  m_Layer: 0
+  m_Name: Settings Board 3D
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2300000011
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2300000010}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2300000012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2300000010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f4ba403ab2c44a08ee64a615da0b961, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SettingsBoard3D
+  viewCamera: {fileID: 336904156}
+  cameraManager: {fileID: 1431406759}
+  hideWhileOpen:
+  - play_button
+  - tutorial_button
+  - settings_button
+  - sidequest_button
+  backdropDim: 0.3
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -11902,3 +11953,4 @@ SceneRoots:
   - {fileID: 2060058707}
   - {fileID: 1566899214}
   - {fileID: 826159957}
+  - {fileID: 2300000011}

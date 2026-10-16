@@ -7,8 +7,8 @@ public class SettingsUI : MonoBehaviour
     [Header("Settings Panel")]
     [SerializeField] private GameObject settingsPanel;
 
-    /// <summary>Read-only visibility for noninteractive HUD presentation.</summary>
-    public bool IsVisible => settingsPanel != null && settingsPanel.activeInHierarchy;
+    /// <summary>Read-only visibility for noninteractive HUD presentation (the 2D panel or the in-game 3D board).</summary>
+    public bool IsVisible => (settingsPanel != null && settingsPanel.activeInHierarchy) || InGameSettings.IsOpen;
 
     [Header("Back Button")]
     [SerializeField] private Button backButton;
@@ -84,6 +84,9 @@ public class SettingsUI : MonoBehaviour
 
     public void OpenSettings()
     {
+        // In gameplay scenes the 3D settings board replaces this panel (InGameSettings).
+        if (InGameSettings.TryOpen()) return;
+
         if (settingsPanel == null)
         {
             Debug.LogWarning("SettingsUI: Settings Panel is not assigned.");

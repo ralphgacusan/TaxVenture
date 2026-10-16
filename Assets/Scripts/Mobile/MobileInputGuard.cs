@@ -52,6 +52,7 @@ public static class MobileInputGuard
 
     public static bool BlocksWorldInput()
     {
+        if (InGameSettings.IsOpen) return true; // the settings board owns every touch
         if (VirtualJoystick.BlocksWorldInput) return true;
         if (Touchscreen.current != null)
             foreach (var touch in Touchscreen.current.touches)
@@ -65,7 +66,7 @@ public static class MobileInputGuard
     public static bool TryGetWorldTap(out Vector2 position)
     {
         position = default;
-        if (suppressedFrame == Time.frameCount) return false;
+        if (suppressedFrame == Time.frameCount || InGameSettings.IsOpen) return false;
         if (Touchscreen.current != null)
         {
             foreach (var touch in Touchscreen.current.touches)

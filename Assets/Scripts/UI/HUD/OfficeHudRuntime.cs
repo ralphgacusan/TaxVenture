@@ -419,7 +419,8 @@ public sealed class OfficeHudRuntime : MonoBehaviour
     /// <summary>Settings and the HUD icons step aside only for conversations and results.</summary>
     private bool SceneButtonsVisible()
     {
-        return !DialogueUI.IsAnyDialogueActive && (results == null || !results.IsVisible) && !HudRewardScreen.AnyOpen;
+        return !DialogueUI.IsAnyDialogueActive && (results == null || !results.IsVisible) && !HudRewardScreen.AnyOpen &&
+               !InGameSettings.IsOpen;
     }
 
     private void FadeSceneButtons()
@@ -493,7 +494,7 @@ public sealed class OfficeHudRuntime : MonoBehaviour
              cameraController.CurrentMode == CameraController.CameraMode.ProfileViewer);
         return freeOrReading &&
                !DialogueUI.IsAnyDialogueActive && Time.timeScale > 0f &&
-               (settings == null || !settings.IsVisible) &&
+               !InGameSettings.IsOpen && (settings == null || !settings.IsVisible) &&
                (results == null || !results.IsVisible) &&
                !HudRewardScreen.AnyOpen &&
                (gameState == null || !gameState.IsPaused);

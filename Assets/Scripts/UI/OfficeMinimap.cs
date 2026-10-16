@@ -70,7 +70,7 @@ public sealed class OfficeMinimap : MonoBehaviour
                        (sceneCameraController.CanStartDialogue ||
                         sceneCameraController.CurrentMode == CameraController.CameraMode.ProfileViewer) &&
                        !DialogueUI.IsAnyDialogueActive && Time.timeScale > 0f &&
-                       (settings == null || !settings.IsVisible) &&
+                       !InGameSettings.IsOpen && (settings == null || !settings.IsVisible) &&
                        (results == null || !results.IsVisible) &&
                        !HudRewardScreen.AnyOpen &&
                        (gameState == null || !gameState.IsPaused) &&
