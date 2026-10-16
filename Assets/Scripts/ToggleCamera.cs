@@ -22,6 +22,9 @@ public class ToggleCamera : MonoBehaviour
 
     private bool isTransitioning = false;
 
+    public bool IsTransitioning => isTransitioning;
+    public bool IsLevelSelectorVisible => levelSelectorCam != null && levelSelectorCam.gameObject.activeInHierarchy;
+
     private void Start()
     {
         // Remember the original Main Camera position

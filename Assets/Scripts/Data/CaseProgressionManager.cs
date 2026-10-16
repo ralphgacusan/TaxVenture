@@ -148,12 +148,17 @@ public class CaseProgressionManager : MonoBehaviour
     private void OnEnable()
     {
         TownEvents.OnSideQuestCompleted += LevelGate.MarkSideQuestDone;
+        TownEvents.OnProfileCollected += HandleProfileCollected;
     }
 
     private void OnDisable()
     {
         TownEvents.OnSideQuestCompleted -= LevelGate.MarkSideQuestDone;
+        TownEvents.OnProfileCollected -= HandleProfileCollected;
     }
+
+    // The side quest clock starts with the first collected taxpayer profile.
+    private void HandleProfileCollected(string profileId) => Score.MarkSideQuestStarted();
 
     private void Start()
     {
@@ -215,6 +220,7 @@ public class CaseProgressionManager : MonoBehaviour
         rewardAccumulator.Reset();
 
         LevelRewardRules rules = LevelRewardRules.Load(levelId);
+        Score.Clock = () => Time.unscaledTime;
         Score.Reset(rules, currentLevel.caseIds.Count);
         LevelGate.Reset(rules.requireSideQuestBeforeOffice, rules.officeDoors);
         caseAuditAttempts = 0;

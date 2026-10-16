@@ -80,6 +80,30 @@ public sealed class LevelScoreLedger
     public IReadOnlyList<BadgeTier> BadgeTiers => badgeTiers;
     public bool SideQuestScored { get; private set; }
 
+    // Run timing (unscaled seconds) for the career board: the whole level from
+    // load to completion, and the side quest from its first collected profile
+    // (or the level start) until its reward.
+    private float runStartedAt = -1f;
+    private float sideQuestStartedAt = -1f;
+    public float SideQuestSeconds { get; private set; }
+    /// <summary>Seconds source (the game sets Time.unscaledTime); null = untimed, as in the regression tests.</summary>
+    public Func<float> Clock { get; set; }
+    private float Now => Clock != null ? Clock() : -1f;
+    public float ElapsedSeconds
+    {
+        get
+        {
+            float now = Now;
+            return runStartedAt < 0f || now < 0f ? 0f : Mathf.Max(0f, now - runStartedAt);
+        }
+    }
+
+    /// <summary>The side quest has begun (first profile collected). Only the first call counts.</summary>
+    public void MarkSideQuestStarted()
+    {
+        if (sideQuestStartedAt < 0f && !SideQuestScored) sideQuestStartedAt = Now;
+    }
+
     public int ExpPercent => LevelScoring.Percent(TotalExp, MaxExp);
     public int HeartsPercent => LevelScoring.Percent(TotalHearts, MaxHearts);
     public bool Passed => LevelScoring.Passed(Rules, TotalExp, TotalHearts, MaxExp, MaxHearts);
@@ -97,6 +121,9 @@ public sealed class LevelScoreLedger
         BonusExp = 0;
         BonusHearts = 0;
         SideQuestScored = false;
+        runStartedAt = Now;
+        sideQuestStartedAt = -1f;
+        SideQuestSeconds = 0f;
         MaxExp = LevelScoring.MaxExp(Rules, cases);
         MaxHearts = LevelScoring.MaxHearts(Rules, cases);
     }
@@ -123,6 +150,9 @@ public sealed class LevelScoreLedger
     {
         if (SideQuestScored) return null;
         SideQuestScored = true;
+        float sideQuestStart = sideQuestStartedAt >= 0f ? sideQuestStartedAt : runStartedAt;
+        float sideQuestEnd = Now;
+        SideQuestSeconds = sideQuestStart < 0f || sideQuestEnd < 0f ? 0f : Mathf.Max(0f, sideQuestEnd - sideQuestStart);
         LevelScoring.Award award = LevelScoring.SideQuest(Rules, wrongPlacements);
         BadgeTier tier = LevelScoring.SideQuestBadge(Rules, award);
         if (!string.IsNullOrEmpty(Rules.sideQuest.badgeId) && !badges.Contains(Rules.sideQuest.badgeId))

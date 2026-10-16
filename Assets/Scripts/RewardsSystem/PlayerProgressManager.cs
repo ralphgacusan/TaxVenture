@@ -174,6 +174,9 @@ public class PlayerProgressManager : MonoBehaviour
             for (int i = 0; i < levelTotal.Badges.Count && i < levelTotal.BadgeTiers.Count; i++)
                 progress.RecordBadge(levelTotal.Badges[i], (int)levelTotal.BadgeTiers[i]);
 
+            // Time spent (career board: best / last / total time, side-quest time).
+            progress.RecordLevelTime(levelTotal.LevelId, levelTotal.RunSeconds, levelTotal.SideQuestSeconds);
+
             Debug.Log(
                 $"[PlayerProgressManager] {levelTotal.LevelId}: {levelTotal.TotalExp}/{levelTotal.MaxExp} EXP, " +
                 $"{levelTotal.TotalReputation}/{levelTotal.MaxReputation} hearts, passed: {levelTotal.Passed}, " +

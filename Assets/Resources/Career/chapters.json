@@ -1,0 +1,44 @@
+{
+  "_readme": [
+    "Career chapters shown on the 3D Menu corkboards (Play > level select). Edit and press Play; no code change needed.",
+    "chapters: in story order. A chapter unlocks when the previous playable chapter is PASSED (see each level's rewards.json passingPercent).",
+    "id: the level id used in the save (Level_01...). number: big number on the pinned paper. noteTitle: short text on the paper. title + description: the chapter sheet.",
+    "scene: the scene to load. Leave it empty, or set comingSoon true, to pin a grey Coming Soon paper that cannot be opened.",
+    "cases: cases in the level; only used for the EXP/hearts maximum before the first result is saved.",
+    "badgeSlots: how many badge spaces the story board shows (filled in sideQuests order; the rest stay empty until a new side quest is added).",
+    "sideQuests: one paper per side quest. chapterId: the chapter it belongs to (tapping it opens that chapter). number: the side quest number written on its badge paper. The badge art and name come from that chapter's rewards.json sideQuest (badgeId, badgeName, badgeEmblem, badgeRibbon).",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "chapters": [
+    {
+      "id": "Level_01",
+      "number": 1,
+      "noteTitle": "Tutorial",
+      "title": "Tutorial Level",
+      "description": "Learn your way around the office, meet your first taxpayer and close your first case.",
+      "scene": "Level1_Character_Intro_Cutscene",
+      "cases": 1
+    },
+    {
+      "id": "Level_02",
+      "number": 2,
+      "noteTitle": "Three cases",
+      "title": "Three Case Level",
+      "description": "A busier day at the office: take on three taxpayers and put your skills to work.",
+      "scene": "Office_Level2",
+      "cases": 3
+    },
+    { "id": "Level_03", "number": 3, "noteTitle": "New chapter", "title": "New Chapter", "description": "A new chapter of your career is on its way.", "comingSoon": true },
+    { "id": "Level_04", "number": 4, "noteTitle": "New chapter", "title": "New Chapter", "description": "A new chapter of your career is on its way.", "comingSoon": true },
+    { "id": "Level_05", "number": 5, "noteTitle": "New chapter", "title": "New Chapter", "description": "A new chapter of your career is on its way.", "comingSoon": true }
+  ],
+  "badgeSlots": 5,
+  "sideQuests": [
+    {
+      "number": 1,
+      "chapterId": "Level_01",
+      "title": "Know Your Taxpayer",
+      "description": "Sort the taxpayer profiles on the office corkboard. Part of Chapter 1."
+    }
+  ]
+}

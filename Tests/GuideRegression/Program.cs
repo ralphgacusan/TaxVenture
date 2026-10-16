@@ -293,6 +293,18 @@ Check(CaseFinaleRules.TierFor(0, false, 2) == CaseFinaleRules.Tier.Good, "one da
 Check(CaseFinaleRules.TierFor(1, false, 2) == CaseFinaleRules.Tier.Okay, "a failed audit and late = okay");
 Check(CaseFinaleRules.TierFor(3, true, 1) == CaseFinaleRules.Tier.Okay, "many failed audits = okay");
 Check(CaseFinaleRules.TierFor(0, false, 3) == CaseFinaleRules.Tier.Okay, "two days late = okay");
+float fakeNow = 10f;
+var timedLedger = new LevelScoreLedger { Clock = () => fakeNow };
+timedLedger.Reset(new LevelRewardRules(), 1);
+fakeNow = 40f; timedLedger.MarkSideQuestStarted();
+fakeNow = 55f; timedLedger.MarkSideQuestStarted();
+fakeNow = 100f; timedLedger.AddSideQuest(0, null);
+fakeNow = 250f;
+Check(Math.Abs(timedLedger.SideQuestSeconds - 60f) < 0.01f, "side quest time runs from the first collected profile to its reward");
+Check(Math.Abs(timedLedger.ElapsedSeconds - 240f) < 0.01f, "level run time counts from the level load");
+var untimedLedger = new LevelScoreLedger();
+untimedLedger.Reset(new LevelRewardRules(), 1);
+Check(untimedLedger.ElapsedSeconds == 0f, "a ledger without a clock reports no time");
 var ledger = new LevelScoreLedger();
 ledger.Reset(new LevelRewardRules(), 1);
 ledger.AddConversation("npc_a", "Talk", null);

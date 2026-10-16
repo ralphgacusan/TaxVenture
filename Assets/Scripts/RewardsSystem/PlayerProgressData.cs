@@ -13,6 +13,12 @@ public class LevelRecord
     public bool passed;
     public int attempts;
     public List<string> badges = new List<string>();
+    // Time spent in whole seconds (0 = never measured; older saves have none).
+    public int bestSeconds;
+    public int lastSeconds;
+    public int totalSeconds;
+    public int sideQuestBestSeconds;
+    public int sideQuestLastSeconds;
 }
 
 /// <summary>Best tier of one collected badge (0 none, 1 bronze, 2 silver, 3 gold).</summary>
@@ -157,6 +163,34 @@ public class PlayerProgressData
         return (expGain, heartsGain, newBest);
     }
 
+    /// <summary>
+    /// Adds a finished run's time to that level's record (call after RecordLevelResult):
+    /// fastest run, last run and total time played; the side quest keeps its fastest
+    /// and last time. Times of 0 or less are ignored. Returns false without a record.
+    /// </summary>
+    public bool RecordLevelTime(string levelId, float runSeconds, float sideQuestSeconds)
+    {
+        LevelRecord record = GetRecord(levelId);
+        if (record == null) return false;
+        int run = ToSeconds(runSeconds);
+        if (run > 0)
+        {
+            record.lastSeconds = run;
+            record.bestSeconds = record.bestSeconds > 0 ? Math.Min(record.bestSeconds, run) : run;
+            record.totalSeconds = (int)Math.Min(int.MaxValue, (long)record.totalSeconds + run);
+        }
+        int side = ToSeconds(sideQuestSeconds);
+        if (side > 0)
+        {
+            record.sideQuestLastSeconds = side;
+            record.sideQuestBestSeconds = record.sideQuestBestSeconds > 0 ? Math.Min(record.sideQuestBestSeconds, side) : side;
+        }
+        return run > 0 || side > 0;
+    }
+
+    private static int ToSeconds(float seconds) =>
+        float.IsNaN(seconds) || seconds <= 0f ? 0 : seconds >= int.MaxValue ? int.MaxValue : (int)Math.Round(seconds);
+
     public bool RecordLevelCompletion(string levelId)
     {
         if (string.IsNullOrWhiteSpace(levelId))
@@ -282,6 +316,11 @@ public class PlayerProgressData
                 changed = true;
             }
             if (record.attempts < 0) { record.attempts = 0; changed = true; }
+            if (record.bestSeconds < 0) { record.bestSeconds = 0; changed = true; }
+            if (record.lastSeconds < 0) { record.lastSeconds = 0; changed = true; }
+            if (record.totalSeconds < 0) { record.totalSeconds = 0; changed = true; }
+            if (record.sideQuestBestSeconds < 0) { record.sideQuestBestSeconds = 0; changed = true; }
+            if (record.sideQuestLastSeconds < 0) { record.sideQuestLastSeconds = 0; changed = true; }
             if (record.badges == null) { record.badges = new List<string>(); changed = true; }
             record.badges = CleanIds(record.badges, ref changed);
 
@@ -292,6 +331,9 @@ public class PlayerProgressData
                 first.bestHearts = Math.Max(first.bestHearts, record.bestHearts);
                 first.passed |= record.passed;
                 first.attempts += record.attempts;
+                first.bestSeconds = MinPositive(first.bestSeconds, record.bestSeconds);
+                first.sideQuestBestSeconds = MinPositive(first.sideQuestBestSeconds, record.sideQuestBestSeconds);
+                first.totalSeconds = (int)Math.Min(int.MaxValue, (long)first.totalSeconds + record.totalSeconds);
                 foreach (string badge in record.badges)
                     if (!first.badges.Contains(badge)) first.badges.Add(badge);
                 changed = true;
@@ -306,6 +348,8 @@ public class PlayerProgressData
         levelRecords = kept;
         return changed;
     }
+
+    private static int MinPositive(int a, int b) => a <= 0 ? b : b <= 0 ? a : Math.Min(a, b);
 
     /// <summary>One entry per badge, tier 0..MaxBadgeTier; empty ids removed.</summary>
     private bool RepairBadges()
