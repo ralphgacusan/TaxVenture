@@ -11,7 +11,7 @@ This initiative improves NPC animation and conversation feedback, desk document 
 
 ## Execution gate
 
-Tickets 01-04 are complete (user-verified; walking deferred). Do not start Ticket 05 or later until the user explicitly asks.
+Tickets 01-04 are complete (user-verified; walking deferred). Ticket 05 is implemented and awaiting user Play Mode verification. Ticket 06 is implemented across three resumable phases and awaiting user Play Mode verification; see its work log.
 
 ## Start here
 
@@ -25,8 +25,8 @@ Before implementation, read `AGENTS.md`, `PROJECT_AUDIT.md`, `IMPLEMENTATION_PLA
 | 2 | [NPC Conversation Animations](tickets/TICKET-02-NPC-CONVERSATION-ANIMATIONS.md) | Complete | Ticket 01 |
 | 3 | [Desk Interaction Overhaul](tickets/TICKET-03-DESK-INTERACTION-OVERHAUL.md) | Complete | Audit |
 | 4 | [3D Document Presentation](tickets/TICKET-04-3D-DOCUMENT-PRESENTATION.md) | Complete | Ticket 03 |
-| 5 | [Interaction Feedback Polish](tickets/TICKET-05-INTERACTION-FEEDBACK-POLISH.md) | Planned | Tickets 03 and 04 |
-| 6 | [Dynamic Minimap](tickets/TICKET-06-DYNAMIC-MINIMAP.md) | Planned | Audit and tutorial review |
+| 5 | [Interaction Feedback Polish](tickets/TICKET-05-INTERACTION-FEEDBACK-POLISH.md) | Awaiting user verification | Tickets 03 and 04 |
+| 6 | [Dynamic Minimap](tickets/TICKET-06-DYNAMIC-MINIMAP.md) | Awaiting user verification | Audit and tutorial review |
 
 ## Tutorial reference
 

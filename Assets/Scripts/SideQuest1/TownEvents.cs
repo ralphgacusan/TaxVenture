@@ -25,6 +25,12 @@ public static class TownEvents
     /// <summary>Fired once, when all 4 corkboard corners are correct.</summary>
     public static event Action OnSideQuestCompleted;
 
+    /// <summary>
+    /// Fired when the tutorial guide's intro conversation has opened the
+    /// corkboard side quest. Notification only (HUD objectives listen).
+    /// </summary>
+    public static event Action OnTutorialIntroCompleted;
+
     public static void RaiseProfileCollected(string profileId) =>
         OnProfileCollected?.Invoke(profileId);
 
@@ -36,4 +42,7 @@ public static class TownEvents
 
     public static void RaiseSideQuestCompleted() =>
         OnSideQuestCompleted?.Invoke();
+
+    public static void RaiseTutorialIntroCompleted() =>
+        OnTutorialIntroCompleted?.Invoke();
 }

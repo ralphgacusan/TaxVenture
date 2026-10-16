@@ -224,6 +224,16 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
         {
             stateMachine.ChangeState(new NpcCompletedState());
         }
+
+        // Conversation bonus (+hearts, once per client) for the level score;
+        // the HUD floats the heart from this NPC to the hearts bar.
+        if (CaseProgressionManager.Instance != null)
+        {
+            TaxpayerProfile talked = TaxpayerProfileDatabase.GetByNpcId(npcId);
+            CaseProgressionManager.Instance.AwardConversation(npcId,
+                talked != null ? talked.TaxpayerName : name,
+                transform.position + Vector3.up * 1.6f);
+        }
     }
 
     private void OnDialogueCancelled(INpcState priorNpcState)

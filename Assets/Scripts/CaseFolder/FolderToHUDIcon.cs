@@ -224,6 +224,7 @@ public class FolderToHUDIcon :
         storedFolderCount++;
 
         UpdateFolderCountText();
+        GameplayEvents.RaiseCaseFolderStored();
 
         /*
          * Disable the open folder's drag system.
@@ -345,6 +346,7 @@ public class FolderToHUDIcon :
 
         storedFolderCount = Mathf.Max(0, storedFolderCount - 1);
         UpdateFolderCountText();
+        GameplayEvents.RaiseCaseFolderReturned();
 
         // Always re-enable the open folder's own dragging, regardless of
         // which desk-return path is used below — StoreFolder() disabled it

@@ -49,4 +49,33 @@ var dirty = new PlayerProgressData
 };
 dirty.Normalize();
 Check(dirty.levelsCompleted == 1 && !dirty.IsLevelUnlocked(3), "Normalization must deduplicate IDs, not trust the old count.");
-Console.WriteLine("PASS: distinct completions, sequential unlocking, legacy migration, reward preservation, and JSON round trip.");
+
+var scored = new PlayerProgressData();
+var below = scored.RecordLevelResult("Level_01", 100, 8, 150, 12, false, new[] { "know_your_taxpayer_1" });
+Check(!scored.IsLevelUnlocked(2) && scored.levelsCompleted == 1, "A below-passing finish must not unlock Level 2.");
+Check(below.expGain == 100 && scored.totalExp == 100 && scored.totalReputation == 8, "The first run must add its score.");
+var worse = scored.RecordLevelResult("Level_01", 60, 5, 150, 12, false, null);
+Check(worse.expGain == 0 && scored.totalExp == 100 && !worse.newBest, "A worse replay must not add EXP.");
+var pass = scored.RecordLevelResult("Level_01", 140, 11, 150, 12, true, null);
+Check(pass.expGain == 40 && pass.heartsGain == 3 && scored.totalExp == 140 && scored.totalReputation == 11,
+    "A better replay must add only the improvement over the best.");
+Check(scored.IsLevelUnlocked(2) && scored.GetRecord("Level_01").attempts == 3 && scored.GetRecord("Level_01").badges.Count == 1,
+    "Passing must unlock Level 2 and keep the best record and badges.");
+scored.RecordLevelResult("Level_01", 10, 1, 150, 12, false, null);
+Check(scored.IsLevelUnlocked(2), "A later failed replay must never re-lock a passed level.");
+var scoredRestored = JsonSerializer.Deserialize<PlayerProgressData>(JsonSerializer.Serialize(scored, serializer), serializer);
+scoredRestored.Normalize();
+Check(scoredRestored.IsLevelUnlocked(2) && scoredRestored.GetRecord("Level_01").bestExp == 140,
+    "Version 2 records must survive a JSON round trip.");
+var v2Fail = new PlayerProgressData { saveVersion = 2, completedLevelIds = new List<string> { "Level_01" } };
+v2Fail.Normalize();
+Check(!v2Fail.IsLevelUnlocked(2), "A version 2 save that completed but never passed Level 1 must keep Level 2 locked.");
+var badgeSave = new PlayerProgressData();
+Check(badgeSave.GetBadgeTier("know_your_taxpayer_1") == 0, "An uncollected badge has tier 0.");
+Check(badgeSave.RecordBadge("know_your_taxpayer_1", 1) && badgeSave.GetBadgeTier("know_your_taxpayer_1") == 1, "Bronze is collected.");
+Check(badgeSave.RecordBadge("know_your_taxpayer_1", 3) && badgeSave.GetBadgeTier("know_your_taxpayer_1") == 3, "Gold upgrades the badge.");
+Check(!badgeSave.RecordBadge("know_your_taxpayer_1", 2) && badgeSave.GetBadgeTier("know_your_taxpayer_1") == 3, "A worse replay never downgrades a badge.");
+Check(!badgeSave.RecordBadge("", 3) && !badgeSave.RecordBadge("x", 0), "Empty ids and tier 0 are ignored.");
+var badgeRestored = JsonSerializer.Deserialize<PlayerProgressData>(JsonSerializer.Serialize(badgeSave, serializer), serializer);
+Check(badgeRestored.GetBadgeTier("know_your_taxpayer_1") == 3, "Badge tiers survive a JSON round trip.");
+Console.WriteLine("PASS: distinct completions, sequential unlocking, legacy migration, reward preservation, JSON round trip, pass-to-unlock, best-score records, and badge tiers.");

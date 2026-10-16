@@ -208,6 +208,8 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
         data.finalVerdictWasCorrect = result.VerdictWasCorrect;
         data.finalMissedIssueCount = result.MissedIssues.Count;
 
+        // The Audit Summary card always shows the outcome: an APPROVED card
+        // that continues by itself (tap to skip), or the findings to fix.
         summaryPopupUI.Show(result.MissedIssues, () => OnSummaryClosed(result));
     }
 
@@ -249,6 +251,11 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     private void OnSummaryClosed(SubmissionResult result)
     {
         bool passed = result.VerdictWasCorrect && result.MissedIssues.Count == 0;
+
+        // Level score: every audit counts; a failed one costs the case reward
+        // (mistakes found + one more submission, per rewards.json).
+        if (CaseProgressionManager.Instance != null)
+            CaseProgressionManager.Instance.RecordAuditAttempt(result.MissedIssues.Count, passed);
 
         if (passed)
         {

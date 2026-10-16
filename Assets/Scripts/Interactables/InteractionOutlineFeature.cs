@@ -27,6 +27,7 @@ public sealed class InteractionOutlineFeature : ScriptableRendererFeature
         if (material == null || HighlightEffect.ActiveEffects.Count == 0 ||
             renderingData.cameraData.cameraType != CameraType.Game ||
             renderingData.cameraData.renderType == CameraRenderType.Overlay) return;
+        if (renderingData.cameraData.camera.GetComponent<OfficeMinimap>() != null) return;
         // Conversation framing suppresses focus feedback, but keeps object materials intact.
         if (DialogueUI.IsAnyDialogueActive) return;
         material.SetColor("_OutlineColor", outlineColor);

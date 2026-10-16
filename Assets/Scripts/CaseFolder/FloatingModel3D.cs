@@ -504,6 +504,9 @@ public class FloatingModel3D :
     }
 
 
+    /// <summary>Read-only: whether dragging is currently allowed (Office HUD restores it).</summary>
+    public bool IsDraggingEnabled => allowDragging;
+
     public bool IsDragging()
     {
         return isDragging;

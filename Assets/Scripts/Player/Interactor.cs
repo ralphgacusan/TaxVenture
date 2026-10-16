@@ -70,7 +70,10 @@ public class Interactor : MonoBehaviour
     /// </summary>
     private void HandleRaycastDetection()
     {
-        if (Camera.main == null || MobileInputGuard.BlocksWorldInput() || DialogueUI.IsAnyDialogueActive)
+        // Looking at something keeps its prompt and outline while the joystick
+        // is held or the pointer rests on the HUD; only the interact tap is
+        // blocked then (HandleInteractInput checks BlocksWorldInput).
+        if (Camera.main == null || DialogueUI.IsAnyDialogueActive)
         {
             ClearFocus();
             return;

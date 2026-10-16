@@ -224,6 +224,14 @@ public class CaseFolderUI : MonoBehaviour
     /// </summary>
     public void Hide()
     {
+        // Opened from the HUD icon as a window: close it the window way, so
+        // the shared HUD hold is released instead of UnlockPlayerControls.
+        if (openedAsWindow)
+        {
+            HideAsWindow();
+            return;
+        }
+
         StopPageTurn();
 
         if (folderPanelRoot != null)
@@ -234,6 +242,134 @@ public class CaseFolderUI : MonoBehaviour
         CameraController.Instance?.UnlockPlayerControls();
 
         Debug.Log("[CaseFolderUI] Case Folder hidden.");
+    }
+
+    // ============================================================
+    // HUD WINDOW (Office HUD: opened from the Case Folder icon)
+    // ============================================================
+
+    private bool openedAsWindow;
+    private FloatingWindow hudWindow;
+
+    /// <summary>True while the folder panel is open (from the icon or the desk).</summary>
+    public bool IsPanelOpen =>
+        folderPanelRoot != null && folderPanelRoot.activeSelf &&
+        (FolderWindow == null || FolderWindow.IsOpen());
+
+    private FloatingWindow FolderWindow =>
+        hudWindow != null ? hudWindow :
+        (hudWindow = folderPanelRoot != null ? folderPanelRoot.GetComponent<FloatingWindow>() : null);
+
+    /// <summary>
+    /// Opens the same Case Folder pages as a HUD paper window: anywhere (not
+    /// only at the desk), flying out of the Case Folder icon, or growing out
+    /// of dropScreenPosition when the folder was dragged out and dropped.
+    /// Holds the player like Notes/profiles instead of LockPlayerControls,
+    /// so several windows can be open together.
+    /// </summary>
+    public bool ShowAsWindow(Vector2? dropScreenPosition)
+    {
+        if (CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null || folderPanelRoot == null)
+        {
+            return false;
+        }
+
+        pages = BuildPages(CaseManager.Instance.CurrentCase);
+        StopPageTurn();
+        currentPageIndex = Page1Index;
+        RenderPage(currentPageIndex);
+
+        // Activate first so the FloatingWindow initialises, then open it.
+        folderPanelRoot.SetActive(true);
+        PrintedPaperStyle.Apply(GetPageTurnRoot(), headingText, bodyText, pageIndicatorText);
+        CentreContentColumn();
+
+        FloatingWindow window = FolderWindow;
+        if (window != null)
+        {
+            window.Closed -= HandleWindowClosed;
+            window.Closed += HandleWindowClosed;
+            if (dropScreenPosition.HasValue)
+            {
+                window.SetPaperOpenOrigin(dropScreenPosition.Value);
+                window.OpenWindowAtScreenPosition(dropScreenPosition.Value);
+            }
+            else
+            {
+                window.OpenWindow();
+            }
+        }
+
+        openedAsWindow = true;
+        HudWindowLock.Acquire(this);
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperSFX();
+        }
+
+        if (!hasOpenedBefore)
+        {
+            hasOpenedBefore = true;
+
+            if (GameStateMachine.Instance != null &&
+                GameStateMachine.Instance.CurrentState is ReceiveCaseState)
+            {
+                GameStateMachine.Instance.ChangeState(
+                    new ReviewDocumentsState()
+                );
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>Closes the HUD window (flies back into the icon).</summary>
+    public void HideAsWindow()
+    {
+        StopPageTurn();
+
+        FloatingWindow window = FolderWindow;
+        if (window != null && folderPanelRoot.activeInHierarchy)
+        {
+            window.CloseWindow();
+        }
+        else if (folderPanelRoot != null)
+        {
+            folderPanelRoot.SetActive(false);
+        }
+
+        ReleaseWindowHold();
+    }
+
+    /// <summary>Case Folder icon tap: open as a window, or close whatever is open.</summary>
+    public void ToggleFromHud()
+    {
+        if (IsPanelOpen)
+        {
+            Hide();
+        }
+        else
+        {
+            ShowAsWindow(null);
+        }
+    }
+
+    private void HandleWindowClosed()
+    {
+        // Also covers closing by dragging the window onto the icon.
+        ReleaseWindowHold();
+    }
+
+    private void ReleaseWindowHold()
+    {
+        if (!openedAsWindow)
+        {
+            return;
+        }
+
+        openedAsWindow = false;
+        HudWindowLock.Release(this);
     }
 
     // ============================================================
@@ -1018,7 +1154,11 @@ public class CaseFolderUI : MonoBehaviour
         foreach (var row in rowList)
         {
             if (row != null)
+            {
+                // Destroy is deferred; clear feedback and raycasts immediately.
+                row.gameObject.SetActive(false);
                 Destroy(row.gameObject);
+            }
         }
 
         rowList.Clear();

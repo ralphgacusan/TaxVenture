@@ -78,6 +78,8 @@ public class ValueTypeValidationFeedback : MonoBehaviour
 
     private Coroutine feedbackCoroutine;
 
+    public bool IsPlaying => feedbackCoroutine != null;
+
 
     // =========================================================
     // AWAKE
@@ -86,6 +88,7 @@ public class ValueTypeValidationFeedback : MonoBehaviour
     private void Awake()
     {
         SetupVisualTargets();
+        ValueHoverFeedback.Ensure(this);
     }
 
     /// <summary>
@@ -202,6 +205,8 @@ public class ValueTypeValidationFeedback : MonoBehaviour
         DataValueType expectedDataType,
         string expectedDataKey)
     {
+        ForceRestore();
+
         expectedType =
             expectedDataType;
 
@@ -348,7 +353,10 @@ public class ValueTypeValidationFeedback : MonoBehaviour
         DataValue value)
     {
         if (value == null)
+        {
+            ForceRestore();
             return;
+        }
 
         bool correct =
             IsCorrectValue(value);
@@ -372,6 +380,9 @@ public class ValueTypeValidationFeedback : MonoBehaviour
     public void ShowFeedback(
         bool correct)
     {
+        if (!isActiveAndEnabled)
+            return;
+
         // -----------------------------------------------------
         // Stop previous feedback
         // -----------------------------------------------------
@@ -456,7 +467,7 @@ public class ValueTypeValidationFeedback : MonoBehaviour
             if (image == null)
                 continue;
 
-            Color rest = originalColors[i];
+            Color rest = RestingColor(image, originalColors[i]);
             Color peak = tint;
             peak.a = Mathf.Max(rest.a, 0.85f);
             image.color = Color.Lerp(rest, peak, amount);
@@ -467,7 +478,7 @@ public class ValueTypeValidationFeedback : MonoBehaviour
     {
         for (Transform t = image.transform; t != null; t = t.parent)
         {
-            if (t.name == "DropFeedbackBadge" || t.name == "PaperInkDecor")
+            if (t.name == "DropFeedbackBadge" || t.name == "PaperInkDecor" || t.name == "ValueHoverCue")
                 return false;
         }
 
@@ -501,7 +512,7 @@ public class ValueTypeValidationFeedback : MonoBehaviour
                 continue;
 
             image.color =
-                originalColors[i];
+                RestingColor(image, originalColors[i]);
 
             image.SetVerticesDirty();
             image.SetMaterialDirty();
@@ -548,6 +559,17 @@ public class ValueTypeValidationFeedback : MonoBehaviour
     // =========================================================
     // ON DESTROY
     // =========================================================
+
+    private Color RestingColor(Image image, Color fallback)
+    {
+        ValueSelectionHighlighter highlighter = GetComponent<ValueSelectionHighlighter>();
+        return highlighter != null ? highlighter.RestingColor(image, fallback) : fallback;
+    }
+
+    private void OnDisable()
+    {
+        ForceRestore();
+    }
 
     private void OnDestroy()
     {

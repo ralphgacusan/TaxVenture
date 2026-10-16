@@ -30,8 +30,12 @@ public class DeskInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract()
     {
+        // Level order: the case starts only after the side quest (rewards.json).
+        if (!LevelGate.TryCase()) return;
+
         CameraController.Instance.EnterFirstPerson(deskViewpoint, "Exit Desk");
     }
 
-    public string GetPromptText() => "Click to sit at desk";
+    public string GetPromptText() =>
+        LevelGate.CaseAllowed ? "Click to sit at desk" : LevelGate.SideQuestFirstMessage;
 }

@@ -6,31 +6,36 @@ using UnityEngine.UI;
 /// <summary>
 /// Presentation-only "printed on paper" look for the interactive values on
 /// the open case folder and tax code book. Rows become printed form lines
-/// (drop targets get a fill-in box), tax-code values become highlighter
-/// marks with a grip. Only colours, rich text and raycast-free decoration
-/// children change; data, layout ownership and drag/transfer components
-/// are untouched.
+/// (drop targets get a rounded fill-in slot), tax-code values become rounded
+/// brass value tags with a grip, all in the clean HUD print font, and both
+/// pop onto the page when it opens. Only colours, sprites, fonts, rich text
+/// and raycast-free decoration children change; data, layout ownership and
+/// drag/transfer components are untouched.
 /// </summary>
 public static class PaperInkStyle
 {
     // Ink palette.
     public static readonly Color PrintInk = new Color(0.12f, 0.13f, 0.17f, 1f);
-    private const string CaptionInkHex = "#4B5568";
-    private const string PenInkHex = "#1E3A8A";
-    private const string BlankInkHex = "#8A94A6";
+    private const string CaptionInkHex = "#5B6578";
+    private const string PenInkHex = "#1C3D7A";
+    private const string BlankInkHex = "#98A2B3";
 
     // Row (case folder field).
-    private static readonly Color FillInBox = new Color(0.84f, 0.9f, 1f, 0.55f);
-    private static readonly Color FillInBoxEdge = new Color(0.2f, 0.32f, 0.6f, 0.55f);
+    private static readonly Color FillInBox = new Color(0.9f, 0.935f, 0.98f, 1f);
+    private static readonly Color FillInBoxEdge = new Color(0.36f, 0.46f, 0.62f, 0.7f);
     private static readonly Color PrintedLine = new Color(0.2f, 0.22f, 0.28f, 0.45f);
     private static readonly Color RowRest = new Color(1f, 1f, 1f, 0f);
 
     // Chip (tax code value).
-    private static readonly Color MarkerRest = new Color(1f, 0.88f, 0.38f, 0.42f);
-    private static readonly Color MarkerEdge = new Color(0.55f, 0.42f, 0.08f, 0.35f);
+    private static readonly Color MarkerRest = new Color(0.995f, 0.93f, 0.76f, 1f);
+    private static readonly Color MarkerEdge = new Color(0.62f, 0.48f, 0.2f, 0.95f);
+    private static readonly Color TagShadow = new Color(0.25f, 0.18f, 0.05f, 0.28f);
 
-    private static readonly Color Selected = new Color(1f, 0.8f, 0.25f, 0.85f);
-    private static readonly Color GripInk = new Color(0.2f, 0.22f, 0.28f, 0.45f);
+    private static readonly Color Selected = new Color(0.96f, 0.76f, 0.38f, 1f);
+    private static readonly Color GripInk = new Color(0.36f, 0.3f, 0.18f, 0.6f);
+
+    private const float TagRadius = 16f;
+    private const float SlotRadius = 12f;
 
     private const string DecorName = "PaperInkDecor";
 
@@ -42,7 +47,34 @@ public static class PaperInkStyle
     public static string FieldText(string label, string value, bool isBlank)
     {
         string valueHex = isBlank ? BlankInkHex : PenInkHex;
-        return $"<color={CaptionInkHex}><size=82%>{label}:</size></color>  <color={valueHex}>{value}</color>";
+        string valueStyle = isBlank ? $"<i>{value}</i>" : $"<b>{value}</b>";
+        return $"<color={CaptionInkHex}><size=78%>{label}</size></color>   <color={valueHex}>{valueStyle}</color>";
+    }
+
+    /// <summary>Two-line form: caption on top, value on its own line below.</summary>
+    public static string FieldTextStacked(string label, string value, bool isBlank)
+    {
+        string valueHex = isBlank ? BlankInkHex : PenInkHex;
+        string valueStyle = isBlank ? $"<i>{value}</i>" : $"<b>{value}</b>";
+        return $"<color={CaptionInkHex}><size=78%>{label}</size></color>\n<color={valueHex}>{valueStyle}</color>";
+    }
+
+    /// <summary>
+    /// Writes a field: "Caption   Value" on one line when it fits the row,
+    /// otherwise the caption on top and the value below it.
+    /// </summary>
+    public static void SetFieldText(TMP_Text text, string label, string value, bool isBlank)
+    {
+        if (text == null) return;
+        string oneLine = FieldText(label, value, isBlank);
+        float available = text.rectTransform.rect.width - text.margin.x - text.margin.z;
+        if (available < 50f)
+        {
+            RectTransform parent = text.rectTransform.parent as RectTransform;
+            available = (parent != null ? parent.rect.width : 580f) - text.margin.x - text.margin.z;
+        }
+        float needed = text.GetPreferredValues(oneLine, 100000f, 1000f).x;
+        text.text = needed <= available ? oneLine : FieldTextStacked(label, value, isBlank);
     }
 
     /// <summary>Styles a case folder field row as a printed form line.</summary>
@@ -51,6 +83,7 @@ public static class PaperInkStyle
     {
         if (label != null)
         {
+            label.font = HudTheme.Font;
             label.color = PrintInk;
             label.fontStyle = FontStyles.Normal;
             Vector4 margin = label.margin;
@@ -63,7 +96,9 @@ public static class PaperInkStyle
             return;
 
         Color rest = isDropTarget ? FillInBox : RowRest;
+        Round(background, SlotRadius);
         ApplyRestColor(background, rest, highlighter, feedback);
+        PaperPopIn.Attach(background);
 
         Outline edge = background.GetComponent<Outline>();
         if (isDropTarget)
@@ -89,7 +124,8 @@ public static class PaperInkStyle
     {
         if (text != null)
         {
-            text.color = PrintInk;
+            text.font = HudTheme.Font;
+            text.color = new Color(0.16f, 0.13f, 0.08f, 1f);
             text.fontStyle = FontStyles.Bold;
             text.alignment = TextAlignmentOptions.MidlineLeft;
             Vector4 margin = text.margin;
@@ -114,6 +150,7 @@ public static class PaperInkStyle
         if (background == null)
             return;
 
+        Round(background, TagRadius);
         ApplyRestColor(background, MarkerRest, highlighter, null);
 
         Outline edge = background.GetComponent<Outline>();
@@ -121,6 +158,17 @@ public static class PaperInkStyle
             edge = background.gameObject.AddComponent<Outline>();
         edge.effectColor = MarkerEdge;
         edge.effectDistance = new Vector2(2f, -2f);
+
+        // A soft lift so the tag reads as something you can pick up.
+        Shadow lift = null;
+        foreach (Shadow s in background.GetComponents<Shadow>())
+            if (!(s is Outline)) lift = s;
+        if (lift == null)
+            lift = background.gameObject.AddComponent<Shadow>();
+        lift.effectColor = TagShadow;
+        lift.effectDistance = new Vector2(3f, -5f);
+
+        PaperPopIn.Attach(background);
 
         RectTransform decor = EnsureDecor(background.rectTransform);
         SetActive(decor, "Grip", true, () => CreateGrip(decor, new Vector2(0f, 0.5f), new Vector2(20f, 0f)));
@@ -164,11 +212,10 @@ public static class PaperInkStyle
         go.transform.SetParent(parent, false);
 
         TextMeshProUGUI caption = go.AddComponent<TextMeshProUGUI>();
-        if (font != null)
-            caption.font = font;
+        caption.font = HudTheme.Font != null ? HudTheme.Font : font;
         caption.text = text;
         caption.fontSize = fontSize;
-        caption.color = new Color(0.25f, 0.27f, 0.33f, 1f);
+        caption.color = new Color(0.3f, 0.33f, 0.4f, 1f);
         caption.alignment = TextAlignmentOptions.TopLeft;
         caption.margin = new Vector4(44f, 0f, 8f, 0f);
         caption.raycastTarget = false;
@@ -198,6 +245,15 @@ public static class PaperInkStyle
             highlighter.SetColors(rest, Selected);
         else
             background.color = rest;
+    }
+
+    /// <summary>Rounded corners for a value tag / fill-in slot (same sprite as the HUD).</summary>
+    private static void Round(Image image, float radius)
+    {
+        if (image == null) return;
+        image.sprite = HudTheme.Rounded;
+        image.type = Image.Type.Sliced;
+        image.pixelsPerUnitMultiplier = 20f / Mathf.Max(1f, radius);
     }
 
     private static RectTransform EnsureDecor(RectTransform owner)

@@ -26,6 +26,13 @@ public class InteractionPromptUI : MonoBehaviour
     [Tooltip("The text component displaying the prompt message.")]
     [SerializeField] private TextMeshProUGUI promptText;
 
+    /// <summary>
+    /// Optional presenter (the Office HUD's prompt pill). When it accepts a
+    /// message, the plain panel stays hidden. Same show/hide timing as before.
+    /// </summary>
+    public static System.Func<string, bool> ShowOverride;
+    public static System.Action HideOverride;
+
     private void Awake()
     {
         HidePrompt();
@@ -36,8 +43,13 @@ public class InteractionPromptUI : MonoBehaviour
     /// </summary>
     public void ShowPrompt(string message)
     {
-        if (promptPanel != null) promptPanel.SetActive(true);
         if (promptText != null) promptText.text = message;
+        if (ShowOverride != null && ShowOverride(message))
+        {
+            if (promptPanel != null) promptPanel.SetActive(false);
+            return;
+        }
+        if (promptPanel != null) promptPanel.SetActive(true);
     }
 
     /// <summary>
@@ -45,6 +57,7 @@ public class InteractionPromptUI : MonoBehaviour
     /// </summary>
     public void HidePrompt()
     {
+        HideOverride?.Invoke();
         if (promptPanel != null) promptPanel.SetActive(false);
     }
 }

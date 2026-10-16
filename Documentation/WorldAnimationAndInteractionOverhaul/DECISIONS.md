@@ -39,3 +39,22 @@ Ticket 03 uses the BoxCollider on `Desk/Visual/SM_Prop_Desk_03` (top y 0.75, the
 ## D010 - Desk motion is presentation-only and completable
 
 Desk document animation lives in `DeskDocumentAnimator` (on `Desk`) and `DeskMotion`. The existing scripts still own every state change and pass it in as a completion callback. Any tween can be completed instantly (before a grab, reset, HUD store or audit retry), so no object is left mid-flight. Leaving the desk uses a `CameraController.WorkstationExited` event rather than giving the camera desk references.
+
+
+## D011 — Ticket 05 feedback follows the current presentation lifecycle
+
+Keep ValueTransferManager, category validation, data writes and submission/progression logic unchanged. Refresh/reinitialize/disable clears old transient feedback; replacement feedback begins after the field refresh. Selection supplies the resting tint without overwriting active pulses. Hover uses a separate neutral, raycast-free underline so it cannot compete for the drop outline or transform. Its runtime installation is restricted to Office_Level1; existing shared feedback lifecycle fixes stay in the common components. Preserve the inactive global popup; if enabled, it is optional nonblocking text with one unscaled expiry and balanced subscriptions. All changes are runtime code, requiring no scene reload.
+
+
+## D012 — Runtime, north-up Office_Level1 minimap
+
+Bootstrap one scene-owned camera/HUD only for Office_Level1. Reuse the existing HUD_Canvas with a dedicated safe-area wrapper. Reserve the current right-hand Settings/document button column rather than moving existing controls. The user reference guides the compact framed game HUD; dark navy, warm gold, cyan player arrow and amber people diamonds provide shape as well as color distinction.
+
+The inspected ceiling slabs share Default with the floors/walls. Use a fixed horizontal camera clipping plane at world Y2.8 (camera Y25, near22.2/far26) to exclude the slabs without changing layers, materials or scene geometry. This is a single-floor map; wall cuts and plaza/indoor readability must be user-verified. Keep a 256-square RenderTexture, disable optional camera effects and stop rendering when hidden. Preserve gameplay camera ownership and scene lifetime cleanup.
+
+Use live NpcStatusMarker roots as discovery anchors rather than only NPC FSMs, since colleague/guide have no FSM. Marker display must not use overhead CurrentShape, which depends on range/occlusion. Suppress the hidden tutorial guide until HasAppeared; no game/quest state writes. No objective arrows, navigation routes, map input or zoom controls.
+
+
+## D013 — User-requested top-right row layout
+
+Supersedes D012's original reservation of the right-hand icon column. Put minimap at the top-right safe-area corner, Settings directly left, and translate the existing icon container below it. Preserve icon styling, child layout, size and input bindings; runtime placement avoids requiring a scene reload.

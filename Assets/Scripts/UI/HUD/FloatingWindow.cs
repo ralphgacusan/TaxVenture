@@ -172,6 +172,37 @@ public class FloatingWindow :
     private Canvas windowCanvas;
 
 
+    // =========================================================
+    // PAPER MOTION (opt-in, Office HUD paper windows)
+    // =========================================================
+
+    private const float PaperOpenDuration = 0.42f;
+    private const float PaperCloseDuration = 0.3f;
+    private const float PaperIconScale = 0.12f;
+    private const float PaperArc = 60f;
+
+    private bool paperMotion;
+    private float paperTilt;
+    private CanvasGroup paperGroup;
+    private bool paperShown;
+    private bool paperOpening;
+    private RectTransform paperIcon;
+    private Vector2 paperTarget;
+    private float paperOpenDelay;
+    private Vector2 pendingOpenOffset;
+    private Vector2? paperOpenOrigin;
+
+    // Registry so 3D document layers can sort and hit-test against windows.
+    public static readonly System.Collections.Generic.List<FloatingWindow> Instances =
+        new System.Collections.Generic.List<FloatingWindow>();
+
+    private const float PopDuration = 0.18f;
+    private Coroutine popRoutine;
+
+    /// <summary>Raised whenever this window finishes closing (any way).</summary>
+    public event System.Action Closed;
+
+
 
     public void SetReturnIcon(RectTransform icon)
     {
@@ -216,6 +247,11 @@ public class FloatingWindow :
 
     private void Awake()
     {
+        if (!Instances.Contains(this))
+        {
+            Instances.Add(this);
+        }
+
         // -----------------------------------------------------
         // Find window
         // -----------------------------------------------------
@@ -357,6 +393,13 @@ public class FloatingWindow :
         }
 
 
+        // Grabbing a paper window mid-flight lands it immediately.
+        if (paperOpening)
+        {
+            FinishPaperOpen();
+        }
+
+
         // -----------------------------------------------------
         // Determine event camera
         // -----------------------------------------------------
@@ -392,7 +435,7 @@ public class FloatingWindow :
 
         if (bringToFront)
         {
-            BringWindowToFront();
+            BringToFront();
         }
 
 
@@ -445,9 +488,11 @@ public class FloatingWindow :
         if (currentSortingOrder >=
             maximumWindowSortingOrder)
         {
-            RebuildSortingOrders();
-
-            return;
+            // Renumber every window from the bottom, keeping their order,
+            // then give this one the next (top) layer. The old reset
+            // returned without assigning a layer, so windows touched after
+            // it could stay stuck below the others.
+            RebuildSortingOrders(this);
         }
 
 
@@ -495,6 +540,40 @@ public class FloatingWindow :
     // =========================================================
     // REBUILD SORTING ORDERS
     // =========================================================
+
+    private static void RebuildSortingOrders(FloatingWindow except)
+    {
+        // Windows and 3D document layers share one order: renumber both
+        // from the bottom, keeping their relative order.
+        var layered = new System.Collections.Generic.List<(int order, System.Action<int> assign)>();
+        for (int i = 0; i < Instances.Count; i++)
+        {
+            FloatingWindow w = Instances[i];
+            if (w == null || w == except || w.windowCanvas == null)
+            {
+                continue;
+            }
+            Canvas c = w.windowCanvas;
+            layered.Add((c.sortingOrder, order => c.sortingOrder = order));
+        }
+        for (int i = 0; i < Doc3DLayer.All.Count; i++)
+        {
+            Doc3DLayer layer = Doc3DLayer.All[i];
+            if (layer != null)
+            {
+                layered.Add((layer.SortingOrder, layer.AssignSortingOrder));
+            }
+        }
+
+        layered.Sort((a, b) => a.order.CompareTo(b.order));
+        int next = 1101;
+        for (int i = 0; i < layered.Count; i++)
+        {
+            layered[i].assign(next++);
+        }
+
+        currentSortingOrder = next;
+    }
 
     private static void RebuildSortingOrders()
     {
@@ -714,6 +793,18 @@ public class FloatingWindow :
                 );
 
 
+            // Paper windows shrink and fade into the icon.
+            if (paperMotion)
+            {
+                float scale = Mathf.Lerp(1f, PaperIconScale, t * t);
+                window.localScale = new Vector3(scale, scale, 1f);
+                if (paperGroup != null)
+                {
+                    paperGroup.alpha = 1f - Mathf.Clamp01((t - 0.5f) / 0.5f);
+                }
+            }
+
+
             yield return null;
         }
 
@@ -722,7 +813,7 @@ public class FloatingWindow :
             targetPosition;
 
 
-        CloseWindow();
+        CloseWindowImmediate();
     }
 
 
@@ -759,7 +850,9 @@ public class FloatingWindow :
         // -----------------------------------------------------
 
         window.anchoredPosition =
-            GetParentCenterPosition();
+            GetParentCenterPosition() + pendingOpenOffset;
+
+        pendingOpenOffset = Vector2.zero;
 
 
         // -----------------------------------------------------
@@ -769,6 +862,8 @@ public class FloatingWindow :
         // -----------------------------------------------------
 
         BringWindowToFront();
+
+        StartPaperOpen();
 
 
         Debug.Log(
@@ -867,6 +962,8 @@ public class FloatingWindow :
         // -----------------------------------------------------
 
         BringWindowToFront();
+
+        StartPaperOpen();
 
 
         Debug.Log(
@@ -991,7 +1088,41 @@ public class FloatingWindow :
         }
 
 
+        // Paper windows tip away and fade before hiding.
+        if (paperMotion &&
+            paperShown &&
+            gameObject.activeInHierarchy)
+        {
+            if (!isClosing)
+            {
+                StopAllCoroutines();
+
+                isClosing = true;
+
+                isDragging = false;
+
+                StartCoroutine(PaperClose());
+            }
+
+            return;
+        }
+
+
+        CloseWindowImmediate();
+    }
+
+
+    private void CloseWindowImmediate()
+    {
         StopAllCoroutines();
+
+        paperShown = false;
+
+        paperOpening = false;
+
+        paperOpenOrigin = null;
+
+        ResetPaperVisual();
 
 
         isClosing = false;
@@ -1012,6 +1143,14 @@ public class FloatingWindow :
             $"[FloatingWindow] " +
             $"{gameObject.name}: CLOSED"
         );
+
+        Closed?.Invoke();
+    }
+
+
+    private void OnDestroy()
+    {
+        Instances.Remove(this);
     }
 
 
@@ -1022,7 +1161,7 @@ public class FloatingWindow :
     public void ToggleWindow()
     {
         bool currentlyOpen =
-            gameObject.activeSelf;
+            IsOpen();
 
 
         if (currentlyOpen)
@@ -1042,7 +1181,322 @@ public class FloatingWindow :
 
     public bool IsOpen()
     {
-        return gameObject.activeSelf;
+        // A paper window that is animating closed already counts as closed.
+        return gameObject.activeSelf &&
+               !(paperMotion && isClosing && paperShown);
+    }
+
+
+    // =========================================================
+    // PAPER MOTION
+    // =========================================================
+
+    /// <summary>
+    /// Opt-in open/close motion used by the Office HUD paper windows
+    /// (Notes, taxpayer profiles, Case Folder). The window rests at
+    /// restTiltDegrees around Z (null keeps its current tilt). With an
+    /// icon, it flies out of that HUD icon when opened and back into it
+    /// when closed; without one it pops in place. Other windows keep the
+    /// original instant behaviour.
+    /// </summary>
+    public void UsePaperMotion(float? restTiltDegrees, RectTransform icon = null)
+    {
+        if (window == null)
+        {
+            window = GetComponent<RectTransform>();
+        }
+
+        paperMotion = true;
+        paperIcon = icon;
+
+        paperTilt = restTiltDegrees ??
+                    (window != null ? Mathf.DeltaAngle(0f, window.localEulerAngles.z) : 0f);
+
+        paperGroup = GetComponent<CanvasGroup>();
+        if (paperGroup == null)
+        {
+            paperGroup = gameObject.AddComponent<CanvasGroup>();
+        }
+
+        ResetPaperVisual();
+    }
+
+    /// <summary>Delay before the next paper open starts (used to stagger cards).</summary>
+    public void SetPaperOpenDelay(float seconds)
+    {
+        paperOpenDelay = Mathf.Max(0f, seconds);
+    }
+
+    /// <summary>
+    /// The next paper open grows out of this screen point (e.g. where a
+    /// dragged HUD item was dropped) instead of flying from the icon.
+    /// </summary>
+    public void SetPaperOpenOrigin(Vector2 screenPoint)
+    {
+        paperOpenOrigin = screenPoint;
+    }
+
+    /// <summary>Opens centred, shifted by offset (parent units).</summary>
+    public void OpenWindowWithOffset(Vector2 offset)
+    {
+        pendingOpenOffset = offset;
+        OpenWindow();
+    }
+
+    public bool UsesPaperMotion => paperMotion;
+
+    /// <summary>
+    /// Makes this window the top layer, with a small "pop" for paper windows
+    /// so coming to the front is felt.
+    /// </summary>
+    public void BringToFront()
+    {
+        bool alreadyTop = windowCanvas != null && windowCanvas.sortingOrder >= currentSortingOrder;
+        BringWindowToFront();
+
+        if (paperMotion && !alreadyTop && !paperOpening && !isClosing && gameObject.activeInHierarchy)
+        {
+            if (popRoutine != null)
+            {
+                StopCoroutine(popRoutine);
+            }
+            popRoutine = StartCoroutine(PaperPop());
+        }
+    }
+
+    private IEnumerator PaperPop()
+    {
+        float elapsed = 0f;
+        while (elapsed < PopDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / PopDuration);
+            float scale = 1f + 0.045f * Mathf.Sin(t * Mathf.PI);
+            window.localScale = new Vector3(scale, scale, 1f);
+            yield return null;
+        }
+
+        window.localScale = Vector3.one;
+        popRoutine = null;
+    }
+
+    /// <summary>Current layer of this window (higher = in front).</summary>
+    public int SortingOrder => windowCanvas != null ? windowCanvas.sortingOrder : 0;
+
+    public RectTransform WindowRect => window;
+
+    /// <summary>
+    /// Blocks or passes touches. A paper under a 3D document that is in
+    /// front of it must let touches through to the document.
+    /// </summary>
+    public void SetBlocksRaycasts(bool blocks)
+    {
+        if (paperGroup != null && paperGroup.blocksRaycasts != blocks)
+        {
+            paperGroup.blocksRaycasts = blocks;
+        }
+    }
+
+    /// <summary>
+    /// Next top layer for something that is not a FloatingWindow (the 3D
+    /// desk documents), so everything shares one front-to-back order.
+    /// </summary>
+    public static int TakeTopSortingOrder()
+    {
+        currentSortingOrder = Mathf.Max(currentSortingOrder + 1, 1101);
+        if (currentSortingOrder >= 1900)
+        {
+            RebuildSortingOrders(null);
+            currentSortingOrder++;
+        }
+        return currentSortingOrder;
+    }
+
+    private void OnEnable()
+    {
+        // Shown by other code without OpenWindow(): never leave it invisible.
+        if (paperMotion && !paperShown)
+        {
+            ResetPaperVisual();
+        }
+    }
+
+    private void ResetPaperVisual()
+    {
+        if (!paperMotion || window == null)
+        {
+            return;
+        }
+
+        window.localScale = Vector3.one;
+        window.localRotation = Quaternion.Euler(0f, 0f, paperTilt);
+        if (paperGroup != null)
+        {
+            paperGroup.alpha = 1f;
+        }
+    }
+
+    private void StartPaperOpen()
+    {
+        if (!paperMotion || !gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        paperShown = true;
+        paperTarget = window.anchoredPosition;
+        StartCoroutine(PaperOpen(paperOpenDelay));
+        paperOpenDelay = 0f;
+    }
+
+    private void FinishPaperOpen()
+    {
+        StopAllCoroutines();
+        paperOpening = false;
+        window.anchoredPosition = paperTarget;
+        ResetPaperVisual();
+    }
+
+    /// <summary>The window position (anchored) that centres it on the HUD icon.</summary>
+    private bool TryGetIconPosition(out Vector2 position)
+    {
+        position = paperTarget;
+        if (paperIcon == null || parentRect == null || !paperIcon.gameObject.activeInHierarchy)
+        {
+            return false;
+        }
+
+        Camera camera = GetCanvasEventCamera();
+        Vector2 screen = RectTransformUtility.WorldToScreenPoint(camera, paperIcon.TransformPoint(paperIcon.rect.center));
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, screen, camera, out Vector2 local))
+        {
+            return false;
+        }
+
+        position = GetAnchoredPositionForCenter(local);
+        return true;
+    }
+
+    private bool TryScreenToAnchored(Vector2 screen, out Vector2 position)
+    {
+        position = paperTarget;
+        if (parentRect == null)
+        {
+            return false;
+        }
+
+        Camera camera = GetCanvasEventCamera();
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, screen, camera, out Vector2 local))
+        {
+            return false;
+        }
+
+        position = GetAnchoredPositionForCenter(local);
+        return true;
+    }
+
+    /// <summary>Point on a soft arc between a and b (the arc bulges upward).</summary>
+    private static Vector2 Arc(Vector2 a, Vector2 b, float t)
+    {
+        Vector2 point = Vector2.LerpUnclamped(a, b, t);
+        point.y += Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI) * PaperArc;
+        return point;
+    }
+
+    private void SetPaperPose(Vector2 position, float scale, float tilt, float alpha)
+    {
+        window.anchoredPosition = position;
+        window.localScale = new Vector3(scale, scale, 1f);
+        window.localRotation = Quaternion.Euler(0f, 0f, tilt);
+        if (paperGroup != null)
+        {
+            paperGroup.alpha = alpha;
+        }
+    }
+
+    private IEnumerator PaperOpen(float delay)
+    {
+        paperOpening = true;
+        bool fromIcon;
+        Vector2 start;
+        float startScale;
+        if (paperOpenOrigin.HasValue && TryScreenToAnchored(paperOpenOrigin.Value, out start))
+        {
+            // Dropped item: grow out of the drop point.
+            fromIcon = true;
+            startScale = 0.35f;
+        }
+        else
+        {
+            fromIcon = TryGetIconPosition(out start);
+            if (!fromIcon)
+            {
+                start = paperTarget;
+            }
+            startScale = fromIcon ? PaperIconScale : 0.82f;
+        }
+        paperOpenOrigin = null;
+
+        float startTilt = paperTilt + (fromIcon ? 28f : 7f);
+        SetPaperPose(start, startScale, startTilt, 0f);
+
+        float wait = 0f;
+        while (wait < delay)
+        {
+            wait += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < PaperOpenDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / PaperOpenDuration);
+
+            // Travel eases out; size and swing overshoot slightly, then settle.
+            float travel = 1f - (1f - t) * (1f - t) * (1f - t);
+            float u = t - 1f;
+            float pop = 1f + u * u * (2.2f * u + 1.2f);
+
+            Vector2 position = fromIcon ? Arc(start, paperTarget, travel) : paperTarget;
+            float scale = Mathf.LerpUnclamped(startScale, 1f, pop);
+            float tilt = Mathf.LerpUnclamped(startTilt, paperTilt, pop);
+            SetPaperPose(position, scale, tilt, Mathf.Clamp01(t * 3f));
+
+            yield return null;
+        }
+
+        paperOpening = false;
+        window.anchoredPosition = paperTarget;
+        ResetPaperVisual();
+    }
+
+    private IEnumerator PaperClose()
+    {
+        paperOpening = false;
+        Vector2 start = window.anchoredPosition;
+        bool toIcon = TryGetIconPosition(out Vector2 end);
+        float startScale = window.localScale.x;
+
+        float elapsed = 0f;
+        while (elapsed < PaperCloseDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / PaperCloseDuration);
+            float ease = t * t;
+
+            Vector2 position = toIcon ? Arc(start, end, ease) : start;
+            float scale = Mathf.Lerp(startScale, toIcon ? PaperIconScale : 0.86f, ease);
+            float tilt = paperTilt - (toIcon ? 24f : 6f) * ease;
+            float alpha = toIcon ? 1f - Mathf.Clamp01((t - 0.55f) / 0.45f) : 1f - ease;
+            SetPaperPose(position, scale, tilt, alpha);
+
+            yield return null;
+        }
+
+        // Next open starts from the same resting spot (centre) as before.
+        window.anchoredPosition = start;
+        CloseWindowImmediate();
     }
 
 

@@ -19,6 +19,7 @@ public class ValueSelectionHighlighter : MonoBehaviour
     public void SetOwner(object owner)
     {
         ownerComponent = owner;
+        RefreshSelection();
     }
 
     /// <summary>
@@ -29,8 +30,7 @@ public class ValueSelectionHighlighter : MonoBehaviour
     {
         normalColor = normal;
         selectedColor = selected;
-        if (targetImage != null)
-            targetImage.color = isSelected ? selectedColor : normalColor;
+        ApplyColor();
     }
 
     private void OnEnable()
@@ -48,6 +48,8 @@ public class ValueSelectionHighlighter : MonoBehaviour
     private void OnDisable()
     {
         Unsubscribe();
+        isSelected = false;
+        ApplyColor();
     }
 
     private void TrySubscribe()
@@ -68,6 +70,7 @@ public class ValueSelectionHighlighter : MonoBehaviour
 
         ValueTransferManager.Instance.OnSelectionChanged += HandleSelectionChanged;
         subscribed = true;
+        RefreshSelection();
 
         Debug.Log(
             $"[ValueSelectionHighlighter] " +
@@ -97,8 +100,25 @@ public class ValueSelectionHighlighter : MonoBehaviour
             selectedComponent != null &&
             selectedComponent == ownerComponent;
 
-        targetImage.color = isSelected
-            ? selectedColor
-            : normalColor;
+        ApplyColor();
     }
+
+    public Color RestingColor(Image image, Color fallback)
+    {
+        return image == targetImage ? (isSelected ? selectedColor : normalColor) : fallback;
+    }
+
+    private void RefreshSelection()
+    {
+        HandleSelectionChanged(ValueTransferManager.Instance != null
+            ? ValueTransferManager.Instance.SelectedSourceComponent : null);
+    }
+
+    private void ApplyColor()
+    {
+        ValueTypeValidationFeedback feedback = GetComponent<ValueTypeValidationFeedback>();
+        if (targetImage != null && (feedback == null || !feedback.IsPlaying))
+            targetImage.color = isSelected ? selectedColor : normalColor;
+    }
+
 }

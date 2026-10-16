@@ -48,6 +48,9 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
     {
         if (dialogueSessionActive) return;
 
+        // Level order: the case starts only after the side quest (rewards.json).
+        if (!LevelGate.TryCase()) return;
+
         Debug.Log("[Receptionist] OnInteract started.");
 
         // ---------------------------------------------------------
@@ -214,6 +217,8 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
 
     public string GetPromptText()
     {
+        if (!LevelGate.CaseAllowed) return LevelGate.SideQuestFirstMessage;
+
         // Determine whether the receptionist has already been
         // spoken to for the CURRENT case.
         if (CaseManager.Instance == null ||

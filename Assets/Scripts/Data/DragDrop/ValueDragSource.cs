@@ -45,6 +45,7 @@ public class ValueDragSource : MonoBehaviour,
         object owner
     )
     {
+        ValueHoverFeedback.Ensure(this);
         source = valueSource;
         ownerComponent = owner;
 
@@ -169,6 +170,9 @@ public class ValueDragSource : MonoBehaviour,
         // Start Dragging
         // -----------------------------------------------------
 
+        // One shared floating label: a newer drag takes ownership.
+        if (activeDrag != null && activeDrag != this)
+            activeDrag.isDragging = false;
         isDragging = true;
         activeDrag = this;
 
@@ -295,6 +299,9 @@ public class ValueDragSource : MonoBehaviour,
         // A disabled or destroyed source can no longer finish its drag.
         isDragging = false;
         if (activeDrag == this)
+        {
             activeDrag = null;
+            DragVisualManager.Instance?.Hide();
+        }
     }
 }

@@ -19712,6 +19712,9 @@ MonoBehaviour:
   openBookCollider: {fileID: 0}
   pageTurnRoot: {fileID: 0}
   pageTurnDuration: 0.26
+  descriptionFontSize: 36
+  minDescriptionFontSize: 26
+  inlineListSize: {x: 700, y: 860}
 --- !u!114 &326375009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -34696,6 +34699,9 @@ MonoBehaviour:
   openBookCollider: {fileID: 183795259}
   pageTurnRoot: {fileID: 0}
   pageTurnDuration: 0.26
+  descriptionFontSize: 36
+  minDescriptionFontSize: 26
+  inlineListSize: {x: 700, y: 860}
 --- !u!1 &552808193
 GameObject:
   m_ObjectHideFlags: 0
@@ -44822,7 +44828,7 @@ Transform:
   m_GameObject: {fileID: 724378877}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.45447978, z: -0, w: 0.890757}
-  m_LocalPosition: {x: 5.042232, y: 0, z: -5.9908752}
+  m_LocalPosition: {x: 3.51, y: 0, z: -1.86}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -44910,7 +44916,7 @@ MonoBehaviour:
   hideWhenOccluded: 1
   occlusionMask:
     serializedVersion: 2
-    m_Bits: 4294967291
+    m_Bits: 1019
   pollInterval: 0.2
 --- !u!1001 &728589333
 PrefabInstance:
@@ -49331,7 +49337,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 299.99994}
+  m_AnchoredPosition: {x: 0, y: 300.00055}
   m_SizeDelta: {x: 0, y: 800}
   m_Pivot: {x: 0, y: 1}
 --- !u!4 &819781689 stripped
@@ -50437,7 +50443,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -25.000061}
+  m_AnchoredPosition: {x: 0, y: -25.000122}
   m_SizeDelta: {x: -800, y: -150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &834182302
@@ -57851,14 +57857,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 959859122}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
-  m_LocalPosition: {x: 5.96, y: 0.6, z: 94.01}
+  m_LocalRotation: {x: 0.08662802, y: 0.7641422, z: 0.39581972, w: -0.5019055}
+  m_LocalPosition: {x: 9.72, y: 0.6, z: 127.11}
   m_LocalScale: {x: 0.7, y: 0.7, z: 0.7}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 752687604}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+  m_LocalEulerAnglesHint: {x: -43.779, y: 255.331, z: -21.527}
 --- !u!114 &959859127
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -67888,7 +67894,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -25.000061}
+  m_AnchoredPosition: {x: 0, y: -25.000122}
   m_SizeDelta: {x: -800, y: -150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1140351702
@@ -72255,8 +72261,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 998.2339, y: 200}
-  m_SizeDelta: {x: 300, y: 300}
+  m_AnchoredPosition: {x: 998.2339, y: 0}
+  m_SizeDelta: {x: 400, y: 400}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1230603456
 MonoBehaviour:
@@ -74877,7 +74883,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -25.000061}
+  m_AnchoredPosition: {x: 0, y: -25.000122}
   m_SizeDelta: {x: -800, y: -150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1264416128
@@ -85015,7 +85021,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -25.000061}
+  m_AnchoredPosition: {x: 0, y: -25.000122}
   m_SizeDelta: {x: -800, y: -150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1446097639
@@ -87865,6 +87871,7 @@ MonoBehaviour:
   page2FixedFieldRowsContainer: {fileID: 494194909}
   page7FieldRowListRoot: {fileID: 618866419}
   page7FieldRowsContainer: {fileID: 618866418}
+  contentWidth: 760
   pageTurnRoot: {fileID: 0}
   pageTurnDuration: 0.26
 --- !u!1001 &1493134559
@@ -95563,7 +95570,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WorkstationUI
   panelRoot: {fileID: 1612138751}
   exitButtonLabel: {fileID: 1542201990}
-  styleSource: {fileID: 1350718503}
+  styleSource: {fileID: 0}
   buttonColor: {r: 0.95, g: 0.8, b: 0.43, a: 1}
   labelColor: {r: 0.08, g: 0.08, b: 0.1, a: 1}
 --- !u!114 &1612138754
@@ -95790,7 +95797,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -25.000061}
+  m_AnchoredPosition: {x: 0, y: -25.000122}
   m_SizeDelta: {x: -800, y: -150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1615591711
@@ -110140,8 +110147,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 515171271}
   m_HandleRect: {fileID: 515171270}
   m_Direction: 2
-  m_Value: 0
-  m_Size: 0.62498647
+  m_Value: -0.0000016276042
+  m_Size: 0.62499845
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -120169,7 +120176,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -25.000061}
+  m_AnchoredPosition: {x: 0, y: -25.000122}
   m_SizeDelta: {x: -800, y: -150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2044334807
@@ -125562,6 +125569,7 @@ MonoBehaviour:
   page2FixedFieldRowsContainer: {fileID: 1621830998}
   page7FieldRowListRoot: {fileID: 151837519}
   page7FieldRowsContainer: {fileID: 151837518}
+  contentWidth: 760
   pageTurnRoot: {fileID: 0}
   pageTurnDuration: 0.26
 --- !u!114 &2135244882

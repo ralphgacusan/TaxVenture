@@ -2,7 +2,7 @@
 
 ## Current scope and execution gate
 
-Only `Assets/Scenes/Office_Level1.unity` is targeted. Other office scenes are excluded. Setup is ready; stop here until the user explicitly starts Ticket 01. Earlier partial code remains for inspection, not as completed acceptance criteria.
+Only `Assets/Scenes/Office_Level1.unity` is targeted. Other office scenes are excluded. Tickets 01-04 are complete and user-verified. Ticket 05 is implemented, awaiting user Play Mode verification; Ticket 06 is implemented across three resumable phases and awaiting user verification.
 
 ## Future order
 
@@ -19,4 +19,4 @@ Preserve current dirty changes. Reuse existing regression suites where relevant,
 
 ## Exact continuation
 
-Tickets 01-04 are done. When the user authorizes Ticket 05, read Tickets 03-04 records first. Never run the earlier multi-scene setup script.
+All three Ticket06 implementation checkpoints are saved. Wait for the user's Ticket06 section17 Play Mode check; read handoffs/TICKET-06_WORK_LOG.md before fixing reported issues. Ticket05 user verification is still pending. Do not rerun completed implementation or the earlier multi-scene setup script. The user owns all git and Play Mode actions.

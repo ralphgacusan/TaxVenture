@@ -489,8 +489,18 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
         if (pinMarker != null) pinMarker.SetActive(false);
     }
 
+    private static bool ApproximatelyEqual(Color a, Color b) => ColorDistance(a, b) < 0.001f;
+
+    private static float ColorDistance(Color a, Color b) =>
+        Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b);
+
     private void SetColor(Color color)
     {
+        // Office HUD card skin: neutral = no frame, otherwise a clear green
+        // (right area) or red (wrong area) frame.
+        ProfileCardSkin.SetResult(this, ApproximatelyEqual(color, neutralColor)
+            ? (bool?)null
+            : ColorDistance(color, correctColor) <= ColorDistance(color, wrongColor));
         if (cardRenderer == null) return;
         // Also supports editor validation, which can initialize cards before Awake.
         if (materialBlock == null) materialBlock = new MaterialPropertyBlock();

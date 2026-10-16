@@ -50,6 +50,29 @@ public class CaseProgressionManager : MonoBehaviour
 
     public LevelRewardAccumulator RewardAccumulator => rewardAccumulator;
     public string CurrentLevelId => levelId;
+    public string CurrentLevelName => currentLevel?.levelName;
+
+    /// <summary>
+    /// Raised after a case reward has been calculated and stored in the
+    /// accumulator. Presentation-only hook (HUD); listeners must not alter rewards.
+    /// </summary>
+    public static event System.Action<LevelResultData> OnCaseRewardStored;
+
+    /// <summary>
+    /// The level's full score (client talks, side quest, cases) against the
+    /// maximum and passing line from Resources/Levels/&lt;id&gt;/rewards.json.
+    /// </summary>
+    public LevelScoreLedger Score { get; } = new LevelScoreLedger();
+
+    /// <summary>
+    /// Raised when the Auditor sends a case back: mistakes found and what the
+    /// failed attempt costs the case's final reward. Presentation hook only.
+    /// </summary>
+    public static event System.Action<int, LevelScoring.Award> OnAuditFailed;
+
+    // Audit attempts and mistakes for the current case (reset per case).
+    private int caseAuditAttempts;
+    private int caseAuditMistakes;
 
     private float caseStartTime;
 
@@ -72,6 +95,16 @@ public class CaseProgressionManager : MonoBehaviour
         Debug.Log("[CaseProgressionManager] Awake.");
     }
 
+
+    private void OnEnable()
+    {
+        TownEvents.OnSideQuestCompleted += LevelGate.MarkSideQuestDone;
+    }
+
+    private void OnDisable()
+    {
+        TownEvents.OnSideQuestCompleted -= LevelGate.MarkSideQuestDone;
+    }
 
     private void Start()
     {
@@ -130,6 +163,12 @@ public class CaseProgressionManager : MonoBehaviour
         currentCaseIndex = 0;
         levelStarted = true;
         rewardAccumulator.Reset(); // <-- add this line
+
+        LevelRewardRules rules = LevelRewardRules.Load(levelId);
+        Score.Reset(rules, currentLevel.caseIds.Count);
+        LevelGate.Reset(rules.requireSideQuestBeforeOffice);
+        caseAuditAttempts = 0;
+        caseAuditMistakes = 0;
 
         Debug.Log(
             $"[CaseProgressionManager] Level '{levelId}' " +
@@ -218,6 +257,8 @@ public class CaseProgressionManager : MonoBehaviour
         );
 
         caseStartTime = Time.time;
+        caseAuditAttempts = 0;
+        caseAuditMistakes = 0;
 
 
         if (CaseManager.Instance.CurrentCase == null)
@@ -547,6 +588,30 @@ public class CaseProgressionManager : MonoBehaviour
     public int CurrentCaseNumber =>
         currentCaseIndex + 1;
 
+    public int CurrentCaseAuditAttempts => caseAuditAttempts;
+    public int CurrentCaseAuditMistakes => caseAuditMistakes;
+
+    /// <summary>
+    /// Called by the Auditor after each audit of the current case. A failed
+    /// audit adds its mistakes and counts as a submission that must be redone.
+    /// </summary>
+    public void RecordAuditAttempt(int mistakes, bool passed)
+    {
+        caseAuditAttempts++;
+        if (passed) return;
+
+        int found = Mathf.Max(0, mistakes);
+        caseAuditMistakes += found;
+        OnAuditFailed?.Invoke(found, LevelScoring.FailedAuditCost(Score.Rules, found));
+    }
+
+    /// <summary>
+    /// +hearts for finishing a client conversation (once per client). Returns
+    /// null when this client already gave the bonus.
+    /// </summary>
+    public ScoreEntry AwardConversation(string npcId, string label, Vector3? origin) =>
+        levelStarted ? Score.AddConversation(npcId, label, origin) : null;
+
 
     private void OnDestroy()
     {
@@ -564,7 +629,23 @@ public class CaseProgressionManager : MonoBehaviour
     {
         LevelResultData result = RewardsCalculator.BuildResult(data);
 
+        // Level score: a case that went through the Auditor is scored from its
+        // audits (mistakes found + extra submissions, per rewards.json); other
+        // cases keep the calculator's values. The result shows the same numbers.
+        string label = $"Case {CurrentCaseNumber}";
+        if (caseAuditAttempts > 0)
+        {
+            ScoreEntry entry = Score.AddCase(label, caseAuditMistakes, caseAuditAttempts - 1);
+            result.ExpEarned = entry.Exp;
+            result.ReputationEarned = entry.Hearts;
+        }
+        else
+        {
+            Score.AddCaseValues(label, result.ExpEarned, result.ReputationEarned);
+        }
+
         rewardAccumulator.AddCaseResult(result);
+        OnCaseRewardStored?.Invoke(result);
 
         Debug.Log(
             $"[CaseProgressionManager] Case reward calculated & stored. " +

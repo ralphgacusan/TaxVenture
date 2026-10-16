@@ -26,3 +26,19 @@ Tickets 01-03 are user-verified. `Tests/VerifyInteractionOutlines.py` fails one 
 ## Ticket 04 presentation
 
 - User-verified in Play Mode. The page transition is a 2D paper flip, not a physical page curl (no page rig exists). The under-sheets may need offset tuning in `PrintedPaperStyle` if they show too much or too little at the desk camera angle.
+
+
+## Ticket 05 checkpoint
+
+- Implemented; Play Mode/device verification NOT RUN. User must verify reset during pulses, selection restoration, rapid drops/submission/retry, hover/touch, and drag cancellation.
+- Office_Level1 ValueTransferPopup is inactive with popupRoot referencing itself. It remains inactive; no second feedback UI was enabled. Lifecycle hardening is compiled but requires temporary activation to test manually.
+- Existing manager rejection reasons infer destination requirements from the incoming type. Manager logic is untouched; the optional popup uses neutral accurate wording instead.
+- Compile has 23 baseline warnings and 0 errors. Required regressions pass; known Mobile_Renderer outline-width failure persists. No scene edits/reopen needed.
+
+
+## Ticket 06 verification limitations
+
+- All three phases implemented; compile0errors/23baseline warnings and regressions PASS. Source review found no material issues. Play Mode/device performance NOT RUN; exact continuation is user checklist in Ticket06 section17.
+- Near-plane roof slicing at world Y2.8 is based on actual ceiling slabs (underside2.93). It also clips taller outdoor props and wall tops. Office/plaza visual readability, floor coverage and shading require the user's check; do not alter roofs/layers globally to compensate.
+- The PC renderer includes SSAO; camera postprocessing/shadows/color/depth-copy settings are disabled, but renderer features can still request their own passes. Mobile GPU cost must be profiled on device before claiming a frame-time improvement.
+- The map occupies the top-right area beside the existing document icon column; safe-area/aspect-ratio placement and small-text readability are unverified.

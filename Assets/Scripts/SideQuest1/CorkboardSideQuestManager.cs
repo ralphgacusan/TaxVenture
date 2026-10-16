@@ -31,12 +31,16 @@ public class CorkboardSideQuestManager : MonoBehaviour
     private float splitY;
     private float boardPlaneZ;
     private int placementAttempts;
+    private int wrongPlacements;
     private bool sideQuestActive;
     private bool sideQuestCompleted;
     private bool completionEventRaised;
     private bool boardGeometryReady;
 
     public bool CanInteract => sideQuestActive && !sideQuestCompleted;
+    public bool IsCompleted => sideQuestCompleted;
+    /// <summary>Placements that were wrong this run (each one costs EXP; see rewards.json).</summary>
+    public int WrongPlacements => wrongPlacements;
 
     private void Awake()
     {
@@ -94,6 +98,7 @@ public class CorkboardSideQuestManager : MonoBehaviour
 
         ClearRuntimeObjects();
         placementAttempts = 0;
+        wrongPlacements = 0;
         firstTrySolvedSlots.Clear();
         sideQuestActive = true;
 
@@ -188,6 +193,7 @@ public class CorkboardSideQuestManager : MonoBehaviour
         placementAttempts++;
         bool firstAttempt = slot.PlacementAttempts == 0;
         bool correct = slot.TryPlaceCard(card);
+        if (!correct) wrongPlacements++;
         if (correct && firstAttempt)
         {
             firstTrySolvedSlots.Add(slot);
@@ -605,8 +611,9 @@ public class CorkboardSideQuestManager : MonoBehaviour
 
     private void GrantRewards()
     {
-        Debug.Log($"[CorkboardSideQuestManager] Rewarding player: +{rewardExp} EXP, +{rewardReputation} Reputation.");
-        // Reward integration is handled by the existing sidequest completion event.
+        // The level score is awarded by the tutorial NPC (TutorialNpcController)
+        // from WrongPlacements and rewards.json; this only logs the run.
+        Debug.Log($"[CorkboardSideQuestManager] Side quest finished: {placementAttempts} placements, {wrongPlacements} wrong.");
     }
 
     private void HideSideQuestRoot()
@@ -678,5 +685,20 @@ public class CorkboardSideQuestManager : MonoBehaviour
         }
     }
 
-    public SideQuestResult BuildResult() => new SideQuestResult(rewardExp, rewardReputation);
+    /// <summary>
+    /// The side-quest reward. Uses the level score entry when one was awarded
+    /// (rewards.json values); otherwise the legacy inspector values.
+    /// </summary>
+    public SideQuestResult BuildResult(ScoreEntry entry = null)
+    {
+        if (entry == null) return new SideQuestResult(rewardExp, rewardReputation);
+        return new SideQuestResult(entry.Exp, entry.Hearts)
+        {
+            MaxExp = entry.MaxExp,
+            MaxReputation = entry.MaxHearts,
+            WrongPlacements = wrongPlacements,
+            BadgeName = entry.BadgeName,
+            BadgeTier = entry.BadgeTier
+        };
+    }
 }

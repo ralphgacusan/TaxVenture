@@ -18,6 +18,9 @@ public static class ProfileCardTextLayout
         {
             descriptionText.alignment = TextAlignmentOptions.TopLeft;
         }
+
+        // Office HUD: same card look as the HUD profile cards (Office_Level1 only).
+        ProfileCardSkin.Apply(nameText, descriptionText);
     }
 
     private static void Configure(TMP_Text text, Vector2 position, Vector2 size, float depth, float fontSize, float minFontSize, float maxFontSize)

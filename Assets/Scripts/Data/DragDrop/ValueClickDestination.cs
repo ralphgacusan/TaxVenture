@@ -15,8 +15,8 @@ using UnityEngine.EventSystems;
 /// 1. Detect interaction
 /// 2. Get selected DataValue
 /// 3. Ask destination.CanAccept()
-/// 4. Show GREEN/RED feedback
-/// 5. Call existing ValueTransferManager transfer logic
+/// 4. Call existing ValueTransferManager transfer logic
+/// 5. Show type/key feedback after the field has refreshed
 ///
 /// The actual transfer system is NOT replaced or modified.
 /// </summary>
@@ -255,48 +255,12 @@ public class ValueClickDestination :
         );
 
 
-        // =====================================================
-        // VISUAL FEEDBACK
-        // =====================================================
+        // Transfer first: receive/refresh may clear the previous presentation.
+        // This remains the only transfer call for this interaction.
+        manager.TryPlaceOnDestination(destination);
 
+        // Feedback describes category compatibility, never answer correctness.
         if (typeFeedback != null)
-        {
-            typeFeedback.ShowFeedback(
-                accepted
-            );
-
-            Debug.Log(
-                $"[ValueClickDestination] " +
-                $"Feedback = " +
-                $"{(accepted ? "GREEN" : "RED")}"
-            );
-        }
-        else
-        {
-            Debug.LogWarning(
-                $"[ValueClickDestination] " +
-                $"No ValueTypeValidationFeedback on " +
-                $"{gameObject.name}"
-            );
-        }
-
-
-        // =====================================================
-        // EXISTING TRANSFER SYSTEM
-        // =====================================================
-        //
-        // IMPORTANT:
-        // Do not remove this.
-        //
-        // We intentionally call the existing manager even
-        // after the visual feedback.
-        //
-        // The manager remains responsible for actual transfer
-        // validation and placement.
-        // =====================================================
-
-        manager.TryPlaceOnDestination(
-            destination
-        );
+            typeFeedback.ShowFeedback(selectedValue);
     }
 }

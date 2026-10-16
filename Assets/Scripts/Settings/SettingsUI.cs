@@ -7,6 +7,9 @@ public class SettingsUI : MonoBehaviour
     [Header("Settings Panel")]
     [SerializeField] private GameObject settingsPanel;
 
+    /// <summary>Read-only visibility for noninteractive HUD presentation.</summary>
+    public bool IsVisible => settingsPanel != null && settingsPanel.activeInHierarchy;
+
     [Header("Back Button")]
     [SerializeField] private Button backButton;
 

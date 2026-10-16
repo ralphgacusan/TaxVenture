@@ -153,9 +153,18 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
 
         hasShownCompletionPanel = true;
 
+        // Level score: the guide hands over the side-quest reward (EXP, hearts
+        // and badge, from rewards.json); the hearts float from the guide.
+        ScoreEntry award = null;
+        if (CaseProgressionManager.Instance != null && corkboardSideQuest != null)
+        {
+            award = CaseProgressionManager.Instance.Score.AddSideQuest(
+                corkboardSideQuest.WrongPlacements, transform.position + Vector3.up * 1.6f);
+        }
+
         if (SideQuestCompleteUI.Instance != null && corkboardSideQuest != null)
         {
-            SideQuestCompleteUI.Instance.Show(corkboardSideQuest.BuildResult());
+            SideQuestCompleteUI.Instance.Show(corkboardSideQuest.BuildResult(award));
         }
         else
         {
@@ -286,6 +295,7 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
         if (corkboardSideQuest.CanInteract || hasCompletedSideQuest)
         {
             hasStartedSideQuest = true;
+            TownEvents.RaiseTutorialIntroCompleted();
             return;
         }
 

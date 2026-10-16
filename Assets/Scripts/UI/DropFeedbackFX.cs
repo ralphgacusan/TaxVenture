@@ -85,14 +85,13 @@ public sealed class DropFeedbackFX : MonoBehaviour
         {
             transform.localScale = restScale;
             transform.localRotation = restRotation;
+            if (edge != null)
+            {
+                edge.effectColor = edgeRestColor;
+                edge.effectDistance = edgeRestDistance;
+                edge.enabled = edgeWasEnabled;
+            }
             playing = false;
-        }
-
-        if (edge != null)
-        {
-            edge.effectColor = edgeRestColor;
-            edge.effectDistance = edgeRestDistance;
-            edge.enabled = edgeWasEnabled;
         }
 
         if (badge != null)

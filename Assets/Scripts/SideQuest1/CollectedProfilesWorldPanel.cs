@@ -298,6 +298,15 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
     /// <summary>Wire this to the same HUD icon Button's onClick.</summary>
     public void OnHudIconClicked()
     {
+        // The scene's profile icon calls this directly. In Office_Level1 the
+        // Office HUD shows the profiles as paper windows instead (they layer
+        // with Notes and the Case Folder), so let it handle the tap first.
+        if (!isOpen && TaxpayerProfileCollectionHUD.IconClickOverride != null &&
+            TaxpayerProfileCollectionHUD.IconClickOverride())
+        {
+            return;
+        }
+
         if (!isActiveAndEnabled || isClosing) return;
         if (isOpen)
         {
@@ -538,7 +547,8 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
         }
     }
 
-    private List<TaxpayerProfile> GetProfilesToShow()
+    /// <summary>The profiles the viewer would show (read-only use by the Office HUD profile cards).</summary>
+    public List<TaxpayerProfile> GetProfilesToShow()
     {
         if (isLockedToSingleProfile)
         {
