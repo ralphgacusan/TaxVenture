@@ -293,6 +293,7 @@ public sealed class HudProgressionPanel : MonoBehaviour
         expBar.SetPassing(passing);
         repBar.SetPassing(passing);
         ApplyCareer();
+        ApplyPassingCaption(progressionManager, passing);
         enabled = expBar.Animating || repBar.Animating;
     }
 
@@ -305,6 +306,28 @@ public sealed class HudProgressionPanel : MonoBehaviour
             headingText.SetText("LEVEL {0}", number);
         }
         levelNameText.text = string.IsNullOrWhiteSpace(levelName) ? string.Empty : levelName;
+    }
+
+    private string levelNameOnly;
+
+    /// <summary>
+    /// "Tutorial Level · Lv 2 needs 80%" beside the level name, so the
+    /// passing tick on the bars has words; "Lv 2 unlocked!" once reached.
+    /// </summary>
+    private void ApplyPassingCaption(CaseProgressionManager progression, int passing)
+    {
+        if (levelNameOnly == null) levelNameOnly = levelNameText.text;
+        if (progression == null || passing <= 0)
+        {
+            levelNameText.text = levelNameOnly;
+            return;
+        }
+        levelNameOnly = string.IsNullOrWhiteSpace(progression.CurrentLevelName) ? levelNameOnly : progression.CurrentLevelName;
+        int next = ParseLevelNumber(progression.CurrentLevelId) + 1;
+        string goal = progression.Score.Passed
+            ? $"<color=#6EC98C>Lv {next} unlocked!</color>"
+            : $"<color=#DDBE7E>Lv {next} needs {passing}%</color>";
+        levelNameText.text = string.IsNullOrEmpty(levelNameOnly) ? goal : $"{levelNameOnly}  <size=85%>·  {goal}</size>";
     }
 
     /// <summary>"Level_01" -> 1. Returns 0 when the id has no trailing number.</summary>

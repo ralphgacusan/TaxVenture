@@ -34,8 +34,9 @@ public sealed class DragGhostSkin : MonoBehaviour
     private void Setup()
     {
         rect = (RectTransform)transform;
-        // Sit above the touch point instead of under the thumb.
-        rect.pivot = new Vector2(0.5f, -0.55f);
+        // Just above the touch point (the thumb never hides it), with a small
+        // pointer whose tip is exactly where the value will be dropped.
+        rect.pivot = new Vector2(0.5f, -0.3f);
 
         Image image = GetComponent<Image>();
         if (image != null)
@@ -70,6 +71,15 @@ public sealed class DragGhostSkin : MonoBehaviour
         hole.anchoredPosition = new Vector2(20f, 0f);
         HudTheme.AddImage(hole, HudTheme.Circle, HudTheme.Brass);
         hole.SetAsFirstSibling();
+
+        RectTransform pointer = HudTheme.CreateRect("Drop Pointer", rect);
+        pointer.anchorMin = pointer.anchorMax = new Vector2(0.5f, 0f);
+        pointer.pivot = new Vector2(0.5f, 1f);
+        pointer.sizeDelta = new Vector2(26f, 22f);
+        pointer.anchoredPosition = new Vector2(0f, 2f);
+        pointer.localRotation = Quaternion.Euler(0f, 0f, 180f);
+        pointer.pivot = new Vector2(0.5f, 0f);
+        HudTheme.AddImage(pointer, GuideArt.Arrow, HudTheme.Brass);
     }
 
     private void OnEnable()

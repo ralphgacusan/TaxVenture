@@ -7,7 +7,11 @@ public enum ScoreSource
 {
     Conversation,
     SideQuest,
-    Case
+    Case,
+    /// <summary>Extra reward on top of the level maximum (e.g. on-time bonus).</summary>
+    Bonus,
+    /// <summary>A deduction (e.g. a late case); never takes the totals below zero.</summary>
+    Penalty
 }
 
 /// <summary>One reward added to the level's score.</summary>
@@ -133,6 +137,33 @@ public sealed class LevelScoreLedger
             Hearts = award.Hearts,
             MaxExp = award.MaxExp,
             MaxHearts = award.MaxHearts
+        });
+    }
+
+    /// <summary>A bonus on top of the level maximum (the maximum is not raised).</summary>
+    public ScoreEntry AddBonus(string label, int exp, int hearts)
+    {
+        return Add(new ScoreEntry
+        {
+            Source = ScoreSource.Bonus,
+            Label = label,
+            Exp = Math.Max(0, exp),
+            Hearts = Math.Max(0, hearts)
+        });
+    }
+
+    /// <summary>A deduction, capped so the totals never go below zero. Exp/Hearts are stored negative.</summary>
+    public ScoreEntry AddPenalty(string label, int exp, int hearts)
+    {
+        int lostExp = Math.Min(Math.Max(0, exp), TotalExp);
+        int lostHearts = Math.Min(Math.Max(0, hearts), TotalHearts);
+        if (lostExp == 0 && lostHearts == 0) return null;
+        return Add(new ScoreEntry
+        {
+            Source = ScoreSource.Penalty,
+            Label = label,
+            Exp = -lostExp,
+            Hearts = -lostHearts
         });
     }
 

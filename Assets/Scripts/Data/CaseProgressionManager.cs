@@ -166,7 +166,7 @@ public class CaseProgressionManager : MonoBehaviour
 
         LevelRewardRules rules = LevelRewardRules.Load(levelId);
         Score.Reset(rules, currentLevel.caseIds.Count);
-        LevelGate.Reset(rules.requireSideQuestBeforeOffice);
+        LevelGate.Reset(rules.requireSideQuestBeforeOffice, rules.officeDoors);
         caseAuditAttempts = 0;
         caseAuditMistakes = 0;
 

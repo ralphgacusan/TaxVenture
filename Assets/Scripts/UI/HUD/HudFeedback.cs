@@ -128,6 +128,15 @@ public sealed class HudFeedback : MonoBehaviour
                 ShowShortfall("Wrong placements", entry);
                 break;
 
+            case ScoreSource.Penalty:
+                toasts.Show(HudToastKind.Deduction, entry.Label, FormatLoss(-entry.Exp, -entry.Hearts));
+                break;
+
+            case ScoreSource.Bonus:
+                if (entry.Exp > 0) toasts.Show(HudToastKind.Exp, entry.Label, null, "bonus", entry.Exp);
+                if (entry.Hearts > 0) toasts.Show(HudToastKind.Reputation, entry.Label, null, "bonusrep", entry.Hearts);
+                break;
+
             default:
                 if (entry.Exp > 0) toasts.Show(HudToastKind.Exp, "EXP earned", null, "exp", entry.Exp);
                 if (entry.Hearts > 0) toasts.Show(HudToastKind.Reputation, "Hearts earned", null, "rep", entry.Hearts);

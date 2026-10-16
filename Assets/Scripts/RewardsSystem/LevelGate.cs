@@ -14,13 +14,21 @@ public static class LevelGate
     public static bool RequireSideQuestFirst { get; private set; }
     public static bool SideQuestDone { get; private set; }
 
+    /// <summary>True once a level has set the gate up (rewards.json read).</summary>
+    public static bool Configured { get; private set; }
+
+    /// <summary>Scene names of the office entrance doors (rewards.json officeDoors).</summary>
+    public static string[] OfficeDoors { get; private set; } = new string[0];
+
     /// <summary>Raised when something is used too early (message for the player).</summary>
     public static event Action<string> OnBlocked;
 
-    public static void Reset(bool requireSideQuestFirst)
+    public static void Reset(bool requireSideQuestFirst, string[] officeDoors = null)
     {
         RequireSideQuestFirst = requireSideQuestFirst;
         SideQuestDone = false;
+        OfficeDoors = officeDoors ?? new string[0];
+        Configured = true;
     }
 
     public static void MarkSideQuestDone() => SideQuestDone = true;

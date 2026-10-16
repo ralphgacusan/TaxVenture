@@ -85,6 +85,10 @@ public class AuditSummaryPopupUI : MonoBehaviour
             data.StatusText = "APPROVED";
             data.StatusDetail = "Every required fact is correct";
             data.Fact("Mistakes", "0");
+            OfficeHours hours = OfficeHours.Instance;
+            if (hours != null && hours.Announced)
+                data.Fact("Office hours", hours.OnTime ? $"On time  +{hours.Config.onTimeBonusExp} EXP"
+                    : $"Day {hours.Day}  ·  late  -{hours.Config.lateExpPerDay * Mathf.Clamp(hours.Day - 1, 0, hours.Config.lateMaxDays)} EXP");
             data.Summary = "You now know your taxpayer. All three required facts have been gathered.";
             // A success needs no decision: it moves on by itself (tap to go now).
             data.AutoContinueSeconds = 3.5f;
@@ -101,7 +105,21 @@ public class AuditSummaryPopupUI : MonoBehaviour
             LevelScoring.Award cost = LevelScoring.FailedAuditCost(progression.Score.Rules, issues.Count);
             data.Fact("Case reward", $"-{cost.Exp} EXP  -{cost.Hearts} hearts");
         }
-        data.Summary = "Your answers were cleared. Look at the case again and resubmit it to the Auditor.";
+        // Why it matters: the real-world cost of the first mistake (case JSON).
+        CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+        string meaning = null;
+        if (def != null && def.mistakeCosts != null)
+            foreach (var issue in issues)
+                if (issue != null && string.IsNullOrEmpty(meaning)) meaning = def.mistakeCosts.For(issue.FieldKey);
+        if (!string.IsNullOrWhiteSpace(meaning))
+        {
+            data.Summary = "Why it matters: " + meaning;
+            data.Footer = "Your answers were cleared. Look at the case again and resubmit it to the Auditor.";
+        }
+        else
+        {
+            data.Summary = "Your answers were cleared. Look at the case again and resubmit it to the Auditor.";
+        }
         return data;
     }
 

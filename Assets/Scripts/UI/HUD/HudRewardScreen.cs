@@ -81,6 +81,65 @@ public sealed class HudRewardScreen : MonoBehaviour
 
     private static readonly List<HudRewardScreen> Open = new List<HudRewardScreen>();
 
+    /// <summary>
+    /// Set by the level guide while it explains an open card: the card's
+    /// auto-continue timer waits (presentation only).
+    /// </summary>
+    public static bool HoldAutoContinue;
+
+    /// <summary>
+    /// Set by the case finale: the next card(s) sit on the right half of the
+    /// screen with a lighter backdrop, so the scene on the left stays visible.
+    /// The card itself is unchanged.
+    /// </summary>
+    public static bool PreferSideLayout;
+
+    /// <summary>
+    /// Set by the case finale while it fades into its scene: the next card
+    /// stays invisible (its entry animation waiting) until this is cleared,
+    /// then it animates in as usual.
+    /// </summary>
+    public static bool HoldReveal;
+
+    /// <summary>All card text is drawn this much larger (same layout).</summary>
+    private const float TextScale = 1.15f;
+
+    private bool revealHeld;
+    private float heldSince;
+
+    // The whole panel (backdrop, card frame, content, button). `group` only
+    // covers the card's content, so a held card used to show its empty frame.
+    private CanvasGroup panelGroup;
+    private GameObject backdropObject;
+
+    private bool IsLevelCompleteCard =>
+        (shownTitle ?? "").IndexOf("Level Complete", System.StringComparison.OrdinalIgnoreCase) >= 0;
+
+    /// <summary>True once this card is actually on screen (not waiting for a scene to fade in).</summary>
+    public bool IsRevealed => !revealHeld && group != null && group.alpha > 0.5f;
+
+    private static TextMeshProUGUI CardLabel(string name, Transform parent, string text, float size, Color color,
+        TextAlignmentOptions alignment, FontStyles style = FontStyles.Normal) =>
+        HudTheme.CreateLabel(name, parent, text, size * TextScale, color, alignment, style);
+
+    /// <summary>The newest open card (null when none).</summary>
+    public static HudRewardScreen Top
+    {
+        get
+        {
+            for (int i = Open.Count - 1; i >= 0; i--)
+                if (Open[i] != null && Open[i].isActiveAndEnabled && Open[i].gameObject.activeInHierarchy) return Open[i];
+            return null;
+        }
+    }
+
+    /// <summary>Title of this card (e.g. "Audit Summary", "Level Complete").</summary>
+    public string Title => shownTitle;
+
+    /// <summary>The card itself and its Continue button (for pointing at them).</summary>
+    public RectTransform Card => card;
+    public RectTransform ContinueButton => continueButton;
+
     /// <summary>True while any reward screen is showing (the HUD steps aside).</summary>
     public static bool AnyOpen
     {
@@ -98,6 +157,9 @@ public sealed class HudRewardScreen : MonoBehaviour
     private CanvasGroup group;
     private RectTransform continueButton;
     private Button sceneButton;
+    private string shownTitle;
+    private bool sideLayout;
+    private Image backdropImage;
     private TextMeshProUGUI buttonLabel;
     private RectTransform autoStrip;
     private float autoSeconds;
@@ -156,7 +218,7 @@ public sealed class HudRewardScreen : MonoBehaviour
     /// <summary>Drains the strip on the button, then presses it (same callback as a tap).</summary>
     private void TickAutoContinue()
     {
-        if (autoSeconds <= 0f || sceneButton == null) return;
+        if (autoSeconds <= 0f || sceneButton == null || HoldAutoContinue) return;
         autoElapsed += Time.unscaledDeltaTime;
         float k = Mathf.Clamp01(autoElapsed / autoSeconds);
         if (autoStrip != null)
@@ -169,6 +231,19 @@ public sealed class HudRewardScreen : MonoBehaviour
         autoSeconds = 0f;
         if (autoStrip != null) autoStrip.gameObject.SetActive(false);
         if (sceneButton.isActiveAndEnabled && sceneButton.interactable) sceneButton.onClick.Invoke();
+    }
+
+    /// <summary>Hides or shows the whole panel (backdrop, frame, content and button) at once.</summary>
+    private void ShowPanel(bool visible)
+    {
+        // Switched off outright (not just faded) so nothing can show an empty
+        // frame: the backdrop and the whole card (frame, content, button).
+        if (backdropObject != null && backdropObject.activeSelf != visible) backdropObject.SetActive(visible);
+        if (card != null && card.gameObject.activeSelf != visible) card.gameObject.SetActive(visible);
+        if (panelGroup == null) return;
+        panelGroup.alpha = visible ? 1f : 0f;
+        panelGroup.blocksRaycasts = visible;
+        panelGroup.interactable = visible;
     }
 
     /// <summary>Card scale that fits a card of this height on a canvas of this size (layout checks).</summary>
@@ -219,6 +294,7 @@ public sealed class HudRewardScreen : MonoBehaviour
         {
             Canvas c = canvases[i];
             if (c == null || !c.isRootCanvas || c == root || c.renderMode == RenderMode.WorldSpace) continue;
+            if (c.GetComponent<HudKeepVisibleDuringRewards>() != null) continue;
             if (c.gameObject.scene != gameObject.scene) continue;
             HideUi(c.transform);
         }
@@ -282,6 +358,7 @@ public sealed class HudRewardScreen : MonoBehaviour
     private void Setup()
     {
         panel = (RectTransform)transform;
+        panelGroup = panel.GetComponent<CanvasGroup>() ?? panel.gameObject.AddComponent<CanvasGroup>();
 
         // The plain panel image and texts are replaced (texts keep receiving values).
         Image plain = GetComponent<Image>();
@@ -296,8 +373,10 @@ public sealed class HudRewardScreen : MonoBehaviour
         backdrop.anchorMax = Vector2.one;
         backdrop.offsetMin = new Vector2(-4000f, -4000f);
         backdrop.offsetMax = new Vector2(4000f, 4000f);
-        HudTheme.AddImage(backdrop, null, new Color(0.02f, 0.03f, 0.05f, 0.76f)).raycastTarget = true;
+        backdropImage = HudTheme.AddImage(backdrop, null, new Color(0.02f, 0.03f, 0.05f, 0.76f));
+        backdropImage.raycastTarget = true;
         backdrop.SetSiblingIndex(0);
+        backdropObject = backdrop.gameObject;
 
         // The card: centred, sized to its content in Build().
         card = HudTheme.CreateRect("Reward Card", panel);
@@ -413,6 +492,14 @@ public sealed class HudRewardScreen : MonoBehaviour
     {
         for (int i = 0; i < built.Count; i++) if (built[i] != null) Destroy(built[i]);
         built.Clear();
+        shownTitle = data.Title;
+        // The Level Complete card waits for the client scene even if this
+        // card is built before the finale has started.
+        bool finaleCard = (shownTitle ?? "").IndexOf("Level Complete", System.StringComparison.OrdinalIgnoreCase) >= 0 &&
+                          CaseFinale.WillStage;
+        sideLayout = PreferSideLayout || finaleCard;
+        if (backdropImage != null) backdropImage.color = new Color(0.02f, 0.03f, 0.05f, sideLayout ? 0.18f : 0.76f);
+        laidOutFor = Vector2.zero;
         hearts.Clear();
         issueRows.Clear();
         sparkles.Clear();
@@ -470,6 +557,9 @@ public sealed class HudRewardScreen : MonoBehaviour
 
         t = 0f;
         animating = true;
+        revealHeld = HoldReveal || (IsLevelCompleteCard && (CaseFinale.WillStage || CaseFinale.HoldsCards));
+        heldSince = Time.unscaledTime;
+        ShowPanel(!revealHeld);
         enabled = true;
         group.alpha = 0f;
         laidOutFor = Vector2.zero;
@@ -497,9 +587,9 @@ public sealed class HudRewardScreen : MonoBehaviour
                 dot.sizeDelta = new Vector2(30f, 30f);
                 dot.anchoredPosition = new Vector2(26f, 0f);
                 HudTheme.AddImage(dot, HudTheme.Circle, Coral);
-                TextMeshProUGUI bang = HudTheme.CreateLabel("Bang", dot, "!", 22f, HudTheme.PanelInner, TextAlignmentOptions.Center, FontStyles.Bold);
+                TextMeshProUGUI bang = CardLabel("Bang", dot, "!", 22f, HudTheme.PanelInner, TextAlignmentOptions.Center, FontStyles.Bold);
                 HudTheme.Stretch((RectTransform)bang.transform);
-                TextMeshProUGUI text = HudTheme.CreateLabel("Text", row, data.Issues[i], 24f, HudTheme.TextPrimary, TextAlignmentOptions.MidlineLeft);
+                TextMeshProUGUI text = CardLabel("Text", row, data.Issues[i], 24f, HudTheme.TextPrimary, TextAlignmentOptions.MidlineLeft);
                 RectTransform tr = (RectTransform)text.transform;
                 HudTheme.Stretch(tr);
                 tr.offsetMin = new Vector2(56f, 0f);
@@ -532,7 +622,7 @@ public sealed class HudRewardScreen : MonoBehaviour
                 data.StatusGood ? HudTheme.Check : null);
             if (!string.IsNullOrEmpty(data.StatusDetail))
             {
-                TextMeshProUGUI detail = HudTheme.CreateLabel("Status Detail", hero, data.StatusDetail, 23f, HudTheme.TextMuted,
+                TextMeshProUGUI detail = CardLabel("Status Detail", hero, data.StatusDetail, 23f, HudTheme.TextMuted,
                     TextAlignmentOptions.Center);
                 Place((RectTransform)detail.transform, 0f, -100f, 900f, 32f);
             }
@@ -552,7 +642,7 @@ public sealed class HudRewardScreen : MonoBehaviour
             heroPop = Medal(hero, data.Medals[0], 240f, 0f, -120f);
             if (labelled)
             {
-                TextMeshProUGUI label = HudTheme.CreateLabel("Medal Label", hero, data.MedalLabel.ToUpperInvariant(), 28f,
+                TextMeshProUGUI label = CardLabel("Medal Label", hero, data.MedalLabel.ToUpperInvariant(), 28f,
                     HudTheme.BrassSoft, TextAlignmentOptions.Center, FontStyles.Bold);
                 label.characterSpacing = 8f;
                 Place((RectTransform)label.transform, 0f, -264f, 700f, 36f);
@@ -625,7 +715,7 @@ public sealed class HudRewardScreen : MonoBehaviour
                 bool reached = data.Exp * 100 >= data.PassingPercent * data.MaxExp;
                 HudTheme.AddImage(mark, HudTheme.Rounded, reached ? HudTheme.Complete : HudTheme.BrassSoft, 2f);
             }
-            expValue = HudTheme.CreateLabel("Value", row, string.Empty, 28f, HudTheme.TextPrimary,
+            expValue = CardLabel("Value", row, string.Empty, 28f, HudTheme.TextPrimary,
                 TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
             Place((RectTransform)expValue.transform, left + 49f + BarWidth + 18f, -25f, 150f, 40f, 0f);
             expTarget = data.Exp;
@@ -656,13 +746,13 @@ public sealed class HudRewardScreen : MonoBehaviour
                     heart.localScale = Vector3.zero;
                     hearts.Add(heart);
                 }
-                TextMeshProUGUI value = HudTheme.CreateLabel("Value", row, $"{data.Hearts} / {data.MaxHearts}", 28f,
+                TextMeshProUGUI value = CardLabel("Value", row, $"{data.Hearts} / {data.MaxHearts}", 28f,
                     HudTheme.TextPrimary, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
                 Place((RectTransform)value.transform, x0 + data.MaxHearts * step - HeartSize * 0.5f + 12f, -26f, 110f, 40f, 0f);
             }
             else
             {
-                TextMeshProUGUI value = HudTheme.CreateLabel("Value", row, $"{data.Hearts} / {data.MaxHearts} hearts", 28f,
+                TextMeshProUGUI value = CardLabel("Value", row, $"{data.Hearts} / {data.MaxHearts} hearts", 28f,
                     HudTheme.Reputation, TextAlignmentOptions.Center, FontStyles.Bold);
                 Place((RectTransform)value.transform, 0f, -26f, 600f, 40f);
             }
@@ -688,7 +778,7 @@ public sealed class HudRewardScreen : MonoBehaviour
             RectTransform chipFill = HudTheme.CreateRect("Fill", chip);
             HudTheme.Stretch(chipFill, 2f);
             HudTheme.AddImage(chipFill, HudTheme.Rounded, HudTheme.PanelInner, 13f);
-            TextMeshProUGUI text = HudTheme.CreateLabel("Text", chip,
+            TextMeshProUGUI text = CardLabel("Text", chip,
                 $"<color=#A8B4C0><size=70%>{fact.Key.ToUpperInvariant()}</size></color>   {fact.Value}", 24f,
                 HudTheme.TextPrimary, TextAlignmentOptions.Center, FontStyles.Bold);
             text.enableAutoSizing = false;
@@ -701,6 +791,8 @@ public sealed class HudRewardScreen : MonoBehaviour
             total += w;
         }
         total += (chips.Count - 1) * 16f;
+        // Larger text must never push the chips past the card.
+        if (total > ContentWidth) row.localScale = new Vector3(ContentWidth / total, ContentWidth / total, 1f);
         float x = -total * 0.5f;
         foreach (RectTransform chip in chips)
         {
@@ -720,7 +812,7 @@ public sealed class HudRewardScreen : MonoBehaviour
     private void Banner(string title, float y)
     {
         RectTransform row = Rect("Title Banner", y, 64f);
-        TextMeshProUGUI text = HudTheme.CreateLabel("Title", row, title, 40f, HudTheme.PanelInner,
+        TextMeshProUGUI text = CardLabel("Title", row, title, 40f, HudTheme.PanelInner,
             TextAlignmentOptions.Center, FontStyles.Bold);
         text.characterSpacing = 8f;
         text.enableAutoSizing = false;
@@ -774,7 +866,7 @@ public sealed class HudRewardScreen : MonoBehaviour
         FontStyles style = FontStyles.Normal, float spacing = 0f)
     {
         RectTransform row = Rect("Label", y, height);
-        TextMeshProUGUI label = HudTheme.CreateLabel("Text", row, text ?? string.Empty, size, color,
+        TextMeshProUGUI label = CardLabel("Text", row, text ?? string.Empty, size, color,
             TextAlignmentOptions.Center, style);
         label.characterSpacing = spacing;
         HudTheme.Stretch((RectTransform)label.transform);
@@ -799,7 +891,7 @@ public sealed class HudRewardScreen : MonoBehaviour
         var shadow = pill.gameObject.AddComponent<Shadow>();
         shadow.effectColor = new Color(0f, 0f, 0f, 0.4f);
         shadow.effectDistance = new Vector2(0f, -4f);
-        TextMeshProUGUI label = HudTheme.CreateLabel("Text", pill, text, size, HudTheme.PanelInner,
+        TextMeshProUGUI label = CardLabel("Text", pill, text, size, HudTheme.PanelInner,
             TextAlignmentOptions.Center, FontStyles.Bold);
         label.characterSpacing = 4f;
         label.enableAutoSizing = false;
@@ -821,7 +913,7 @@ public sealed class HudRewardScreen : MonoBehaviour
             else
             {
                 HudTheme.AddImage(glyph, HudTheme.Circle, HudTheme.PanelInner);
-                TextMeshProUGUI m = HudTheme.CreateLabel("Mark", glyph, mark, size * 0.9f, color, TextAlignmentOptions.Center, FontStyles.Bold);
+                TextMeshProUGUI m = CardLabel("Mark", glyph, mark, size * 0.9f, color, TextAlignmentOptions.Center, FontStyles.Bold);
                 HudTheme.Stretch((RectTransform)m.transform);
             }
         }
@@ -885,7 +977,17 @@ public sealed class HudRewardScreen : MonoBehaviour
         Vector2 size = canvasRect.rect.size;
         if (size == laidOutFor) return;
         laidOutFor = size;
-        fitScale = FitScale(size.x, size.y, cardHeight);
+        if (sideLayout)
+        {
+            // Right half of the screen; the card keeps its own look.
+            fitScale = FitScale(size.x * 0.5f + ScreenMarginX * 0.5f, size.y, cardHeight);
+            card.anchoredPosition = new Vector2(size.x * 0.25f - ScreenMarginX * 0.25f, 25f);
+        }
+        else
+        {
+            fitScale = FitScale(size.x, size.y, cardHeight);
+            card.anchoredPosition = new Vector2(0f, 25f);
+        }
     }
 
     private void Update()
@@ -910,6 +1012,31 @@ public sealed class HudRewardScreen : MonoBehaviour
             float s = HudTheme.EaseOutBack(k) * tw;
             sparkles[i].localScale = new Vector3(s, s, 1f);
             sparkles[i].localRotation = Quaternion.Euler(0f, 0f, now * 40f + i * 30f);
+        }
+
+        // The client scene started after this card was built: hide it again
+        // and restart its entry animation once the scene lets it show.
+        if (!revealHeld && IsLevelCompleteCard && (HoldReveal || CaseFinale.HoldsCards))
+        {
+            revealHeld = true;
+            heldSince = Time.unscaledTime;
+            t = 0f;
+            animating = true;
+        }
+
+        // Waiting for a scene to fade in: invisible, entry animation not started.
+        if (revealHeld)
+        {
+            // Never stuck: give up waiting after 10 s.
+            if ((HoldReveal || CaseFinale.HoldsCards || !CaseFinale.CardReleased) && Time.unscaledTime - heldSince < 10f)
+            {
+                ShowPanel(false);
+                group.alpha = 0f;
+                t = 0f;
+                return;
+            }
+            revealHeld = false;
+            ShowPanel(true);   // the backdrop and frame appear with the card's own pop-in
         }
 
         if (!animating)

@@ -165,8 +165,16 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         // Desk / corkboard exit button in the HUD style.
         SkinExitButton();
 
-        // Game-feel skin for the floating value while dragging.
-        DragGhostSkin.Attach(FindAnyObjectByType<DragVisualManager>(FindObjectsInactive.Include));
+        // Game-feel skin for the floating value while dragging, plus a frame on
+        // the field under the finger (green = it fits, red = it doesn't).
+        DragVisualManager dragVisuals = FindAnyObjectByType<DragVisualManager>(FindObjectsInactive.Include);
+        DragGhostSkin.Attach(dragVisuals);
+        DropAimIndicator aim = DropAimIndicator.Create(dragVisuals);
+        if (aim != null) addedObjects.Add(aim.gameObject);
+
+        // No walking or looking around while a reward/summary card is up.
+        PlayerControlHold.ResetForNewScene();
+        addedComponents.Add(gameObject.AddComponent<HudModalControlHold>());
 
         // Matching, distinct HUD icons (same buttons, same behaviour).
         ApplyIcon(canvasRoot, "PermanentHUD/Settings/SettingsButton", "settings");

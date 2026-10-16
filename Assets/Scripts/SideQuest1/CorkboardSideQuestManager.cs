@@ -26,6 +26,15 @@ public class CorkboardSideQuestManager : MonoBehaviour
     private Material dividerMaterial;
     private Canvas feedbackCanvas;
     private TextMeshProUGUI feedbackText;
+
+    // Reveal (Side Quest 1 title card): while the card shows, the board is
+    // bare; the corner labels, dividers, prompt and the profile cards only
+    // appear (with a pop) once it closes.
+    private bool revealHeld;
+    private bool cameraArrived;
+    private bool revealStarted;
+    private float revealTimeout;
+    private readonly List<KeyValuePair<Transform, Vector3>> hiddenLabels = new List<KeyValuePair<Transform, Vector3>>();
     private Bounds boardBounds;
     private float splitX;
     private float splitY;
@@ -38,6 +47,15 @@ public class CorkboardSideQuestManager : MonoBehaviour
     private bool boardGeometryReady;
 
     public bool CanInteract => sideQuestActive && !sideQuestCompleted;
+
+    /// <summary>Notification (Phase 3 reactions): a card was placed; correct?, locked after this miss?</summary>
+    public static event System.Action<ProfileDragCard, bool, bool> CardPlaced;
+
+    /// <summary>Wrong drops in a row for one card before it is locked for LockSeconds.</summary>
+    public const int MissesBeforeLock = 2;
+    public const float LockSeconds = 3f;
+    private readonly System.Collections.Generic.Dictionary<ProfileDragCard, int> missesByCard =
+        new System.Collections.Generic.Dictionary<ProfileDragCard, int>();
     public bool IsCompleted => sideQuestCompleted;
     /// <summary>Placements that were wrong this run (each one costs EXP; see rewards.json).</summary>
     public int WrongPlacements => wrongPlacements;
@@ -107,17 +125,146 @@ public class CorkboardSideQuestManager : MonoBehaviour
             sideQuestRoot.SetActive(true);
         }
 
-        CreateDividers();
-        SetFeedback("Your files are ready. Match each profile to a corkboard area.");
-
-        if (CameraController.Instance != null)
+        revealHeld = SideQuestSplash.Active;
+        revealStarted = false;
+        cameraArrived = false;
+        if (revealHeld)
         {
-            CameraController.Instance.EnterCorkboardSideQuest(corkboardViewpoint, SpawnCards);
+            // Only the bare corkboard behind the title card.
+            HideSlotLabels();
+            revealTimeout = Time.unscaledTime + 30f;
         }
         else
         {
-            SpawnCards();
+            CreateDividers();
+            SetFeedback("Your files are ready. Match each profile to a corkboard area.");
         }
+
+        if (CameraController.Instance != null)
+        {
+            CameraController.Instance.EnterCorkboardSideQuest(corkboardViewpoint, OnCameraArrived);
+        }
+        else
+        {
+            OnCameraArrived();
+        }
+    }
+
+    private void OnCameraArrived()
+    {
+        cameraArrived = true;
+        if (!revealHeld) SpawnCards();
+    }
+
+    /// <summary>
+    /// Called when the Side Quest 1 title card has closed: the board fills in
+    /// with a subtle pop (labels, dividers, prompt), then the profile cards
+    /// fly in as before.
+    /// </summary>
+    public void ReleaseReveal()
+    {
+        if (!revealHeld || revealStarted) return;
+        revealStarted = true;
+        StartCoroutine(Reveal());
+    }
+
+    private void Update()
+    {
+        // Safety: never leave the board bare if the title card never closes.
+        if (revealHeld && !revealStarted && sideQuestActive && Time.unscaledTime > revealTimeout) ReleaseReveal();
+    }
+
+    private System.Collections.IEnumerator Reveal()
+    {
+        while (!cameraArrived) yield return null;
+        if (!sideQuestActive) yield break;
+
+        // Corner labels pop in one by one.
+        for (int i = 0; i < hiddenLabels.Count; i++)
+        {
+            StartCoroutine(Pop(hiddenLabels[i].Key, hiddenLabels[i].Value, 0.32f));
+            yield return Wait(0.08f);
+        }
+        hiddenLabels.Clear();
+
+        // Dividers grow out from the centre of the board.
+        CreateDividers();
+        StartCoroutine(GrowDividers(0.4f));
+        yield return Wait(0.25f);
+
+        // The prompt panel pops up.
+        SetFeedback("Your files are ready. Match each profile to a corkboard area.");
+        Transform panel = feedbackCanvas != null ? feedbackCanvas.transform.Find("FeedbackPanel") : null;
+        if (panel != null) StartCoroutine(Pop(panel, panel.localScale, 0.3f));
+        yield return Wait(0.2f);
+
+        revealHeld = false;
+        SpawnCards();   // the existing fly-in from the profiles icon
+    }
+
+    private static System.Collections.IEnumerator Wait(float seconds)
+    {
+        float end = Time.unscaledTime + seconds;
+        while (Time.unscaledTime < end) yield return null;
+    }
+
+    /// <summary>Subtle pop: from 60% with a small overshoot to full size.</summary>
+    private static System.Collections.IEnumerator Pop(Transform target, Vector3 fullScale, float seconds)
+    {
+        if (target == null) yield break;
+        float t = 0f;
+        while (t < seconds && target != null)
+        {
+            t += Time.unscaledDeltaTime;
+            float k = Mathf.Clamp01(t / seconds) - 1f;
+            float back = 1f + k * k * (2.2f * k + 1.2f);   // ease-out-back, gentle overshoot
+            target.localScale = fullScale * Mathf.LerpUnclamped(0.6f, 1f, back);
+            yield return null;
+        }
+        if (target != null) target.localScale = fullScale;
+    }
+
+    private System.Collections.IEnumerator GrowDividers(float seconds)
+    {
+        var ends = new List<KeyValuePair<Vector3, Vector3>>();
+        foreach (LineRenderer line in dividerLines)
+            ends.Add(new KeyValuePair<Vector3, Vector3>(line.GetPosition(0), line.GetPosition(1)));
+        float t = 0f;
+        while (t < seconds)
+        {
+            t += Time.unscaledDeltaTime;
+            float k = 1f - Mathf.Pow(1f - Mathf.Clamp01(t / seconds), 3f);
+            for (int i = 0; i < dividerLines.Count && i < ends.Count; i++)
+            {
+                if (dividerLines[i] == null) continue;
+                Vector3 mid = (ends[i].Key + ends[i].Value) * 0.5f;
+                dividerLines[i].SetPosition(0, Vector3.Lerp(mid, ends[i].Key, k));
+                dividerLines[i].SetPosition(1, Vector3.Lerp(mid, ends[i].Value, k));
+            }
+            yield return null;
+        }
+    }
+
+    private void HideSlotLabels()
+    {
+        hiddenLabels.Clear();
+        if (slots == null) return;
+        foreach (CorkboardSlot slot in slots)
+        {
+            if (slot == null) continue;
+            foreach (TMP_Text label in slot.GetComponentsInChildren<TMP_Text>(true))
+            {
+                hiddenLabels.Add(new KeyValuePair<Transform, Vector3>(label.transform, label.transform.localScale));
+                label.transform.localScale = Vector3.zero;
+            }
+        }
+    }
+
+    private void RestoreSlotLabels()
+    {
+        foreach (var pair in hiddenLabels)
+            if (pair.Key != null) pair.Key.localScale = pair.Value;
+        hiddenLabels.Clear();
     }
 
     /// <summary>Maps a pointer ray to a quadrant and clamps the whole card inside it.</summary>
@@ -194,6 +341,30 @@ public class CorkboardSideQuestManager : MonoBehaviour
         bool firstAttempt = slot.PlacementAttempts == 0;
         bool correct = slot.TryPlaceCard(card);
         if (!correct) wrongPlacements++;
+
+        // No brute force: every second miss in a row locks the card briefly.
+        bool locked = false;
+        if (correct) missesByCard.Remove(card);
+        else
+        {
+            missesByCard.TryGetValue(card, out int misses);
+            misses++;
+            missesByCard[card] = misses;
+            if (misses % MissesBeforeLock == 0)
+            {
+                card.LockedUntil = Time.unscaledTime + LockSeconds;
+                locked = true;
+            }
+        }
+
+        // Arthur reacts: why it fits, or a hint toward the missed clue
+        // (never the answer). Shown in his bubble when the guide runs,
+        // otherwise in this board's own feedback line.
+        string reaction = CorkboardTeaching.ReactionFor(card.Profile, slot.ExpectedClassification);
+        if (locked)
+            reaction = $"Hold on! Let's re-read {card.Profile.TaxpayerName}'s card for a moment. " + reaction;
+        bool spoken = GuideVoice.TrySay(reaction, correct ? "wow" : "confused", correct ? 4f : locked ? 6.5f : 5.5f);
+        CardPlaced?.Invoke(card, correct, locked);
         if (correct && firstAttempt)
         {
             firstTrySolvedSlots.Add(slot);
@@ -204,11 +375,13 @@ public class CorkboardSideQuestManager : MonoBehaviour
         if (correct)
         {
             string firstTry = firstAttempt ? " First try!" : " Nice recovery!";
-            SetFeedback($"{card.Profile.TaxpayerName} is filed correctly.{firstTry} {count} • {placementAttempts} placements • {firstTrySolvedSlots.Count} first-try areas.");
+            string lead = spoken || string.IsNullOrEmpty(reaction) ? $"{card.Profile.TaxpayerName} is filed correctly.{firstTry}" : reaction;
+            SetFeedback($"{lead} {count} • {placementAttempts} placements • {firstTrySolvedSlots.Count} first-try areas.");
         }
         else
         {
-            SetFeedback($"Try again: compare citizenship and usual residence for {card.Profile.TaxpayerName}. {count} • {placementAttempts} placements.");
+            string lead = spoken || string.IsNullOrEmpty(reaction) ? $"{card.Profile.TaxpayerName} bounced back. Try another corner." : reaction;
+            SetFeedback($"{lead} {count} • {placementAttempts} placements.");
         }
 
         CheckForCompletion();
@@ -561,7 +734,9 @@ public class CorkboardSideQuestManager : MonoBehaviour
         textRect.offsetMax = new Vector2(-18f, -8f);
         feedbackText = textObject.GetComponent<TextMeshProUGUI>();
         feedbackText.font = TMP_Settings.defaultFontAsset;
-        feedbackText.fontSize = 20f;
+        // Big and easy to read on the board (same font as the rest of the game).
+        feedbackText.fontSize = 24f;
+        feedbackText.fontStyle = FontStyles.Bold;
         feedbackText.color = new Color(1f, 0.94f, 0.78f);
         feedbackText.alignment = TextAlignmentOptions.Center;
         feedbackText.enableWordWrapping = true;
@@ -644,6 +819,8 @@ public class CorkboardSideQuestManager : MonoBehaviour
 
     private void ClearRuntimeObjects()
     {
+        RestoreSlotLabels();
+        revealHeld = false;
         DestroyDividers();
         if (feedbackCanvas != null)
         {

@@ -126,6 +126,7 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
     private bool CanFocusPointer(PointerEventData eventData)
     {
         return eventData != null && !hasBeenTalkedTo && !dialogueSessionActive &&
+               InteractionRange.PlayerCanReach(this) &&
                !DialogueUI.IsAnyDialogueActive && !VirtualJoystick.BlocksWorldInput &&
                !MobileInputGuard.IsPointerOverUI(eventData.position);
     }
@@ -144,6 +145,9 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
         {
             return;
         }
+
+        // Only within reach (taps through the EventSystem have no distance limit).
+        if (!InteractionRange.PlayerCanReach(this)) return;
 
         if (dialogueUI == null)
         {

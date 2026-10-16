@@ -271,25 +271,10 @@
 
 
   "receptionistGreeting": [
-
-    {
-      "speaker": "Npc",
-      "text": "Good afternoon! I heard you're getting familiar with the local taxpayers.",
-      "portraitId": "Client1_Marie_Happy"
-    },
-
-    {
-      "speaker": "Npc",
-      "text": "Marie from the BPO office should be easy enough to start with. Her situation is pretty simple.",
-      "portraitId": "Client1_Marie_Happy"
-    },
-
-    {
-      "speaker": "Player",
-      "text": "Sounds good. I'll head over and speak with her.",
-      "portraitId": "Auditor_Default"
-    }
-
+    {"speaker": "Npc", "text": "Welcome to the office! You must be our new tax consultant.", "portraitId": "default"},
+    {"speaker": "Npc", "text": "Word travels fast around here. Everyone's saying you did great in the plaza!", "portraitId": "default"},
+    {"speaker": "Npc", "text": "Remember Marie, from outside? She's your first case. Her case folder is already on your desk.", "portraitId": "default"},
+    {"speaker": "Player", "text": "Great, I'll head straight there.", "portraitId": "Auditor_Default"}
   ],
 
 
@@ -459,5 +444,60 @@
     }
 
   ]
+  ,
+
+  "_consequences": "Level 1 Phase 3. Marie's talk after a failed audit (her story again as clues, never the answer), her bubbles, what each mistake would mean in real life (Audit Summary), and the Auditor's lines that get stricter on each failed try (the last repeats).",
+
+  "clientAfterFailedAudit": [
+    { "speaker": "Npc", "text": "The Auditor said something was off with my file... Did I tell you something wrong?", "portraitId": "Client1_Marie_Sad" },
+    { "speaker": "Player", "text": "Not at all. I just need to take another look. Can you remind me about your work?", "portraitId": "Auditor_Default" },
+    { "speaker": "Npc", "text": "I've only ever had one job: the night shift at the BPO, with my salary every payday. No business on the side.", "portraitId": "Client1_Marie_Default" },
+    { "speaker": "Npc", "text": "And I've lived in this town my whole life. My passport has never even been stamped!", "portraitId": "Client1_Marie_Default" },
+    { "speaker": "Player", "text": "That helps a lot. Leave it to me.", "portraitId": "Auditor_Default" },
+    { "speaker": "Npc", "text": "Thank you. I'll be right here.", "portraitId": "Client1_Marie_Happy" }
+  ],
+
+  "clientFailedBubble": "Something's off with my file? Oh no... I'll be in the conference room if you need me!",
+  "clientFailedPortrait": "Client1_Marie_Sad",
+  "clientApprovedBubble": "My file's approved? Thank you so much! Karaoke is on me this weekend!",
+  "clientApprovedPortrait": "Client1_Marie_Happy",
+
+  "mistakeCosts": {
+    "residencyStatus": "get where Marie belongs and lives wrong, and she could be taxed on the wrong income, or miss what she's owed.",
+    "taxpayerType": "the wrong taxpayer type puts Marie's return under the wrong rules and forms, and that can mean penalties she doesn't deserve.",
+    "incomeSource": "mix up how Marie earns her money, and her return reports the wrong income, with surcharges and interest to follow."
+  },
+
+  "auditorRetryLines": [
+    "This case isn't quite ready yet. Take another look, and don't worry: you can go back and work through it again.",
+    "Second try, and still not right. Did you check her profile and the Tax Code Book this time?",
+    "Slow down. Talk to your client, read her profile again, then match it to the book. I want careful work, not guesses."
+  ],
+  "auditorSameAnswersLine": "These are the exact same answers you gave me last time. Change what's wrong first, then come back.",
+
+  "_clientFinale": "End-of-level scene: Marie (the plaza model) in the conference room on the left, the Level Complete card on the right. Her lines depend on the result: great = first try and on time; good = one slip (one failed audit, or one day late); okay = more slips. screenLeft = where she stands across the screen (0 left, 0.5 centre). distanceScale: 1 = default, bigger = camera farther back. floorPath = the room floor she stands on.",
+  "clientFinale": {
+    "enabled": true,
+    "name": "Marie",
+    "modelPath": "Environment/Outside/Plaza/NPCS/NPC_Marie",
+    "spotPath": "Environment/OfficeBuilding/Rooms/ConferenceRoom/Client",
+    "roomPath": "Environment/OfficeBuilding/Rooms/ConferenceRoom",
+    "floorPath": "Environment/OfficeBuilding/Rooms/ConferenceRoom/Floors",
+    "fieldOfView": 40,
+    "distanceScale": 1,
+    "screenLeft": 0.25,
+    "great": [
+      "You did it! First try, and right on time!",
+      "My file is all sorted. Karaoke is on me this weekend!"
+    ],
+    "good": [
+      "My file's approved! Thank you so much.",
+      "It took a little extra work, but you got there in the end!"
+    ],
+    "okay": [
+      "Phew... it's finally approved.",
+      "That was a bit of a journey... but thank you for sticking with it. Maybe a little quicker next time?"
+    ]
+  }
 
 }

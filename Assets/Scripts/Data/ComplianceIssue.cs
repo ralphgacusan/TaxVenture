@@ -9,8 +9,12 @@ public class ComplianceIssue
 {
     public string ShortLabel;
 
-    public ComplianceIssue(string shortLabel)
+    /// <summary>The CaseData field this issue is about ("residencyStatus", "taxpayerType", "incomeSource"), or null.</summary>
+    public string FieldKey;
+
+    public ComplianceIssue(string shortLabel, string fieldKey = null)
     {
         ShortLabel = shortLabel;
+        FieldKey = fieldKey;
     }
 }

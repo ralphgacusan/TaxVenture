@@ -11,6 +11,7 @@
     <Compile Include="../../Assets/Scripts/Data/DialogueBuilder.cs" Link="DialogueBuilder.cs" />
     <Compile Include="../../Assets/Scripts/SideQuest1/TownNpcDialogueLibrary.cs" Link="TownNpcDialogueLibrary.cs" />
     <Compile Include="../../Assets/Scripts/SideQuest1/TaxpayerProfileData.cs" Link="TaxpayerProfileData.cs" />
+    <Compile Include="../../Assets/Scripts/SideQuest1/CorkboardTeaching.cs" Link="CorkboardTeaching.cs" />
     <Compile Include="PresentationTests.cs" />
     <Compile Include="../../Assets/Scripts/UI/DialogueTerminalHandoff.cs" Link="DialogueTerminalHandoff.cs" />
     <Compile Include="../../Assets/Scripts/UI/DialogueAdvanceGate.cs" Link="DialogueAdvanceGate.cs" />

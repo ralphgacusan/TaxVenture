@@ -29,7 +29,7 @@
       "title": "Finish Side Quest 1",
       "steps": [
         { "text": "Explore the plaza and talk to the 4 clients to get their taxpayer profiles.", "trigger": "event:AllProfilesCollected", "progress": "profiles" },
-        { "text": "Talk to the tutorial guide.", "trigger": "event:TutorialGuideTalkedTo" },
+        { "text": "Talk to Arthur, the tutorial guide.", "trigger": "event:TutorialGuideTalkedTo" },
         { "text": "Finish Side Quest 1 at the corkboard.", "trigger": "event:SideQuestCompleted" }
       ]
     },

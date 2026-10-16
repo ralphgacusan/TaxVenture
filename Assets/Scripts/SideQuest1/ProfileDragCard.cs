@@ -156,8 +156,14 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
         }
     }
 
+    /// <summary>Time (unscaled) until which this card can't be picked up (after repeated misses).</summary>
+    public float LockedUntil { get; set; }
+
+    public bool IsLocked => Time.unscaledTime < LockedUntil;
+
     public void OnPointerDown(PointerEventData eventData)
     {
+        if (IsLocked) return;
         if (eventData.button != PointerEventData.InputButton.Left || state == MotionState.Pinning ||
             state == MotionState.Dragging || state == MotionState.Arriving || activePointerId != NoPointer ||
             (activeCard != null && activeCard != this) || (manager != null && !manager.CanInteract)) return;

@@ -2,7 +2,8 @@
   "_readme": [
     "Level 1 reward rules. Change any number here; it applies on the next Play.",
     "passingPercent: the share of the level's maximum EXP AND maximum hearts needed to pass (unlock the next level). 100 = perfect run required.",
-    "requireSideQuestBeforeOffice: true = the receptionist, desk and case cannot be used until the side quest is finished.",
+    "requireSideQuestBeforeOffice: true = the office entrance doors stay shut (and block the way in) until the side quest is finished, then swing open; the receptionist, desk and case cannot be used before that either.",
+    "officeDoors: scene names of the entrance door leaves that stay shut. They close toward each other and open back to the pose they have in the scene.",
     "conversation: hearts per finished plaza client conversation (bonus), and how many clients there are.",
     "sideQuest: full EXP and hearts for a perfect corkboard; expPerWrong is taken off per wrong placement; a heart is lost at each count in heartsLostAtWrong (e.g. 1, 3, 5 wrong).",
     "Badge tiers: finishing the side quest always earns the badge. Bronze = finished, Silver = side-quest EXP at or above passingPercent, Gold = perfect (no wrong placements). Replays keep the best tier.",
@@ -12,6 +13,7 @@
   ],
   "passingPercent": 80,
   "requireSideQuestBeforeOffice": true,
+  "officeDoors": ["Office_Entrance_Door_1", "Office_Entrance_Door_2"],
   "conversation": { "hearts": 1, "count": 4 },
   "sideQuest": {
     "exp": 50,

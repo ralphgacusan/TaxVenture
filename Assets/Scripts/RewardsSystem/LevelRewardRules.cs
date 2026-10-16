@@ -48,6 +48,8 @@ public class LevelRewardRules
 
     public int passingPercent = 80;
     public bool requireSideQuestBeforeOffice = true;
+    /// <summary>Door objects (scene names) kept shut until the side quest is done.</summary>
+    public string[] officeDoors = { "Office_Entrance_Door_1", "Office_Entrance_Door_2" };
     public ConversationRules conversation = new ConversationRules();
     public SideQuestRules sideQuest = new SideQuestRules();
     public CaseRules caseFile = new CaseRules();

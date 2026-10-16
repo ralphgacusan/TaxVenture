@@ -97,6 +97,9 @@ public sealed class HudProfileCards : MonoBehaviour
     /// <summary>True when a profile stack can be dragged out of the icon.</summary>
     public bool CanDragOut() => !AnyCardOpen() && CurrentProfiles().Count > 0;
 
+    /// <summary>Read-only: true while any profile card is open (used by the level guide).</summary>
+    public bool IsShowingCards => AnyCardOpen();
+
     /// <summary>Dropped stack: scatter the cards from the drop point.</summary>
     public bool OpenFromDrop(Vector2 screenPosition)
     {
@@ -150,6 +153,9 @@ public sealed class HudProfileCards : MonoBehaviour
         HudWindowLock.Acquire(this);
         holding = true;
     }
+
+    /// <summary>Closes every open profile card (e.g. Office Hours' next morning).</summary>
+    public void CloseCards() => CloseAll();
 
     private void CloseAll()
     {

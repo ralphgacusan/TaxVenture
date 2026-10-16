@@ -50,19 +50,19 @@ public static class ComplianceChecker
         if (!TryMatchEnum(data.residencyStatus, answerKey.residencyStatus))
         {
             issues.Add(new ComplianceIssue(
-                "Review the taxpayer's background and living situation."));
+                "Review the taxpayer's background and living situation.", "residencyStatus"));
         }
 
         if (!TryMatchEnum(data.taxpayerType, answerKey.taxpayerType))
         {
             issues.Add(new ComplianceIssue(
-                "Look for details that help identify the taxpayer's classification."));
+                "Look for details that help identify the taxpayer's classification.", "taxpayerType"));
         }
 
         if (!TryMatchEnum(data.incomeSource, answerKey.incomeSource))
         {
             issues.Add(new ComplianceIssue(
-                "Review how the taxpayer earns income."));
+                "Review how the taxpayer earns income.", "incomeSource"));
         }
 
         return issues;

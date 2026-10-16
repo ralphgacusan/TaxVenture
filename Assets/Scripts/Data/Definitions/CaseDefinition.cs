@@ -96,6 +96,73 @@ public class CaseDefinition
 
     public List<DialogueLineDefinition> outcomeWrongVerdictWithIssues =
         new List<DialogueLineDefinition>();
+
+    // ---------- Consequences (Level 1 Phase 3) ----------
+    // What the client says when you visit her after a failed audit (clues
+    // again, never the answer). Empty = the client has nothing new to say.
+    public List<DialogueLineDefinition> clientAfterFailedAudit =
+        new List<DialogueLineDefinition>();
+
+    // One-line reactions shown in a bubble with the client's portrait.
+    public string clientFailedBubble;
+    public string clientFailedPortrait;
+    public string clientApprovedBubble;
+    public string clientApprovedPortrait;
+
+    // What each kind of mistake would mean in real life (Audit Summary).
+    public MistakeCostDefinition mistakeCosts = new MistakeCostDefinition();
+
+    // The Auditor's closing line after the 1st, 2nd, 3rd... failed audit
+    // (the last one repeats), and his line when the same answers come back.
+    public List<string> auditorRetryLines = new List<string>();
+    public string auditorSameAnswersLine;
+
+    // The end-of-level scene with the client (CaseFinale).
+    public ClientFinaleDefinition clientFinale = new ClientFinaleDefinition();
+}
+
+/// <summary>
+/// The client's end-of-level scene: which plaza model to show, where she
+/// stands, the shot, and her lines per result (great / good / okay).
+/// </summary>
+[Serializable]
+public class ClientFinaleDefinition
+{
+    public bool enabled = true;
+    public string name = "Marie";
+    public string modelPath = "Environment/Outside/Plaza/NPCS/NPC_Marie";
+    public string spotPath = "Environment/OfficeBuilding/Rooms/ConferenceRoom/Client";
+    public string roomPath = "Environment/OfficeBuilding/Rooms/ConferenceRoom";
+    /// <summary>The room's floor (she stands on its top surface).</summary>
+    public string floorPath = "Environment/OfficeBuilding/Rooms/ConferenceRoom/Floors";
+    /// <summary>1 = default distance; bigger = camera farther back.</summary>
+    public float distanceScale = 1f;
+    public float fieldOfView = 40f;
+    /// <summary>Where she stands across the screen, 0 = left edge, 0.5 = centre.</summary>
+    public float screenLeft = 0.25f;
+    public List<string> great = new List<string>();
+    public List<string> good = new List<string>();
+    public List<string> okay = new List<string>();
+}
+
+/// <summary>Real-world meaning of a mistake, per required field (never the answer).</summary>
+[Serializable]
+public class MistakeCostDefinition
+{
+    public string residencyStatus;
+    public string taxpayerType;
+    public string incomeSource;
+
+    public string For(string fieldKey)
+    {
+        switch (fieldKey)
+        {
+            case "residencyStatus": return residencyStatus;
+            case "taxpayerType": return taxpayerType;
+            case "incomeSource": return incomeSource;
+        }
+        return null;
+    }
 }
 
 /// <summary>

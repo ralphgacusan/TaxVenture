@@ -114,11 +114,8 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
             return;
         }
 
-        var lines = new DialogueBuilder("Tutorial Guide")
-            .Npc("Excellent work! Every profile is in its correct spot.")
-            .Npc("You've completed your first side quest — and you're already learning how to tell your taxpayers apart!")
-            .Npc("That's exactly the kind of instinct you'll need in the office. Let's head back.")
-            .Build();
+        // Arthur's wrap-up (CorkboardTeaching; editable in town.json).
+        var lines = CorkboardTeaching.BuildDone("Arthur");
 
         if (dialogueUI.TryStartDialogue(lines, ShowSideQuestCompletePanel,
             OnCompletionDialogueCancelled, this))
@@ -209,6 +206,9 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
             return;
         }
 
+        // Only within reach (taps through the EventSystem have no distance limit).
+        if (!InteractionRange.PlayerCanReach(this)) return;
+
         if (dialogueUI == null)
         {
             Debug.LogError("[TutorialNpcController] DialogueUI is not assigned.");
@@ -224,14 +224,9 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
             return;
         }
 
-        var lines = new DialogueBuilder("Tutorial Guide")
-            .Npc("Good work collecting all four taxpayer profiles!")
-            .Npc("Before we head back to the office, let's sort them properly.")
-            .Npc("I have a small corkboard here. Each corner represents a taxpayer classification.")
-            .Player("Alright, what do I do?")
-            .Npc("Simple — drag each profile to the corner that matches how that taxpayer earns their income.")
-            .Npc("Don't worry about getting it wrong — you can keep trying until every corner is correct.")
-            .Build();
+        // Arthur explains each corner indirectly, one line per kind of
+        // taxpayer, without naming any (CorkboardTeaching; town.json).
+        var lines = CorkboardTeaching.BuildIntro("Arthur");
 
         if (!dialogueUI.TryStartDialogue(lines, BeginSideQuest, OnGuideDialogueCancelled, this))
         {
@@ -255,6 +250,7 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
     private bool CanFocusPointer(PointerEventData eventData)
     {
         return eventData != null && hasAppeared && !hasStartedSideQuest && !dialogueSessionActive &&
+               InteractionRange.PlayerCanReach(this) &&
                !DialogueUI.IsAnyDialogueActive && !VirtualJoystick.BlocksWorldInput &&
                !MobileInputGuard.IsPointerOverUI(eventData.position);
     }
