@@ -95,6 +95,82 @@ public class CaseFolderUI : MonoBehaviour
 
     private const int Page1Index = 0;
 
+    /// <summary>
+    /// Optional level pages added after the case's own pages (Level 2's
+    /// Findings page). Null in Level 1. Set and cleared by the level's code.
+    /// </summary>
+    public static System.Func<CaseData, List<CaseFolderPageContent>> ExtraPages;
+
+    /// <summary>
+    /// Optional level drawing on top of any page after it renders (Level 2's
+    /// stamp ink on the front page). (page index, builder). Null in Level 1.
+    /// </summary>
+    public static System.Action<int, PageBuilder> PageDecorator;
+
+    /// <summary>The paper the pages print on (also what flips on a page turn).</summary>
+    public RectTransform PaperRect => GetPageTurnRoot();
+
+    /// <summary>True while this folder's paper is visible (desk or HUD view).</summary>
+    public bool IsShowing => folderPanelRoot != null && folderPanelRoot.activeInHierarchy;
+
+    /// <summary>The page currently shown (0 = Taxpayer Information, the front page).</summary>
+    public int CurrentPageIndex => currentPageIndex;
+
+    /// <summary>True for the desk folder's world-space paper (not the flat HUD copy).</summary>
+    public bool IsWorldPaper
+    {
+        get
+        {
+            Canvas canvas = GetComponentInParent<Canvas>(true);
+            return canvas != null && canvas.renderMode == RenderMode.WorldSpace;
+        }
+    }
+
+    private Coroutine leafThroughRoutine;
+
+    /// <summary>
+    /// Turns back (or forward) page by page to <paramref name="target"/> with
+    /// quick page-turn flips, then calls <paramref name="done"/>.
+    /// </summary>
+    public void TurnToPage(int target, System.Action done = null)
+    {
+        if (pages == null || pages.Count == 0 || !isActiveAndEnabled)
+        {
+            done?.Invoke();
+            return;
+        }
+        target = Mathf.Clamp(target, 0, pages.Count - 1);
+        if (leafThroughRoutine != null) StopCoroutine(leafThroughRoutine);
+        leafThroughRoutine = StartCoroutine(LeafThrough(target, done));
+    }
+
+    private System.Collections.IEnumerator LeafThrough(int target, System.Action done)
+    {
+        const float flipSeconds = 0.14f;
+        while (currentPageIndex != target)
+        {
+            int direction = target < currentPageIndex ? -1 : 1;
+            currentPageIndex += direction;
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+
+            RectTransform root = GetPageTurnRoot();
+            StopPageTurn();
+            if (root == null)
+            {
+                RenderPage(currentPageIndex);
+                continue;
+            }
+            int shown = currentPageIndex;
+            yield return DeskMotion.TurnPage(root, pageTurnRestRotation, pageTurnRestScale, direction, flipSeconds,
+                () => RenderPage(shown));
+        }
+        leafThroughRoutine = null;
+        done?.Invoke();
+    }
+
+    // Objects a level page created (slots, ink); removed on every page render.
+    private readonly List<GameObject> levelPageObjects = new List<GameObject>();
+
 
     private List<CaseFolderPageContent> pages;
     private int currentPageIndex = 0;
@@ -477,10 +553,39 @@ public class CaseFolderUI : MonoBehaviour
             headingText.horizontalAlignment = HorizontalAlignmentOptions.Center;
         }
 
-        RectTransform left = leftEdgeZone != null ? leftEdgeZone.transform as RectTransform : null;
-        RectTransform right = rightEdgeZone != null ? rightEdgeZone.transform as RectTransform : null;
-        if (left != null && right != null)
-            left.anchoredPosition = new Vector2(Mathf.Abs(right.anchoredPosition.x), left.anchoredPosition.y);
+        // Previous / next page buttons sit in the bottom corners, level with
+        // the "Page n / m" line, instead of full-height strips at the sides.
+        PlaceBottomPageButton(leftEdgeZone, false);
+        PlaceBottomPageButton(rightEdgeZone, true);
+    }
+
+    private const float PageButtonSize = 130f;
+    private const float PageButtonInset = 70f;
+    private const float PageButtonBottom = 10f;
+
+    private static void PlaceBottomPageButton(PageEdgeTapZone zone, bool right)
+    {
+        RectTransform rect = zone != null ? zone.transform as RectTransform : null;
+        if (rect == null)
+            return;
+
+        float x = right ? 1f : 0f;
+        rect.anchorMin = rect.anchorMax = new Vector2(x, 0f);
+        rect.pivot = new Vector2(x, 0f);
+        rect.anchoredPosition = new Vector2(right ? -PageButtonInset : PageButtonInset, PageButtonBottom);
+        rect.sizeDelta = new Vector2(PageButtonSize, PageButtonSize);
+
+        // The arrow (indicator) is the zone's child: centre it in the button.
+        foreach (Transform child in rect)
+        {
+            RectTransform arrow = child as RectTransform;
+            if (arrow == null || !child.name.EndsWith("EdgeIndicator"))
+                continue;
+            arrow.anchorMin = arrow.anchorMax = new Vector2(0.5f, 0.5f);
+            arrow.pivot = new Vector2(0.5f, 0.5f);
+            arrow.anchoredPosition = Vector2.zero;
+            arrow.sizeDelta = new Vector2(PageButtonSize, PageButtonSize);
+        }
     }
 
     // ============================================================
@@ -562,14 +667,16 @@ public class CaseFolderUI : MonoBehaviour
                 $"Page {index + 1} / {pages.Count}";
         }
 
+        // Arrows only when there is a page that way (a one-page Level 1
+        // folder shows none, as before), like the Tax Code Book.
         if (leftEdgeIndicator != null)
         {
-            leftEdgeIndicator.SetActive(false);
+            leftEdgeIndicator.SetActive(index > 0);
         }
 
         if (rightEdgeIndicator != null)
         {
-            rightEdgeIndicator.SetActive(false);
+            rightEdgeIndicator.SetActive(index < pages.Count - 1);
         }
 
         supportingDocumentsPageLink?.OnFolderPageChanged(index);
@@ -616,6 +723,8 @@ public class CaseFolderUI : MonoBehaviour
             bodyText.gameObject.SetActive(false);
         }
 
+        ClearLevelPageObjects();
+
         if (index == Page1Index)
         {
             if (page1FieldRowsContainer != null)
@@ -625,6 +734,28 @@ public class CaseFolderUI : MonoBehaviour
 
             BuildPage1Rows(data);
         }
+        else if (page.Render != null)
+        {
+            if (page1FieldRowsContainer != null)
+            {
+                page1FieldRowsContainer.SetActive(true);
+            }
+
+            ClearRows(page1Rows);
+            page.Render(new PageBuilder(this));
+        }
+        else if (page.Document != null)
+        {
+            // Review pages print in page 1's rows, so they look like it.
+            if (page1FieldRowsContainer != null)
+            {
+                page1FieldRowsContainer.SetActive(true);
+            }
+
+            BuildReviewPageRows(data, page.Document);
+        }
+
+        PageDecorator?.Invoke(index, new PageBuilder(this));
     }
 
     // ============================================================
@@ -642,7 +773,147 @@ public class CaseFolderUI : MonoBehaviour
             )
         );
 
+        AddReviewPages(list, data);
+
+        if (ExtraPages != null)
+        {
+            List<CaseFolderPageContent> extra = ExtraPages(data);
+            if (extra != null) list.AddRange(extra);
+        }
+
         return list;
+    }
+
+    // ============================================================
+    // LEVEL PAGES
+    // ============================================================
+
+    /// <summary>What a level page may draw with: page-1 rows and paper overlays.</summary>
+    public sealed class PageBuilder
+    {
+        private readonly CaseFolderUI ui;
+
+        internal PageBuilder(CaseFolderUI owner)
+        {
+            ui = owner;
+        }
+
+        /// <summary>The page's paper (for overlays such as stamp ink).</summary>
+        public RectTransform Paper => ui.GetPageTurnRoot();
+
+        /// <summary>A read-only page-1 row (it can still be picked up as a value).</summary>
+        public CaseFolderFieldRow AddSourceRow(string label, object value, DataValueType type, string key)
+        {
+            CaseFolderFieldRow row = Instantiate(ui.caseFolderFieldRowPrefab, ui.page1FieldRowListRoot);
+            row.InitializeSourceOnly(label, value, type, key);
+            ui.page1Rows.Add(row);
+            return row;
+        }
+
+        /// <summary>A fresh page-1 row object for the level to turn into its own control.</summary>
+        public GameObject AddRowObject()
+        {
+            CaseFolderFieldRow row = Instantiate(ui.caseFolderFieldRowPrefab, ui.page1FieldRowListRoot);
+            ui.levelPageObjects.Add(row.gameObject);
+            return row.gameObject;
+        }
+
+        /// <summary>Puts an object on the paper; it is removed when the page changes.</summary>
+        public void AddOverlay(GameObject overlay)
+        {
+            if (overlay == null) return;
+            overlay.transform.SetParent(Paper, false);
+            ui.levelPageObjects.Add(overlay);
+        }
+
+        /// <summary>Redraws the current page (after the level changed its data).</summary>
+        public void Refresh() => ui.RefreshCurrentPage();
+    }
+
+    /// <summary>Rebuilds the pages and redraws the current one, if the folder is open.</summary>
+    public void RefreshCurrentPage()
+    {
+        if (folderPanelRoot == null || !folderPanelRoot.activeInHierarchy ||
+            CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null)
+            return;
+
+        pages = BuildPages(CaseManager.Instance.CurrentCase);
+        currentPageIndex = Mathf.Clamp(currentPageIndex, 0, pages.Count - 1);
+        RenderPage(currentPageIndex);
+    }
+
+    private void ClearLevelPageObjects()
+    {
+        foreach (GameObject item in levelPageObjects)
+        {
+            if (item == null) continue;
+            item.SetActive(false);
+            Destroy(item);
+        }
+        levelPageObjects.Clear();
+    }
+
+    /// <summary>
+    /// Level 2+: one page per prepared-packet page the player holds (cover,
+    /// summary, note, later the collected records), in the case's order.
+    /// Cases without review data keep their single page.
+    /// </summary>
+    private static void AddReviewPages(List<CaseFolderPageContent> list, CaseData data)
+    {
+        CaseDefinition definition = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+        if (definition == null || !definition.HasReview || data == null || data.review == null || definition.documents == null)
+            return;
+
+        foreach (ReviewDocumentDefinition reviewPage in definition.review.documents)
+        {
+            if (reviewPage == null || !data.review.HasDocument(reviewPage.id)) continue;
+            DocumentDefinition document = definition.documents.Find(d => d != null && d.documentName == reviewPage.documentName);
+            if (document == null) continue;
+            list.Add(new CaseFolderPageContent(reviewPage.title, "") { Document = document });
+        }
+    }
+
+    /// <summary>"₱12,000" / "12000.50" -> the amount; false when there is no number.</summary>
+    public static bool TryParseAmount(string text, out float amount)
+    {
+        amount = 0f;
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        var digits = new System.Text.StringBuilder();
+        foreach (char c in text)
+            if (char.IsDigit(c) || c == '.') digits.Append(c);
+        return digits.Length > 0 &&
+               float.TryParse(digits.ToString(), System.Globalization.NumberStyles.Float,
+                   System.Globalization.CultureInfo.InvariantCulture, out amount);
+    }
+
+    /// <summary>Prints a review page's fields as page-1-style rows and marks the page read.</summary>
+    private void BuildReviewPageRows(CaseData data, DocumentDefinition document)
+    {
+        ClearRows(page1Rows);
+
+        if (document.fields != null)
+        {
+            foreach (DocumentFieldDefinition field in document.fields)
+            {
+                if (field == null) continue;
+                DataValueType type = System.Enum.TryParse(field.type, out DataValueType parsed) ? parsed : DataValueType.Text;
+                object value = field.displayValue;
+                // Number rows print and transfer a number ("₱12,000" -> 12000).
+                if (type == DataValueType.Number)
+                {
+                    if (TryParseAmount(field.displayValue, out float amount)) value = amount;
+                    else type = DataValueType.Text;
+                }
+                CaseFolderFieldRow row = Instantiate(caseFolderFieldRowPrefab, page1FieldRowListRoot);
+                row.InitializeSourceOnly(field.label, value, type, field.semanticKey);
+                page1Rows.Add(row);
+            }
+        }
+
+        if (data != null && data.supportingDocuments != null)
+            foreach (SupportingDocument supporting in data.supportingDocuments)
+                if (supporting != null && supporting.documentName == document.documentName)
+                    supporting.isReviewed = true;
     }
 
     // ============================================================
