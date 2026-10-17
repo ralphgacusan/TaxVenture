@@ -210,9 +210,11 @@ Check(Regex.IsMatch(level1, @"m_TargetAssemblyTypeName: SettingsUI, Assembly-CSh
     "Office_Level1: the HUD settings button calls SettingsUI.OpenSettings");
 Check(Regex.IsMatch(Body(settingsUi, "public void OpenSettings()"), @"\{\s*//[^\n]*\n\s*if \(InGameSettings\.TryOpen\(\)\) return;"),
     "SettingsUI.OpenSettings opens the 3D board first (the 2D panel never shows in-game)");
-Check(Regex.IsMatch(level2, @"m_TargetAssemblyTypeName: SettingsButtonPlaceholder, Assembly-CSharp\s+m_MethodName: OnSettingsPressed"),
-    "Office_Level2: the HUD settings button calls SettingsButtonPlaceholder.OnSettingsPressed");
-Check(placeholder.Contains("if (InGameSettings.TryOpen()) return;"), "Office_Level2's settings button opens the in-game board");
+// Office_Level2 is a one-time copy of Office_Level1 (Level 2 initiative, SCENE_REUSE.md),
+// so its HUD settings button is Level 1's; the old scene (Office_Level2_OLD) used the placeholder.
+Check(Regex.IsMatch(level2, @"m_TargetAssemblyTypeName: SettingsUI, Assembly-CSharp\s+m_MethodName: OpenSettings"),
+    "Office_Level2: the HUD settings button calls SettingsUI.OpenSettings (copied from Office_Level1)");
+Check(placeholder.Contains("if (InGameSettings.TryOpen()) return;"), "SettingsButtonPlaceholder (Office_Level2_OLD) opens the in-game board");
 Check(Index(mainMenuUi, "InGameSettings.TryOpen()") > 0 && Index(mainMenuUi, "InGameSettings.TryOpen()") < Index(mainMenuUi, "FindAnyObjectByType<SettingsBoard3D>()"),
     "MainMenuUI.OnSettingsPressed opens the in-game board in gameplay scenes (no trip to the 3D Menu)");
 Check(Body(inGame, "private void Start()").Contains("legacy.CloseSettings();"), "the old 2D SettingsPanel is kept closed at runtime");

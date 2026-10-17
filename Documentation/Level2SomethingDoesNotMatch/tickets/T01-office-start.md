@@ -1,6 +1,6 @@
 # T01 — Open Level 2 in the familiar office
 
-Status: Planned. Blocked by: None.
+Status: Implemented — internally verified; user Play Mode pending (2026-10-17). Blocked by: None.
 
 ## Visible accomplishment
 
@@ -16,13 +16,15 @@ Add initial Rosa cover/summary/referral fixtures and three Level2 book leaves th
 
 ## Acceptance
 
-- [ ] New Office_Level2 exists with its own GUID and correct menu/build routing; Level1/_OLD unchanged and shared assets not duplicated.
-- [ ] Re-running setup preserves the destination and creates no duplicate world/owners.
-- [ ] One correct level/case loads, no Marie/Teody/corkboard objective or locked entrance.
-- [ ] Reception welcome and cabinet objective appear in existing presentation.
-- [ ] Shared systems select Level2 content and initialize once; Level1 defaults unchanged.
-- [ ] Case fixtures and book rules validate; legal/course authority limits documented honestly.
-- [ ] Exact reused assets, conflicts, source changes and unresolved parity gaps recorded.
+Internal status per box (source checks only; every box also needs the user's Play Mode check):
+
+- [x] New Office_Level2 exists with its own GUID and correct menu/build routing; Level1/_OLD unchanged and shared assets not duplicated. *(VerifyLevel2Scene.py; Unity import pending)*
+- [x] Re-running setup preserves the destination and creates no duplicate world/owners. *(runtime root built once per load; editor guard acts only while the build entry is missing)*
+- [x] One correct level/case loads, no Marie/Teody/corkboard objective or locked entrance. *(Level2Regression)*
+- [x] Reception welcome and cabinet objective appear in existing presentation. *(data checked; on-screen result pending)*
+- [x] Shared systems select Level2 content and initialize once; Level1 defaults unchanged. *(Level2Regression + all existing suites)*
+- [x] Case fixtures and book rules validate; legal/course authority limits documented honestly. *(loan rule = educational draft, see CONTENT)*
+- [x] Exact reused assets, conflicts, source changes and unresolved parity gaps recorded. *(PROGRESS, KNOWN_ISSUES)*
 
 ## Internal verification and handoff
 

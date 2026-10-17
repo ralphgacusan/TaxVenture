@@ -1,5 +1,12 @@
 {
+  "_readme": [
+    "Level 2: Something Does Not Match. One client (Aling Rosa Santos), one case.",
+    "caseIds: case files in Levels/Level_02/cases, in play order. case_001/case_002 are old placeholder copies, kept on disk but no longer played.",
+    "officeFeatures: shared office systems Office_Level2 uses (hud, minimap, guide, fade). Office_Level1 always has all of them. Remove one to switch it off here.",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
   "levelId": "Level_02",
-  "levelName": "3 Case Level",
-  "caseIds": ["case_001", "case_002"]
+  "levelName": "Something Does Not Match",
+  "caseIds": ["case_rosa_001"],
+  "officeFeatures": ["hud", "minimap", "guide", "fade"]
 }

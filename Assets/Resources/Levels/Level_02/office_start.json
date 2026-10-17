@@ -1,0 +1,18 @@
+{
+  "_readme": [
+    "How Office_Level2 starts (Level2OfficeStart). Office_Level2 is a one-time copy of Office_Level1, so it still contains Level 1's plaza clients, Arthur and the corkboard side quest.",
+    "spawn / face: scene paths. The player stands part way from spawn to face (blend 0..1), looking at face. Same placement as the Tutorial Hub office drills.",
+    "hide: scene objects switched off before anything starts (deactivated, never deleted). Level 1's own scene is not touched.",
+    "disableComponents: component class names switched off in this scene before they start (e.g. the old Level 1 popup tutorial).",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "spawn": "Environment/OfficeBuilding/Rooms/Reception/Doors",
+  "face": "Environment/OfficeBuilding/Rooms/Reception/Receptionist",
+  "blend": 0.45,
+  "hide": [
+    "Environment/Outside/Plaza/NPCS",
+    "Environment/Outside/Plaza/CorkboardSideQuestRoot",
+    "UI/HUD_Canvas/PermanentHUD/IconButtons/TaxpayerProfileIcon"
+  ],
+  "disableComponents": ["TutorialController"]
+}

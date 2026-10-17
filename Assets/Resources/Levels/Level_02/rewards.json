@@ -1,0 +1,32 @@
+{
+  "_readme": [
+    "Level 2 reward rules (same format as Level_01/rewards.json; see its _readme for every field).",
+    "requireSideQuestBeforeOffice: false = the office is open from the start (Level 2 starts inside it). officeDoors: none are held shut.",
+    "Maxima follow Documentation/Level2SomethingDoesNotMatch/REWARDS_AND_VALIDATION.md: Rosa talk 1 heart, Mark the Money 60 EXP + 3 hearts, case 100 EXP + 5 hearts = 160 EXP, 9 hearts; 80% to pass.",
+    "PROVISIONAL (T01): the Level 2 per-decision scoring, accuracy badge tiers and capped audit deductions are added by T06/T09. Until then these numbers only set the maxima and the badge identity.",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "passingPercent": 80,
+  "requireSideQuestBeforeOffice": false,
+  "officeDoors": [],
+  "conversation": { "hearts": 1, "count": 1 },
+  "sideQuest": {
+    "exp": 60,
+    "hearts": 3,
+    "expPerWrong": 1,
+    "heartsLostAtWrong": [],
+    "badgeId": "mark_the_money_2",
+    "badgeName": "Mark the Money!",
+    "badgeEmblem": "receipt",
+    "badgeRibbon": "#2E9E6A"
+  },
+  "caseFile": {
+    "exp": 100,
+    "hearts": 5,
+    "expPerMistake": 2,
+    "heartsPerMistake": 0,
+    "expPerRetry": 1,
+    "heartsPerRetry": 0,
+    "wrongVerdictExp": 20
+  }
+}

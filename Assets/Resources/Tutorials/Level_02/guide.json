@@ -1,0 +1,144 @@
+{
+  "_readme": [
+    "LEVEL 2 GUIDE: same format as Tutorials/Level_01/guide.json (see its _readme, _targets and _triggers, and Documentation/LevelGuideTutorial/README.md).",
+    "Level 2 teaches only what is new. Movement, looking, the HUD and the desk were taught in Level 1, so they are not repeated here.",
+    "The guide only observes: it never changes the case, the review phase, rewards or documents.",
+    "Later Level 2 tickets add short lessons for the first finding, the toolkit and the stamp reason.",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+
+  "enabled": true,
+  "platform": "touch",
+  "rememberFinishedLessons": false,
+  "startDelay": 0.8,
+  "lettersPerSecond": 55,
+
+  "guide": {
+    "name": "Arthur",
+    "role": "Senior Tax Consultant",
+    "portraitFolder": "Tutorials/Portraits",
+    "portraits": [
+      { "mood": "default", "file": "Arthur-Default" },
+      { "mood": "wow", "file": "Arthur-Wow" },
+      { "mood": "confused", "file": "Arthur-Confused" },
+      { "mood": "sad", "file": "Arthur-Sad" },
+      { "mood": "angry", "file": "Arthur-Angry" }
+    ]
+  },
+
+  "welcome": {
+    "kicker": "LEVEL 2",
+    "title": "Something Does Not Match",
+    "subtitle": "ONE MARKET CLIENT · ONE PREPARED SUMMARY",
+    "tagline": "Check Aling Rosa's income summary against the records behind it.",
+    "objectivesHeading": "TODAY'S OBJECTIVES",
+    "listObjectives": true,
+    "button": "START"
+  },
+
+  "trail": {
+    "enabled": true,
+    "waitForGuide": true,
+    "color": "#64D7FF",
+    "spacing": 1.1,
+    "length": 26,
+    "speed": 1.6,
+    "beacon": true,
+    "minimap": true,
+    "arriveDistance": 2.2,
+    "minimapReminderSeconds": 8
+  },
+
+  "_waypoints": "Where the arrows lead for each Level_02/objectives.json step. 'step' must match the step's trigger exactly.",
+  "waypoints": [
+    { "step": "event:ReceptionistTalkedTo", "target": "Environment/OfficeBuilding/Rooms/Reception/Receptionist", "label": "Receptionist" },
+    { "step": "event:CaseFolderRetrieved", "target": "Environment/OfficeBuilding/Rooms/FileStorageRoom/Filing_Cabinet_1", "label": "Market-client drawer" },
+    { "step": "state:ReviewDocumentsState", "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk", "label": "Your desk" },
+    { "step": "event:FindingRecorded", "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk", "label": "Your desk" },
+    { "step": "event:PreliminaryHoldStamped", "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/Stamps", "label": "Stamps" },
+    { "step": "event:RosaRecordsCollected", "target": "Level2Gameplay/RosaStall/Rosa", "label": "Aling Rosa" },
+    { "step": "event:MarketDeskOpened", "target": "Level2Gameplay/RosaStall/MarketRecordsDesk", "label": "Records desk" },
+    { "step": "state:CaseCompleteState", "target": "Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "label": "Auditor" }
+  ],
+
+  "lessons": [
+    {
+      "id": "welcome",
+      "when": "start",
+      "pages": [
+        { "show": "welcome" },
+        { "mood": "wow", "text": "Welcome back! Today you have one client: Aling Rosa, who runs an alterations stall at the market." },
+        { "text": "Someone already filled in her income summary. Your job is to check it, not just accept it." },
+        { "point": "waypoint", "gesture": "none", "revealArrows": true, "text": "Start at the front desk. Follow the arrows to the receptionist and tap to talk." }
+      ]
+    },
+    {
+      "id": "to-cabinet",
+      "title": "ROSA'S FOLDER",
+      "when": "event:ReceptionistTalkedTo",
+      "after": "welcome",
+      "pages": [
+        { "style": "hint", "text": "Rosa's folder is in the market-client drawer. Follow the arrows to the file storage room." }
+      ]
+    },
+    {
+      "id": "to-desk",
+      "title": "TO YOUR DESK",
+      "when": "event:CaseFolderRetrieved",
+      "after": "to-cabinet",
+      "pages": [
+        { "style": "hint", "text": "Got it! Rosa's folder is in your folder icon. Sit at your desk, then drag it from the icon onto the desk." }
+      ]
+    },
+    {
+      "id": "first-look",
+      "title": "THE PREPARED PAGES",
+      "when": "state:ReviewDocumentsState",
+      "after": "to-desk",
+      "pages": [
+        { "style": "hint", "text": "Tap the arrow at the bottom right of the paper to turn the page. Read the cover, Rosa's May summary and the referral note." }
+      ]
+    },
+    {
+      "id": "first-finding",
+      "title": "SOMETHING DOESN'T MATCH",
+      "when": "lesson:first-look",
+      "after": "first-look",
+      "pages": [
+        { "mood": "confused", "text": "A filled page can still need checking. Find the record behind the entry." },
+        { "text": "The referral note asks about a paid commission. Look at Rosa's May summary. Is that payment on it?" },
+        { "text": "When something doesn't match, write a finding. Turn to the last page of the folder: Findings." },
+        { "text": "Here's the first step. Tap a line on the May summary to pick it up, turn to Findings and tap Concern." },
+        { "style": "hint", "waitFor": "event:FindingRecorded", "text": "Your turn: put a referral note line in Related record, then tap a Choice and put it in Reason." }
+      ]
+    },
+    {
+      "id": "initial-stamp",
+      "title": "THE INITIAL REVIEW",
+      "when": "event:FindingRecorded",
+      "after": "first-finding",
+      "pages": [
+        { "text": "Good. While that concern is open, this work isn't ready. Let's say so on the folder." },
+        { "style": "hint", "waitFor": "event:PreliminaryHoldStamped", "text": "Your turn: tap the stamp set on your desk, then drag a stamp onto the front page of Rosa's folder." }
+      ]
+    },
+    {
+      "id": "to-rosa",
+      "title": "ROSA'S STALL",
+      "when": "event:PreliminaryHoldStamped",
+      "after": "initial-stamp",
+      "pages": [
+        { "style": "hint", "text": "Rosa's stall is near the plaza. Follow the arrows and talk to her about the records." }
+      ]
+    },
+    {
+      "id": "records-desk",
+      "title": "THE RECORDS DESK",
+      "when": "event:RosaRecordsCollected",
+      "after": "to-rosa",
+      "pages": [
+        { "style": "hint", "text": "Rosa gave you six records. Sit at the records desk beside her stall to look at them." }
+      ]
+    }
+  ]
+}

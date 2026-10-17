@@ -1,0 +1,25 @@
+{
+  "_readme": [
+    "Level 2 Tax Code Book leaves (LevelBookLeaves). They appear after the shared book's sections in Office_Level2 only; Level 1's book is unchanged.",
+    "Leaves explain concepts. Never put a client's amounts, a finding, the summary answer or the stamp to choose here.",
+    "Simplified classroom rules, not legal advice. The loan-principal rule is an EDUCATIONAL DRAFT: no confirmed Philippine primary-source passage yet (see Documentation/Level2SomethingDoesNotMatch/CONTENT.md).",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "sections": [
+    {
+      "heading": "Level 2 · Where Income Comes From",
+      "body": "Ask first: what was this money paid for?\n\nServices: payment for work done, like sewing or alterations.\n\nCommission: payment for arranging a sale or sending customers to someone else.\n\nRent: payment for letting someone use your property or equipment for a time.\n\nCompensation: pay an employee earns from an employer, like a salary shown on a payslip.\n\nName the source and type before you decide how it is treated.",
+      "clickableValues": []
+    },
+    {
+      "heading": "Level 2 · Is It Income?",
+      "body": "Type and treatment are two separate questions.\n\nRegular income schedule: earned income that belongs with the period's other income.\n\nSeparate treatment: some income has its own rule. Check that rule before adding it to a schedule.\n\nStatutory exclusion: only when a specific rule excludes it. Do not guess.\n\nNot income: money you must pay back, like the principal of a genuine loan. Receiving it does not mean you earned it.\n\n(Classroom rule. The loan rule is an educational simplification.)",
+      "clickableValues": []
+    },
+    {
+      "heading": "Level 2 · Checking a Record",
+      "body": "A filled page can still need checking.\n\nSource: who paid, and for what?\n\nPeriod: do the dates fall in the period being reviewed?\n\nPayment channel: cash, bank transfer or both. A bank statement shows only what went through the bank.\n\nDuplicates: one payment can appear on two records, like a receipt that is also counted on a monthly sheet. Count it once.\n\nA deposit alone does not tell you what the money was for. Find the record behind it.",
+      "clickableValues": []
+    }
+  ]
+}
