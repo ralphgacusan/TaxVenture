@@ -41,6 +41,13 @@ public class StampUI : MonoBehaviour
     /// Called by Stamp3DDrag when a 3D stamp is successfully
     /// dropped onto the Case Folder.
     /// </summary>
+    /// <summary>
+    /// Optional level rule (Level 2's initial review): return true when the
+    /// level handled this stamp itself, so the Level 1 apply below is skipped.
+    /// Null in Level 1.
+    /// </summary>
+    public static System.Func<StampType, bool> StampOverride;
+
     public void ApplyStampType(StampType type)
     {
         // -----------------------------------------------------
@@ -93,6 +100,17 @@ public class StampUI : MonoBehaviour
             AudioManager.Instance.PlaySelectSFX();
         }
 
+
+        // -----------------------------------------------------
+        // Level rule first (Level 2 initial review)
+        // -----------------------------------------------------
+
+        if (StampOverride != null && StampOverride(type))
+        {
+            StampCaseFolderUI levelFolder = FindAnyObjectByType<StampCaseFolderUI>();
+            if (levelFolder != null) levelFolder.Refresh();
+            return;
+        }
 
         // -----------------------------------------------------
         // Apply stamp

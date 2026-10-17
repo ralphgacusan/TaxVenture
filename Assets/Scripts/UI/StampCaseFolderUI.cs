@@ -794,6 +794,24 @@ public class StampCaseFolderUI : MonoBehaviour
             "CaseAssessment"
         );
 
+        // Level 2: the initial review's own stamp, separate from the final assessment.
+        bool initialHold = data.review != null && data.review.preliminary != null;
+        if (initialHold)
+        {
+            AddSourceOnlyRow(
+                page1Rows,
+                page1FieldRowListRoot,
+                "Initial review",
+                "Not Ready",
+                DataValueType.Text,
+                "PreliminaryAssessment"
+            );
+        }
+        ReviewInkMark.Show(
+            headingText != null ? headingText.transform.parent as RectTransform : null,
+            initialHold ? "INITIAL REVIEW\nNOT READY" : null
+        );
+
 
         Debug.Log(
             $"[StampCaseFolderUI] " +

@@ -1,6 +1,6 @@
 # T03 — Record a concern and stamp the preliminary hold
 
-Status: Planned. Blocked by: T02.
+Status: Implemented — internally verified; user Play Mode pending (2026-10-17). Blocked by: T02.
 
 ## Visible accomplishment
 
@@ -16,11 +16,13 @@ After valid initial hold, objective/map point to Rosa near the plaza. Reopening 
 
 ## Acceptance
 
-- [ ] F1 refers to S1/N1 and is visible as an unresolved concern.
-- [ ] Selection and evidence attachment work without free typing or precision drawing.
-- [ ] Initial Not Ready ink and reason appear; no final audit/success path fires.
-- [ ] Guided correction is free; preliminary stamping grants no reward.
-- [ ] Rosa waypoint activates only after this initial review, with office exit available.
+Internal status (source checks only; each box also needs the user's Play Mode check):
+
+- [x] F1 refers to S1/N1 and is visible as an unresolved concern. *(Findings page shows status "Needs checking")*
+- [x] Selection and evidence attachment work without free typing or precision drawing. *(tap-to-pick / tap-to-place or drag on the page)*
+- [x] Initial Not Ready ink and reason appear; no final audit/success path fires. *(source checks: no assessment, state, audit or completion calls)*
+- [x] Guided correction is free; preliminary stamping grants no reward.
+- [x] Rosa waypoint activates only after this initial review, with office exit available.
 
 ## Verification/handoff
 
