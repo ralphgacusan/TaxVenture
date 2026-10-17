@@ -5,8 +5,9 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// PURPOSE:
 /// Builds and owns the RPG-style Office HUD inside the existing HUD_Canvas of
-/// Office_Level1. Same self-bootstrapping pattern as OfficeMinimap: no scene
-/// edits are required and no serialized references change.
+/// Office_Level1 (and of any level scene whose level.json opts into "hud", see
+/// OfficeLevelProfile). Same self-bootstrapping pattern as OfficeMinimap: no
+/// scene edits are required and no serialized references change.
 ///
 /// RESPONSIBILITIES:
 /// - Create a safe-area root placed just above PermanentHUD (so modals still
@@ -24,7 +25,6 @@ using UnityEngine.SceneManagement;
 [DefaultExecutionOrder(100)]
 public sealed class OfficeHudRuntime : MonoBehaviour
 {
-    private const string TargetSceneName = "Office_Level1";
     private const float FadeSpeed = 6f;
 
     public static OfficeHudRuntime Instance { get; private set; }
@@ -85,7 +85,7 @@ public sealed class OfficeHudRuntime : MonoBehaviour
 
     private static void EnsureForScene(Scene scene)
     {
-        if (!scene.IsValid() || !scene.isLoaded || scene.name != TargetSceneName) return;
+        if (!scene.IsValid() || !scene.isLoaded || !OfficeLevelProfile.Allows(scene, OfficeFeature.Hud)) return;
 
         GameObject[] roots = scene.GetRootGameObjects();
         for (int i = 0; i < roots.Length; i++)
@@ -131,7 +131,7 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         // keeps running (so its time is unchanged) but is made invisible.
         HudTimer clock = timer != null ? timer.GetComponent<HudTimer>() : null;
         // One shared objective record for the tracker and the Notes paper.
-        objectiveProgress = OfficeObjectives.Create(gameObject, TaskListProvider.Level1Id);
+        objectiveProgress = OfficeObjectives.Create(gameObject, OfficeLevelProfile.LevelIdFor(this));
         objectives = HudObjectiveTracker.Build(safeRoot, this, objectiveProgress, clock);
         AttachNotesPaper();
         AttachPaperWindows(canvasRoot);

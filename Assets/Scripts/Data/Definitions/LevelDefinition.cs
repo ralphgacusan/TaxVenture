@@ -15,4 +15,11 @@ public class LevelDefinition
     public string levelId;
     public string levelName;
     public List<string> caseIds = new List<string>();
+
+    /// <summary>
+    /// Optional: shared office systems this level's scene opts into
+    /// ("hud", "minimap", "guide", "fade"). Office_Level1 always has all of
+    /// them; see OfficeLevelCatalog.
+    /// </summary>
+    public List<string> officeFeatures = new List<string>();
 }

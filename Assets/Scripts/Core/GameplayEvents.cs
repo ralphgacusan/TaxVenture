@@ -41,6 +41,21 @@ public static class GameplayEvents
     public static event Action OnCaseFolderStored;
     public static event Action OnCaseFolderReturned;
 
+    // Raised once when the player takes the case folder out of the filing
+    // cabinet (Level 2 retrieval). Notification only: never archives or
+    // completes the case.
+    public static event Action OnCaseFolderRetrieved;
+
+    // Level 2 initial review: a complete finding was recorded on the folder's
+    // Findings page, and the initial Not Ready hold was stamped. Notification only.
+    public static event Action OnFindingRecorded;
+    public static event Action OnPreliminaryHoldStamped;
+
+    // Level 2 stall: Rosa handed over her records, and the player sat at the
+    // market records desk the first time. Notification only.
+    public static event Action OnRosaRecordsCollected;
+    public static event Action OnMarketDeskOpened;
+
 
     public static void RaiseCaseFolderOpened()
         => OnCaseFolderOpened?.Invoke();
@@ -62,4 +77,19 @@ public static class GameplayEvents
 
     public static void RaiseCaseFolderReturned()
         => OnCaseFolderReturned?.Invoke();
+
+    public static void RaiseCaseFolderRetrieved()
+        => OnCaseFolderRetrieved?.Invoke();
+
+    public static void RaiseFindingRecorded()
+        => OnFindingRecorded?.Invoke();
+
+    public static void RaisePreliminaryHoldStamped()
+        => OnPreliminaryHoldStamped?.Invoke();
+
+    public static void RaiseRosaRecordsCollected()
+        => OnRosaRecordsCollected?.Invoke();
+
+    public static void RaiseMarketDeskOpened()
+        => OnMarketDeskOpened?.Invoke();
 }

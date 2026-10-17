@@ -131,6 +131,11 @@ public sealed class GuideDirector : MonoBehaviour
         GameplayEvents.OnCaseCompleted += HandleCaseCompleted;
         GameplayEvents.OnCaseFolderStored += HandleFolderStored;
         GameplayEvents.OnCaseFolderReturned += HandleFolderReturned;
+        GameplayEvents.OnCaseFolderRetrieved += HandleFolderRetrieved;
+        GameplayEvents.OnPreliminaryHoldStamped += HandlePreliminaryHoldStamped;
+        GameplayEvents.OnFindingRecorded += HandleFindingRecorded;
+        GameplayEvents.OnMarketDeskOpened += HandleMarketDeskOpened;
+        GameplayEvents.OnRosaRecordsCollected += HandleRosaRecordsCollected;
     }
 
     private void OnDisable()
@@ -149,6 +154,11 @@ public sealed class GuideDirector : MonoBehaviour
         GameplayEvents.OnCaseCompleted -= HandleCaseCompleted;
         GameplayEvents.OnCaseFolderStored -= HandleFolderStored;
         GameplayEvents.OnCaseFolderReturned -= HandleFolderReturned;
+        GameplayEvents.OnCaseFolderRetrieved -= HandleFolderRetrieved;
+        GameplayEvents.OnPreliminaryHoldStamped -= HandlePreliminaryHoldStamped;
+        GameplayEvents.OnFindingRecorded -= HandleFindingRecorded;
+        GameplayEvents.OnMarketDeskOpened -= HandleMarketDeskOpened;
+        GameplayEvents.OnRosaRecordsCollected -= HandleRosaRecordsCollected;
         if (stateMachine != null) stateMachine.OnStateChanged -= HandleState;
         stateMachine = null;
         UnhookTransfers();
@@ -167,6 +177,11 @@ public sealed class GuideDirector : MonoBehaviour
     private void HandleCaseCompleted() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.CaseCompleted));
     private void HandleFolderStored() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.CaseFolderStored));
     private void HandleFolderReturned() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.CaseFolderReturned));
+    private void HandleFolderRetrieved() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.CaseFolderRetrieved));
+    private void HandlePreliminaryHoldStamped() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.PreliminaryHoldStamped));
+    private void HandleFindingRecorded() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.FindingRecorded));
+    private void HandleMarketDeskOpened() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.MarketDeskOpened));
+    private void HandleRosaRecordsCollected() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.RosaRecordsCollected));
     private void HandleState(IGameState state) { if (state != null) Fire(ObjectiveTriggers.StateKey(state.GetType())); }
 
     private void HandleSelection(object source)

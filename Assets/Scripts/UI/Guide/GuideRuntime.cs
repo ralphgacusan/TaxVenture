@@ -10,7 +10,9 @@ using UnityEngine.UI;
 /// objective beacon layer, the coach view, the lesson director and the
 /// objective guide (ground arrows + minimap pin).
 ///
-/// Content lives in Resources/Tutorials/Level_01/guide.json. With the file
+/// Content lives in Resources/Tutorials/&lt;levelId&gt;/guide.json (Level_01 for
+/// Office_Level1; other level scenes opt in with "guide" in level.json
+/// officeFeatures, see OfficeLevelProfile). With the file
 /// missing or "enabled": false, nothing is built. During a Tutorial Hub
 /// practice run (TrainingSession) the drill's script plays instead, without
 /// the SKIP TUTORIAL button.
@@ -18,7 +20,6 @@ using UnityEngine.UI;
 [DefaultExecutionOrder(110)]
 public sealed class GuideRuntime : MonoBehaviour
 {
-    private const string TargetSceneName = "Office_Level1";
     // The objective marker sits under the HUD paper windows (1100-1900);
     // the coach sits above everything (windows, profile cards 2650, drags),
     // so Arthur's box is never covered by Notes, Profiles or the Case Folder.
@@ -48,7 +49,7 @@ public sealed class GuideRuntime : MonoBehaviour
 
     private static void EnsureForScene(Scene scene)
     {
-        if (!scene.IsValid() || !scene.isLoaded || scene.name != TargetSceneName) return;
+        if (!scene.IsValid() || !scene.isLoaded || !OfficeLevelProfile.Allows(scene, OfficeFeature.Guide)) return;
         GameObject[] roots = scene.GetRootGameObjects();
         for (int i = 0; i < roots.Length; i++)
             if (roots[i].GetComponentInChildren<GuideRuntime>(true) != null)
@@ -62,7 +63,7 @@ public sealed class GuideRuntime : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-        string levelId = TaskListProvider.Level1Id;
+        string levelId = OfficeLevelProfile.LevelIdFor(this);
         Practice = TrainingSession.ComposeFor(levelId);
         GuideScript script = Practice != null ? Practice.Script : GuideScript.Load(levelId);
         if (script == null || !script.enabled)

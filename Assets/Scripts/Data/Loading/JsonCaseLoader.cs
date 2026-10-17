@@ -236,6 +236,14 @@ public static class JsonCaseLoader
                 return $"Case '{def.caseId}': {problem}.";
         }
 
+        if (def.HasReview)
+        {
+            System.Collections.Generic.List<string> reviewProblems = CaseReviewValidator.Validate(def.review);
+            reviewProblems.AddRange(CaseReviewValidator.ValidateDocumentLinks(def.review,
+                def.documents.FindAll(d => d != null).ConvertAll(d => d.documentName)));
+            if (reviewProblems.Count > 0)
+                return $"Case '{def.caseId}': {string.Join("; ", reviewProblems)}.";
+        }
         foreach (var doc in def.documents)
         {
             if (doc == null)

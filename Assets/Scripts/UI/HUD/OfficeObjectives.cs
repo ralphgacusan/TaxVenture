@@ -101,6 +101,11 @@ public sealed class OfficeObjectives : MonoBehaviour
         GameplayEvents.OnCaseCompleted += HandleCaseCompleted;
         GameplayEvents.OnCaseFolderStored += HandleCaseFolderStored;
         GameplayEvents.OnCaseFolderReturned += HandleCaseFolderReturned;
+        GameplayEvents.OnCaseFolderRetrieved += HandleCaseFolderRetrieved;
+        GameplayEvents.OnPreliminaryHoldStamped += HandlePreliminaryHoldStamped;
+        GameplayEvents.OnFindingRecorded += HandleFindingRecorded;
+        GameplayEvents.OnMarketDeskOpened += HandleMarketDeskOpened;
+        GameplayEvents.OnRosaRecordsCollected += HandleRosaRecordsCollected;
 
         stateMachine = GameStateMachine.Instance;
         if (stateMachine != null)
@@ -124,6 +129,11 @@ public sealed class OfficeObjectives : MonoBehaviour
         GameplayEvents.OnCaseCompleted -= HandleCaseCompleted;
         GameplayEvents.OnCaseFolderStored -= HandleCaseFolderStored;
         GameplayEvents.OnCaseFolderReturned -= HandleCaseFolderReturned;
+        GameplayEvents.OnCaseFolderRetrieved -= HandleCaseFolderRetrieved;
+        GameplayEvents.OnPreliminaryHoldStamped -= HandlePreliminaryHoldStamped;
+        GameplayEvents.OnFindingRecorded -= HandleFindingRecorded;
+        GameplayEvents.OnMarketDeskOpened -= HandleMarketDeskOpened;
+        GameplayEvents.OnRosaRecordsCollected -= HandleRosaRecordsCollected;
 
         if (stateMachine != null) stateMachine.OnStateChanged -= HandleStateChanged;
         stateMachine = null;
@@ -160,6 +170,11 @@ public sealed class OfficeObjectives : MonoBehaviour
     private void HandleCaseCompleted() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.CaseCompleted));
     private void HandleCaseFolderStored() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.CaseFolderStored));
     private void HandleCaseFolderReturned() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.CaseFolderReturned));
+    private void HandleCaseFolderRetrieved() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.CaseFolderRetrieved));
+    private void HandlePreliminaryHoldStamped() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.PreliminaryHoldStamped));
+    private void HandleFindingRecorded() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.FindingRecorded));
+    private void HandleMarketDeskOpened() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.MarketDeskOpened));
+    private void HandleRosaRecordsCollected() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.RosaRecordsCollected));
 
     /// <summary>Records a trigger (and any "undoneBy" it causes); notifies when anything changed.</summary>
     private bool Record(string key)

@@ -33,12 +33,18 @@ public static class ObjectiveTriggers
     public const string CaseCompleted = "CaseCompleted";                   // GameplayEvents.OnCaseCompleted
     public const string CaseFolderStored = "CaseFolderStored";             // GameplayEvents.OnCaseFolderStored
     public const string CaseFolderReturned = "CaseFolderReturned";         // GameplayEvents.OnCaseFolderReturned
+    public const string CaseFolderRetrieved = "CaseFolderRetrieved";       // GameplayEvents.OnCaseFolderRetrieved
+    public const string FindingRecorded = "FindingRecorded";               // GameplayEvents.OnFindingRecorded
+    public const string PreliminaryHoldStamped = "PreliminaryHoldStamped"; // GameplayEvents.OnPreliminaryHoldStamped
+    public const string RosaRecordsCollected = "RosaRecordsCollected";     // GameplayEvents.OnRosaRecordsCollected
+    public const string MarketDeskOpened = "MarketDeskOpened";             // GameplayEvents.OnMarketDeskOpened
 
     public static readonly string[] Events =
     {
         ProfileCollected, AllProfilesCollected, TutorialGuideAppeared, TutorialGuideTalkedTo,
         SideQuestCompleted, ReceptionistTalkedTo, CaseFolderOpened, TaxCodeBookOpened,
-        TaxReturnCollected, CaseCompleted, CaseFolderStored, CaseFolderReturned
+        TaxReturnCollected, CaseCompleted, CaseFolderStored, CaseFolderReturned, CaseFolderRetrieved,
+        FindingRecorded, PreliminaryHoldStamped, RosaRecordsCollected, MarketDeskOpened
     };
 
     /// <summary>Live counters a step may show next to its text.</summary>

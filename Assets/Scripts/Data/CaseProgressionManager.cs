@@ -164,7 +164,10 @@ public class CaseProgressionManager : MonoBehaviour
     {
         Debug.Log("[CaseProgressionManager] Start.");
 
-        StartLevel(startingLevelId);
+        // An office scene plays its own level (Office_Level2 -> Level_02),
+        // so a copied scene never starts the level it was copied from.
+        string sceneLevelId = OfficeLevelProfile.LevelIdFor(gameObject.scene);
+        StartLevel(string.IsNullOrEmpty(sceneLevelId) ? startingLevelId : sceneLevelId);
     }
 
 

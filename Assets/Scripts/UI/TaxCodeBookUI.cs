@@ -30,6 +30,10 @@ public class TaxCodeBookUI : MonoBehaviour
     [Tooltip("Drag the single TaxCodeBookData asset here.")]
     [SerializeField] private TaxCodeBookData bookData;
 
+    // The shared book's sections plus this level's optional extra leaves
+    // (Levels/<levelId>/book.json, see LevelBookLeaves). Built once.
+    private List<TaxCodeSection> sections;
+
     [Header("Panel")]
     [SerializeField] private GameObject bookPanelRoot;
 
@@ -181,10 +185,10 @@ public class TaxCodeBookUI : MonoBehaviour
         if (ValueDragSource.IsAnyDragActive)
             return;
 
-        if (bookData == null || bookData.sections == null || bookData.sections.Count == 0)
+        if (Sections.Count == 0)
             return;
 
-        if (currentSectionIndex < bookData.sections.Count - 1)
+        if (currentSectionIndex < Sections.Count - 1)
         {
             currentSectionIndex++;
 
@@ -203,7 +207,7 @@ public class TaxCodeBookUI : MonoBehaviour
         if (ValueDragSource.IsAnyDragActive)
             return;
 
-        if (bookData == null || bookData.sections == null || bookData.sections.Count == 0)
+        if (Sections.Count == 0)
             return;
 
         if (currentSectionIndex > 0)
@@ -272,9 +276,23 @@ public class TaxCodeBookUI : MonoBehaviour
         return pageTurnRoot;
     }
 
+    private List<TaxCodeSection> Sections
+    {
+        get
+        {
+            if (sections == null)
+            {
+                sections = new List<TaxCodeSection>();
+                if (bookData != null && bookData.sections != null) sections.AddRange(bookData.sections);
+                sections.AddRange(LevelBookLeaves.Load(OfficeLevelProfile.LevelIdFor(this)));
+            }
+            return sections;
+        }
+    }
+
     private void RenderSection(int index)
     {
-        if (bookData == null || bookData.sections.Count == 0)
+        if (Sections.Count == 0)
         {
             headingText.text = "No Tax Code Data Assigned";
             bodyText.text = "Assign a TaxCodeBookData asset in the Inspector.";
@@ -283,13 +301,13 @@ public class TaxCodeBookUI : MonoBehaviour
             return;
         }
 
-        TaxCodeSection section = bookData.sections[index];
+        TaxCodeSection section = Sections[index];
         headingText.text = section.heading;
         bodyText.text = section.body;
-        pageIndicatorText.text = $"Section {index + 1} / {bookData.sections.Count}";
+        pageIndicatorText.text = $"Section {index + 1} / {Sections.Count}";
 
         leftEdgeIndicator.SetActive(index > 0);
-        rightEdgeIndicator.SetActive(index < bookData.sections.Count - 1);
+        rightEdgeIndicator.SetActive(index < Sections.Count - 1);
 
         RenderClickableValues(section);
     }

@@ -96,7 +96,10 @@ public static class CaseFactory
 
             // ---------- Final Audit Result ----------
             finalVerdictWasCorrect = false,
-            finalMissedIssueCount = 0
+            finalMissedIssueCount = 0,
+
+            // ---------- Review (Level 2+; null for ordinary cases) ----------
+            review = CaseReviewState.Seed(def.review)
         };
 
         return data;

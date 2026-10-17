@@ -111,6 +111,12 @@ public class CaseData
     public bool finalVerdictWasCorrect = false;
     public int finalMissedIssueCount = 0;
 
+    // ---------- Review (Level 2+) ----------
+    // Prepared-packet review progress: phase and pages the player holds.
+    // Null for ordinary cases. ResetForRetry deliberately leaves it alone,
+    // so a returned audit never takes documents or review work away.
+    public CaseReviewState review = null;
+
 
     /// <summary>
     /// Called when the Auditor rejects a submission (not 100% correct).

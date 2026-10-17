@@ -129,6 +129,13 @@ public class CaseDefinition
     // The end-of-level scene with the client (CaseFinale).
     public ClientFinaleDefinition clientFinale = new ClientFinaleDefinition();
 
+    // Optional prepared-packet review (Level 2+). Leave out for an ordinary
+    // case; only a non-empty review.reviewId turns it on.
+    public CaseReviewDefinition review = new CaseReviewDefinition();
+
+    /// <summary>True when this case carries review data (review.reviewId set).</summary>
+    public bool HasReview => review != null && review.IsReview;
+
     /// <summary>The fields this case grades (its requiredFields, or the Level 1 defaults).</summary>
     public List<RequiredFieldDefinition> GradedFields()
     {

@@ -2,12 +2,11 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Rendering.Universal;
 
-/// <summary>Creates the Office_Level1 minimap camera and owns its runtime resources.</summary>
+/// <summary>Creates the office minimap camera (Office_Level1, or a level scene that opts into "minimap") and owns its runtime resources.</summary>
 [DefaultExecutionOrder(100)]
 [RequireComponent(typeof(Camera))]
 public sealed class OfficeMinimap : MonoBehaviour
 {
-    private const string TargetSceneName = "Office_Level1";
     private const float CameraHeight = 25f;
 
     private Camera mapCamera;
@@ -35,7 +34,7 @@ public sealed class OfficeMinimap : MonoBehaviour
 
     private static void EnsureForScene(Scene scene)
     {
-        if (!scene.IsValid() || !scene.isLoaded || scene.name != TargetSceneName) return;
+        if (!scene.IsValid() || !scene.isLoaded || !OfficeLevelProfile.Allows(scene, OfficeFeature.Minimap)) return;
 
         GameObject[] roots = scene.GetRootGameObjects();
         for (int i = 0; i < roots.Length; i++)
@@ -170,7 +169,7 @@ public sealed class OfficeMinimap : MonoBehaviour
     private void ResolveSceneDependencies()
     {
         Scene scene = gameObject.scene;
-        if (!scene.IsValid() || scene.name != TargetSceneName) return;
+        if (!scene.IsValid() || !OfficeLevelProfile.Allows(scene, OfficeFeature.Minimap)) return;
 
         if (sceneCameraController == null || sceneCameraController.gameObject.scene != scene)
         {

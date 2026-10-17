@@ -5,13 +5,13 @@ using UnityEngine.UI;
 
 /// <summary>
 /// PURPOSE:
-/// Scene transitions for Office_Level1: the level fades in from black when
+/// Scene transitions for Office_Level1 (and level scenes that opt into "fade",
+/// see OfficeLevelProfile): the level fades in from black when
 /// it starts, and FadeOutThenLoad fades it to black before leaving (Level
 /// Complete's Continue). The next scene is not touched.
 /// </summary>
 public sealed class SceneFade : MonoBehaviour
 {
-    private const string TargetSceneName = "Office_Level1";
     private const float FadeInSeconds = 0.9f;
     private const float FadeOutSeconds = 0.6f;
 
@@ -32,7 +32,7 @@ public sealed class SceneFade : MonoBehaviour
 
     private static void EnsureForScene(Scene scene)
     {
-        if (!scene.IsValid() || !scene.isLoaded || scene.name != TargetSceneName) return;
+        if (!scene.IsValid() || !scene.isLoaded || !OfficeLevelProfile.Allows(scene, OfficeFeature.Fade)) return;
         foreach (GameObject root in scene.GetRootGameObjects())
             if (root.GetComponentInChildren<SceneFade>(true) != null) return;
         var host = new GameObject("Scene Fade", typeof(RectTransform));

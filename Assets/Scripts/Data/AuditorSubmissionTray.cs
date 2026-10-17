@@ -74,6 +74,12 @@ public class AuditorSubmissionTray :
     }
 
 
+    /// <summary>
+    /// Optional level rule (Level 2): return true to refuse a case-folder
+    /// hand-in for now. Null = always allowed (Level 1 behaviour).
+    /// </summary>
+    public static System.Func<bool> SubmissionBlocked;
+
     public bool CanAccept(DataValue value)
     {
         return value != null &&
@@ -102,6 +108,12 @@ public class AuditorSubmissionTray :
         // =========================================================
         // VALIDATE DATA VALUE
         // =========================================================
+
+        if (SubmissionBlocked != null && SubmissionBlocked())
+        {
+            Debug.Log("[AuditorSubmissionTray] Refused: the level does not allow a hand-in yet.");
+            return false;
+        }
 
         if (!CanAccept(value))
         {
