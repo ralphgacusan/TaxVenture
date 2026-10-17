@@ -1,6 +1,6 @@
 # T04 — Meet Rosa at a complete 3D market encounter
 
-Status: Planned. Blocked by: T03.
+Status: Implemented — internally verified; user Play Mode pending (2026-10-17). Blocked by: T03.
 
 ## Visible accomplishment
 
@@ -16,12 +16,14 @@ Build/render the six authentic-looking fictional records from CONTENT, with matc
 
 ## Acceptance
 
-- [ ] Stall, desk, envelope and documents are physical 3D scene items, not a flat substitute.
-- [ ] Rosa uses the selected SM_Chr_Business_Female_03 model with working compatible animations, not a T-pose; dialogue/portrait identity is consistent and records supplied in one visit.
-- [ ] Store reuses the selected Building_4 (1) appearance near the plaza; source scenes/prefabs unchanged.
-- [ ] Six records have distinct receipt/statement/agreement layouts and correct values/references.
-- [ ] Required conversation and evidence acquisition occur once; no reward farming.
-- [ ] Market desk objective and workstation entry become available; no new walking AI needed.
+Internal status (source checks only; each box also needs the user's Play Mode check):
+
+- [x] Stall, desk, envelope and documents are physical 3D scene items, not a flat substitute. *(runtime primitives + originals)*
+- [x] Rosa uses the selected SM_Chr_Business_Female_03 model with a compatible idle (humanoid Standing Idle); dialogue identity "Aling Rosa"; no portrait art yet (none shown); records supplied in one visit. *(T-pose fix needs the user's check)*
+- [x] Store reuses Building_4 (mirrored X, like Building_4 (1)) near the plaza; source scenes/prefabs unchanged (hashes recorded).
+- [x] Six records with distinct headings and correct, cross-checked values/references. *(printed as case-folder pages in page 1's style, by user direction)*
+- [x] Required conversation and evidence acquisition occur once; no reward farming.
+- [x] Market desk objective and workstation entry become available; no new walking AI.
 
 ## Verification/handoff
 
