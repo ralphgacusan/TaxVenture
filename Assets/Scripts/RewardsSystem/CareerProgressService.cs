@@ -127,13 +127,13 @@ public static class CareerProgressService
         {
             id = "Level_01", number = 1, noteTitle = "Tutorial", title = "Tutorial Level",
             description = "Learn your way around the office, meet your first taxpayer and close your first case.",
-            scene = "Level1_Character_Intro_Cutscene", cases = 1
+            scene = "Cutscene1.0", cases = 1
         });
         built.chapters.Add(new CareerChapterDef
         {
-            id = "Level_02", number = 2, noteTitle = "Three cases", title = "Three Case Level",
-            description = "A busier day at the office: take on three taxpayers and put your skills to work.",
-            scene = "Office_Level2", cases = 3
+            id = "Level_02", number = 2, noteTitle = "One market client", title = "Something Does Not Match",
+            description = "Check Aling Rosa's prepared income summary, follow the records back to her market stall and decide if her work is ready.",
+            scene = "Office_Level2", cases = 1
         });
         for (int number = 3; number <= 5; number++)
             built.chapters.Add(new CareerChapterDef

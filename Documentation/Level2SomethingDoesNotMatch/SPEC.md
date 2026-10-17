@@ -4,6 +4,17 @@
 
 Create a new Office_Level2 from one controlled copy of current saved Office_Level1, preserving shared asset references and source scenes. Specialize only the copied level behavior and local additions. SCENE_REUSE.md defines the exact procedure, rerun safeguards and menu/build integration. Office_Level2_OLD remains a reference, not the implementation base.
 
+### T01 implementation notes (2026-10-17)
+
+- **Scene copy.** Unity was open on `3D Menu`, not Office_Level1. So the one-time copy used SCENE_REUSE's source-only fallback: the saved file was copied byte for byte and given a new unique `.meta` GUID. Unity imports it on its next refresh.
+- **No serialized Level2Gameplay root.** `Level2OfficeStart` builds the `Level2Gameplay` root at runtime, once per load (same self-bootstrap as the HUD and guide), and carries `SetupVersion`. Later tickets add their parts under it. This avoids hand-editing scene YAML.
+- **Level opt-in.** The HUD, minimap, guide and fade are switched on through `level.json` `officeFeatures`, via `OfficeLevelProfile`/`OfficeLevelCatalog`. Office_Level1 always gets them all. Finale, office hours, consequences, the door gate, the splash and profile skins stay Level 1-only until their own tickets.
+- **Case file.** Rosa's case is `cases/case_rosa_001.json` (case id `L2-ROSA-001`). The old placeholder `case_001`/`case_002` files are kept on disk but no longer referenced.
+- **T02 retrieval (user direction).** The retrieved folder flies into the HUD Case Folder icon. The player puts it on the desk from the icon in desk view; it cannot be opened from the icon before that. The packet pages are extra pages of the case folder after Taxpayer Information, turned with the folder's page edges. The Auditor refuses a hand-in until the folder has been on the desk, so retrieval and hand-in stay separate actions.
+- **T03 finding and initial stamp.** The finding note is a "Findings" case-folder page whose boxes accept groups of held lines (no exact-key hint). The desk stamps record the initial hold through `StampUI.StampOverride`, separate from the final assessment.
+- **T04 stall.** Rosa and the Building_4 store are runtime instances of the originals (Resources `scene_assets`), placed by measured free space beside the plaza. The records arrive as folder pages D1–D6, and the market desk uses the normal desk view.
+- **Book leaves.** Level 2 leaves live in `Levels/Level_02/book.json` (`LevelBookLeaves`), shown after the shared book asset. The shared `TaxCodeBookData_Main.asset` is not edited, so Level 1's book is unchanged.
+
 ## Goal and scope
 
 Teach recognition of income inclusions, use of supporting records, and justified readiness recommendations. Main question: **Can I rely on this income summary?** Level 1 taught taxpayer identification; Level 2 adds evidence-backed review of prepared work. One main Rosa case, no Ben case. Target duration is a hypothesis: 15–20 minutes, revised from user playtesting, not guaranteed by source checks.
