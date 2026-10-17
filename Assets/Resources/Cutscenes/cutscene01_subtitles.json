@@ -1,0 +1,37 @@
+{
+  "_readme": [
+    "Subtitles for the Level 1 intro cutscene (scene Cutscene1.0). Edit and press Play; no code change needed.",
+    "lines: one entry per subtitle, in order. clip: the cutscene clip it belongs to (1 = first clip on the Timeline). text: what is shown; \\n starts a new line.",
+    "title: true shows the line as the big centred title card (first line = heading, the rest = caption) instead of a bottom subtitle.",
+    "start / end: seconds from the start of the cutscene. estimate: true means the time is a guess (the Timeline assets were not in the project when this was written).",
+    "useTimelineClipTimes: when true and the scene's Timeline can be read, each line is timed to its clip instead (lines of one clip share it evenly, in order), and the Console logs every clip's real start and end so you can copy them here.",
+    "timelineTrack: name of the Timeline track whose clips are numbered. Leave empty to use the track with the most clips.",
+    "nextScene: loaded when the cutscene ends or Skip is tapped. fadeInSeconds / fadeOutSeconds: black fades, same as the old intro (0.25).",
+    "fallbackDurationSeconds: how long the cutscene runs when the scene has no playable Timeline.",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "nextScene": "Office_Level1",
+  "fadeInSeconds": 0.25,
+  "fadeOutSeconds": 0.25,
+  "showSkip": true,
+  "useTimelineClipTimes": true,
+  "timelineTrack": "",
+  "fallbackDurationSeconds": 66,
+  "lineGapSeconds": 0.15,
+  "lines": [
+    { "clip": 1, "title": true, "text": "COAST TALES.\nA small town by the sea.", "start": 0.5, "end": 3.8, "estimate": true },
+    { "clip": 2, "text": "\"Coast Tales has always been a simple town.\"", "start": 4.0, "end": 7.8, "estimate": true },
+    { "clip": 3, "text": "\"People work. People trade. People build their lives.\"", "start": 8.0, "end": 11.8, "estimate": true },
+    { "clip": 5, "text": "\"But for years...\"", "start": 16.0, "end": 19.8, "estimate": true },
+    { "clip": 6, "text": "\"Keeping track of it all hasn't been easy.\"", "start": 20.0, "end": 23.8, "estimate": true },
+    { "clip": 7, "text": "\"And that's where I come in.\"", "start": 24.0, "end": 27.8, "estimate": true },
+    { "clip": 8, "text": "\"I'm supposed to fix all of this mess\"", "start": 28.0, "end": 31.8, "estimate": true },
+    { "clip": 10, "text": "\"As Coast Tales' tax consultant, every case comes across my desk.\"", "start": 36.0, "end": 39.6, "estimate": true },
+    { "clip": 10, "text": "\"Read the documents.\"", "start": 39.8, "end": 42.2, "estimate": true },
+    { "clip": 10, "text": "\"Check the numbers.\"", "start": 42.4, "end": 44.8, "estimate": true },
+    { "clip": 10, "text": "\"Find what's wrong.\"", "start": 45.0, "end": 47.4, "estimate": true },
+    { "clip": 10, "text": "\"And decide what should be done\"", "start": 47.6, "end": 50.0, "estimate": true },
+    { "clip": 14, "text": "\"Alright...\"", "start": 59.0, "end": 61.8, "estimate": true },
+    { "clip": 14, "text": "\"Let's get to work.\"", "start": 62.0, "end": 65.0, "estimate": true }
+  ]
+}

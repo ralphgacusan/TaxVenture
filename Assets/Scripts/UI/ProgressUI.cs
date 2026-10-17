@@ -13,7 +13,7 @@ public class ProgressUI : MonoBehaviour
     }
 
     [Header("Scene Names")]
-    [SerializeField] private string levelOneCutscene = "Level1_Character_Intro_Cutscene";
+    [SerializeField] private string levelOneCutscene = "Cutscene1.0";
     [SerializeField] private string levelTwoCutscene = "Office_Level2";
     [SerializeField] private string mainMenuSceneName = "3D Menu";
 

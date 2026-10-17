@@ -3802,7 +3802,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d93676ca4d6c20d4396f7c76a7514762, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProgressUI
-  levelOneCutscene: Level1_Character_Intro_Cutscene
+  levelOneCutscene: Cutscene1.0
   levelTwoCutscene: Office_Level2
   mainMenuSceneName: 3D Menu
   totalExpText: {fileID: 961151974}
