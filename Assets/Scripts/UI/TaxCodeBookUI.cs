@@ -70,6 +70,12 @@ public class TaxCodeBookUI : MonoBehaviour
 
     private int currentSectionIndex = 0;
 
+    // The body's authored type settings, restored before each fit.
+    private bool hasBodyRest;
+    private float bodyRestSize;
+    private bool bodyRestAutoSize;
+    private float bodyRestMin, bodyRestMax;
+
     private List<TaxCodeValueChip> spawnedChips = new List<TaxCodeValueChip>();
     private readonly List<GameObject> spawnedCaptions = new List<GameObject>();
     private VerticalLayoutGroup chipLayout;
@@ -128,6 +134,12 @@ public class TaxCodeBookUI : MonoBehaviour
         StopPageTurn();
     }
 
+    /// <summary>The printed page (for a level's drag grip on a floating book).</summary>
+    public Transform PaperRoot => GetPageTurnRoot();
+
+    /// <summary>The book's pages are on screen.</summary>
+    public bool IsShowing => bookPanelRoot != null && bookPanelRoot.activeSelf;
+
     public void Show()
     {
         Debug.Log("[TaxCodeBookUI] Show() was called.");
@@ -141,6 +153,7 @@ public class TaxCodeBookUI : MonoBehaviour
         CameraController.Instance?.LockPlayerControls();
 
         StopPageTurn();
+        // The book always opens on page 1.
         currentSectionIndex = 0;
 
         RenderSection(currentSectionIndex);
@@ -310,6 +323,37 @@ public class TaxCodeBookUI : MonoBehaviour
         rightEdgeIndicator.SetActive(index < Sections.Count - 1);
 
         RenderClickableValues(section);
+        FitBody();
+    }
+
+    /// <summary>
+    /// Keeps a long leaf inside its page: when the printed body would run
+    /// past its box it shrinks (never below about two thirds of its size).
+    /// Text that already fits keeps its authored size.
+    /// </summary>
+    private void FitBody()
+    {
+        if (bodyText == null) return;
+        if (!hasBodyRest)
+        {
+            bodyRestSize = bodyText.fontSize;
+            bodyRestAutoSize = bodyText.enableAutoSizing;
+            bodyRestMin = bodyText.fontSizeMin;
+            bodyRestMax = bodyText.fontSizeMax;
+            hasBodyRest = true;
+        }
+        bodyText.enableAutoSizing = bodyRestAutoSize;
+        bodyText.fontSizeMin = bodyRestMin;
+        bodyText.fontSizeMax = bodyRestMax;
+        bodyText.fontSize = bodyRestSize;
+        if (bodyRestAutoSize || string.IsNullOrEmpty(bodyText.text)) return;
+
+        Rect box = bodyText.rectTransform.rect;
+        if (box.width <= 0f || box.height <= 0f) return;
+        if (bodyText.GetPreferredValues(bodyText.text, box.width, Mathf.Infinity).y <= box.height) return;
+        bodyText.fontSizeMax = bodyRestSize;
+        bodyText.fontSizeMin = Mathf.Max(10f, bodyRestSize * 0.66f);
+        bodyText.enableAutoSizing = true;
     }
 
     /// <summary>

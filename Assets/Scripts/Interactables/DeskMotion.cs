@@ -9,6 +9,15 @@ using UnityEngine;
 /// </summary>
 public static class DeskMotion
 {
+    /// <summary>Changes only a document's final position, keeping its visible paper centre at viewport centre.</summary>
+    public static Vector3 CentrePaper(Camera camera, Vector3 rootPosition, Vector3 paperCentre)
+    {
+        if (camera == null) return rootPosition;
+        float depth = Vector3.Dot(paperCentre - camera.transform.position, camera.transform.forward);
+        Vector2 centre = camera.pixelRect.center;
+        return rootPosition + camera.ScreenToWorldPoint(new Vector3(centre.x, centre.y, depth)) - paperCentre;
+    }
+
     public static float EaseInQuad(float t) => t * t;
     public static float EaseOutQuad(float t) => 1f - (1f - t) * (1f - t);
     public static float EaseInCubic(float t) => t * t * t;
@@ -58,6 +67,10 @@ public static class DeskMotion
             yield return null;
         }
 
+        // Finish exactly edge-on before changing content; low frame rates must
+        // not expose the next page before it reaches the spine.
+        page.localRotation = restRotation * Quaternion.Euler(0f, -sign * 90f, 0f);
+        page.localScale = restScale * 0.96f;
         onMidpoint?.Invoke();
 
         for (float t = 0f; t < half; t += Time.unscaledDeltaTime)

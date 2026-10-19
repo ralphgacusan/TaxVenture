@@ -56,6 +56,27 @@ public static class GameplayEvents
     public static event Action OnRosaRecordsCollected;
     public static event Action OnMarketDeskOpened;
 
+    // Level 2 market toolkit: the guide's demonstration played to the end
+    // (presentation), and the player repeated it on the practice record
+    // (review moved on to the challenge). Notification only.
+    public static event Action OnToolkitDemoFinished;
+    public static event Action OnAnnotationTutorialCompleted;
+
+    // Mark the Money! (T06): the first complete check was scored (frozen), and
+    // every note was corrected and the quest award given. Notification only.
+    public static event Action OnAnnotationsChecked;
+    public static event Action OnIncomeQuestCompleted;
+
+    // Office reconciliation (T07): the reviewed schedule and every office finding
+    // part are filled in (structural only, never "correct"). Notification only.
+    public static event Action OnOfficeReviewCompleted;
+
+    // Final assessment (T08) stamped; the Auditor returned the packet or
+    // acknowledged a hold (T09); the review cutoff rolled to the next morning (T10).
+    public static event Action OnFinalAssessmentStamped;
+    public static event Action OnAuditReturned;
+    public static event Action OnReviewDayRolled;
+
 
     public static void RaiseCaseFolderOpened()
         => OnCaseFolderOpened?.Invoke();
@@ -92,4 +113,28 @@ public static class GameplayEvents
 
     public static void RaiseMarketDeskOpened()
         => OnMarketDeskOpened?.Invoke();
+
+    public static void RaiseToolkitDemoFinished()
+        => OnToolkitDemoFinished?.Invoke();
+
+    public static void RaiseAnnotationTutorialCompleted()
+        => OnAnnotationTutorialCompleted?.Invoke();
+
+    public static void RaiseAnnotationsChecked()
+        => OnAnnotationsChecked?.Invoke();
+
+    public static void RaiseIncomeQuestCompleted()
+        => OnIncomeQuestCompleted?.Invoke();
+
+    public static void RaiseOfficeReviewCompleted()
+        => OnOfficeReviewCompleted?.Invoke();
+
+    public static void RaiseFinalAssessmentStamped()
+        => OnFinalAssessmentStamped?.Invoke();
+
+    public static void RaiseAuditReturned()
+        => OnAuditReturned?.Invoke();
+
+    public static void RaiseReviewDayRolled()
+        => OnReviewDayRolled?.Invoke();
 }

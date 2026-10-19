@@ -145,8 +145,12 @@ public sealed class LevelScoreLedger
         });
     }
 
-    /// <summary>Side quest result (once per level), with its badge.</summary>
-    public ScoreEntry AddSideQuest(int wrongPlacements, Vector3? origin)
+    /// <summary>
+    /// Side quest result (once per level), with its badge. A level with an
+    /// accuracy badge (rewards.json goldAtCorrect) passes the frozen tier in
+    /// <paramref name="accuracyTier"/>; otherwise the tier comes from the EXP.
+    /// </summary>
+    public ScoreEntry AddSideQuest(int wrongPlacements, Vector3? origin, BadgeTier? accuracyTier = null)
     {
         if (SideQuestScored) return null;
         SideQuestScored = true;
@@ -154,7 +158,9 @@ public sealed class LevelScoreLedger
         float sideQuestEnd = Now;
         SideQuestSeconds = sideQuestStart < 0f || sideQuestEnd < 0f ? 0f : Mathf.Max(0f, sideQuestEnd - sideQuestStart);
         LevelScoring.Award award = LevelScoring.SideQuest(Rules, wrongPlacements);
-        BadgeTier tier = LevelScoring.SideQuestBadge(Rules, award);
+        BadgeTier tier = accuracyTier.HasValue && accuracyTier.Value != BadgeTier.None
+            ? accuracyTier.Value
+            : LevelScoring.SideQuestBadge(Rules, award);
         if (!string.IsNullOrEmpty(Rules.sideQuest.badgeId) && !badges.Contains(Rules.sideQuest.badgeId))
         {
             badges.Add(Rules.sideQuest.badgeId);
@@ -178,9 +184,9 @@ public sealed class LevelScoreLedger
     }
 
     /// <summary>Case result after the Auditor approves it.</summary>
-    public ScoreEntry AddCase(string label, int mistakes, int retries)
+    public ScoreEntry AddCase(string label, int mistakes, int retries, int extraExpLoss = 0, int extraHeartLoss = 0)
     {
-        LevelScoring.Award award = LevelScoring.Case(Rules, mistakes, retries);
+        LevelScoring.Award award = LevelScoring.Case(Rules, mistakes, retries, extraExpLoss, extraHeartLoss);
         return Add(new ScoreEntry
         {
             Source = ScoreSource.Case,

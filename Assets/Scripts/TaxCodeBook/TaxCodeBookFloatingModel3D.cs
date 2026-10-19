@@ -155,13 +155,25 @@ public class TaxCodeBookFloatingModel3D :
 
     private void OnDisable()
     {
+        SetHeld(false);
         isPointerOver = false;
         SetOutlineFocused(false);
     }
 
 
+    private bool heldTinted;
+
+    /// <summary>Red tint while the open book is held (same look as the closed desk book).</summary>
+    private void SetHeld(bool held)
+    {
+        if (held == heldTinted || taxCodeBook == null) return;
+        heldTinted = held;
+        TaxCodeBook3DDrag.SetHeldTint(taxCodeBook.gameObject, held);
+    }
+
     private void Update()
     {
+        SetHeld(isDragging && hasDragTarget);
         if (isPointerOver || isDragging)
         {
             UpdateOutlineFocus();
@@ -380,10 +392,27 @@ public class TaxCodeBookFloatingModel3D :
     }
 
 
+    /// <summary>
+    /// Optional level hook (Level 2's Tax Code Book icon): the open book
+    /// dragged and released at this screen point is stored there. Return true
+    /// when the book was taken.
+    /// </summary>
+    public static System.Func<TaxCodeBookFloatingModel3D, Vector2, bool> TryStoreAt;
+
     public void OnPointerUp(PointerEventData eventData)
     {
         if (!isDragging)
         {
+            return;
+        }
+
+        if (TryStoreAt != null && TryStoreAt(this, eventData.position))
+        {
+            isDragging = false;
+            hasDragTarget = false;
+            isPointerOver = false;
+            SetHeld(false);
+            UpdateOutlineFocus();
             return;
         }
 

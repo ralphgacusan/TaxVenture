@@ -183,6 +183,7 @@ public class FloatingWindow :
 
     private bool paperMotion;
     private float paperTilt;
+    private float paperRestScale = 1f;
     private CanvasGroup paperGroup;
     private bool paperShown;
     private bool paperOpening;
@@ -796,7 +797,7 @@ public class FloatingWindow :
             // Paper windows shrink and fade into the icon.
             if (paperMotion)
             {
-                float scale = Mathf.Lerp(1f, PaperIconScale, t * t);
+                float scale = paperRestScale * Mathf.Lerp(1f, PaperIconScale, t * t);
                 window.localScale = new Vector3(scale, scale, 1f);
                 if (paperGroup != null)
                 {
@@ -1271,19 +1272,37 @@ public class FloatingWindow :
         {
             elapsed += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / PopDuration);
-            float scale = 1f + 0.045f * Mathf.Sin(t * Mathf.PI);
+            float scale = paperRestScale * (1f + 0.045f * Mathf.Sin(t * Mathf.PI));
             window.localScale = new Vector3(scale, scale, 1f);
             yield return null;
         }
 
-        window.localScale = Vector3.one;
+        window.localScale = Vector3.one * paperRestScale;
         popRoutine = null;
+    }
+
+    /// <summary>Sets the resting scale for paper windows that use a scaled presentation.</summary>
+    public void SetPaperRestScale(float scale)
+    {
+        paperRestScale = Mathf.Max(0.01f, scale);
+        if (paperMotion && window != null && !paperOpening && !isClosing && popRoutine == null)
+            window.localScale = Vector3.one * paperRestScale;
     }
 
     /// <summary>Current layer of this window (higher = in front).</summary>
     public int SortingOrder => windowCanvas != null ? windowCanvas.sortingOrder : 0;
 
     public RectTransform WindowRect => window;
+
+    /// <summary>Opt-in for papers that filter 3D coverage at each hit point.</summary>
+    public bool UsesPointRaycastFiltering { get; set; }
+
+    public bool ContainsScreenPoint(Vector2 point)
+    {
+        if (!RectTransformUtility.RectangleContainsScreenPoint(window, point, null)) return false;
+        return !UsesPointRaycastFiltering || !(GetComponent<ICanvasRaycastFilter>() is ICanvasRaycastFilter filter) ||
+            filter.IsRaycastLocationValid(point, null);
+    }
 
     /// <summary>
     /// Blocks or passes touches. A paper under a 3D document that is in
@@ -1328,7 +1347,7 @@ public class FloatingWindow :
             return;
         }
 
-        window.localScale = Vector3.one;
+        window.localScale = Vector3.one * paperRestScale;
         window.localRotation = Quaternion.Euler(0f, 0f, paperTilt);
         if (paperGroup != null)
         {
@@ -1424,7 +1443,7 @@ public class FloatingWindow :
         {
             // Dropped item: grow out of the drop point.
             fromIcon = true;
-            startScale = 0.35f;
+            startScale = paperRestScale * 0.35f;
         }
         else
         {
@@ -1433,7 +1452,7 @@ public class FloatingWindow :
             {
                 start = paperTarget;
             }
-            startScale = fromIcon ? PaperIconScale : 0.82f;
+            startScale = paperRestScale * (fromIcon ? PaperIconScale : 0.82f);
         }
         paperOpenOrigin = null;
 
@@ -1459,7 +1478,7 @@ public class FloatingWindow :
             float pop = 1f + u * u * (2.2f * u + 1.2f);
 
             Vector2 position = fromIcon ? Arc(start, paperTarget, travel) : paperTarget;
-            float scale = Mathf.LerpUnclamped(startScale, 1f, pop);
+            float scale = Mathf.LerpUnclamped(startScale, paperRestScale, pop);
             float tilt = Mathf.LerpUnclamped(startTilt, paperTilt, pop);
             SetPaperPose(position, scale, tilt, Mathf.Clamp01(t * 3f));
 
@@ -1486,7 +1505,7 @@ public class FloatingWindow :
             float ease = t * t;
 
             Vector2 position = toIcon ? Arc(start, end, ease) : start;
-            float scale = Mathf.Lerp(startScale, toIcon ? PaperIconScale : 0.86f, ease);
+            float scale = Mathf.Lerp(startScale, paperRestScale * (toIcon ? PaperIconScale : 0.86f), ease);
             float tilt = paperTilt - (toIcon ? 24f : 6f) * ease;
             float alpha = toIcon ? 1f - Mathf.Clamp01((t - 0.55f) / 0.45f) : 1f - ease;
             SetPaperPose(position, scale, tilt, alpha);

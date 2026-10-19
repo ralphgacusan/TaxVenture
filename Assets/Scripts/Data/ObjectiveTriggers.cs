@@ -38,13 +38,23 @@ public static class ObjectiveTriggers
     public const string PreliminaryHoldStamped = "PreliminaryHoldStamped"; // GameplayEvents.OnPreliminaryHoldStamped
     public const string RosaRecordsCollected = "RosaRecordsCollected";     // GameplayEvents.OnRosaRecordsCollected
     public const string MarketDeskOpened = "MarketDeskOpened";             // GameplayEvents.OnMarketDeskOpened
+    public const string ToolkitDemoFinished = "ToolkitDemoFinished";       // GameplayEvents.OnToolkitDemoFinished
+    public const string AnnotationTutorialCompleted = "AnnotationTutorialCompleted"; // GameplayEvents.OnAnnotationTutorialCompleted
+    public const string AnnotationsChecked = "AnnotationsChecked";         // GameplayEvents.OnAnnotationsChecked
+    public const string IncomeQuestCompleted = "IncomeQuestCompleted";     // GameplayEvents.OnIncomeQuestCompleted
+    public const string OfficeReviewCompleted = "OfficeReviewCompleted";   // GameplayEvents.OnOfficeReviewCompleted
+    public const string FinalAssessmentStamped = "FinalAssessmentStamped"; // GameplayEvents.OnFinalAssessmentStamped
+    public const string AuditReturned = "AuditReturned";                   // GameplayEvents.OnAuditReturned
+    public const string ReviewDayRolled = "ReviewDayRolled";               // GameplayEvents.OnReviewDayRolled
 
     public static readonly string[] Events =
     {
         ProfileCollected, AllProfilesCollected, TutorialGuideAppeared, TutorialGuideTalkedTo,
         SideQuestCompleted, ReceptionistTalkedTo, CaseFolderOpened, TaxCodeBookOpened,
         TaxReturnCollected, CaseCompleted, CaseFolderStored, CaseFolderReturned, CaseFolderRetrieved,
-        FindingRecorded, PreliminaryHoldStamped, RosaRecordsCollected, MarketDeskOpened
+        FindingRecorded, PreliminaryHoldStamped, RosaRecordsCollected, MarketDeskOpened,
+        ToolkitDemoFinished, AnnotationTutorialCompleted, AnnotationsChecked, IncomeQuestCompleted,
+        OfficeReviewCompleted, FinalAssessmentStamped, AuditReturned, ReviewDayRolled
     };
 
     /// <summary>Live counters a step may show next to its text.</summary>

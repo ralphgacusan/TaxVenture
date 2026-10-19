@@ -33,7 +33,7 @@ public sealed class Level2OfficeStart : MonoBehaviour
 {
     public const string RootName = "Level2Gameplay";
     /// <summary>Bump when this start changes what it builds, so a later session can tell setups apart.</summary>
-    public const int SetupVersion = 7;
+    public const int SetupVersion = 13;
     public const string ConfigPath = "Levels/Level_02/office_start";
     private const float StartTimeout = 6f;
 
@@ -99,6 +99,7 @@ public sealed class Level2OfficeStart : MonoBehaviour
     {
         Instance = this;
         AppliedSetupVersion = SetupVersion;
+        FolderToHUDIcon.ResetStoredFolderCount();
         config = LoadConfig();
         HideUnusedParts();
         DisableUnusedComponents();
@@ -108,6 +109,12 @@ public sealed class Level2OfficeStart : MonoBehaviour
         EnsurePart<Level2PreliminaryStamp>(Level2PreliminaryStamp.ChildName);
         EnsurePart<Level2DeskStamps>(Level2DeskStamps.ChildName);
         EnsurePart<Level2RosaStall>(Level2RosaStall.ChildName);
+        EnsurePart<Level2OfficeReview>(Level2OfficeReview.ChildName);
+        EnsurePart<Level2Audit>(Level2Audit.ChildName);
+        EnsurePart<Level2ReviewClock>(Level2ReviewClock.ChildName);
+        EnsurePart<Level2Checkpointer>(Level2Checkpointer.ChildName);
+        EnsurePart<Level2AnnotatedPapers>(Level2AnnotatedPapers.ChildName);
+        EnsurePart<Level2TaxCodeBookIcon>(Level2TaxCodeBookIcon.ChildName);
         Debug.Log($"[Level2] Office start v{SetupVersion}: switched off {HiddenCount} Level 1 object(s) and {DisabledCount} component(s).");
     }
 

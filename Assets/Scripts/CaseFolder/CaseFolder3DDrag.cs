@@ -103,6 +103,7 @@ public class CaseFolder3DDrag :
     private HighlightEffect highlightEffect;
 
     private Vector3 dragTargetPosition;
+    private Vector3 heldPointerPosition;
     private Vector3 dragOffset;
     private Vector3 dragStartPosition;
     private Collider placementCollider;
@@ -246,12 +247,13 @@ public class CaseFolder3DDrag :
             return;
         }
 
-        Vector3 heldPosition = dragTargetPosition;
+        // Like the tax-code book, the held visual follows the pointer freely;
+        // only the resting/drop position is constrained to the desk.
+        Vector3 heldPosition = heldPointerPosition;
         if (deskSurface != null)
             heldPosition += deskSurface.DragLiftOffset;
-        Vector3 dragLag = heldPosition - closedFolder.transform.position;
 
-        if (animateDragging)
+        if (animateDragging && !hasMovedDuringDrag)
         {
             float interpolation =
                 1f - Mathf.Exp(
@@ -273,9 +275,7 @@ public class CaseFolder3DDrag :
 
         if (preserveClosedFolderRotation)
         {
-            closedFolder.transform.rotation = deskSurface != null
-                ? DeskMotion.HeldRotation(originalClosedRotation, dragLag, deskSurface.transform.up)
-                : originalClosedRotation;
+            closedFolder.transform.rotation = originalClosedRotation;
         }
     }
 
@@ -330,6 +330,7 @@ public class CaseFolder3DDrag :
         isDragging = true;
         dragStartPosition = closedFolder.transform.position;
         dragTargetPosition = dragStartPosition;
+        heldPointerPosition = dragStartPosition;
         hasDragTarget = true;
         currentDropValid = true;
 
@@ -352,7 +353,7 @@ public class CaseFolder3DDrag :
         }
         else
         {
-            dragPlane = new Plane(mainCamera.transform.forward, closedFolder.transform.position);
+            dragPlane = new Plane(mainCamera.transform.forward, TaxCodeBook3DDrag.VisualCentre(closedFolder));
             if (!dragPlane.Raycast(ray, out float enter))
             {
                 DebugLog("The pointer did not intersect the drag plane.");
@@ -365,11 +366,9 @@ public class CaseFolder3DDrag :
         }
 
         /*
-         * Calculate the exact grab offset.
+         * Centre the visible model under the touch, accounting for its mesh pivot.
          */
-        dragOffset =
-            closedFolder.transform.position -
-            pointerWorldPosition;
+        dragOffset = closedFolder.transform.position - TaxCodeBook3DDrag.VisualCentre(closedFolder);
 
         dragTargetPosition =
             closedFolder.transform.position;
@@ -607,15 +606,17 @@ public class CaseFolder3DDrag :
         if (deskSurface != null)
         {
             // Pointer off the desk plane: keep the last safe pose, do not open on release.
-            if (!deskSurface.TryGetPointerPoint(ray, dragStartPosition, out Vector3 surfacePoint))
+            // Project at the visible centre's height, keeping an off-centre pivot
+            // at its original resting height when the folder is dropped.
+            if (!deskSurface.TryGetPointerPoint(ray, dragStartPosition - dragOffset + deskSurface.DragLiftOffset, out Vector3 surfacePoint))
             {
                 currentDropValid = false;
                 return;
             }
 
-            // A blocked move keeps the last valid target, which stays a valid drop.
+            heldPointerPosition = surfacePoint + dragOffset - deskSurface.DragLiftOffset;
             if (deskSurface.TryClampPosition(closedFolder.transform, placementCollider,
-                    surfacePoint + dragOffset, out Vector3 clampedPosition))
+                    heldPointerPosition, out Vector3 clampedPosition))
             {
                 dragTargetPosition = clampedPosition;
             }
@@ -641,6 +642,7 @@ public class CaseFolder3DDrag :
         dragTargetPosition =
             pointerWorldPosition +
             dragOffset;
+        heldPointerPosition = dragTargetPosition;
 
         /*
          * Apply the height offset only to the closed folder.
@@ -743,7 +745,7 @@ public class CaseFolder3DDrag :
         return ray.GetPoint(enter);
     }
 
-    private void ShowOpenFolder(Vector2 dropScreenPosition)
+    private void ShowOpenFolder(Vector2 dropScreenPosition, bool centrePaper = false)
     {
         if (closedFolder == null ||
             openFolder == null)
@@ -775,6 +777,10 @@ public class CaseFolder3DDrag :
         }
 
         openFolder.SetActive(true);
+
+        if (centrePaper && caseFolderUI != null && caseFolderUI.PaperRect != null)
+            openFolder.transform.position = DeskMotion.CentrePaper(mainCamera, openFolder.transform.position,
+                caseFolderUI.PaperRect.TransformPoint(caseFolderUI.PaperRect.rect.center));
 
         if (deskAnimator != null)
             deskAnimator.PlayOpen(openFolder.transform, closedFolder.transform.position);
@@ -903,6 +909,7 @@ public class CaseFolder3DDrag :
         isDragging = true;
         dragStartPosition = closedFolder.transform.position;
         dragTargetPosition = dragStartPosition;
+        heldPointerPosition = dragStartPosition;
         hasDragTarget = true;
         currentDropValid = true;
         eventCamera = mainCamera;
@@ -924,7 +931,7 @@ public class CaseFolder3DDrag :
         }
         else
         {
-            dragPlane = new Plane(mainCamera.transform.forward, closedFolder.transform.position);
+            dragPlane = new Plane(mainCamera.transform.forward, TaxCodeBook3DDrag.VisualCentre(closedFolder));
             if (!dragPlane.Raycast(ray, out float enter))
             {
                 externalHUDDragging = false;
@@ -938,9 +945,7 @@ public class CaseFolder3DDrag :
             pointerWorldPosition = ray.GetPoint(enter);
         }
 
-        dragOffset =
-            closedFolder.transform.position -
-            pointerWorldPosition;
+        dragOffset = closedFolder.transform.position - TaxCodeBook3DDrag.VisualCentre(closedFolder);
 
         dragTargetPosition =
             closedFolder.transform.position;
@@ -950,6 +955,7 @@ public class CaseFolder3DDrag :
 
         closedFolder.SetActive(true);
         openFolder.SetActive(false);
+        UpdateDragTarget(screenPosition);
 
         DebugLog(
             "External HUD drag started."
@@ -1041,9 +1047,9 @@ public class CaseFolder3DDrag :
         return true;
     }
 
-    public void OpenDraggedFolder()
+    public void OpenDraggedFolder(bool centrePaper = false)
     {
-        ShowOpenFolder(lastPointerScreenPosition);
+        ShowOpenFolder(lastPointerScreenPosition, centrePaper);
     }
 
     /// <summary>

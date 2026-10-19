@@ -29,6 +29,7 @@ public class SideQuestCompleteUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI congratsText;
 
     private SideQuestResult currentResult;
+    private System.Action customContinue;
 
     private void Awake()
     {
@@ -72,6 +73,25 @@ public class SideQuestCompleteUI : MonoBehaviour
 
         panelRoot.SetActive(true);
         if (!HudRewardScreen.Present(panelRoot, BuildScreen(result))) ShowMedal(result);
+    }
+
+    /// <summary>
+    /// Shows an already built reward card on this panel (Level 2 Mark the
+    /// Money!: its own title, first-check facts and accuracy medal). The
+    /// plain text fields get the same values when the HUD card is unavailable.
+    /// <paramref name="onContinue"/> runs once when the player continues.
+    /// </summary>
+    public void ShowScreen(RewardScreenData data, System.Action onContinue = null)
+    {
+        if (data == null) return;
+        customContinue = onContinue;
+        currentResult = new SideQuestResult(data.Exp, data.Hearts) { MaxExp = data.MaxExp, MaxReputation = data.MaxHearts };
+        expText.text = data.MaxExp > 0 ? $"EXP Earned: {data.Exp} / {data.MaxExp}" : $"EXP Earned: {data.Exp}";
+        reputationText.text = data.MaxHearts > 0 ? $"Hearts Earned: {data.Hearts} / {data.MaxHearts}" : $"Hearts Earned: {data.Hearts}";
+        congratsText.text = (data.Title ?? string.Empty) + (string.IsNullOrEmpty(data.Summary) ? string.Empty : " " + data.Summary);
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayAchievementSFX();
+        panelRoot.SetActive(true);
+        HudRewardScreen.Present(panelRoot, data);
     }
 
     /// <summary>The reward card for this result (Office HUD); same values as the text fields.</summary>
@@ -175,6 +195,9 @@ public class SideQuestCompleteUI : MonoBehaviour
     public void OnContinuePressed()
     {
         Hide();
+        System.Action next = customContinue;
+        customContinue = null;
+        next?.Invoke();
     }
 }
 

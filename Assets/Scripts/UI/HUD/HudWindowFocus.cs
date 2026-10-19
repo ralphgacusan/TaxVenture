@@ -50,7 +50,7 @@ public sealed class HudWindowFocus : MonoBehaviour
         {
             FloatingWindow w = FloatingWindow.Instances[i];
             if (w == null || !w.IsOpen() || w.SortingOrder <= bestOrder) continue;
-            if (!RectTransformUtility.RectangleContainsScreenPoint(w.WindowRect, screenPosition, null)) continue;
+            if (!w.ContainsScreenPoint(screenPosition)) continue;
             bestWindow = w;
             bestOrder = w.SortingOrder;
         }
@@ -61,7 +61,7 @@ public sealed class HudWindowFocus : MonoBehaviour
         {
             Doc3DLayer layer = Doc3DLayer.All[d];
             if (layer == null || !layer.IsVisible || layer.SortingOrder <= bestOrder) continue;
-            if (!HitsDocument(layer.Source)) continue;
+            if (!HitsDocument(layer.Source) && !HitsDocument(layer.transform)) continue;
             bestDocument = layer;
             bestOrder = layer.SortingOrder;
         }
@@ -79,6 +79,14 @@ public sealed class HudWindowFocus : MonoBehaviour
             FloatingWindow w = FloatingWindow.Instances[i];
             if (w == null || !w.UsesPaperMotion) continue;
 
+            if (w.UsesPointRaycastFiltering)
+            {
+                // Its own ICanvasRaycastFilter handles coverage at the pointer,
+                // so an overlapping book cannot disable every exposed field.
+                w.SetBlocksRaycasts(true);
+                continue;
+            }
+
             bool covered = false;
             if (w.IsOpen())
             {
@@ -94,6 +102,7 @@ public sealed class HudWindowFocus : MonoBehaviour
         }
     }
 
+    /// <summary>A hit inside the document, or on its layer's own UI (e.g. a held tool's pointer surface).</summary>
     private bool HitsDocument(Transform document)
     {
         if (document == null) return false;

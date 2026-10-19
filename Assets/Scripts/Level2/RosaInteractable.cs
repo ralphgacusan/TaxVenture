@@ -8,7 +8,7 @@ using UnityEngine;
 /// DialogueUI (conversation camera frames her through this component) and
 /// her lines from the case JSON (review.stall):
 /// - before the initial review is stamped: a short greeting, nothing else;
-/// - during MarketVisit: the required conversation (referral payment and
+/// - during MarketVisit: the required conversation (paid laundry job and
 ///   original records, fixed order: the project has no dialogue choices);
 ///   when it COMPLETES, the handover happens once: records D1-D6 are
 ///   collected (review moves on to Tutorial), the conversation heart is

@@ -39,6 +39,10 @@ public sealed class SideQuestSplash : MonoBehaviour
 
     private static SideQuestSplash instance;
 
+    private SplashContent instanceContent;
+    private Action continueCallback;
+    private bool releaseBoardOnClose;
+
     /// <summary>True when a title card will open the side quest (the board waits for it).</summary>
     public static bool Active => instance != null && instance.isActiveAndEnabled;
 
@@ -77,12 +81,22 @@ public sealed class SideQuestSplash : MonoBehaviour
 
     private static void EnsureForScene(Scene scene)
     {
-        if (!scene.IsValid() || !scene.isLoaded || scene.name != TargetSceneName) return;
+        if (scene.name != TargetSceneName) return;
+        GetOrCreateForScene(scene);
+    }
+
+    /// <summary>Returns this scene's splash runner, creating one when needed.</summary>
+    public static SideQuestSplash GetOrCreateForScene(Scene scene)
+    {
+        if (!scene.IsValid() || !scene.isLoaded) return null;
         foreach (GameObject root in scene.GetRootGameObjects())
-            if (root.GetComponentInChildren<SideQuestSplash>(true) != null) return;
+        {
+            SideQuestSplash existing = root.GetComponentInChildren<SideQuestSplash>(true);
+            if (existing != null) return existing;
+        }
         var runner = new GameObject("Side Quest Splash");
         SceneManager.MoveGameObjectToScene(runner, scene);
-        runner.AddComponent<SideQuestSplash>();
+        return runner.AddComponent<SideQuestSplash>();
     }
 
     private void OnEnable()
@@ -96,7 +110,8 @@ public sealed class SideQuestSplash : MonoBehaviour
         if (instance == this) instance = null;
         TownEvents.OnTutorialIntroCompleted -= HandleSideQuestStarted;
         IsShowing = false;
-        ReleaseBoard();
+        if (releaseBoardOnClose) ReleaseBoard();
+        ClearRequest();
     }
 
     /// <summary>The card is gone: the board fills in and the profiles fly in.</summary>
@@ -110,16 +125,57 @@ public sealed class SideQuestSplash : MonoBehaviour
     {
         IsShowing = false;
         if (host != null) Destroy(host);
+        ClearRequest();
     }
 
     // Arthur's talk ended and the board opened: show the card a moment later
     // (IsShowing is set now, so nothing else starts in between).
     private void HandleSideQuestStarted()
     {
-        if (host != null) return;
+        StartRequest(Content, null, releaseBoard: true);
+    }
+
+    /// <summary>Shows this same cinematic card with scene-specific text and a one-shot continue callback.</summary>
+    public bool Show(SplashContent content, Action onContinue)
+    {
+        if (host != null || pending || IsShowing) return false;
+        if (!gameObject.activeSelf) gameObject.SetActive(true);
+        if (!enabled) enabled = true;
+        StartRequest(content, onContinue, releaseBoard: false);
+        return true;
+    }
+
+    private void StartRequest(SplashContent content, Action onContinue, bool releaseBoard)
+    {
+        if (host != null || pending || IsShowing) return;
+        instance = this;
+        age = closeAge = 0f;
+        closing = false;
+        instanceContent = content;
+        continueCallback = onContinue;
+        releaseBoardOnClose = releaseBoard;
         pending = true;
         IsShowing = true;
         showAt = Time.unscaledTime + 0.35f;
+    }
+
+    /// <summary>Dismisses a card owned by a scene object that is being torn down.</summary>
+    public void Cancel()
+    {
+        if (host != null) Destroy(host);
+        host = null;
+        pending = false;
+        closing = false;
+        IsShowing = false;
+        if (releaseBoardOnClose) ReleaseBoard();
+        ClearRequest();
+    }
+
+    private void ClearRequest()
+    {
+        instanceContent = null;
+        continueCallback = null;
+        releaseBoardOnClose = false;
     }
 
     private void Update()
@@ -145,7 +201,10 @@ public sealed class SideQuestSplash : MonoBehaviour
                 Destroy(host);
                 host = null;
                 IsShowing = false;
-                ReleaseBoard();
+                if (releaseBoardOnClose) ReleaseBoard();
+                Action callback = continueCallback;
+                ClearRequest();
+                callback?.Invoke();
             }
             return;
         }
@@ -192,7 +251,7 @@ public sealed class SideQuestSplash : MonoBehaviour
 
     private void Build()
     {
-        SplashContent c = Content ?? new SplashContent();
+        SplashContent c = instanceContent ?? Content ?? new SplashContent();
         host = new GameObject("Side Quest Splash Canvas", typeof(RectTransform));
         SceneManager.MoveGameObjectToScene(host, gameObject.scene);
         host.layer = LayerMask.NameToLayer("UI");

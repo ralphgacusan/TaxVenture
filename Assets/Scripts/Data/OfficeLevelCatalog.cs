@@ -11,7 +11,9 @@ public enum OfficeFeature
     /// <summary>GuideRuntime: lessons, objective arrows and minimap pin.</summary>
     Guide,
     /// <summary>SceneFade: fade in on load, fade out before leaving.</summary>
-    Fade
+    Fade,
+    /// <summary>CaseFinale: the client's ending in the conference room before Level Complete.</summary>
+    Finale
 }
 
 /// <summary>

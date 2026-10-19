@@ -311,6 +311,8 @@ public class GuideLesson
 [Serializable]
 public class GuidePage
 {
+    /// <summary>Visible hint duration; the gameplay wait continues after the bubble fades.</summary>
+    public float hintSeconds;
     /// <summary>Optional chip above this page's text (defaults to the lesson title).</summary>
     public string title;
     public string text;

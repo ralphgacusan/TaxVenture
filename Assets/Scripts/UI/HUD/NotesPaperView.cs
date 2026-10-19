@@ -41,6 +41,12 @@ public sealed class NotesPaperView : MonoBehaviour
     private RectTransform panel;
     private RectTransform content;
     private TextMeshProUGUI subtitle;
+    private RectTransform chapterNavigation;
+    private TextMeshProUGUI chapterLabel;
+    private Button previousChapter, nextChapter;
+    private readonly List<int> chapterStarts = new List<int>();
+    private int shownChapter = -1;
+    private int lastActiveChapter = -1;
 
     private Image panelImage;
     private Sprite originalSprite;
@@ -65,6 +71,11 @@ public sealed class NotesPaperView : MonoBehaviour
         view.objectives = objectives;
         view.panel = panel;
         view.Build(root);
+        if (view.isActiveAndEnabled)
+        {
+            objectives.Changed += view.Render;
+            view.Render();
+        }
         return view;
     }
 
@@ -128,8 +139,36 @@ public sealed class NotesPaperView : MonoBehaviour
         hint.alignment = TextAlignmentOptions.Center;
         HudTheme.PlaceTopLeft((RectTransform)hint.transform, 0f, height - 52f, width, 32f);
 
+        chapterNavigation = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Chapter navigation", root),
+            ContentLeft, height - 115f, width - ContentLeft - RightPadding, 54f);
+        previousChapter = ChapterButton(chapterNavigation, "Previous", "<", 0f, -1);
+        nextChapter = ChapterButton(chapterNavigation, "Next", ">", chapterNavigation.sizeDelta.x - 64f, 1);
+        chapterLabel = InkLabel("Chapter", chapterNavigation, "", 26f, Ink, FontStyles.Bold);
+        chapterLabel.alignment = TextAlignmentOptions.Center;
+        HudTheme.PlaceTopLeft(chapterLabel.rectTransform, 70f, 8f, chapterNavigation.sizeDelta.x - 140f, 40f);
+        chapterNavigation.gameObject.SetActive(false);
+
         content = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Objectives", root), ContentLeft, ContentTop,
             width - ContentLeft - RightPadding, height - ContentTop - BottomPadding);
+    }
+
+    private Button ChapterButton(RectTransform parent, string name, string caption, float x, int direction)
+    {
+        RectTransform rect = HudTheme.PlaceTopLeft(HudTheme.CreateRect(name, parent), x, 0f, 64f, 54f);
+        Image face = HudTheme.AddImage(rect, HudTheme.Rounded, new Color32(226, 214, 186, 255), 12f);
+        face.raycastTarget = true;
+        TextMeshProUGUI text = InkLabel("Arrow", rect, caption, 34f, Ink, FontStyles.Bold);
+        text.alignment = TextAlignmentOptions.Center;
+        HudTheme.Stretch(text.rectTransform);
+        Button button = rect.gameObject.AddComponent<Button>();
+        button.targetGraphic = face;
+        button.onClick.AddListener(() =>
+        {
+            shownChapter = Mathf.Clamp(shownChapter + direction, 0, chapterStarts.Count - 1);
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+            Render();
+        });
+        return button;
     }
 
     private static readonly Color PaperBack = new Color32(226, 214, 186, 255);
@@ -211,7 +250,10 @@ public sealed class NotesPaperView : MonoBehaviour
         if (content == null || objectives == null || objectives.Snapshot == null) return;
 
         for (int i = content.childCount - 1; i >= 0; i--)
+        {
+            content.GetChild(i).gameObject.SetActive(false);
             Destroy(content.GetChild(i).gameObject);
+        }
 
         CaseProgressionManager manager = CaseProgressionManager.Instance;
         string levelName = manager != null ? manager.CurrentLevelName : null;
@@ -222,9 +264,33 @@ public sealed class NotesPaperView : MonoBehaviour
             : $"{snapshot.DoneCount} of {snapshot.StepCount} done";
 
         IReadOnlyList<TaskDefinition> tasks = objectives.Tasks;
+        bool chapters = manager != null && manager.CurrentLevelId == OfficeLevelCatalog.Level2Id;
+        chapterStarts.Clear();
+        if (chapters)
+            for (int i = 0; i < tasks.Count; i++)
+                if (tasks[i] != null && tasks[i].IsHeader) chapterStarts.Add(i);
+        chapters = chapterStarts.Count > 1;
+        chapterNavigation.gameObject.SetActive(chapters);
+        int first = 0, end = tasks.Count;
+        if (chapters)
+        {
+            int active = 0;
+            for (int i = 0; i < chapterStarts.Count; i++)
+                if (chapterStarts[i] <= (snapshot.ActiveIndex >= 0 ? snapshot.ActiveIndex : tasks.Count - 1)) active = i;
+            if (shownChapter < 0 || active != lastActiveChapter) shownChapter = active;
+            lastActiveChapter = active;
+            shownChapter = Mathf.Clamp(shownChapter, 0, chapterStarts.Count - 1);
+            first = chapterStarts[shownChapter];
+            end = shownChapter + 1 < chapterStarts.Count ? chapterStarts[shownChapter + 1] : tasks.Count;
+            chapterLabel.text = $"{shownChapter + 1} / {chapterStarts.Count}";
+            previousChapter.interactable = shownChapter > 0;
+            nextChapter.interactable = shownChapter + 1 < chapterStarts.Count;
+            subtitle.text = $"Level {levelNumber}   ·   {snapshot.DoneCount} of {snapshot.StepCount} done";
+        }
+        content.localScale = Vector3.one;
         float width = content.rect.width;
         float y = 0f;
-        for (int i = 0; i < tasks.Count; i++)
+        for (int i = first; i < end; i++)
         {
             TaskDefinition task = tasks[i];
             if (task == null) continue;
@@ -241,7 +307,7 @@ public sealed class NotesPaperView : MonoBehaviour
 
         // Shrink the list to fit the page if a long edited list overflows it.
         float available = content.rect.height;
-        float scale = y > available && y > 0f ? available / y : 1f;
+        float scale = !chapters && y > available && y > 0f ? available / y : 1f;
         content.localScale = new Vector3(scale, scale, 1f);
     }
 

@@ -105,6 +105,14 @@ public sealed class OfficeObjectives : MonoBehaviour
         GameplayEvents.OnPreliminaryHoldStamped += HandlePreliminaryHoldStamped;
         GameplayEvents.OnFindingRecorded += HandleFindingRecorded;
         GameplayEvents.OnMarketDeskOpened += HandleMarketDeskOpened;
+        GameplayEvents.OnToolkitDemoFinished += HandleToolkitDemoFinished;
+        GameplayEvents.OnAnnotationTutorialCompleted += HandleAnnotationTutorialCompleted;
+        GameplayEvents.OnIncomeQuestCompleted += HandleIncomeQuestCompleted;
+        GameplayEvents.OnOfficeReviewCompleted += HandleOfficeReviewCompleted;
+        GameplayEvents.OnReviewDayRolled += HandleReviewDayRolled;
+        GameplayEvents.OnAuditReturned += HandleAuditReturned;
+        GameplayEvents.OnFinalAssessmentStamped += HandleFinalAssessmentStamped;
+        GameplayEvents.OnAnnotationsChecked += HandleAnnotationsChecked;
         GameplayEvents.OnRosaRecordsCollected += HandleRosaRecordsCollected;
 
         stateMachine = GameStateMachine.Instance;
@@ -133,6 +141,14 @@ public sealed class OfficeObjectives : MonoBehaviour
         GameplayEvents.OnPreliminaryHoldStamped -= HandlePreliminaryHoldStamped;
         GameplayEvents.OnFindingRecorded -= HandleFindingRecorded;
         GameplayEvents.OnMarketDeskOpened -= HandleMarketDeskOpened;
+        GameplayEvents.OnToolkitDemoFinished -= HandleToolkitDemoFinished;
+        GameplayEvents.OnAnnotationTutorialCompleted -= HandleAnnotationTutorialCompleted;
+        GameplayEvents.OnIncomeQuestCompleted -= HandleIncomeQuestCompleted;
+        GameplayEvents.OnOfficeReviewCompleted -= HandleOfficeReviewCompleted;
+        GameplayEvents.OnReviewDayRolled -= HandleReviewDayRolled;
+        GameplayEvents.OnAuditReturned -= HandleAuditReturned;
+        GameplayEvents.OnFinalAssessmentStamped -= HandleFinalAssessmentStamped;
+        GameplayEvents.OnAnnotationsChecked -= HandleAnnotationsChecked;
         GameplayEvents.OnRosaRecordsCollected -= HandleRosaRecordsCollected;
 
         if (stateMachine != null) stateMachine.OnStateChanged -= HandleStateChanged;
@@ -174,6 +190,14 @@ public sealed class OfficeObjectives : MonoBehaviour
     private void HandlePreliminaryHoldStamped() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.PreliminaryHoldStamped));
     private void HandleFindingRecorded() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.FindingRecorded));
     private void HandleMarketDeskOpened() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.MarketDeskOpened));
+    private void HandleToolkitDemoFinished() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.ToolkitDemoFinished));
+    private void HandleAnnotationTutorialCompleted() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.AnnotationTutorialCompleted));
+    private void HandleIncomeQuestCompleted() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.IncomeQuestCompleted));
+    private void HandleOfficeReviewCompleted() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.OfficeReviewCompleted));
+    private void HandleReviewDayRolled() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.ReviewDayRolled));
+    private void HandleAuditReturned() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.AuditReturned));
+    private void HandleFinalAssessmentStamped() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.FinalAssessmentStamped));
+    private void HandleAnnotationsChecked() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.AnnotationsChecked));
     private void HandleRosaRecordsCollected() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.RosaRecordsCollected));
 
     /// <summary>Records a trigger (and any "undoneBy" it causes); notifies when anything changed.</summary>

@@ -26,7 +26,6 @@ using UnityEngine.UI;
 /// </summary>
 public sealed class CaseFinale : MonoBehaviour
 {
-    private const string TargetSceneName = "Office_Level1";
 
     public static CaseFinale Instance { get; private set; }
 
@@ -96,7 +95,7 @@ public sealed class CaseFinale : MonoBehaviour
 
     private static void EnsureForScene(Scene scene)
     {
-        if (!scene.IsValid() || !scene.isLoaded || scene.name != TargetSceneName) return;
+        if (!scene.IsValid() || !scene.isLoaded || !OfficeLevelProfile.Allows(scene, OfficeFeature.Finale)) return;
         foreach (GameObject root in scene.GetRootGameObjects())
             if (root.GetComponentInChildren<CaseFinale>(true) != null) return;
         var host = new GameObject("Case Finale");
@@ -183,6 +182,15 @@ public sealed class CaseFinale : MonoBehaviour
 
     private CaseFinaleRules.Tier CurrentTier()
     {
+        // A review case (Level 2) knows its own returned submissions and cutoff.
+        CaseReviewState review = CaseManager.Instance != null && CaseManager.Instance.CurrentCase != null
+            ? CaseManager.Instance.CurrentCase.review : null;
+        if (review != null)
+        {
+            bool reviewOnTime = review.clock == null || !review.clock.missed;
+            return CaseFinaleRules.TierFor(review.audit != null ? review.audit.failedSubmissions : 0, reviewOnTime,
+                review.clock != null ? Mathf.Max(1, review.clock.day) : 1);
+        }
         AuditorInteractable auditor = FindAnyObjectByType<AuditorInteractable>(FindObjectsInactive.Include);
         int failed = auditor != null ? auditor.FailedAudits : 0;
         OfficeHours hours = OfficeHours.Instance;

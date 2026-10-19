@@ -7,8 +7,8 @@ using UnityEngine.UI;
 /// PURPOSE:
 /// The Office Hours countdown: a small navy chip under the progress card
 /// (top-left; it slides to the corner when the HUD steps aside at the desk)
-/// with a ticking clock face, "AUDITOR LEAVES 9:20 AM" and the minutes
-/// left. It turns amber, then pulsing red, as time runs short. Shown only
+/// with a ticking clock face, a deadline caption and the minutes left.
+/// It turns amber, then pulsing red, as time runs short. Shown only
 /// after the receptionist has announced the deadline and until the case is
 /// done. Purely visual; never blocks touches.
 /// </summary>
@@ -18,6 +18,7 @@ public sealed class OfficeHoursChip : MonoBehaviour
     private const float Height = 78f;
 
     private OfficeHours hours;
+    private Level2ReviewClock reviewClock;
     private RectTransform chip;
     private CanvasGroup group;
     private Image rim;
@@ -34,8 +35,18 @@ public sealed class OfficeHoursChip : MonoBehaviour
 
     public static OfficeHoursChip Create(OfficeHours owner)
     {
+        return Create(owner, null, owner.gameObject.scene);
+    }
+
+    public static OfficeHoursChip Create(Level2ReviewClock owner)
+    {
+        return Create(null, owner, owner.gameObject.scene);
+    }
+
+    private static OfficeHoursChip Create(OfficeHours hours, Level2ReviewClock reviewClock, UnityEngine.SceneManagement.Scene scene)
+    {
         var host = new GameObject("Office Hours Canvas", typeof(RectTransform));
-        SceneManager.MoveGameObjectToScene(host, owner.gameObject.scene);
+        SceneManager.MoveGameObjectToScene(host, scene);
         host.layer = LayerMask.NameToLayer("UI");
         Canvas canvas = host.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -50,7 +61,8 @@ public sealed class OfficeHoursChip : MonoBehaviour
         safe.gameObject.AddComponent<MobileControlsSafeArea>();
 
         var view = host.AddComponent<OfficeHoursChip>();
-        view.hours = owner;
+        view.hours = hours;
+        view.reviewClock = reviewClock;
         view.Build(safe);
         return view;
     }
@@ -115,9 +127,12 @@ public sealed class OfficeHoursChip : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (hours == null) return;
+        if (hours == null && reviewClock == null) return;
         float dt = Time.unscaledDeltaTime;
-        bool show = hours.Announced && !hours.CaseDone && !hours.InNextMorning && !HudRewardScreen.AnyOpen;
+        bool level2 = reviewClock != null;
+        bool show = level2
+            ? reviewClock.Announced && !reviewClock.CaseDone && !reviewClock.InNextMorning && !HudRewardScreen.AnyOpen
+            : hours.Announced && !hours.CaseDone && !hours.InNextMorning && !HudRewardScreen.AnyOpen;
         alpha = Mathf.MoveTowards(alpha, show ? 1f : 0f, dt * 4f);
         group.alpha = alpha;
         if (alpha <= 0f) return;
@@ -128,27 +143,31 @@ public sealed class OfficeHoursChip : MonoBehaviour
         y = Mathf.Lerp(y == 0f ? goal : y, goal, 1f - Mathf.Exp(-10f * dt));
         chip.anchoredPosition = new Vector2(HudTheme.Margin, y);
 
-        int minutes = hours.MinutesLeft;
-        if (minutes != shownMinutes || hours.Day != shownDay)
+        int minutes = level2 ? reviewClock.MinutesLeft : hours.MinutesLeft;
+        int day = level2 ? reviewClock.Day : hours.Day;
+        if (minutes != shownMinutes || day != shownDay)
         {
             shownMinutes = minutes;
-            shownDay = hours.Day;
-            caption.text = (hours.Day > 1 ? $"Day {hours.Day} · " : "") + "Auditor leaves " + hours.DeadlineText;
+            shownDay = day;
+            caption.text = level2
+                ? (day > 1 ? $"Day {day} · " : "") + "Review cutoff today " + reviewClock.DeadlineText
+                : (day > 1 ? $"Day {day} · " : "") + "Auditor leaves " + hours.DeadlineText;
             value.text = minutes == 1 ? "1 min left" : $"{minutes} min left";
         }
 
         // Clock hands follow the in-game time.
-        double t = hours.GameSeconds;
+        double t = level2 ? reviewClock.GameSeconds : hours.GameSeconds;
         minuteHand.localRotation = Quaternion.Euler(0f, 0f, -(float)(t / 60.0 % 60.0) * 6f);
         hourHand.localRotation = Quaternion.Euler(0f, 0f, -(float)(t / 3600.0 % 12.0) * 30f);
 
-        float real = hours.RealSecondsLeft;
-        Color state = real <= hours.Config.redRealSeconds ? HudTheme.Reputation
-            : real <= hours.Config.amberRealSeconds ? HudTheme.Exp : HudTheme.Brass;
-        float pulse = real <= hours.Config.redRealSeconds ? 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 9f) : 0f;
+        float real = level2 ? reviewClock.RealSecondsLeft : hours.RealSecondsLeft;
+        float amber = level2 ? reviewClock.AmberSeconds : hours.Config.amberRealSeconds;
+        float red = level2 ? reviewClock.RedSeconds : hours.Config.redRealSeconds;
+        Color state = real <= red ? HudTheme.Reputation : real <= amber ? HudTheme.Exp : HudTheme.Brass;
+        float pulse = real <= red ? 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 9f) : 0f;
         rim.color = Color.Lerp(state, Color.white, pulse * 0.35f);
         face.color = state;
-        value.color = real <= hours.Config.amberRealSeconds ? state : HudTheme.TextPrimary;
+        value.color = real <= amber ? state : HudTheme.TextPrimary;
 
         pop = Mathf.MoveTowards(pop, 0f, dt * 1.6f);
         float scale = 1f + 0.08f * Mathf.Sin(pop * Mathf.PI) + 0.03f * pulse;

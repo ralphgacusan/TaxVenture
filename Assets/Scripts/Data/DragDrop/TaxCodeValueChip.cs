@@ -24,6 +24,20 @@ public class TaxCodeValueChip : MonoBehaviour, IDataValueSource
         // Printed highlighter-mark presentation; transfer data is unchanged.
         PaperInkStyle.StyleValueChip(GetComponent<Image>(), chipText,
             GetComponent<ValueSelectionHighlighter>());
+
+        // Reference term: the same printed look, but nothing to pick up.
+        if (value.readOnly)
+        {
+            clickSource.enabled = false;
+            dragSource.enabled = false;
+            Image background = GetComponent<Image>();
+            if (background != null) background.raycastTarget = false;
+            foreach (Transform child in GetComponentsInChildren<Transform>(true))
+                if (child.name == "Grip") child.gameObject.SetActive(false);
+            Vector4 margin = chipText.margin;
+            margin.x = 18f;
+            chipText.margin = margin;
+        }
     }
 
     public DataValue GetDataValue()

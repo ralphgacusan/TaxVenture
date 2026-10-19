@@ -10,6 +10,9 @@ public class TaxCodeClickableValue
 
     public DataValueType type;
     public string semanticKey;
+
+    /// <summary>A printed term with its explanation, styled like a value but not picked up (reference pages).</summary>
+    public bool readOnly;
 }
 
 [Serializable]

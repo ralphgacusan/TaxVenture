@@ -81,6 +81,9 @@ public class DialogueUI : MonoBehaviour
     /// <summary>True from admission until controls are released after the return.</summary>
     public bool IsDialogueActive => session.IsActive || handoff.IsPending;
     public static bool IsAnyDialogueActive => activeUI != null && activeUI.IsDialogueActive;
+
+    /// <summary>This dialogue box is still on screen (it can outlive the session for a moment while it closes).</summary>
+    public bool IsPanelShowing => panelRoot != null && panelRoot.activeInHierarchy;
     public bool CanStartDialogue => !IsAnyDialogueActive && CanShowPanel() &&
         (CameraController.Instance == null || CameraController.Instance.CanStartDialogue) &&
         (GameStateMachine.Instance == null || !GameStateMachine.Instance.IsPaused);

@@ -8,10 +8,13 @@ using UnityEngine.UI;
 /// box with capital ink text (e.g. "INITIAL REVIEW / NOT READY"). Created
 /// once per paper as a child named "ReviewInk", shown or hidden on demand.
 /// Presentation only; ignores raycasts so rows and page buttons stay usable.
-/// </summary>
+/// </summary>         
 public static class ReviewInkMark
 {
     public const string ObjectName = "ReviewInk";
+
+    /// <summary>Size of one impression in paper units (the desk stamp's pad is built to match it).</summary>
+    public static readonly Vector2 Size = new Vector2(440f, 160f);
     private static readonly Color Ink = new Color(0.72f, 0.12f, 0.14f, 0.88f);
 
     /// <summary>Not Ready ink.</summary>
@@ -94,7 +97,7 @@ public static class ReviewInkMark
         rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
         rect.pivot = new Vector2(1f, 1f);
         rect.anchoredPosition = new Vector2(-70f, -60f);
-        rect.sizeDelta = new Vector2(440f, 160f);
+        rect.sizeDelta = Size;
         rect.localRotation = Quaternion.Euler(0f, 0f, -9f);
 
         Image frame = go.AddComponent<Image>();

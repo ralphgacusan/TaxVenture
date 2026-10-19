@@ -97,6 +97,9 @@ public sealed class CaseFolder3DView : MonoBehaviour
         // Already open on the desk: do not move it, just bring it forward.
         if (folder.gameObject.activeInHierarchy)
         {
+            if (!screenPosition.HasValue && pages != null && pages.PaperRect != null)
+                folder.position = DeskMotion.CentrePaper(MainCamera(), folder.position,
+                    pages.PaperRect.TransformPoint(pages.PaperRect.rect.center));
             layer?.BringToFront();
             return true;
         }
@@ -133,6 +136,13 @@ public sealed class CaseFolder3DView : MonoBehaviour
         float depth = Vector3.Dot(toPosition - main.transform.position, main.transform.forward);
         if (screenPosition.HasValue && depth > main.nearClipPlane)
             toPosition = main.ScreenToWorldPoint(new Vector3(screenPosition.Value.x, screenPosition.Value.y, depth));
+        else if (!screenPosition.HasValue)
+        {
+            Vector3 localCentre = pages != null && pages.PaperRect != null
+                ? folder.InverseTransformPoint(pages.PaperRect.TransformPoint(pages.PaperRect.rect.center)) : Vector3.zero;
+            Vector3 paperCentre = toPosition + toRotation * (localCentre * savedScale.x);
+            toPosition = DeskMotion.CentrePaper(main, toPosition, paperCentre);
+        }
 
         toScale = savedScale.x;
         fromScale = savedScale.x * IconScale;
@@ -158,6 +168,7 @@ public sealed class CaseFolder3DView : MonoBehaviour
     public void Close()
     {
         if (phase != Phase.Opening && phase != Phase.Open) return;
+        pages?.NotifyClosing();
         Camera main = MainCamera();
         fromPosition = folder.position;
         fromRotation = folder.rotation;

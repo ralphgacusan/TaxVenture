@@ -66,6 +66,20 @@ public class AuditSummaryPopupUI : MonoBehaviour
         HudRewardScreen.Present(popupPanelRoot, BuildScreen(issues));
     }
 
+    /// <summary>
+    /// The same Audit Summary card with content prepared by a level that
+    /// runs its own review (Level 2): the card, controls lock and close
+    /// callback are exactly the Level 1 ones.
+    /// </summary>
+    public void ShowScreen(RewardScreenData data, string plainText, System.Action onClosedCallback)
+    {
+        CameraController.Instance?.LockPlayerControls();
+        onClosed = onClosedCallback;
+        if (summaryText != null) summaryText.text = plainText ?? string.Empty;
+        popupPanelRoot.SetActive(true);
+        HudRewardScreen.Present(popupPanelRoot, data);
+    }
+
     /// <summary>The findings card (Office HUD): what the Auditor found and what it costs, one button to go fix it.</summary>
     private static RewardScreenData BuildScreen(List<ComplianceIssue> issues)
     {
@@ -131,7 +145,7 @@ public class AuditSummaryPopupUI : MonoBehaviour
 
         onClosed?.Invoke();
 
-        FirstPersonHands.Instance.ShowCarriedDocument();
+        if (FirstPersonHands.Instance != null) FirstPersonHands.Instance.ShowCarriedDocument();
     }
 
     private void Hide()

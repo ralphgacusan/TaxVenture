@@ -18,6 +18,9 @@ using UnityEngine.UI;
 /// </summary>
 public sealed class GuideCoachView : MonoBehaviour
 {
+    /// <summary>Optional level hook: show the hint bubble at the bottom centre instead of the top.</summary>
+    public static System.Func<bool> HintAtBottom;
+
     public enum Placement { Auto, Top, Bottom, Center }
 
     private const float BoxWidth = 1360f;
@@ -572,6 +575,20 @@ public sealed class GuideCoachView : MonoBehaviour
         hintGroup.alpha = Mathf.MoveTowards(hintGroup.alpha, hintVisible ? 1f : 0f, dt * 4f);
         float hk = hintVisible ? HudTheme.EaseOutBack(hintGroup.alpha) : hintGroup.alpha;
         hint.localScale = Vector3.one * Mathf.Lerp(0.85f, 1f, hk);
+        CameraController controller = CameraController.Instance;
+        bool deskView = controller != null && (controller.CurrentMode == CameraController.CameraMode.Workstation ||
+            controller.CurrentMode == CameraController.CameraMode.ProfileViewer);
+        // A level may ask for the bubble at the bottom (Level 2's records desk keeps the paper clear).
+        bool bottom = HintAtBottom != null && HintAtBottom();
+        Vector2 anchor = bottom ? new Vector2(0.5f, 0f) : new Vector2(0.5f, 1f);
+        if (hint.anchorMin != anchor)
+        {
+            hint.anchorMin = hint.anchorMax = hint.pivot = anchor;
+            hint.anchoredPosition = new Vector2(0f, bottom ? 24f : (deskView ? -24f : -190f));
+        }
+        float hintY = bottom ? 24f : deskView ? -24f : -190f;
+        hint.anchoredPosition = Vector2.Lerp(hint.anchoredPosition, new Vector2(0f, hintY),
+            1f - Mathf.Exp(-10f * dt));
     }
 
     private void LayoutDims()

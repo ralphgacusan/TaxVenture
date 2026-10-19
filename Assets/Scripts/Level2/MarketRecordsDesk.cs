@@ -6,18 +6,22 @@ using UnityEngine;
 /// her records, tapping it sits the player at the desk in the same desk view
 /// the office desk uses (CameraController.EnterFirstPerson, "Exit Desk").
 /// The first time raises MarketDeskOpened. Before the handover it only says
-/// what to do first. The hands-on toolkit on this desk is ticket T05.
+/// what to do first. Sitting down opens the income toolkit on the desk
+/// (IncomeToolkit, ticket T05), which closes again when the player leaves.
 /// </summary>
 public sealed class MarketRecordsDesk : MonoBehaviour, IInteractable
 {
     private Transform viewpoint;
     private HighlightEffect highlight;
+    private IncomeToolkit toolkit;
 
     public Transform Viewpoint => viewpoint;
+    public IncomeToolkit Toolkit => toolkit;
 
-    public void Init(Transform deskViewpoint)
+    public void Init(Transform deskViewpoint, IncomeToolkit incomeToolkit = null)
     {
         viewpoint = deskViewpoint;
+        toolkit = incomeToolkit;
         highlight = HighlightEffect.For((Component)this);
     }
 
@@ -46,6 +50,9 @@ public sealed class MarketRecordsDesk : MonoBehaviour, IInteractable
 
         CameraController.Instance.EnterFirstPerson(viewpoint, "Exit Desk");
         if (review.TryOpenMarketDesk()) GameplayEvents.RaiseMarketDeskOpened();
-        Level2Say.Line("Here are Rosa's six records. You can read each one in your folder, after the Findings page.");
+        if (toolkit != null) toolkit.RequestOpen();
+        // The toolkit's own guide lines take over (tutorial and Mark the Money!).
+        if (toolkit == null)
+            Level2Say.Line("Rosa's records are clipped inside Supporting Documents in your folder.");
     }
 }

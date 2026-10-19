@@ -62,6 +62,27 @@ public class TrainingRecord
 /// a best above its maximum, duplicate ids, badge tiers out of range), so
 /// whatever is on disk always loads as a consistent save.
 /// </summary>
+/// <summary>
+/// An unfinished level run that can be resumed after a relaunch (Level 2:
+/// Rosa's review). Plain data only (no scene references): the review state as
+/// JSON plus the taxpayer facts the player entered, which Unity's JSON cannot
+/// store as nullable enums. Cleared when the level result is saved.
+/// </summary>
+[Serializable]
+public class LevelCheckpoint
+{
+    public string levelId;
+    public string caseId;
+    public int writes;
+    public string reviewJson;
+    public string residencyStatus;
+    public string taxpayerType;
+    public string incomeSource;
+    public List<string> transferredFields = new List<string>();
+
+    public bool IsSet => !string.IsNullOrEmpty(levelId) && !string.IsNullOrEmpty(reviewJson);
+}
+
 [Serializable]
 public class PlayerProgressData
 {
@@ -82,6 +103,41 @@ public class PlayerProgressData
     /// <summary>In-game tutorial lessons the player has seen, as "Level_01/move" (version 4).</summary>
     public List<string> tutorialsSeen = new List<string>();
     public List<TrainingRecord> trainingRecords = new List<TrainingRecord>();
+
+    /// <summary>One resumable unfinished level run (empty = none). Optional: old saves have none.</summary>
+    public LevelCheckpoint activeCheckpoint = new LevelCheckpoint();
+
+    /// <summary>Neutral story facts learned in completed levels (e.g. "rosa-desk-provenance").</summary>
+    public List<string> storyFacts = new List<string>();
+
+    /// <summary>The resumable run of this level, or null.</summary>
+    public LevelCheckpoint CheckpointFor(string levelId) =>
+        activeCheckpoint != null && activeCheckpoint.IsSet && activeCheckpoint.levelId == levelId ? activeCheckpoint : null;
+
+    public void SetCheckpoint(LevelCheckpoint checkpoint)
+    {
+        if (checkpoint == null || !checkpoint.IsSet) return;
+        checkpoint.writes = (activeCheckpoint != null && activeCheckpoint.levelId == checkpoint.levelId ? activeCheckpoint.writes : 0) + 1;
+        activeCheckpoint = checkpoint;
+    }
+
+    /// <summary>Clears the checkpoint of this level. True when there was one.</summary>
+    public bool ClearCheckpoint(string levelId)
+    {
+        if (CheckpointFor(levelId) == null) return false;
+        activeCheckpoint = new LevelCheckpoint();
+        return true;
+    }
+
+    /// <summary>Records a story fact once. True when it is new.</summary>
+    public bool RecordStoryFact(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return false;
+        if (storyFacts == null) storyFacts = new List<string>();
+        if (storyFacts.Contains(id)) return false;
+        storyFacts.Add(id);
+        return true;
+    }
 
     // =========================================================
     // TRAINING HUB (version 4): never touches EXP, hearts, badges or levels
@@ -324,6 +380,9 @@ public class PlayerProgressData
 
         if (tutorialsSeen == null) { tutorialsSeen = new List<string>(); changed = true; }
         if (trainingRecords == null) { trainingRecords = new List<TrainingRecord>(); changed = true; }
+        if (activeCheckpoint == null) { activeCheckpoint = new LevelCheckpoint(); changed = true; }
+        if (activeCheckpoint.transferredFields == null) { activeCheckpoint.transferredFields = new List<string>(); changed = true; }
+        if (storyFacts == null) { storyFacts = new List<string>(); changed = true; }
 
         if (saveVersion == 0 && levelsCompleted > 0 && completedLevelIds.Count == 0)
         {

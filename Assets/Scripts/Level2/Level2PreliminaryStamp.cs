@@ -6,7 +6,7 @@ using UnityEngine;
 /// Level2Gameplay/PreliminaryStamp. The existing desk stamps are reused: when
 /// one lands on the case folder during Rosa's initial review, StampUI asks
 /// this part first. A supported Not Ready (finding F1 on the summary, linked
-/// to the referral note, reason "Not on summary") is recorded once as the
+/// to the payment note, reason "Unlisted payment") is recorded once as the
 /// preliminary assessment; anything else gets Arthur's guided correction and
 /// is not recorded, scored or rewarded.
 ///
@@ -61,7 +61,7 @@ public sealed class Level2PreliminaryStamp : MonoBehaviour
     private bool HandleStamp(StampType type)
     {
         CaseReviewState review = Level2OfficeStart.Review;
-        if (review == null || review.phase >= ReviewPhase.FinalAssessment) return false;
+        if (review == null || review.phase >= ReviewPhase.OfficeReconciliation) return false;
         return Stamp(type, null, 0f) != PreliminaryReview.Outcome.NoRule;
     }
 
@@ -75,6 +75,7 @@ public sealed class Level2PreliminaryStamp : MonoBehaviour
         CaseReviewState review = Level2OfficeStart.Review;
         CaseDefinition definition = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
         if (review == null || definition == null || !definition.HasReview) return PreliminaryReview.Outcome.NoRule;
+        if (review.phase >= ReviewPhase.OfficeReconciliation) return StampFinal(review, definition, type, inkPoint, inkAngle);
 
         PreliminaryReview.Outcome outcome =
             PreliminaryReview.TryStamp(review, definition.review.preliminaryRule, type == StampType.NotReadyForFiling);
@@ -100,5 +101,30 @@ public sealed class Level2PreliminaryStamp : MonoBehaviour
             Guard("PreliminaryHoldStamped listeners", GameplayEvents.RaisePreliminaryHoldStamped);
         }
         return outcome;
+    }
+
+    /// <summary>
+    /// The final (consultant) assessment stamp (T08): committed once at impact
+    /// to the current packet revision, with the chosen reason. Mapped onto the
+    /// initial-stamp outcomes the desk stamps already understand (Recorded =
+    /// ink stays; anything else = a faint mark that fades).
+    /// </summary>
+    private static PreliminaryReview.Outcome StampFinal(CaseReviewState review, CaseDefinition definition, StampType type,
+        Vector2? inkPoint, float inkAngle)
+    {
+        bool ready = type == StampType.ReadyForFiling;
+        FinalAssessment.Outcome outcome = FinalAssessment.TryStamp(review, definition.review, ready,
+            inkPoint.HasValue ? inkPoint.Value.x : (float?)null, inkPoint.HasValue ? inkPoint.Value.y : (float?)null, inkAngle);
+        Guard("Arthur's line", () => Level2Say.Line(FinalAssessment.Message(outcome, ready)));
+        if (outcome != FinalAssessment.Outcome.Recorded)
+            return outcome == FinalAssessment.Outcome.AlreadyCurrent ? PreliminaryReview.Outcome.AlreadyStamped : PreliminaryReview.Outcome.FindingIncomplete;
+        Debug.Log($"[Level2] Final assessment stamped {review.finalStamp.verdict} (reason {review.finalStamp.reasonId}, revision {review.finalStamp.revision}).");
+        Guard("folder redraw", () =>
+        {
+            foreach (CaseFolderUI folder in FindObjectsByType<CaseFolderUI>(FindObjectsInactive.Include))
+                folder.RefreshCurrentPage();
+        });
+        Guard("FinalAssessmentStamped listeners", GameplayEvents.RaiseFinalAssessmentStamped);
+        return PreliminaryReview.Outcome.Recorded;
     }
 }

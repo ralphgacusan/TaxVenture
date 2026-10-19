@@ -25,10 +25,34 @@ public class WorkstationUI : MonoBehaviour
     [SerializeField] private Color buttonColor = new Color(0.95f, 0.8f, 0.43f, 1f);
     [SerializeField] private Color labelColor = new Color(0.08f, 0.08f, 0.1f, 1f);
 
+    /// <summary>
+    /// Optional level hook: while it returns true the exit control is hidden
+    /// and does nothing (Level 2: during the Mark the Money! practice and
+    /// challenge). Level 1 never sets it.
+    /// </summary>
+    public static System.Func<bool> ExitBlocked;
+
+    private CanvasGroup exitGroup;
+
     private void Awake()
     {
         ApplyButtonStyle();
         Hide();
+    }
+
+    private void LateUpdate()
+    {
+        if (panelRoot == null) return;
+        bool blocked = ExitBlocked != null && ExitBlocked();
+        if (exitGroup == null)
+        {
+            if (!blocked) return;
+            exitGroup = panelRoot.GetComponent<CanvasGroup>();
+            if (exitGroup == null) exitGroup = panelRoot.AddComponent<CanvasGroup>();
+        }
+        exitGroup.alpha = blocked ? 0f : 1f;
+        exitGroup.blocksRaycasts = !blocked;
+        exitGroup.interactable = !blocked;
     }
 
     /// <summary>
@@ -97,6 +121,7 @@ public class WorkstationUI : MonoBehaviour
     /// <summary>Wired to the bottom-center Exit button's OnClick().</summary>
     public void OnExitButtonPressed()
     {
+        if (ExitBlocked != null && ExitBlocked()) return;
         CameraController.Instance.ExitFirstPerson();
     }
 }

@@ -149,6 +149,9 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
             return;
         }
 
+        // A level with its own review (Level 2) judges the hand-in itself.
+        if (LevelAudit != null && LevelAudit(this)) return;
+
         CaseData data = CaseManager.Instance.CurrentCase;
         if (lastFailedAnswers != null && AnswerSignature(data) == lastFailedAnswers)
         {
@@ -183,6 +186,66 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
         npcState.ChangeState(new NpcInteractState());
         npcState.ChangeState(new NpcDialogueState());
         gameStateMachine.ChangeState(submittedState);
+    }
+
+    // =========================================================
+    // LEVEL AUDIT HOOK (Level 2 review cases)
+    // =========================================================
+
+    /// <summary>
+    /// Optional level rule: handles a final hand-in itself (returns true).
+    /// Null or false keeps the Level 1 audit unchanged.
+    /// </summary>
+    public static System.Func<AuditorInteractable, bool> LevelAudit;
+
+    /// <summary>Plays a level's audit lines with the usual NPC dialogue states. False when a dialogue is already running.</summary>
+    public bool RunLevelDialogue(List<DialogueLine> lines, System.Action onDone)
+    {
+        if (dialogueSessionActive || dialogueUI == null || DialogueUI.IsAnyDialogueActive || lines == null || lines.Count == 0) return false;
+        INpcState priorNpcState = npcState.CurrentState;
+        if (!dialogueUI.TryStartDialogue(
+            lines,
+            () =>
+            {
+                dialogueSessionActive = false;
+                npcState.ChangeState(new NpcIdleState());
+                onDone?.Invoke();
+            },
+            () =>
+            {
+                OnDialogueCancelled(priorNpcState);
+                onDone?.Invoke();
+            },
+            this)) return false;
+        dialogueSessionActive = true;
+        npcState.ChangeState(new NpcInteractState());
+        npcState.ChangeState(new NpcDialogueState());
+        return true;
+    }
+
+    /// <summary>Shows Level 1's Audit Summary card with a level's own content (Level 2 review cases). False without the card.</summary>
+    public bool ShowLevelSummary(RewardScreenData data, string plainText, System.Action closed)
+    {
+        if (summaryPopupUI == null || data == null) return false;
+        summaryPopupUI.ShowScreen(data, plainText, closed);
+        return true;
+    }
+
+    /// <summary>Gives the folder back for more work (the review itself is kept by the level).</summary>
+    public void ReturnFolderForReview()
+    {
+        if (submissionTray != null) submissionTray.ResetForRetryWithoutNewCase();
+        if (GameStateMachine.Instance != null) GameStateMachine.Instance.UnlockProgression();
+    }
+
+    /// <summary>An accepted review: the Auditor is done and the case completes through the existing states.</summary>
+    public void CompleteLevelReview()
+    {
+        npcState.ChangeState(new NpcCompletedState());
+        GameStateMachine machine = GameStateMachine.Instance;
+        if (machine == null) return;
+        if (!(machine.CurrentState is AuditSubmittedState)) machine.ChangeState(new AuditSubmittedState());
+        machine.ChangeState(new CaseCompleteState());
     }
 
     private SubmissionResult EvaluateSubmission(CaseData data)

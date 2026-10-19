@@ -10,6 +10,7 @@ using UnityEngine;
 ///   notes     - a ruled notepad with a red binding and a yellow pencil
 ///   folder    - a manila case folder with a paper and a red case label
 ///   profiles  - two stacked blue taxpayer ID cards
+///   papers    - the corrected annotated records collected in Level 2
 /// Render() is pure (no Unity objects) for tests and previews; Get() caches
 /// the sprite.
 /// </summary>
@@ -18,7 +19,7 @@ public static class HudIconArt
     public const int Size = 160;
     private const int Samples = 3;
 
-    public static readonly string[] Icons = { "settings", "notes", "folder", "profiles" };
+    public static readonly string[] Icons = { "settings", "notes", "folder", "profiles", "papers", "book" };
     private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
 
     public static Sprite Get(string icon)
@@ -99,6 +100,8 @@ public static class HudIconArt
             case "notes": Notepad(u, v, ref c); break;
             case "folder": Folder(u, v, ref c); break;
             case "profiles": Cards(u, v, ref c); break;
+            case "papers": Papers(u, v, ref c); break;
+            case "book": Book(u, v, ref c); break;
         }
         return c;
     }
@@ -204,6 +207,64 @@ public static class HudIconArt
                 if (Mathf.Abs(v - ly) < 0.012f && u > 0.44f && u < (i == 2 ? 0.58f : 0.68f)) Over(ref c, C(60, 96, 140));
             }
         }
+    }
+
+    private static void Papers(float u, float v, ref Color c)
+    {
+        // A small stack of corrected records, with a green check on the top sheet.
+        if (RoundRect(u + 0.025f, v - 0.015f, 0.24f, 0.22f, 0.69f, 0.72f, 0.035f, 0f, out _))
+            Over(ref c, new Color(0f, 0f, 0f, 0.35f));
+        if (RoundRect(u - 0.045f, v + 0.015f, 0.24f, 0.29f, 0.7f, 0.78f, 0.035f, 0f, out _))
+            Over(ref c, C(220, 215, 199));
+        if (RoundRect(u, v, 0.25f, 0.22f, 0.72f, 0.73f, 0.035f, 0f, out _))
+        {
+            Over(ref c, C(250, 248, 238));
+            if (RoundRect(u, v, 0.25f, 0.61f, 0.72f, 0.73f, 0.025f, 0f, out _))
+                Over(ref c, C(46, 158, 106));
+            for (int i = 0; i < 3; i++)
+            {
+                float lineY = 0.53f - i * 0.075f;
+                if (Mathf.Abs(v - lineY) < 0.009f && u > 0.32f && u < 0.64f)
+                    Over(ref c, C(124, 145, 153));
+            }
+            // Green confirmation tick on the lower corner.
+            float ax = 0.48f, ay = 0.34f;
+            if (DistanceToSegment(new Vector2(u, v), new Vector2(ax - 0.055f, ay), new Vector2(ax - 0.01f, ay - 0.045f)) < 0.014f ||
+                DistanceToSegment(new Vector2(u, v), new Vector2(ax - 0.01f, ay - 0.045f), new Vector2(ax + 0.075f, ay + 0.05f)) < 0.014f)
+                Over(ref c, C(46, 158, 106));
+        }
+    }
+
+    private static void Book(float u, float v, ref Color c)
+    {
+        // A closed reference book: cream page block, deep red cover (like the desk book), spine bands and a bookmark ribbon.
+        if (RoundRect(u + 0.014f, v + 0.02f, 0.24f, 0.2f, 0.76f, 0.8f, 0.04f, 0f, out _)) Over(ref c, new Color(0f, 0f, 0f, 0.35f));
+        if (RoundRect(u, v, 0.3f, 0.21f, 0.75f, 0.76f, 0.025f, 0f, out _))
+        {
+            Over(ref c, C(246, 240, 222));
+            if (u > 0.7f && Mathf.Repeat(v * 60f, 1f) < 0.35f) Over(ref c, C(214, 204, 180));          // page edges
+        }
+        if (RoundRect(u, v, 0.24f, 0.24f, 0.7f, 0.8f, 0.04f, 0f, out _))
+        {
+            Over(ref c, Color.Lerp(C(128, 26, 30), C(196, 52, 52), (v - 0.24f) / 0.56f));
+            if (u < 0.31f) Over(ref c, C(98, 18, 22));                                                 // spine
+            if ((Mathf.Abs(v - 0.7f) < 0.012f || Mathf.Abs(v - 0.34f) < 0.012f) && u < 0.31f) Over(ref c, C(236, 206, 140));
+            if (RoundRect(u, v, 0.38f, 0.5f, 0.62f, 0.64f, 0.02f, 0f, out _))                            // title plate
+            {
+                Over(ref c, C(236, 206, 140));
+                if (Mathf.Abs(v - 0.57f) < 0.01f && u > 0.42f && u < 0.58f) Over(ref c, C(120, 92, 44));
+            }
+            if (v > 0.74f) Over(ref c, new Color(1f, 1f, 1f, 0.14f));                                  // top highlight
+        }
+        if (u > 0.56f && u < 0.62f && v > 0.12f && v < 0.3f && v > 0.12f + Mathf.Abs(u - 0.59f) * 1.4f)
+            Over(ref c, C(236, 206, 140));                                                              // ribbon
+    }
+
+    private static float DistanceToSegment(Vector2 point, Vector2 start, Vector2 end)
+    {
+        Vector2 delta = end - start;
+        float t = Mathf.Clamp01(Vector2.Dot(point - start, delta) / Mathf.Max(0.0001f, delta.sqrMagnitude));
+        return Vector2.Distance(point, start + delta * t);
     }
 
     // ---------------- helpers ----------------

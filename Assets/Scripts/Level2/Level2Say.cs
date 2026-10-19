@@ -9,6 +9,9 @@ public static class Level2Say
     public static void Line(string text, string mood = null, float seconds = 5f)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
+        CaseReviewState review = Level2OfficeStart.Review;
+        if (review != null && review.phase >= ReviewPhase.Tutorial && review.phase <= ReviewPhase.Feedback)
+            seconds = UnityEngine.Mathf.Clamp(seconds, 2f, 4f);
         if (!GuideVoice.TrySay(text, mood, seconds)) LevelGate.NotifyBlocked(text);
     }
 }

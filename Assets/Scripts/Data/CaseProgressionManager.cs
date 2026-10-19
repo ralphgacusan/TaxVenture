@@ -228,6 +228,7 @@ public class CaseProgressionManager : MonoBehaviour
         LevelGate.Reset(rules.requireSideQuestBeforeOffice, rules.officeDoors);
         caseAuditAttempts = 0;
         caseAuditMistakes = 0;
+        CaseExtraExpLoss = CaseExtraHeartLoss = 0;
 
         Debug.Log(
             $"[CaseProgressionManager] Level '{levelId}' " +
@@ -319,6 +320,7 @@ public class CaseProgressionManager : MonoBehaviour
         caseStartTime = Time.time;
         caseAuditAttempts = 0;
         caseAuditMistakes = 0;
+        CaseExtraExpLoss = CaseExtraHeartLoss = 0;
 
 
         if (CaseManager.Instance.CurrentCase == null)
@@ -646,6 +648,17 @@ public class CaseProgressionManager : MonoBehaviour
         currentCaseIndex + 1;
 
     public int CurrentCaseAuditAttempts => caseAuditAttempts;
+
+    /// <summary>Resume (Level 2 checkpoint): restores the case's audit counters without raising events.</summary>
+    public void RestoreAuditCounters(int attempts, int mistakes)
+    {
+        caseAuditAttempts = Mathf.Max(0, attempts);
+        caseAuditMistakes = Mathf.Max(0, mistakes);
+    }
+
+    /// <summary>A level's own case consequence (Level 2: the first missed review cutoff), inside the case caps.</summary>
+    public int CaseExtraExpLoss { get; set; }
+    public int CaseExtraHeartLoss { get; set; }
     public int CurrentCaseAuditMistakes => caseAuditMistakes;
 
     /// <summary>
@@ -692,7 +705,7 @@ public class CaseProgressionManager : MonoBehaviour
         string label = $"Case {CurrentCaseNumber}";
         if (caseAuditAttempts > 0)
         {
-            ScoreEntry entry = Score.AddCase(label, caseAuditMistakes, caseAuditAttempts - 1);
+            ScoreEntry entry = Score.AddCase(label, caseAuditMistakes, caseAuditAttempts - 1, CaseExtraExpLoss, CaseExtraHeartLoss);
             result.ExpEarned = entry.Exp;
             result.ReputationEarned = entry.Hearts;
         }

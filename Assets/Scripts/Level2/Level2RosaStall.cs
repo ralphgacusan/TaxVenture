@@ -10,7 +10,7 @@ using UnityEngine;
 /// (Level2SceneAssets): the Building_4 store (mirrored on X like
 /// Building_4 (1)) and Rosa (SM_Chr_Business_Female_03, humanoid idle).
 /// Adds only what the stall needs: a records desk with a tray, the envelope
-/// and six record sheets, a "Rosa's Alterations / Stall 04" sign and a few
+/// and four record sheets, a "Rosa's Laundry / Stall 04" sign and a few
 /// cloth bundles, from Unity primitives.
 ///
 /// PLACEMENT (measured, not guessed):
@@ -330,36 +330,36 @@ public sealed class Level2RosaStall : MonoBehaviour
 
         Material wood = MaterialFor(Wood, "Desk");
         Material dark = MaterialFor(DarkWood, "Desk Dark");
-        const float top = 0.78f, w = 1.4f, depth = 0.7f;
+        const float top = 0.78f, w = 1.4f, depth = 0.82f;
         Box("Top", root.transform, new Vector3(0f, top - 0.025f, 0f), new Vector3(w, 0.05f, depth), wood);
         foreach (float x in new[] { -w * 0.45f, w * 0.45f })
             foreach (float z in new[] { -depth * 0.4f, depth * 0.4f })
                 Box("Leg", root.transform, new Vector3(x, (top - 0.05f) * 0.5f, z), new Vector3(0.06f, top - 0.05f, 0.06f), dark);
 
-        // Records tray (shallow box) and the cloth bundles at the far end.
-        tray = Child("RecordsTray", root.transform, new Vector3(0.1f, top, 0f));
-        Box("Base", tray, new Vector3(0f, 0.006f, 0f), new Vector3(0.5f, 0.012f, 0.38f), dark);
-        Box("EdgeA", tray, new Vector3(0f, 0.025f, 0.19f), new Vector3(0.5f, 0.04f, 0.012f), dark);
-        Box("EdgeB", tray, new Vector3(0f, 0.025f, -0.19f), new Vector3(0.5f, 0.04f, 0.012f), dark);
+        // The collected records form a stack beneath the toolkit's active paper.
+        tray = Child("RecordsTray", root.transform, new Vector3(0.04f, top, -0.015f));
         for (int i = 0; i < 3; i++)
         {
-            GameObject bundle = Prim(PrimitiveType.Cylinder, "ClothBundle", root.transform,
-                new Vector3(w * 0.42f, top + 0.05f + i * 0.09f, -0.12f + 0.08f * (i % 2)), new Vector3(0.16f, 0.045f, 0.16f), MaterialFor(ClothColors[i], "Cloth " + i));
-            bundle.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            Transform towel = Child("Folded Laundry " + (i + 1), root.transform,
+                new Vector3(0.53f + (i % 2) * 0.008f, top + 0.013f + i * 0.022f, 0.255f));
+            Material cloth = MaterialFor(ClothColors[i], "Folded Cloth " + i);
+            Box("Fold", towel, Vector3.zero, new Vector3(0.19f, 0.022f, 0.115f), cloth);
+            Box("Folded Edge", towel, new Vector3(0f, 0.009f, -0.049f), new Vector3(0.175f, 0.006f, 0.012f), cloth);
         }
 
-        // Envelope on Rosa's end of the desk; six sheets wait inside it.
+        // Envelope on Rosa's end of the desk; her four record sheets wait inside it.
         envelope = Child("Envelope", root.transform, new Vector3(-w * 0.32f, top + 0.008f, 0.05f));
         Material manila = MaterialFor(Manila, "Envelope");
         Box("Body", envelope, Vector3.zero, new Vector3(0.26f, 0.014f, 0.18f), manila);
         envelopeFlap = Child("FlapHinge", envelope, new Vector3(0f, 0.008f, 0.09f));
         Box("Flap", envelopeFlap, new Vector3(0f, 0f, -0.045f), new Vector3(0.26f, 0.004f, 0.09f), manila);
         Label(envelope, new Vector3(0f, 0.009f, -0.02f), new Vector2(0.22f, 0.05f), "ROSA SANTOS\nMAY RECORDS", Quaternion.Euler(90f, 0f, 0f) * Quaternion.Euler(0f, 180f, 0f));
-        for (int i = 0; i < 6; i++)
+        string[] recordIds = HandedRecordIds();
+        for (int i = 0; i < recordIds.Length; i++)
         {
-            Transform sheet = Child("Record D" + (i + 1), envelope, new Vector3(0f, 0.002f, 0f));
-            Box("Paper", sheet, Vector3.zero, new Vector3(0.15f, 0.003f, 0.2f), MaterialFor(SheetColors[i], "Sheet " + (i + 1)));
-            Label(sheet, new Vector3(0f, 0.0025f, 0.06f), new Vector2(0.13f, 0.04f), "D" + (i + 1), Quaternion.Euler(90f, 0f, 0f) * Quaternion.Euler(0f, 180f, 0f));
+            Transform sheet = Child("Record " + recordIds[i], envelope, new Vector3(0f, 0.002f, 0f));
+            Box("Paper", sheet, Vector3.zero, new Vector3(0.4f, 0.003f, 0.47f), MaterialFor(SheetColors[i % SheetColors.Length], "Sheet " + (i + 1)));
+            Label(sheet, new Vector3(0f, 0.0025f, 0.06f), new Vector2(0.13f, 0.04f), recordIds[i], Quaternion.Euler(90f, 0f, 0f) * Quaternion.Euler(0f, 180f, 0f));
             sheet.gameObject.SetActive(false);
             sheets.Add(sheet);
         }
@@ -369,18 +369,26 @@ public sealed class Level2RosaStall : MonoBehaviour
         hit.size = new Vector3(w, top + 0.1f, depth);
 
         // Where the camera sits: on the plaza side, looking down at the desk.
-        Transform viewpoint = Child("DeskViewpoint", root.transform, new Vector3(0f, 1.3f, -0.62f));
-        viewpoint.localRotation = Quaternion.LookRotation(new Vector3(0f, top - 1.3f, 0.62f), Vector3.up);
+        // Close framing: roughly 90% of the view's width at 16:9, ten degrees off vertical.
+        Transform viewpoint = Child("DeskViewpoint", root.transform, new Vector3(0f, 1.49f, -0.195f));
+        viewpoint.localRotation = Quaternion.Euler(80f, 0f, 0f);
 
         Desk = root.AddComponent<MarketRecordsDesk>();
-        Desk.Init(viewpoint);
+        Desk.Init(viewpoint, IncomeToolkit.Create(root.transform, top));
     }
 
     /// <summary>
-    /// The handover on the desk: envelope slides in, its flap opens and the six
+    /// The handover on the desk: envelope slides in, its flap opens and the four
     /// records fan into the tray. Presentation only (the records were already
     /// collected); instant on a resumed review.
     /// </summary>
+    /// <summary>The record ids Rosa hands over (case data), for the sheet labels on the desk.</summary>
+    private static string[] HandedRecordIds()
+    {
+        var ids = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition?.review?.handoverDocumentIds : null;
+        return ids != null && ids.Count > 0 ? ids.ToArray() : new[] { "D1", "D3", "D4", "D5" };
+    }
+
     public void ShowRecordsOnDesk(bool instant)
     {
         if (envelope == null || tray == null) return;
@@ -440,9 +448,8 @@ public sealed class Level2RosaStall : MonoBehaviour
 
     private static void SheetPose(int index, out Vector3 position, out Quaternion rotation)
     {
-        float spread = (index - 2.5f) * 0.06f;
-        position = new Vector3(spread, 0.014f + index * 0.0035f, -0.01f * Mathf.Abs(index - 2.5f));
-        rotation = Quaternion.Euler(0f, (index - 2.5f) * 7f, 0f);
+        position = new Vector3((index % 3 - 1) * 0.002f, 0.002f + index * 0.003f, (index % 2) * 0.002f);
+        rotation = Quaternion.identity;
     }
 
     // =========================================================
@@ -458,8 +465,8 @@ public sealed class Level2RosaStall : MonoBehaviour
         Box("PostRight", sign, new Vector3(0.6f, 0.9f, 0f), new Vector3(0.07f, 1.8f, 0.07f), dark);
         Box("Board", sign, new Vector3(0f, 1.55f, 0f), new Vector3(1.4f, 0.5f, 0.05f), MaterialFor(Cream, "Sign Board"));
         // Readable from the plaza (front) and from behind.
-        Label(sign, new Vector3(0f, 1.55f, 0.03f), new Vector2(1.3f, 0.44f), "<b>ROSA'S ALTERATIONS</b>\nStall 04 · Plaza Market", Quaternion.identity);
-        Label(sign, new Vector3(0f, 1.55f, -0.03f), new Vector2(1.3f, 0.44f), "<b>ROSA'S ALTERATIONS</b>\nStall 04 · Plaza Market", Quaternion.Euler(0f, 180f, 0f));
+        Label(sign, new Vector3(0f, 1.55f, 0.03f), new Vector2(1.3f, 0.44f), "<b>ROSA'S LAUNDRY</b>\nStall 04 · Plaza Market", Quaternion.identity);
+        Label(sign, new Vector3(0f, 1.55f, -0.03f), new Vector2(1.3f, 0.44f), "<b>ROSA'S LAUNDRY</b>\nStall 04 · Plaza Market", Quaternion.Euler(0f, 180f, 0f));
     }
 
     // =========================================================

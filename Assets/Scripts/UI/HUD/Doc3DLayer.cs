@@ -25,6 +25,7 @@ using UnityEngine.UI;
 /// COST: nothing unless the document is visible AND in front of an open
 /// paper window it overlaps.
 /// </summary>
+[DefaultExecutionOrder(500)]
 public sealed class Doc3DLayer : MonoBehaviour
 {
     public static readonly List<Doc3DLayer> All = new List<Doc3DLayer>();
@@ -53,6 +54,26 @@ public sealed class Doc3DLayer : MonoBehaviour
     public int SortingOrder => sortingOrder;
     public bool IsVisible => source != null && source.gameObject.activeInHierarchy;
     public bool IsComposited => composited;
+    /// <summary>Opt-in for held tools that must also cover composited desk documents.</summary>
+    public bool CompositeOverDocuments { get; set; }
+    /// <summary>Held tools remain visible even where world geometry would occlude them.</summary>
+    public bool AlwaysComposite { get; set; }
+    /// <summary>Optional stable layer for runtime tools; ordinary documents use temporary isolation.</summary>
+    public int PersistentRenderLayer { get; set; } = -1;
+    /// <summary>
+    /// Opt-in: re-render only when the document moved relative to the camera
+    /// (or the screen size changed). For still documents pinned to the
+    /// screen (HUD papers) the last capture is reused, so only a paper being
+    /// dragged costs a render.
+    /// </summary>
+    public bool RenderOnlyWhenChanged { get; set; }
+    /// <summary>Opt-in: the footprint is this screen-overlay rect (the paper's window) instead of a scan of every renderer.</summary>
+    public RectTransform FootprintRect { get; set; }
+
+    private bool hasRenderedPose;
+    private Matrix4x4 renderedPose;
+    private Vector2Int renderedSize;
+    private float renderedFov;
 
     /// <summary>Screen rectangle the document covers (valid while visible).</summary>
     public bool TryGetFootprint(out Rect rect)
@@ -112,7 +133,7 @@ public sealed class Doc3DLayer : MonoBehaviour
     }
 
     /// <summary>Puts this document on top of everything, with a small pop.</summary>
-    public void BringToFront()
+    public void BringToFront(bool animate = true)
     {
         bool alreadyTop = true;
         for (int i = 0; i < FloatingWindow.Instances.Count; i++)
@@ -125,7 +146,7 @@ public sealed class Doc3DLayer : MonoBehaviour
         if (alreadyTop) return;
 
         AssignSortingOrder(FloatingWindow.TakeTopSortingOrder());
-        popElapsed = 0f;
+        popElapsed = animate ? 0f : -1f;
     }
 
     // =========================================================
@@ -149,7 +170,7 @@ public sealed class Doc3DLayer : MonoBehaviour
             return;
         }
 
-        RenderDocument(main);
+        if (!RenderOnlyWhenChanged || NeedsRender(main)) RenderDocument(main);
         SetComposited(true);
         AnimatePop();
     }
@@ -157,17 +178,44 @@ public sealed class Doc3DLayer : MonoBehaviour
     /// <summary>True when an open paper window under this document overlaps it.</summary>
     private bool CoversAPaperBelow()
     {
+        if (AlwaysComposite) return true;
         for (int i = 0; i < FloatingWindow.Instances.Count; i++)
         {
             FloatingWindow w = FloatingWindow.Instances[i];
             if (w == null || !w.IsOpen() || w.SortingOrder >= sortingOrder) continue;
             if (ScreenRect(w.WindowRect).Overlaps(footprint)) return true;
         }
+        if (CompositeOverDocuments)
+            for (int i = 0; i < All.Count; i++)
+            {
+                Doc3DLayer other = All[i];
+                if (other != this && other != null && other.IsComposited && other.sortingOrder < sortingOrder &&
+                    other.TryGetFootprint(out Rect rect) && rect.Overlaps(footprint)) return true;
+            }
         return false;
     }
 
+    private bool NeedsRender(Camera main)
+    {
+        Matrix4x4 pose = main.worldToCameraMatrix * source.localToWorldMatrix;
+        var size = new Vector2Int(main.pixelWidth, main.pixelHeight);
+        bool same = hasRenderedPose && texture != null && size == renderedSize && Mathf.Approximately(main.fieldOfView, renderedFov);
+        for (int i = 0; same && i < 16; i++)
+            if (Mathf.Abs(pose[i] - renderedPose[i]) > 1e-5f) same = false;
+        if (same) return false;
+        hasRenderedPose = true;
+        renderedPose = pose;
+        renderedSize = size;
+        renderedFov = main.fieldOfView;
+        return true;
+    }
+
+    /// <summary>Forces the next frame to capture again (content changed without moving).</summary>
+    public void MarkDirty() => hasRenderedPose = false;
+
     private void SetComposited(bool on)
     {
+        if (!on) hasRenderedPose = false;
         composited = on;
         if (image.enabled != on) image.enabled = on;
     }
@@ -189,8 +237,14 @@ public sealed class Doc3DLayer : MonoBehaviour
         }
 
         docCamera.CopyFrom(main);
+        // Render the copied view into the whole texture, then place that
+        // texture in the original viewport (including letterboxed views).
+        docCamera.rect = new Rect(0f, 0f, 1f, 1f);
+        image.rectTransform.anchorMin = main.rect.min;
+        image.rectTransform.anchorMax = main.rect.max;
+        image.rectTransform.offsetMin = image.rectTransform.offsetMax = Vector2.zero;
         docCamera.enabled = false;
-        docCamera.cullingMask = 1 << PrivateLayer;
+        docCamera.cullingMask = 1 << (PersistentRenderLayer >= 0 ? PersistentRenderLayer : PrivateLayer);
         docCamera.clearFlags = CameraClearFlags.SolidColor;
         docCamera.backgroundColor = new Color(0f, 0f, 0f, 0f);
         docCamera.targetTexture = texture;
@@ -199,7 +253,8 @@ public sealed class Doc3DLayer : MonoBehaviour
         data.renderPostProcessing = false;
         data.antialiasing = AntialiasingMode.None;
 
-        SwapLayers();
+        bool temporaryLayers = PersistentRenderLayer < 0;
+        if (temporaryLayers) SwapLayers();
         try
         {
             var request = new RenderPipeline.StandardRequest { destination = texture };
@@ -210,7 +265,7 @@ public sealed class Doc3DLayer : MonoBehaviour
         }
         finally
         {
-            RestoreLayers();
+            if (temporaryLayers) RestoreLayers();
         }
     }
 
@@ -240,6 +295,12 @@ public sealed class Doc3DLayer : MonoBehaviour
     private bool ComputeFootprint(Camera main, out Rect rect)
     {
         rect = default;
+        if (FootprintRect != null)
+        {
+            if (!FootprintRect.gameObject.activeInHierarchy) return false;
+            rect = ScreenRect(FootprintRect);
+            return rect.width > 1f && rect.height > 1f;
+        }
         bool any = false;
         Vector2 min = Vector2.zero, max = Vector2.zero;
 

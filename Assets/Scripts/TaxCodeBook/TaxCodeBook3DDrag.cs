@@ -96,6 +96,7 @@ public class TaxCodeBook3DDrag :
 
     private Vector3 dragOffset;
     private Vector3 dragTargetPosition;
+    private Vector3 heldPointerPosition;
 
     private Quaternion originalClosedRotation;
     private Vector3 originalClosedPosition;
@@ -120,6 +121,7 @@ public class TaxCodeBook3DDrag :
     private bool currentDropValid;
 
     private HighlightEffect highlightEffect;
+    private bool heldTinted;
 
 
     private void Awake()
@@ -176,6 +178,9 @@ public class TaxCodeBook3DDrag :
             originalClosedScale = closedTaxCodeBook.transform.localScale;
         }
 
+        ApplyRedCover(closedTaxCodeBook);
+        ApplyRedCover(openTaxCodeBook);
+
         if (openTaxCodeBook != null)
         {
             /*
@@ -195,8 +200,16 @@ public class TaxCodeBook3DDrag :
     }
 
 
+    private void ClearHeldTint()
+    {
+        if (!heldTinted) return;
+        heldTinted = false;
+        SetHeldTint(closedTaxCodeBook, false);
+    }
+
     private void OnDisable()
     {
+        ClearHeldTint();
         if (isDragging && closedTaxCodeBook != null)
         {
             closedTaxCodeBook.transform.position = hasDragTarget ? dragTargetPosition : dragStartPosition;
@@ -223,6 +236,14 @@ public class TaxCodeBook3DDrag :
             UpdateOutlineFocus();
         }
 
+        // A held book reads as "in your hand": red-tinted while it is dragged.
+        bool tint = isDragging && hasMovedDuringDrag;
+        if (tint != heldTinted && closedTaxCodeBook != null)
+        {
+            heldTinted = tint;
+            SetHeldTint(closedTaxCodeBook, tint);
+        }
+
         if (!isDragging ||
             !hasDragTarget ||
             closedTaxCodeBook == null)
@@ -230,12 +251,11 @@ public class TaxCodeBook3DDrag :
             return;
         }
 
-        Vector3 heldPosition = dragTargetPosition;
+        Vector3 heldPosition = heldPointerPosition;
         if (deskSurface != null)
             heldPosition += deskSurface.DragLiftOffset;
-        Vector3 dragLag = heldPosition - closedTaxCodeBook.transform.position;
 
-        if (animateDragging)
+        if (animateDragging && !hasMovedDuringDrag)
         {
             float interpolation =
                 1f - Mathf.Exp(
@@ -258,9 +278,7 @@ public class TaxCodeBook3DDrag :
 
         if (preserveClosedBookRotation)
         {
-            closedTaxCodeBook.transform.rotation = deskSurface != null
-                ? DeskMotion.HeldRotation(originalClosedRotation, dragLag, deskSurface.transform.up)
-                : originalClosedRotation;
+            closedTaxCodeBook.transform.rotation = originalClosedRotation;
         }
     }
 
@@ -290,6 +308,7 @@ public class TaxCodeBook3DDrag :
         currentDropValid = true;
         dragStartPosition = closedTaxCodeBook.transform.position;
         dragTargetPosition = dragStartPosition;
+        heldPointerPosition = dragStartPosition;
         hasDragTarget = true;
 
         eventCamera = eventData.pressEventCamera != null ? eventData.pressEventCamera : mainCamera;
@@ -338,6 +357,7 @@ public class TaxCodeBook3DDrag :
             closedTaxCodeBook.transform.position;
 
         hasDragTarget = true;
+        UpdateDragTarget(eventData.position);
         UpdateOutlineFocus();
 
         DebugLog("Tax code book dragging started.");
@@ -376,6 +396,16 @@ public class TaxCodeBook3DDrag :
         }
 
         pointerPosition = eventData.position;
+
+        if (hasMovedDuringDrag && TryStoreAt != null && TryStoreAt(this, eventData.position))
+        {
+            isDragging = false;
+            hasDragTarget = false;
+            currentDropValid = false;
+            isPointerOver = false;
+            SetOutlineFocused(false);
+            return;
+        }
 
         float screenDistance =
             Vector2.Distance(
@@ -495,15 +525,16 @@ public class TaxCodeBook3DDrag :
         if (deskSurface != null)
         {
             // Pointer off the desk plane: keep the last safe pose, do not open on release.
-            if (!deskSurface.TryGetPointerPoint(ray, dragStartPosition, out Vector3 surfacePoint))
+            if (!deskSurface.TryGetPointerPoint(ray, dragStartPosition + deskSurface.DragLiftOffset, out Vector3 surfacePoint))
             {
                 currentDropValid = false;
                 return;
             }
 
-            // A blocked move keeps the last valid target, which stays a valid drop.
+            // The lifted book follows the finger; only its final resting pose is constrained.
+            heldPointerPosition = surfacePoint + dragOffset - deskSurface.DragLiftOffset;
             if (deskSurface.TryClampPosition(closedTaxCodeBook.transform, placementCollider,
-                    surfacePoint + dragOffset, out Vector3 clampedPosition))
+                    heldPointerPosition, out Vector3 clampedPosition))
             {
                 dragTargetPosition = clampedPosition;
             }
@@ -525,54 +556,10 @@ public class TaxCodeBook3DDrag :
         dragTargetPosition =
             pointerWorldPosition +
             dragOffset;
+        heldPointerPosition = dragTargetPosition;
 
         hasDragTarget = true;
         currentDropValid = true;
-    }
-
-
-    /// <summary>
-    /// Computes where the open book should sit so that its
-    /// sideways/up-down position matches the given screen point,
-    /// while keeping its original distance from the camera
-    /// (depth is never changed).
-    /// </summary>
-    private Vector3 GetOpenBookPositionForScreenPoint(
-        Vector2 screenPosition
-    )
-    {
-        if (mainCamera == null)
-        {
-            return originalOpenPosition;
-        }
-
-        /*
-         * Plane perpendicular to the camera, passing through the
-         * open book's original position. Any point on this plane
-         * shares the same depth-from-camera as the original position,
-         * so raycasting onto it only changes sideways/up-down placement.
-         */
-        Plane openBookPlane = new Plane(
-            mainCamera.transform.forward,
-            originalOpenPosition
-        );
-
-        Ray ray =
-            mainCamera.ScreenPointToRay(
-                screenPosition
-            );
-
-        if (!openBookPlane.Raycast(ray, out float enter))
-        {
-            DebugLog(
-                "Could not project drop point onto the open book's plane. " +
-                "Falling back to the original open book position."
-            );
-
-            return originalOpenPosition;
-        }
-
-        return ray.GetPoint(enter);
     }
 
 
@@ -589,10 +576,17 @@ public class TaxCodeBook3DDrag :
 
         closedTaxCodeBook.SetActive(false);
 
-        if (positionOpenBookAtDropPoint)
+        if (positionOpenBookAtDropPoint && mainCamera != null)
         {
-            openTaxCodeBook.transform.position =
-                GetOpenBookPositionForScreenPoint(dropScreenPosition);
+            // Model pivots differ (the open mesh is hinged at its spine).
+            // Align the visible centres, preserving the open book's reading depth.
+            Vector2 centre = mainCamera.WorldToScreenPoint(VisualCentre(closedTaxCodeBook));
+            openTaxCodeBook.transform.SetPositionAndRotation(originalOpenPosition, originalOpenRotation);
+            openTaxCodeBook.transform.localScale = originalOpenScale;
+            Vector3 openCentre = VisualCentre(openTaxCodeBook);
+            Plane plane = new Plane(mainCamera.transform.forward, openCentre);
+            if (plane.Raycast(mainCamera.ScreenPointToRay(centre), out float enter))
+                openTaxCodeBook.transform.position += mainCamera.ScreenPointToRay(centre).GetPoint(enter) - openCentre;
 
             DebugLog(
                 $"Open book positioned at drop point: " +
@@ -633,8 +627,124 @@ public class TaxCodeBook3DDrag :
     }
 
 
+    /// <summary>The open book model (shown while the book is read).</summary>
+    public GameObject OpenBook => openTaxCodeBook;
+
+    /// <summary>The closed book on the desk.</summary>
+    public GameObject ClosedBook => closedTaxCodeBook;
+
+    public TaxCodeBookUI BookUI => taxCodeBookUI;
+
+    public bool IsBookOpen => openTaxCodeBook != null && openTaxCodeBook.activeSelf;
+
+    /// <summary>
+    /// Optional level hook (Level 2's Tax Code Book icon): a dragged closed
+    /// book released at this screen point is stored there instead of being
+    /// opened. Return true when the book was taken.
+    /// </summary>
+    public static System.Func<TaxCodeBook3DDrag, Vector2, bool> TryStoreAt;
+
+    /// <summary>Optional level hook: the book lives in a HUD icon, so desk resets keep it off the desk.</summary>
+    public static System.Func<bool> IsStoredElsewhere;
+
+    private static bool StoredElsewhere => IsStoredElsewhere != null && IsStoredElsewhere();
+
+    private static readonly Color CoverRed = new Color(0.62f, 0.12f, 0.13f, 1f);
+
+    /// <summary>
+    /// Gives the book's grey cover parts the same red as the rest of the
+    /// cover, once and for good (per-slot property blocks; shared materials and
+    /// the white page block are untouched), so it never changes colour.
+    /// </summary>
+    public static void ApplyRedCover(GameObject model)
+    {
+        if (model == null) return;
+        var block = new MaterialPropertyBlock();
+        foreach (MeshRenderer renderer in model.GetComponentsInChildren<MeshRenderer>(true))
+        {
+            if (renderer.GetComponentInParent<Canvas>() != null || renderer.GetComponent<TMPro.TMP_Text>() != null) continue;
+            Material[] materials = renderer.sharedMaterials;
+            for (int i = 0; i < materials.Length; i++)
+            {
+                if (materials[i] == null) continue;
+                Color.RGBToHSV(materials[i].color, out _, out float saturation, out float value);
+                // Grey (not white paper, not already a colour): the cover's side and spine.
+                if (saturation > 0.2f || value < 0.15f || value > 0.86f) continue;
+                renderer.GetPropertyBlock(block, i);
+                Color red = new Color(CoverRed.r, CoverRed.g, CoverRed.b, materials[i].color.a);
+                block.SetColor("_BaseColor", red);
+                block.SetColor("_Color", red);
+                renderer.SetPropertyBlock(block, i);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Kept for callers that mark a held book: the book is already red, so
+    /// holding it no longer changes its colour (it only reasserts the red cover).
+    /// </summary>
+    public static void SetHeldTint(GameObject model, bool held) => ApplyRedCover(model);
+
+    /// <summary>Closes an open desk book into the HUD icon: pages hidden, open model reset and hidden, closed book parked.</summary>
+    public void ParkOpenBook()
+    {
+        if (taxCodeBookUI != null && taxCodeBookUI.IsShowing) taxCodeBookUI.Hide();
+        if (openTaxCodeBook != null)
+        {
+            if (deskAnimator != null) deskAnimator.Complete(openTaxCodeBook.transform);
+            openTaxCodeBook.transform.SetPositionAndRotation(originalOpenPosition, originalOpenRotation);
+            openTaxCodeBook.transform.localScale = originalOpenScale;
+            openTaxCodeBook.SetActive(false);
+        }
+        ParkClosedBook();
+    }
+
+    /// <summary>The closed book's resting spot on the desk (world).</summary>
+    public Vector3 RestingClosedPosition => originalClosedPosition;
+
+    /// <summary>Brings a carried book back: closed, on its desk spot, visible, with the desk settle motion.</summary>
+    public void UnparkClosedBook()
+    {
+        ClearHeldTint();
+        if (closedTaxCodeBook == null) return;
+        if (openTaxCodeBook != null && openTaxCodeBook.activeSelf) return;
+        PlaceClosedBookAtOrigin();
+        closedTaxCodeBook.SetActive(true);
+        ApplyRedCover(closedTaxCodeBook);
+        if (deskAnimator != null) deskAnimator.PlaySettle(closedTaxCodeBook.transform);
+    }
+
+    /// <summary>Puts the closed book back on its desk spot, hidden (it is now carried in the HUD icon).</summary>
+    public void ParkClosedBook()
+    {
+        ClearHeldTint();
+        CompleteDeskMotion();
+        isDragging = false;
+        hasDragTarget = false;
+        isPointerOver = false;
+        SetOutlineFocused(false);
+        if (closedTaxCodeBook == null) return;
+        PlaceClosedBookAtOrigin();
+        closedTaxCodeBook.SetActive(false);
+    }
+
+    /// <summary>
+    /// HUD shortcut (Level 2 Tax Code Book icon): opens the book where it
+    /// lies on the desk, exactly as a drag-and-release would.
+    /// </summary>
+    public bool OpenFromHud()
+    {
+        if (!allowDragging || isDragging || closedTaxCodeBook == null || openTaxCodeBook == null ||
+            !closedTaxCodeBook.activeInHierarchy || openTaxCodeBook.activeSelf)
+            return false;
+        CompleteDeskMotion();
+        ShowOpenTaxCodeBook(Vector2.zero);
+        return true;
+    }
+
     public void ResetTaxCodeBook()
     {
+        if (StoredElsewhere) return;
         CompleteDeskMotion();
         isDragging = false;
         hasDragTarget = false;
@@ -665,6 +775,20 @@ public class TaxCodeBook3DDrag :
         );
     }
 
+    internal static Vector3 VisualCentre(GameObject model)
+    {
+        Bounds bounds = new Bounds(model.transform.position, Vector3.zero);
+        bool any = false;
+        foreach (Renderer renderer in model.GetComponentsInChildren<Renderer>(true))
+        {
+            if (!(renderer is MeshRenderer) || renderer.GetComponentInParent<Canvas>() != null ||
+                renderer.GetComponentInParent<TMPro.TMP_Text>() != null) continue;
+            if (!any) { bounds = renderer.bounds; any = true; }
+            else bounds.Encapsulate(renderer.bounds);
+        }
+        return bounds.center;
+    }
+
 
     /// <summary>
     /// Puts the book back exactly where it started on the desk: an open book
@@ -673,7 +797,7 @@ public class TaxCodeBook3DDrag :
     /// </summary>
     public void ReturnToOriginalPlace(bool animate)
     {
-        if (!enabled || !allowDragging || closedTaxCodeBook == null)
+        if (!enabled || !allowDragging || closedTaxCodeBook == null || StoredElsewhere)
             return;
 
         CompleteDeskMotion();

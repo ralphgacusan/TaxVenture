@@ -2,13 +2,14 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 /// <summary>
 /// PURPOSE:
 /// Controls the normal Case Folder UI.
 ///
 /// Handles:
-/// - 7-page case folder display
+/// - Case folder pages, including the compact Level 2 review packet
 /// - Page navigation
 /// - Case information
 /// - Editable fields
@@ -94,6 +95,9 @@ public class CaseFolderUI : MonoBehaviour
     private List<CaseFolderFieldRow> page7Rows = new List<CaseFolderFieldRow>();
 
     private const int Page1Index = 0;
+    public const string PreparedPacketPageTitle = "Prepared Packet";
+    public const string PreparedSummaryPageTitle = "Summary";
+    public const string PaymentNotePageTitle = "Payment Note";
 
     /// <summary>
     /// Optional level pages added after the case's own pages (Level 2's
@@ -112,9 +116,15 @@ public class CaseFolderUI : MonoBehaviour
 
     /// <summary>True while this folder's paper is visible (desk or HUD view).</summary>
     public bool IsShowing => folderPanelRoot != null && folderPanelRoot.activeInHierarchy;
+    /// <summary>Raised as closing starts so floating desk tools can return immediately.</summary>
+    public event System.Action Closing;
+    public void NotifyClosing() => Closing?.Invoke();
 
     /// <summary>The page currently shown (0 = Taxpayer Information, the front page).</summary>
     public int CurrentPageIndex => currentPageIndex;
+
+    /// <summary>Find a level page by its printed heading; -1 when unavailable.</summary>
+    public int FindPageIndex(string heading) => pages == null ? -1 : pages.FindIndex(p => p.Heading == heading);
 
     /// <summary>True for the desk folder's world-space paper (not the flat HUD copy).</summary>
     public bool IsWorldPaper
@@ -140,29 +150,30 @@ public class CaseFolderUI : MonoBehaviour
             return;
         }
         target = Mathf.Clamp(target, 0, pages.Count - 1);
-        if (leafThroughRoutine != null) StopCoroutine(leafThroughRoutine);
+        StopPageTurn();
+        if (target == currentPageIndex) { RenderPage(target); done?.Invoke(); return; }
         leafThroughRoutine = StartCoroutine(LeafThrough(target, done));
     }
 
     private System.Collections.IEnumerator LeafThrough(int target, System.Action done)
     {
-        const float flipSeconds = 0.14f;
+        const float flipSeconds = 0.24f;
         while (currentPageIndex != target)
         {
             int direction = target < currentPageIndex ? -1 : 1;
-            currentPageIndex += direction;
             if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
 
             RectTransform root = GetPageTurnRoot();
-            StopPageTurn();
+            StopPageTurn(false);
             if (root == null)
             {
+                currentPageIndex += direction;
                 RenderPage(currentPageIndex);
                 continue;
             }
-            int shown = currentPageIndex;
+            int shown = currentPageIndex + direction;
             yield return DeskMotion.TurnPage(root, pageTurnRestRotation, pageTurnRestScale, direction, flipSeconds,
-                () => RenderPage(shown));
+                () => { currentPageIndex = shown; RenderPage(shown); });
         }
         leafThroughRoutine = null;
         done?.Invoke();
@@ -197,6 +208,7 @@ public class CaseFolderUI : MonoBehaviour
 
     private void OnDisable()
     {
+        NotifyClosing();
         StopPageTurn();
     }
 
@@ -300,6 +312,7 @@ public class CaseFolderUI : MonoBehaviour
     /// </summary>
     public void Hide()
     {
+        NotifyClosing();
         // Opened from the HUD icon as a window: close it the window way, so
         // the shared HUD hold is released instead of UnlockPlayerControls.
         if (openedAsWindow)
@@ -403,6 +416,7 @@ public class CaseFolderUI : MonoBehaviour
     /// <summary>Closes the HUD window (flies back into the icon).</summary>
     public void HideAsWindow()
     {
+        NotifyClosing();
         StopPageTurn();
 
         FloatingWindow window = FolderWindow;
@@ -454,6 +468,7 @@ public class CaseFolderUI : MonoBehaviour
 
     public void NextPage()
     {
+        if (leafThroughRoutine != null) return;
         // Changing page rebuilds the rows/chips; never do it under a dragged value.
         if (ValueDragSource.IsAnyDragActive)
             return;
@@ -477,6 +492,7 @@ public class CaseFolderUI : MonoBehaviour
 
     public void PreviousPage()
     {
+        if (leafThroughRoutine != null) return;
         // Changing page rebuilds the rows/chips; never do it under a dragged value.
         if (ValueDragSource.IsAnyDragActive)
             return;
@@ -610,8 +626,13 @@ public class CaseFolderUI : MonoBehaviour
     }
 
     /// <summary>Stops a page turn and puts the paper back at rest.</summary>
-    private void StopPageTurn()
+    private void StopPageTurn(bool cancelLeafThrough = true)
     {
+        if (cancelLeafThrough && leafThroughRoutine != null)
+        {
+            StopCoroutine(leafThroughRoutine);
+            leafThroughRoutine = null;
+        }
         if (pageTurnRoutine != null)
         {
             StopCoroutine(pageTurnRoutine);
@@ -679,7 +700,9 @@ public class CaseFolderUI : MonoBehaviour
             rightEdgeIndicator.SetActive(index < pages.Count - 1);
         }
 
-        supportingDocumentsPageLink?.OnFolderPageChanged(index);
+        bool isReviewCase = CaseManager.Instance != null && CaseManager.Instance.CurrentDefinition != null &&
+            CaseManager.Instance.CurrentDefinition.HasReview;
+        supportingDocumentsPageLink?.OnFolderPageChanged(isReviewCase ? -1 : index);
 
         CaseData data = CaseManager.Instance.CurrentCase;
 
@@ -801,6 +824,14 @@ public class CaseFolderUI : MonoBehaviour
         /// <summary>The page's paper (for overlays such as stamp ink).</summary>
         public RectTransform Paper => ui.GetPageTurnRoot();
 
+        public CaseFolderUI Owner => ui;
+
+        /// <summary>A row owned by a removable sheet, rather than the current folder page.</summary>
+        public CaseFolderFieldRow CreateSheetRow(Transform parent) => Instantiate(ui.caseFolderFieldRowPrefab, parent);
+
+        /// <summary>Release an overlay before lifting it out of the folder.</summary>
+        public void ReleaseOverlay(GameObject overlay) => ui.levelPageObjects.Remove(overlay);
+
         /// <summary>A read-only page-1 row (it can still be picked up as a value).</summary>
         public CaseFolderFieldRow AddSourceRow(string label, object value, DataValueType type, string key)
         {
@@ -853,24 +884,47 @@ public class CaseFolderUI : MonoBehaviour
         levelPageObjects.Clear();
     }
 
-    /// <summary>
-    /// Level 2+: one page per prepared-packet page the player holds (cover,
-    /// summary, note, later the collected records), in the case's order.
-    /// Cases without review data keep their single page.
-    /// </summary>
-    private static void AddReviewPages(List<CaseFolderPageContent> list, CaseData data)
+    /// <summary>Prints each prepared document on its own case-folder page.</summary>
+    private void AddReviewPages(List<CaseFolderPageContent> list, CaseData data)
     {
         CaseDefinition definition = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
-        if (definition == null || !definition.HasReview || data == null || data.review == null || definition.documents == null)
+        if (definition == null || !definition.HasReview || data == null || data.review == null ||
+            definition.documents == null || definition.review.documents == null)
             return;
 
-        foreach (ReviewDocumentDefinition reviewPage in definition.review.documents)
+        var preparedDocuments = new List<ReviewDocumentDefinition>();
+        foreach (ReviewDocumentDefinition document in definition.review.documents)
         {
-            if (reviewPage == null || !data.review.HasDocument(reviewPage.id)) continue;
-            DocumentDefinition document = definition.documents.Find(d => d != null && d.documentName == reviewPage.documentName);
-            if (document == null) continue;
-            list.Add(new CaseFolderPageContent(reviewPage.title, "") { Document = document });
+            if (document == null || (document.kind != "summary" && document.kind != "note") ||
+                !data.review.HasDocument(document.id))
+                continue;
+            if (definition.documents.Exists(d => d != null && d.documentName == document.documentName))
+                preparedDocuments.Add(document);
         }
+
+        foreach (ReviewDocumentDefinition reviewDocument in preparedDocuments)
+        {
+            ReviewDocumentDefinition captured = reviewDocument;
+            DocumentDefinition document = definition.documents.Find(d => d != null &&
+                d.documentName == captured.documentName);
+            if (document == null) continue;
+
+            string title = captured.kind == "summary" ? PreparedSummaryPageTitle : PaymentNotePageTitle;
+            list.Add(new CaseFolderPageContent(title, "")
+            {
+                Render = page => BuildReviewPageRows(data, document)
+            });
+        }
+    }
+
+    /// <summary>Marks a held review document as read when its printed paper is opened.</summary>
+    public static void MarkReviewDocumentRead(string documentName)
+    {
+        CaseData data = CaseManager.Instance != null ? CaseManager.Instance.CurrentCase : null;
+        if (data?.supportingDocuments == null) return;
+        foreach (SupportingDocument supporting in data.supportingDocuments)
+            if (supporting != null && supporting.documentName == documentName)
+                supporting.isReviewed = true;
     }
 
     /// <summary>"₱12,000" / "12000.50" -> the amount; false when there is no number.</summary>
@@ -910,10 +964,7 @@ public class CaseFolderUI : MonoBehaviour
             }
         }
 
-        if (data != null && data.supportingDocuments != null)
-            foreach (SupportingDocument supporting in data.supportingDocuments)
-                if (supporting != null && supporting.documentName == document.documentName)
-                    supporting.isReviewed = true;
+        MarkReviewDocumentRead(document.documentName);
     }
 
     // ============================================================

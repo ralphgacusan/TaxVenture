@@ -543,48 +543,15 @@ public sealed class OfficeHours : MonoBehaviour
 
     private static IEnumerator Fade(CanvasGroup group, float from, float to, float seconds)
     {
-        float t = 0f;
-        while (t < seconds)
-        {
-            t += Time.unscaledDeltaTime;
-            group.alpha = Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, t / seconds));
-            yield return null;
-        }
-        group.alpha = to;
+        yield return OfficeMorningOverlay.Fade(group, from, to, seconds);
         group.blocksRaycasts = to > 0.5f;
     }
 
     private CanvasGroup BuildOverlay(out TextMeshProUGUI title, out TextMeshProUGUI time)
     {
         if (overlayHost != null) Destroy(overlayHost);
-        overlayHost = new GameObject("Next Morning Overlay", typeof(RectTransform));
-        SceneManager.MoveGameObjectToScene(overlayHost, gameObject.scene);
-        Canvas canvas = overlayHost.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 6000;
-        CanvasScaler scaler = overlayHost.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0.5f;
-        overlayHost.AddComponent<GraphicRaycaster>();
-        overlayHost.AddComponent<HudKeepVisibleDuringRewards>();
-
-        var root = (RectTransform)overlayHost.transform;
-        CanvasGroup group = overlayHost.AddComponent<CanvasGroup>();
-        group.alpha = 0f;
-        RectTransform bg = HudTheme.CreateRect("Night", root);
-        HudTheme.Stretch(bg);
-        Image image = HudTheme.AddImage(bg, null, new Color(0.03f, 0.05f, 0.1f, 1f));
-        image.raycastTarget = true;
-
-        title = HudTheme.CreateLabel("Title", root, "", 64f, HudTheme.BrassSoft, TextAlignmentOptions.Center,
-            FontStyles.Bold | FontStyles.UpperCase);
-        title.characterSpacing = 16f;
-        title.rectTransform.sizeDelta = new Vector2(1200f, 90f);
-        title.rectTransform.anchoredPosition = new Vector2(0f, 40f);
-        time = HudTheme.CreateLabel("Time", root, "", 34f, HudTheme.TextPrimary, TextAlignmentOptions.Center, FontStyles.Bold);
-        time.rectTransform.sizeDelta = new Vector2(900f, 60f);
-        time.rectTransform.anchoredPosition = new Vector2(0f, -40f);
+        CanvasGroup group = OfficeMorningOverlay.Create(gameObject.scene, 6000, out title, out time);
+        overlayHost = group.gameObject;
         return group;
     }
 }

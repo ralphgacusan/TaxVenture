@@ -40,6 +40,15 @@ public class LevelRewardRules
         public string badgeEmblem = "taxpayer_id";
         /// <summary>Ribbon colour of the medal, as #RRGGBB.</summary>
         public string badgeRibbon = "#2F8FD8";
+        /// <summary>Floor for the side-quest EXP however many were wrong (0 = none, Level 1).</summary>
+        public int minExp;
+        /// <summary>
+        /// Accuracy badge (Level 2 Mark the Money!): correct first-check
+        /// decisions needed for Gold / Silver. 0 = off, the badge then comes
+        /// from the EXP result as in Level 1.
+        /// </summary>
+        public int goldAtCorrect;
+        public int silverAtCorrect;
     }
 
     [Serializable]
@@ -49,6 +58,9 @@ public class LevelRewardRules
         public int hearts = 5;
         public int expPerMistake = 15;
         public int heartsPerMistake = 1;
+        /// <summary>Caps on the case's total deductions (0 = no cap, Level 1). Level 2: 15 EXP, 1 heart.</summary>
+        public int maxExpLoss;
+        public int maxHeartLoss;
         public int expPerRetry = 10;
         public int heartsPerRetry = 1;
         /// <summary>
@@ -145,6 +157,9 @@ public class LevelRewardRules
         sideQuest.exp = Fix(fixes, "sideQuest.exp", sideQuest.exp, 0, MaxAmount);
         sideQuest.hearts = Fix(fixes, "sideQuest.hearts", sideQuest.hearts, 0, MaxAmount);
         sideQuest.expPerWrong = Fix(fixes, "sideQuest.expPerWrong", sideQuest.expPerWrong, 0, MaxAmount);
+        sideQuest.minExp = Fix(fixes, "sideQuest.minExp", sideQuest.minExp, 0, sideQuest.exp);
+        sideQuest.goldAtCorrect = Fix(fixes, "sideQuest.goldAtCorrect", sideQuest.goldAtCorrect, 0, MaxAmount);
+        sideQuest.silverAtCorrect = Fix(fixes, "sideQuest.silverAtCorrect", sideQuest.silverAtCorrect, 0, sideQuest.goldAtCorrect);
         sideQuest.heartsLostAtWrong = CleanThresholds(sideQuest.heartsLostAtWrong, fixes);
         sideQuest.badgeId = (sideQuest.badgeId ?? string.Empty).Trim();
         sideQuest.badgeName = string.IsNullOrWhiteSpace(sideQuest.badgeName) ? sideQuest.badgeId : sideQuest.badgeName.Trim();
@@ -156,6 +171,8 @@ public class LevelRewardRules
         caseFile.expPerRetry = Fix(fixes, "caseFile.expPerRetry", caseFile.expPerRetry, 0, MaxAmount);
         caseFile.heartsPerRetry = Fix(fixes, "caseFile.heartsPerRetry", caseFile.heartsPerRetry, 0, MaxAmount);
         caseFile.wrongVerdictExp = Fix(fixes, "caseFile.wrongVerdictExp", caseFile.wrongVerdictExp, 0, caseFile.exp);
+        caseFile.maxExpLoss = Fix(fixes, "caseFile.maxExpLoss", caseFile.maxExpLoss, 0, caseFile.exp);
+        caseFile.maxHeartLoss = Fix(fixes, "caseFile.maxHeartLoss", caseFile.maxHeartLoss, 0, caseFile.hearts);
 
         officeDoors = CleanNames(officeDoors);
         return fixes;

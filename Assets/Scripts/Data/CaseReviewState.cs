@@ -58,6 +58,44 @@ public class CaseReviewState
     /// <summary>True once the player has sat at the market records desk.</summary>
     public bool marketDeskOpened;
 
+    /// <summary>The records-desk introduction was dismissed before the tutorial.</summary>
+    public bool sideQuestIntroSeen;
+
+    /// <summary>True once the guide's toolkit demonstration played to the end (it replays if interrupted).</summary>
+    public bool toolkitDemoSeen;
+
+    /// <summary>The player's own work on the unscored tutorial record (T0). Never counts toward accuracy.</summary>
+    public AnnotationEntryState tutorialAnnotation;
+
+    /// <summary>True once the player repeated the demonstration (review moved on to Challenge).</summary>
+    public bool tutorialCompleted;
+
+    /// <summary>Mark the Money! (T06): work on Rosa's entries, the frozen first check and the award flag.</summary>
+    public ChallengeState challenge;
+
+    /// <summary>Office reconciliation (T07): the player-reviewed May schedule (original S1 is never edited).</summary>
+    public List<ScheduleRowState> schedule = new List<ScheduleRowState>();
+
+    /// <summary>Office findings (F1 follow-up, F2 comparison) as the player recorded them.</summary>
+    public List<OfficeFindingState> officeFindings = new List<OfficeFindingState>();
+
+    /// <summary>OfficeReviewCompleted was raised (structurally complete once; correctness is the Auditor's).</summary>
+    public bool officeReviewAnnounced;
+
+    /// <summary>The player put the Tax Code Book into its HUD icon (it travels with them; the desk copy is hidden).</summary>
+    public bool taxBookStored;
+
+    /// <summary>Final assessment (T08): the chosen reason, the current stamp and a compact history.</summary>
+    public string assessmentReasonId;
+    public FinalAssessmentState finalStamp;
+    public List<FinalAssessmentState> stampHistory = new List<FinalAssessmentState>();
+
+    /// <summary>Audit history (T09): charged root causes, returned submissions, holds, approval and award.</summary>
+    public AuditTrackState audit = new AuditTrackState();
+
+    /// <summary>Review cutoff (T10).</summary>
+    public ReviewClockState clock = new ReviewClockState();
+
     /// <summary>Raised when the phase changed (from, to). Not serialized.</summary>
     [field: NonSerialized] public event Action<ReviewPhase, ReviewPhase> PhaseChanged;
 
@@ -149,8 +187,24 @@ public class CaseReviewState
         }
         if (!changed) return false;
 
+        finding.comparisonConfirmed = false;
         packetRevision++;
         if (finding.IsComplete && phase == ReviewPhase.PreliminaryReview) TryAdvance(ReviewPhase.PreliminaryStamp);
+        return true;
+    }
+
+    /// <summary>Clears an unsupported preliminary draft so all three fields can be tried again.</summary>
+    public bool ClearFindingDraft(string findingId)
+    {
+        if (!CanEditPreliminaryFinding) return false;
+        ReviewFindingState finding = FindFinding(findingId);
+        if (finding == null) return false;
+        if (finding.concernDocument == null && finding.evidenceDocument == null && finding.reasonId == null) return false;
+        finding.concernDocument = finding.concernKey = finding.concernLabel = null;
+        finding.evidenceDocument = finding.evidenceKey = finding.evidenceLabel = null;
+        finding.reasonId = finding.reasonLabel = null;
+        finding.comparisonConfirmed = false;
+        packetRevision++;
         return true;
     }
 
@@ -175,6 +229,34 @@ public class CaseReviewState
     {
         if (!HandoverDone || marketDeskOpened) return false;
         marketDeskOpened = true;
+        return true;
+    }
+
+    /// <summary>The toolkit tutorial is open for practice: records handed over and not yet repeated.</summary>
+    public bool TutorialActive => phase == ReviewPhase.Tutorial && !tutorialCompleted;
+
+    /// <summary>The player's tutorial work (created on first use). Practice edits never change packetRevision.</summary>
+    public AnnotationEntryState TutorialWork(AnnotationEntryDefinition entry) =>
+        AnnotationActions.Ensure(ref tutorialAnnotation, entry);
+
+    /// <summary>Records that the demonstration was watched to the end. True once.</summary>
+    public bool TryMarkToolkitDemoSeen()
+    {
+        if (toolkitDemoSeen || phase < ReviewPhase.Tutorial) return false;
+        toolkitDemoSeen = true;
+        return true;
+    }
+
+    /// <summary>
+    /// The player repeated the demonstrated annotation: only during the
+    /// Tutorial phase, only once, only when their work matches the
+    /// demonstration. Moves on to Challenge. No score, reward or revision.
+    /// </summary>
+    public bool TryCompleteTutorial(AnnotationEntryDefinition entry)
+    {
+        if (!TutorialActive || !AnnotationActions.MatchesDemonstration(tutorialAnnotation, entry)) return false;
+        tutorialCompleted = true;
+        TryAdvance(ReviewPhase.Challenge);
         return true;
     }
 
@@ -225,6 +307,9 @@ public class ReviewFindingState
     public string reasonId;
     public string reasonLabel;
     public string status = NeedsChecking;
+
+    /// <summary>The complete draft has a supported link; edits invalidate it.</summary>
+    public bool comparisonConfirmed;
 
     public bool IsComplete =>
         !string.IsNullOrEmpty(concernKey) && !string.IsNullOrEmpty(evidenceKey) && !string.IsNullOrEmpty(reasonId);

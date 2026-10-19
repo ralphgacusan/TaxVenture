@@ -135,6 +135,14 @@ public sealed class GuideDirector : MonoBehaviour
         GameplayEvents.OnPreliminaryHoldStamped += HandlePreliminaryHoldStamped;
         GameplayEvents.OnFindingRecorded += HandleFindingRecorded;
         GameplayEvents.OnMarketDeskOpened += HandleMarketDeskOpened;
+        GameplayEvents.OnToolkitDemoFinished += HandleToolkitDemoFinished;
+        GameplayEvents.OnAnnotationTutorialCompleted += HandleAnnotationTutorialCompleted;
+        GameplayEvents.OnIncomeQuestCompleted += HandleIncomeQuestCompleted;
+        GameplayEvents.OnOfficeReviewCompleted += HandleOfficeReviewCompleted;
+        GameplayEvents.OnReviewDayRolled += HandleReviewDayRolled;
+        GameplayEvents.OnAuditReturned += HandleAuditReturned;
+        GameplayEvents.OnFinalAssessmentStamped += HandleFinalAssessmentStamped;
+        GameplayEvents.OnAnnotationsChecked += HandleAnnotationsChecked;
         GameplayEvents.OnRosaRecordsCollected += HandleRosaRecordsCollected;
     }
 
@@ -158,6 +166,14 @@ public sealed class GuideDirector : MonoBehaviour
         GameplayEvents.OnPreliminaryHoldStamped -= HandlePreliminaryHoldStamped;
         GameplayEvents.OnFindingRecorded -= HandleFindingRecorded;
         GameplayEvents.OnMarketDeskOpened -= HandleMarketDeskOpened;
+        GameplayEvents.OnToolkitDemoFinished -= HandleToolkitDemoFinished;
+        GameplayEvents.OnAnnotationTutorialCompleted -= HandleAnnotationTutorialCompleted;
+        GameplayEvents.OnIncomeQuestCompleted -= HandleIncomeQuestCompleted;
+        GameplayEvents.OnOfficeReviewCompleted -= HandleOfficeReviewCompleted;
+        GameplayEvents.OnReviewDayRolled -= HandleReviewDayRolled;
+        GameplayEvents.OnAuditReturned -= HandleAuditReturned;
+        GameplayEvents.OnFinalAssessmentStamped -= HandleFinalAssessmentStamped;
+        GameplayEvents.OnAnnotationsChecked -= HandleAnnotationsChecked;
         GameplayEvents.OnRosaRecordsCollected -= HandleRosaRecordsCollected;
         if (stateMachine != null) stateMachine.OnStateChanged -= HandleState;
         stateMachine = null;
@@ -181,6 +197,14 @@ public sealed class GuideDirector : MonoBehaviour
     private void HandlePreliminaryHoldStamped() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.PreliminaryHoldStamped));
     private void HandleFindingRecorded() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.FindingRecorded));
     private void HandleMarketDeskOpened() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.MarketDeskOpened));
+    private void HandleToolkitDemoFinished() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.ToolkitDemoFinished));
+    private void HandleAnnotationTutorialCompleted() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.AnnotationTutorialCompleted));
+    private void HandleIncomeQuestCompleted() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.IncomeQuestCompleted));
+    private void HandleOfficeReviewCompleted() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.OfficeReviewCompleted));
+    private void HandleReviewDayRolled() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.ReviewDayRolled));
+    private void HandleAuditReturned() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.AuditReturned));
+    private void HandleFinalAssessmentStamped() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.FinalAssessmentStamped));
+    private void HandleAnnotationsChecked() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.AnnotationsChecked));
     private void HandleRosaRecordsCollected() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.RosaRecordsCollected));
     private void HandleState(IGameState state) { if (state != null) Fire(ObjectiveTriggers.StateKey(state.GetType())); }
 
@@ -307,7 +331,7 @@ public sealed class GuideDirector : MonoBehaviour
     private static bool Calm(bool allowResults)
     {
         if ((HudRewardScreen.AnyOpen && !allowResults) || Time.timeScale <= 0f) return false;
-        if (SideQuestSplash.IsShowing) return false;
+        if (SideQuestSplash.IsShowing || (Level2AnnotatedPapers.Instance != null && Level2AnnotatedPapers.Instance.IsCollecting)) return false;
         if (!allowResults && CaseResultPopupUI.Instance != null && CaseResultPopupUI.Instance.IsVisible) return false;
         if (GameStateMachine.Instance != null && GameStateMachine.Instance.IsPaused) return false;
         return true;
@@ -600,6 +624,7 @@ public sealed class GuideDirector : MonoBehaviour
         TrackMotion();
         UpdatePointer(false);
         UpdateCollapse(now);
+        if (!asideActive && HintExpired(now)) view.HideHint();
 
         if (IsBlocking && welcomeCard == null && Keyboard.current != null &&
             (Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.enterKey.wasPressedThisFrame))
@@ -634,12 +659,15 @@ public sealed class GuideDirector : MonoBehaviour
         return true;
     }
 
+    private bool HintExpired(float now) => page != null && page.IsHint && page.hintSeconds > 0f &&
+                                           now - pageStart >= page.hintSeconds;
+
     private void TickAside(float now)
     {
         if (!asideActive || now < asideUntil) return;
         asideActive = false;
         // Hand the bubble back to a page that uses it, otherwise hide it.
-        if (page != null && !suspended && (page.IsHint || collapsed))
+        if (page != null && !suspended && (page.IsHint || collapsed) && !HintExpired(now))
         {
             view.SetPortrait(Portrait(page.mood), false);
             view.ShowHint(Format(page.TextFor(touch)), instant: true);

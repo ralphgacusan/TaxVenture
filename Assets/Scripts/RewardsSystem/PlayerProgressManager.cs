@@ -159,6 +159,9 @@ public class PlayerProgressManager : MonoBehaviour
 
         lastAppliedRunId = levelTotal.RunId;
         if (pendingResult == levelTotal) pendingResult = null;
+        // The finished run replaces its resumable checkpoint in the same write.
+        if (levelTotal.LevelId != OfficeLevelCatalog.Level2Id || !Level2Checkpointer.IsDirectEditorAttempt)
+            progress.ClearCheckpoint(levelTotal.LevelId);
 
         if (levelTotal.HasScore)
         {
@@ -218,6 +221,29 @@ public class PlayerProgressManager : MonoBehaviour
         if (!TrainingSession.IsPracticing) return false;
         Debug.Log($"[PlayerProgressManager] Practice run of {levelTotal.LevelId}: not saved to the career.");
         if (pendingResult == levelTotal) pendingResult = null;
+        return true;
+    }
+
+    // =========================================================
+    // LEVEL CHECKPOINT AND STORY FACTS (Level 2)
+    // =========================================================
+
+    /// <summary>Saves the resumable state of an unfinished level run (signed, atomic, same save file).</summary>
+    public bool SaveCheckpoint(LevelCheckpoint checkpoint)
+    {
+        if (progress == null || checkpoint == null || !checkpoint.IsSet || TrainingSession.IsPracticing) return false;
+        progress.SetCheckpoint(checkpoint);
+        return Save();
+    }
+
+    /// <summary>The resumable run of this level, or null.</summary>
+    public LevelCheckpoint GetCheckpoint(string levelId) => progress != null ? progress.CheckpointFor(levelId) : null;
+
+    /// <summary>Records a neutral story fact once and saves.</summary>
+    public bool RecordStoryFact(string id)
+    {
+        if (progress == null || TrainingSession.IsPracticing || !progress.RecordStoryFact(id)) return false;
+        Save();
         return true;
     }
 

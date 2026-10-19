@@ -29,11 +29,11 @@ public sealed class Level2CaseRetrieval : MonoBehaviour
 
     // Drawer layout (metres). Tunable; see PROGRESS for the user's visual check.
     private const float FrontHeight = 0.2f;
-    private const float FrontDepth = 0.03f;
+    private const float FrontDepth = 0.008f;
     private const float BodyDepth = 0.34f;
-    private const float Proud = 0.012f;
+    private const float Proud = 0.002f;
 
-    private static readonly Color FrontColor = new Color32(84, 101, 118, 255);
+    private static readonly Color FrontColor = new Color32(58, 68, 80, 255);
     private static readonly Color DarkColor = new Color32(38, 42, 48, 255);
     private static readonly Color LabelColor = new Color32(244, 236, 214, 255);
     private static readonly Color FolderColor = new Color32(222, 186, 120, 255);
@@ -158,8 +158,11 @@ public sealed class Level2CaseRetrieval : MonoBehaviour
 
         Vector3 front = ChooseFront(cabinet, bounds, out float halfDepth, out float halfWidth);
         float height = bounds.size.y;
-        float centerY = bounds.min.y + Mathf.Clamp(height * 0.62f, 0.55f, Mathf.Max(0.55f, height - 0.15f));
-        float width = Mathf.Clamp(halfWidth * 2f * 0.8f, 0.3f, 0.6f);
+        // This authored cabinet has four rows. Fit the second drawer face,
+        // instead of placing a small extra drawer across the existing seams.
+        float centerY = bounds.min.y + height * 0.625f;
+        float width = halfWidth * 2f * 0.90f;
+        float faceHeight = height * 0.215f;
 
         int layer = cabinet.gameObject.layer;
         Vector3 facePoint = new Vector3(bounds.center.x, centerY, bounds.center.z) + front * halfDepth;
@@ -175,7 +178,7 @@ public sealed class Level2CaseRetrieval : MonoBehaviour
         Material labelMat = MaterialFor(LabelColor, "Drawer Label");
         Material folderMat = MaterialFor(FolderColor, "Rosa Folder");
 
-        Box("Front", slider, layer, new Vector3(0f, 0f, Proud + FrontDepth * 0.5f), new Vector3(width, FrontHeight, FrontDepth), frontMat);
+        Box("Front", slider, layer, new Vector3(0f, 0f, Proud + FrontDepth * 0.5f), new Vector3(width, faceHeight, FrontDepth), frontMat);
         Box("Handle", slider, layer, new Vector3(0f, -0.045f, Proud + FrontDepth + 0.012f), new Vector3(0.12f, 0.018f, 0.024f), darkMat);
         Box("LabelPlate", slider, layer, new Vector3(0f, 0.035f, Proud + FrontDepth + 0.002f), new Vector3(Mathf.Min(0.22f, width - 0.04f), 0.07f, 0.004f), labelMat);
         Label(slider, layer, new Vector3(0f, 0.035f, Proud + FrontDepth + 0.0045f), new Vector2(Mathf.Min(0.21f, width - 0.05f), 0.062f),
@@ -196,7 +199,7 @@ public sealed class Level2CaseRetrieval : MonoBehaviour
         // One static tap target over the drawer front (the cabinet behind keeps its own collider).
         BoxCollider hit = root.AddComponent<BoxCollider>();
         hit.center = new Vector3(0f, 0f, Proud + FrontDepth);
-        hit.size = new Vector3(width + 0.04f, FrontHeight + 0.04f, 0.08f);
+        hit.size = new Vector3(width, faceHeight, 0.04f);
 
         Drawer = root.AddComponent<MarketClientDrawer>();
         Drawer.Init(this, slider, folder);

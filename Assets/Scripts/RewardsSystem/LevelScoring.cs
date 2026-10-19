@@ -37,6 +37,22 @@ public static class LevelScoring
         return Percent(award.Exp, award.MaxExp) >= rules.passingPercent ? BadgeTier.Silver : BadgeTier.Bronze;
     }
 
+    /// <summary>
+    /// Accuracy badge from correct decisions (Level 2): Gold at goldAtCorrect,
+    /// Silver at silverAtCorrect or more, otherwise Bronze. Never inferred
+    /// from the forgiving EXP.
+    /// </summary>
+    public static BadgeTier AccuracyBadge(LevelRewardRules rules, int correct)
+    {
+        var r = rules.sideQuest;
+        if (r.goldAtCorrect > 0 && correct >= r.goldAtCorrect) return BadgeTier.Gold;
+        if (r.silverAtCorrect > 0 && correct >= r.silverAtCorrect) return BadgeTier.Silver;
+        return BadgeTier.Bronze;
+    }
+
+    /// <summary>True when this level's side quest uses the accuracy badge.</summary>
+    public static bool UsesAccuracyBadge(LevelRewardRules rules) => rules != null && rules.sideQuest.goldAtCorrect > 0;
+
     public struct Award
     {
         public int Exp;
@@ -57,22 +73,31 @@ public static class LevelScoring
 
         return new Award
         {
-            Exp = Math.Max(0, r.exp - wrong * r.expPerWrong),
+            Exp = Math.Max(Math.Max(0, r.minExp), r.exp - wrong * r.expPerWrong),
             Hearts = Math.Max(0, r.hearts - heartsLost),
             MaxExp = r.exp,
             MaxHearts = r.hearts
         };
     }
 
-    public static Award Case(LevelRewardRules rules, int mistakes, int retries)
+    /// <summary>
+    /// Case result. <paramref name="extraExpLoss"/>/<paramref name="extraHeartLoss"/>
+    /// add a level's own consequence (Level 2: the first missed cutoff); the
+    /// rules' maxExpLoss/maxHeartLoss cap the combined deduction when set.
+    /// </summary>
+    public static Award Case(LevelRewardRules rules, int mistakes, int retries, int extraExpLoss = 0, int extraHeartLoss = 0)
     {
         var r = rules.caseFile;
         int m = Math.Max(0, mistakes);
         int t = Math.Max(0, retries);
+        int expLoss = m * r.expPerMistake + t * r.expPerRetry + Math.Max(0, extraExpLoss);
+        int heartLoss = m * r.heartsPerMistake + t * r.heartsPerRetry + Math.Max(0, extraHeartLoss);
+        if (r.maxExpLoss > 0) expLoss = Math.Min(expLoss, r.maxExpLoss);
+        if (r.maxHeartLoss > 0) heartLoss = Math.Min(heartLoss, r.maxHeartLoss);
         return new Award
         {
-            Exp = Math.Max(0, r.exp - m * r.expPerMistake - t * r.expPerRetry),
-            Hearts = Math.Max(0, r.hearts - m * r.heartsPerMistake - t * r.heartsPerRetry),
+            Exp = Math.Max(0, r.exp - expLoss),
+            Hearts = Math.Max(0, r.hearts - heartLoss),
             MaxExp = r.exp,
             MaxHearts = r.hearts
         };
