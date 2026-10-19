@@ -1,0 +1,1232 @@
+{
+  "reviewId": "L2-ROSA-001",
+  "focusPeriod": "May 2026",
+  "scheduleLabel": "May 2026 income schedule",
+  "priorVerifiedAggregate": 120000,
+  "contentStatus": "educational-draft",
+  "_contentStatus": "educational-draft: the loan-principal teaching rule has no confirmed Philippine primary-source passage yet (see CONTENT.md, Book additions and sources). It is NOT a legal citation.",
+  "startPhase": "OfficeWelcome",
+  "_reasons": "Review principles transferred from the Tax Code Book. Stable ids travel as Enum values under FindingReason; labels are display copy.",
+  "reasons": [
+    {
+      "id": "unaccounted-payment",
+      "label": "Unlisted payment"
+    },
+    {
+      "id": "amounts-differ",
+      "label": "Different totals"
+    },
+    {
+      "id": "maybe-not-income",
+      "label": "Not earnings"
+    },
+    {
+      "id": "paid-another-way",
+      "label": "Paid another way"
+    }
+  ],
+  "_preliminaryRule": "Private rule: May total (SummarySubtotal), the paid-job statement (legacy semantic key ReferralNote), and unaccounted-payment. Check the complete link automatically; no reward or penalty. Semantic keys/references are stable compatibility identifiers, not display copy.",
+  "preliminaryRule": {
+    "findingId": "F1",
+    "concernDocument": "S1",
+    "evidenceDocument": "N1",
+    "reasonId": "unaccounted-payment",
+    "evidenceKeys": [
+      "ReferralNote"
+    ],
+    "supportedObservation": "The blanket-washing payment is missing from May's total. Check the original receipt before approving it.",
+    "concernKeys": [
+      "SummarySubtotal"
+    ]
+  },
+  "initialDocumentIds": [
+    "COVER",
+    "S1",
+    "N1"
+  ],
+  "_handoverDocumentIds": "Records Rosa hands over at her stall (T04), once, after the conversation.",
+  "handoverDocumentIds": [
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "D5",
+    "D6"
+  ],
+  "_stall": "Rosa at her stall (T04). conversationLines play once in this order (the project has no dialogue choices, rule R4); the records are handed over when it completes. Portrait Rosa_Default has no art yet, so no portrait shows (no stand-in face).",
+  "stall": {
+    "speakerName": "Aling Rosa",
+    "earlyLines": [
+      {
+        "speaker": "Npc",
+        "text": "Good morning! I'm Rosa. Did the office get my folder?",
+        "portraitId": "Rosa_Default"
+      },
+      {
+        "speaker": "Npc",
+        "text": "I'll be right here at the stall when you need me.",
+        "portraitId": "Rosa_Default"
+      }
+    ],
+    "conversationLines": [
+      {
+        "speaker": "Npc",
+        "text": "The Desk helped me put that together. The originals are here by the stall.",
+        "portraitId": "Rosa_Default"
+      },
+      {
+        "speaker": "Npc",
+        "text": "Can this still be finished today? I had to close the stall when I came yesterday.",
+        "portraitId": "Rosa_Default"
+      },
+      {
+        "speaker": "Player",
+        "text": "Which job was this payment for?",
+        "portraitId": "Auditor_Default"
+      },
+      {
+        "speaker": "Npc",
+        "text": "A guesthouse paid me to wash a batch of blankets. I kept that receipt separate from the daily clothes list.",
+        "portraitId": "Rosa_Default"
+      },
+      {
+        "speaker": "Player",
+        "text": "May I review the records behind the summary?",
+        "portraitId": "Auditor_Default"
+      },
+      {
+        "speaker": "Npc",
+        "text": "Some customers pay in cash; others send it to the account.",
+        "portraitId": "Rosa_Default"
+      },
+      {
+        "speaker": "Npc",
+        "text": "Everything for May is in this envelope. I'll put it on the desk for you.",
+        "portraitId": "Rosa_Default"
+      }
+    ],
+    "afterLines": [
+      {
+        "speaker": "Npc",
+        "text": "Your records are on the desk beside me. Take your time.",
+        "portraitId": "Rosa_Default"
+      }
+    ]
+  },
+  "_annotation": "Income toolkit at the market desk (T05). typeOptions/treatmentOptions are the TYPE and TREATMENT note cards (general rules only, never Rosa-specific). tutorial is T0, an unrelated fictional payslip the guide demonstrates once and the player repeats; it is never scored. entries (Rosa's E1-E4) and their separate answer keys arrive with T06.",
+  "annotation": {
+    "typeOptions": [
+      {
+        "id": "compensation",
+        "label": "Compensation income",
+        "rule": "pay from an employer for work done as an employee."
+      },
+      {
+        "id": "business-service",
+        "label": "Business / service income",
+        "rule": "money earned from your own trade or from jobs done for customers."
+      },
+      {
+        "id": "rental",
+        "label": "Rental income",
+        "rule": "money received for letting someone use your property."
+      },
+      {
+        "id": "passive-interest",
+        "label": "Passive income (interest)",
+        "rule": "earnings from money or investments, such as bank interest. Check its own rule before deciding its treatment."
+      },
+      {
+        "id": "borrowed",
+        "label": "Borrowed funds",
+        "rule": "money that must be paid back. Borrowing is not earning."
+      }
+    ],
+    "treatmentOptions": [
+      {
+        "id": "regular-schedule",
+        "label": "Regular income schedule",
+        "rule": "earned income listed with the other income for the period."
+      },
+      {
+        "id": "separate-rule",
+        "label": "Separate rule",
+        "rule": "some income follows its own rule instead of the regular schedule. Check that rule first."
+      },
+      {
+        "id": "statutory-exclusion",
+        "label": "Statutory exclusion",
+        "rule": "only for items a law itself excludes. Use it only when a rule says so."
+      },
+      {
+        "id": "not-income",
+        "label": "Not income",
+        "rule": "money that was not earned, such as a loan that must be repaid."
+      }
+    ],
+    "tutorial": {
+      "id": "T0",
+      "title": "Payslip · April 2026",
+      "issuer": "Northwind Printing Co.",
+      "reference": "PS-0430",
+      "lines": [
+        {
+          "id": "T0-employer",
+          "label": "Employer",
+          "value": "Northwind Printing Co.",
+          "amount": 0,
+          "role": "info"
+        },
+        {
+          "id": "T0-employee",
+          "label": "Employee",
+          "value": "Jun Dela Cruz, press assistant",
+          "amount": 0,
+          "role": "info"
+        },
+        {
+          "id": "T0-period",
+          "label": "Pay period",
+          "value": "1-30 April 2026",
+          "amount": 0,
+          "role": "info"
+        },
+        {
+          "id": "T0-salary",
+          "label": "Salary for April work",
+          "value": "₱8,000",
+          "amount": 8000,
+          "role": "income"
+        },
+        {
+          "id": "T0-status",
+          "label": "Status",
+          "value": "Paid 30 April",
+          "amount": 0,
+          "role": "info"
+        }
+      ],
+      "evidenceOptions": [
+        {
+          "id": "payslip-ps0430",
+          "label": "Payslip PS-0430",
+          "rule": "the record of this pay: who paid, for what work, and when."
+        },
+        {
+          "id": "company-id",
+          "label": "Company ID card",
+          "rule": "shows where someone works, not what they were paid."
+        },
+        {
+          "id": "bank-passbook",
+          "label": "Bank passbook page",
+          "rule": "shows money arriving, not why it was paid."
+        }
+      ],
+      "maxEvidence": 1,
+      "demo": {
+        "highlightLineId": "T0-salary",
+        "typeId": "compensation",
+        "treatmentId": "regular-schedule",
+        "evidenceIds": [
+          "payslip-ps0430"
+        ],
+        "introLine": "Before Rosa's records, let me show you once on someone else's payslip. It's practice: nothing here is scored.",
+        "highlightLine": "First, pick up the yellow highlighter. Aim at the line that shows the money and what it was paid for, then swipe across it.",
+        "evidenceLine": "Last, clip the record that proves it: the payslip itself.",
+        "yourTurnLine": "Your turn. Tap the highlighter to lift it beside the paper, then drag it onto the salary line and sweep across. Add TYPE and TREATMENT cards, then clip the payslip. Tap a card and its place, or drag it.",
+        "doneLine": "Practice complete: your highlight, TYPE, TREATMENT and evidence match. This build ends here; Rosa's record challenge is not available yet. Use Exit Desk to leave."
+      }
+    },
+    "entries": [
+      {
+        "id": "E1",
+        "title": "E1 · Clothes-washing payments",
+        "issuer": "Rosa's Laundry",
+        "reference": "May 2026",
+        "lines": [
+          {
+            "id": "E1-work",
+            "label": "Work",
+            "value": "Washing clothes for customers",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "E1-bank",
+            "label": "Bank transfer BT-0905",
+            "value": "₱9,000",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "E1-cash",
+            "label": "Cash receipt RC-0531",
+            "value": "₱3,000",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "E1-total",
+            "label": "Collected in May",
+            "value": "₱12,000",
+            "amount": 12000,
+            "role": "income"
+          }
+        ],
+        "evidenceOptions": [
+          {
+            "id": "D1",
+            "label": "D1 Collection sheet",
+            "rule": "the monthly list of clothes-washing payments."
+          },
+          {
+            "id": "D2",
+            "label": "D2 Bank statement",
+            "rule": "shows money arriving in the account, not why it was paid."
+          },
+          {
+            "id": "D3",
+            "label": "D3 Receipt CM-0526",
+            "rule": "the receipt written for the blanket-washing job."
+          },
+          {
+            "id": "D4",
+            "label": "D4 Rental receipt RA-0520",
+            "rule": "the receipt for letting someone use the spare washer."
+          },
+          {
+            "id": "D5",
+            "label": "D5 Loan agreement LN-0510",
+            "rule": "the signed loan and its repayment terms."
+          },
+          {
+            "id": "D6",
+            "label": "D6 Cash receipt RC-0531",
+            "rule": "one cash payment already listed on the collection sheet."
+          }
+        ],
+        "maxEvidence": 2
+      },
+      {
+        "id": "E2",
+        "title": "E2 · Blanket-washing job",
+        "issuer": "Rosa's Laundry",
+        "reference": "CM-0526",
+        "lines": [
+          {
+            "id": "E2-payer",
+            "label": "Paid by",
+            "value": "Market Guesthouse",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "E2-work",
+            "label": "Work",
+            "value": "Washing a batch of blankets",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "E2-amount",
+            "label": "Amount, paid in cash",
+            "value": "₱5,000",
+            "amount": 5000,
+            "role": "income"
+          },
+          {
+            "id": "E2-date",
+            "label": "Date",
+            "value": "May 26, 2026",
+            "amount": 0,
+            "role": "info"
+          }
+        ],
+        "evidenceOptions": [
+          {
+            "id": "D1",
+            "label": "D1 Collection sheet",
+            "rule": "the monthly list of clothes-washing payments."
+          },
+          {
+            "id": "D2",
+            "label": "D2 Bank statement",
+            "rule": "shows money arriving in the account, not why it was paid."
+          },
+          {
+            "id": "D3",
+            "label": "D3 Receipt CM-0526",
+            "rule": "the receipt written for the blanket-washing job."
+          },
+          {
+            "id": "D4",
+            "label": "D4 Rental receipt RA-0520",
+            "rule": "the receipt for letting someone use the spare washer."
+          },
+          {
+            "id": "D5",
+            "label": "D5 Loan agreement LN-0510",
+            "rule": "the signed loan and its repayment terms."
+          },
+          {
+            "id": "D6",
+            "label": "D6 Cash receipt RC-0531",
+            "rule": "one cash payment already listed on the collection sheet."
+          }
+        ],
+        "maxEvidence": 2
+      },
+      {
+        "id": "E3",
+        "title": "E3 · Spare washing machine",
+        "issuer": "Rosa's Laundry",
+        "reference": "RA-0520",
+        "lines": [
+          {
+            "id": "E3-item",
+            "label": "Item",
+            "value": "Rosa's spare washing machine",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "E3-use",
+            "label": "Used by a customer",
+            "value": "May 18 to 20",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "E3-amount",
+            "label": "Amount, paid in cash",
+            "value": "₱3,000",
+            "amount": 3000,
+            "role": "income"
+          }
+        ],
+        "evidenceOptions": [
+          {
+            "id": "D1",
+            "label": "D1 Collection sheet",
+            "rule": "the monthly list of clothes-washing payments."
+          },
+          {
+            "id": "D2",
+            "label": "D2 Bank statement",
+            "rule": "shows money arriving in the account, not why it was paid."
+          },
+          {
+            "id": "D3",
+            "label": "D3 Receipt CM-0526",
+            "rule": "the receipt written for the blanket-washing job."
+          },
+          {
+            "id": "D4",
+            "label": "D4 Rental receipt RA-0520",
+            "rule": "the receipt for letting someone use the spare washer."
+          },
+          {
+            "id": "D5",
+            "label": "D5 Loan agreement LN-0510",
+            "rule": "the signed loan and its repayment terms."
+          },
+          {
+            "id": "D6",
+            "label": "D6 Cash receipt RC-0531",
+            "rule": "one cash payment already listed on the collection sheet."
+          }
+        ],
+        "maxEvidence": 2
+      },
+      {
+        "id": "E4",
+        "title": "E4 · Bank deposit LN-0510",
+        "issuer": "Plaza Savings Bank",
+        "reference": "****4821",
+        "lines": [
+          {
+            "id": "E4-credit",
+            "label": "Credit to the account",
+            "value": "₱20,000",
+            "amount": 20000,
+            "role": "memo"
+          },
+          {
+            "id": "E4-ref",
+            "label": "Reference",
+            "value": "LN-0510",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "E4-date",
+            "label": "Date",
+            "value": "May 10, 2026",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "E4-desc",
+            "label": "Bank description",
+            "value": "Loan release",
+            "amount": 0,
+            "role": "info"
+          }
+        ],
+        "evidenceOptions": [
+          {
+            "id": "D1",
+            "label": "D1 Collection sheet",
+            "rule": "the monthly list of clothes-washing payments."
+          },
+          {
+            "id": "D2",
+            "label": "D2 Bank statement",
+            "rule": "shows money arriving in the account, not why it was paid."
+          },
+          {
+            "id": "D3",
+            "label": "D3 Receipt CM-0526",
+            "rule": "the receipt written for the blanket-washing job."
+          },
+          {
+            "id": "D4",
+            "label": "D4 Rental receipt RA-0520",
+            "rule": "the receipt for letting someone use the spare washer."
+          },
+          {
+            "id": "D5",
+            "label": "D5 Loan agreement LN-0510",
+            "rule": "the signed loan and its repayment terms."
+          },
+          {
+            "id": "D6",
+            "label": "D6 Cash receipt RC-0531",
+            "rule": "one cash payment already listed on the collection sheet."
+          }
+        ],
+        "maxEvidence": 2
+      }
+    ]
+  },
+  "_annotationKey": "Answer key for Mark the Money! (T06): one per entry, separate from the player-facing records. Hints go from a general rule to a specific one on later checks; they never mention summary totals, findings or the stamp.",
+  "annotationKey": [
+    {
+      "entryId": "E1",
+      "highlightLineId": "E1-total",
+      "typeId": "business-service",
+      "treatmentId": "regular-schedule",
+      "evidenceIds": [
+        "D1"
+      ],
+      "typeHints": [
+        "Customers pay Rosa for washing their clothes: money from her own trade.",
+        "Payments for her laundry work are Business / service income."
+      ],
+      "treatmentHints": [
+        "Money earned from ordinary work goes with the other income of the period.",
+        "Use Regular income schedule."
+      ],
+      "evidenceHints": [
+        "Which one record lists these clothes-washing payments for the month?",
+        "Clip only the monthly collection sheet, D1."
+      ],
+      "highlightHints": [
+        "Find the row that states the full payment for clothes-washing work.",
+        "Highlight the combined payment row, rather than a separate bank or cash entry."
+      ]
+    },
+    {
+      "entryId": "E2",
+      "highlightLineId": "E2-amount",
+      "typeId": "business-service",
+      "treatmentId": "regular-schedule",
+      "evidenceIds": [
+        "D3"
+      ],
+      "typeHints": [
+        "A guesthouse paid Rosa to do a washing job for them.",
+        "A paid job done for a customer is Business / service income."
+      ],
+      "treatmentHints": [
+        "A paid job is earned money, like her other work.",
+        "Use Regular income schedule."
+      ],
+      "evidenceHints": [
+        "Which record was written for this job?",
+        "Clip receipt CM-0526, D3."
+      ],
+      "highlightHints": [
+        "Find the amount paid for the washing job.",
+        "Highlight the amount row on the payment record."
+      ]
+    },
+    {
+      "entryId": "E3",
+      "highlightLineId": "E3-amount",
+      "typeId": "rental",
+      "treatmentId": "regular-schedule",
+      "evidenceIds": [
+        "D4"
+      ],
+      "typeHints": [
+        "She was paid for letting someone use her machine.",
+        "Letting someone use your property earns Rental income."
+      ],
+      "treatmentHints": [
+        "This is an ordinary rental with no special rule of its own.",
+        "Use Regular income schedule."
+      ],
+      "evidenceHints": [
+        "Which receipt shows the machine being rented?",
+        "Clip rental receipt RA-0520, D4."
+      ],
+      "highlightHints": [
+        "Find the row showing how much Rosa received for letting someone use the machine.",
+        "Highlight the rental amount row."
+      ]
+    },
+    {
+      "entryId": "E4",
+      "highlightLineId": "E4-credit",
+      "typeId": "borrowed",
+      "treatmentId": "not-income",
+      "evidenceIds": [
+        "D2",
+        "D5"
+      ],
+      "typeHints": [
+        "Rosa has to pay this money back.",
+        "Money that must be repaid is Borrowed funds."
+      ],
+      "treatmentHints": [
+        "Borrowing is not earning.",
+        "Use Not income: it is not an exclusion, it was never earned."
+      ],
+      "evidenceHints": [
+        "One record shows the money arriving; another shows why it was paid.",
+        "Clip the bank statement D2 and the loan agreement D5 together."
+      ],
+      "highlightHints": [
+        "A bank credit shows money arriving, but check the description before treating it as income.",
+        "Highlight the credit row so you can compare it with the loan record."
+      ]
+    }
+  ],
+  "_office": "Office reconciliation (T07). conclusions and the new reason are offered by the book. scheduleSources are the record lines the player may put in the reviewed schedule; moneyIds stop the same payment being counted twice. officeFindings are the F1 follow-up and the F2 comparison prompt (player-facing). officeRule is answer data for the evaluator (T09): never printed.",
+  "conclusions": [
+    {
+      "id": "corrected-included",
+      "label": "Corrected: included"
+    },
+    {
+      "id": "explained-no-adjustment",
+      "label": "Explained: no change"
+    },
+    {
+      "id": "unresolved",
+      "label": "Still unresolved"
+    }
+  ],
+  "scheduleSlots": 4,
+  "scheduleSources": [
+    {
+      "semanticKey": "D1Total",
+      "amount": 12000,
+      "moneyIds": [
+        "bank-BT0905",
+        "cash-RC0531"
+      ]
+    },
+    {
+      "semanticKey": "D1Bank",
+      "amount": 9000,
+      "moneyIds": [
+        "bank-BT0905"
+      ]
+    },
+    {
+      "semanticKey": "D1Cash",
+      "amount": 3000,
+      "moneyIds": [
+        "cash-RC0531"
+      ]
+    },
+    {
+      "semanticKey": "D2Services",
+      "amount": 9000,
+      "moneyIds": [
+        "bank-BT0905"
+      ]
+    },
+    {
+      "semanticKey": "D2Loan",
+      "amount": 20000,
+      "moneyIds": [
+        "loan-LN0510"
+      ]
+    },
+    {
+      "semanticKey": "D2Credits",
+      "amount": 29000,
+      "moneyIds": [
+        "bank-BT0905",
+        "loan-LN0510"
+      ]
+    },
+    {
+      "semanticKey": "D3Amount",
+      "amount": 5000,
+      "moneyIds": [
+        "job-CM0526"
+      ]
+    },
+    {
+      "semanticKey": "D4Amount",
+      "amount": 3000,
+      "moneyIds": [
+        "rental-RA0520"
+      ]
+    },
+    {
+      "semanticKey": "D5Principal",
+      "amount": 20000,
+      "moneyIds": [
+        "loan-LN0510"
+      ]
+    },
+    {
+      "semanticKey": "D6Amount",
+      "amount": 3000,
+      "moneyIds": [
+        "cash-RC0531"
+      ]
+    }
+  ],
+  "officeFindings": [
+    {
+      "id": "F1",
+      "title": "Finding F1 · Unlisted payment",
+      "continuesFinding": "F1",
+      "parts": [
+        {
+          "id": "record",
+          "label": "Original record",
+          "accepts": "record"
+        },
+        {
+          "id": "conclusion",
+          "label": "Conclusion",
+          "accepts": "conclusion"
+        }
+      ]
+    },
+    {
+      "id": "F2",
+      "title": "Finding F2 · Do two records disagree?",
+      "continuesFinding": "",
+      "parts": [
+        {
+          "id": "entry",
+          "label": "Entry to check",
+          "accepts": "record"
+        },
+        {
+          "id": "compare",
+          "label": "Compared with",
+          "accepts": "record"
+        },
+        {
+          "id": "clue",
+          "label": "Clue",
+          "accepts": "record"
+        },
+        {
+          "id": "reason",
+          "label": "Reason",
+          "accepts": "reason"
+        },
+        {
+          "id": "conclusion",
+          "label": "Conclusion",
+          "accepts": "conclusion"
+        }
+      ]
+    }
+  ],
+  "officeRule": {
+    "requiredMoney": [
+      "bank-BT0905",
+      "cash-RC0531",
+      "job-CM0526",
+      "rental-RA0520"
+    ],
+    "forbiddenMoney": [
+      "loan-LN0510"
+    ],
+    "omittedMoney": "job-CM0526",
+    "findings": [
+      {
+        "findingId": "F1",
+        "rootCause": "f1-unsupported",
+        "needsScheduleMoney": "job-CM0526",
+        "parts": [
+          {
+            "partId": "record",
+            "accepted": [
+              "D3Amount",
+              "D3For",
+              "D3Invoice",
+              "D3Payer",
+              "D3Paid"
+            ]
+          },
+          {
+            "partId": "conclusion",
+            "accepted": [
+              "corrected-included"
+            ]
+          }
+        ],
+        "unorderedParts": [],
+        "falseFlagConclusions": []
+      },
+      {
+        "findingId": "F2",
+        "rootCause": "f2-unexplained",
+        "needsScheduleMoney": "",
+        "parts": [
+          {
+            "partId": "entry",
+            "accepted": [
+              "D1Total"
+            ]
+          },
+          {
+            "partId": "compare",
+            "accepted": [
+              "D2Services"
+            ]
+          },
+          {
+            "partId": "clue",
+            "accepted": [
+              "D6Amount",
+              "D6Recorded",
+              "D6Receipt",
+              "D6For"
+            ]
+          },
+          {
+            "partId": "reason",
+            "accepted": [
+              "paid-another-way"
+            ]
+          },
+          {
+            "partId": "conclusion",
+            "accepted": [
+              "explained-no-adjustment"
+            ]
+          }
+        ],
+        "unorderedParts": [
+          "entry",
+          "compare"
+        ],
+        "falseFlagConclusions": [
+          "corrected-included",
+          "unresolved"
+        ]
+      }
+    ]
+  },
+  "_finalAndAudit": "T08 assessmentReasons (book offers them; verdict/names are answer meaning, labels are generic). T09 audit lines per outcome and per root cause (point to the record or rule, never fix it). T10 review cutoff clock (active seconds per day, warnings, one late consequence).",
+  "assessmentReasons": [
+    {
+      "id": "income-supported",
+      "label": "Income supported",
+      "verdict": "Ready",
+      "names": []
+    },
+    {
+      "id": "payment-missing",
+      "label": "Payment not counted",
+      "verdict": "NotReady",
+      "names": [
+        "omission",
+        "missing-income",
+        "f1-unsupported"
+      ]
+    },
+    {
+      "id": "non-income-counted",
+      "label": "Non-income counted",
+      "verdict": "NotReady",
+      "names": [
+        "not-income-counted",
+        "double-counted"
+      ]
+    },
+    {
+      "id": "difference-unexplained",
+      "label": "Difference unexplained",
+      "verdict": "NotReady",
+      "names": [
+        "f2-unexplained"
+      ]
+    },
+    {
+      "id": "facts-wrong",
+      "label": "Taxpayer facts wrong",
+      "verdict": "NotReady",
+      "names": [
+        "field:"
+      ]
+    }
+  ],
+  "audit": {
+    "approved": [
+      "Approved. Every income entry has a supported place, and the difference is explained.",
+      "Rosa's review can go forward."
+    ],
+    "justifiedHold": "You have a reason to hold this. Use the collected records to finish the unresolved item.",
+    "prematureApproval": "This isn't ready yet. Look at this before you approve it again.",
+    "falseHold": "The amounts cover different payment channels. Check the cash record before requesting more paperwork.",
+    "reasonError": "Your recommendation and its reason don't match what this review shows. Check the reason you chose.",
+    "unchanged": "Nothing has changed since I last looked. Change the review, stamp it again, then bring it back.",
+    "rosaHold": "Rosa: \"Can this still be finished today? Tell me what you need.\"",
+    "rosaPremature": "Rosa: \"I thought it was finished. Please tell me what still needs fixing.\"",
+    "rosaFalseHold": "Rosa: \"I brought those receipts already. Can we use them to finish this?\"",
+    "feedback": [
+      {
+        "root": "omission",
+        "line": "This payment still has no supported place in the summary. Check the record of the payment for a separate blanket-washing job."
+      },
+      {
+        "root": "missing-income",
+        "line": "An earned payment from Rosa's records is missing from your schedule. Check each record's money line."
+      },
+      {
+        "root": "not-income-counted",
+        "line": "Money that must be repaid is not earnings. Check the loan agreement before counting it."
+      },
+      {
+        "root": "double-counted",
+        "line": "One payment is counted twice."
+      },
+      {
+        "root": "f1-unsupported",
+        "line": "Finding F1 needs the original record and a conclusion that matches what you changed."
+      },
+      {
+        "root": "f2-unexplained",
+        "line": "Finding F2 doesn't explain the difference yet. Compare the collection sheet, the bank statement and the cash receipt."
+      },
+      {
+        "root": "field:",
+        "line": "One of Rosa's taxpayer facts on the first page needs another look."
+      }
+    ]
+  },
+  "clock": {
+    "allowanceSeconds": 720,
+    "warnSeconds": [
+      120,
+      30
+    ],
+    "lateExp": 3,
+    "lateHearts": 1,
+    "announceLine": "Today's review cutoff is {deadline}. Keep an eye on the office clock while you check Rosa's records.",
+    "warnLine": "Today's review cutoff is coming up: {minutes} minutes left.",
+    "missedLine": "The review window closed for today. Your work is safe.",
+    "nextMorningLine": "A new morning. Your work is right where you left it. Today's review cutoff is {deadline}.",
+    "onTimeLine": "On time! Approved before the first cutoff."
+  },
+  "documents": [
+    {
+      "id": "COVER",
+      "kind": "cover",
+      "title": "Case Cover",
+      "documentName": "Case Cover - L2-ROSA-001",
+      "issuer": "Town Tax Consultancy Office",
+      "reference": "L2-ROSA-001",
+      "date": "June 10, 2026",
+      "footer": "",
+      "lines": [
+        {
+          "id": "COVER-client",
+          "label": "Client",
+          "value": "Aling Rosa Santos, Rosa's Laundry",
+          "amount": 0,
+          "role": "info"
+        },
+        {
+          "id": "COVER-stall",
+          "label": "Address",
+          "value": "Plaza Market, Stall 04",
+          "amount": 0,
+          "role": "info"
+        },
+        {
+          "id": "COVER-year",
+          "label": "Tax Year",
+          "value": "2026",
+          "amount": 0,
+          "role": "info"
+        },
+        {
+          "id": "COVER-focus",
+          "label": "Review Focus",
+          "value": "May 2026 income schedule",
+          "amount": 0,
+          "role": "info"
+        },
+        {
+          "id": "COVER-prior",
+          "label": "Other Periods (verified)",
+          "value": "₱120,000",
+          "amount": 120000,
+          "role": "info"
+        }
+      ]
+    },
+    {
+      "id": "S1",
+      "kind": "summary",
+      "title": "May Income Summary",
+      "documentName": "Prepared May Income Summary (S1)",
+      "issuer": "Rosa's Laundry",
+      "reference": "S1",
+      "date": "May 2026",
+      "footer": "Prepared with assistance: Taxpayer Assistance Desk",
+      "lines": [
+        {
+          "id": "S1-services",
+          "label": "Clothes washing",
+          "value": "₱12,000",
+          "amount": 12000,
+          "role": "income"
+        },
+        {
+          "id": "S1-rental",
+          "label": "Small equipment rental",
+          "value": "₱3,000",
+          "amount": 3000,
+          "role": "income"
+        },
+        {
+          "id": "S1-subtotal",
+          "label": "May total",
+          "value": "₱15,000",
+          "amount": 15000,
+          "role": "subtotal"
+        },
+        {
+          "id": "S1-loan-memo",
+          "label": "Memorandum (not income): loan deposit LN-0510",
+          "value": "₱20,000, pending verification",
+          "amount": 20000,
+          "role": "memo"
+        }
+      ]
+    },
+    {
+      "id": "N1",
+      "kind": "note",
+      "title": "Payment Note",
+      "documentName": "Payment Note (N1)",
+      "issuer": "Town Tax Consultancy Office",
+      "reference": "N1",
+      "date": "June 9, 2026",
+      "footer": "",
+      "lines": [
+        {
+          "id": "N1-note",
+          "label": "Note",
+          "value": "A customer paid for blanket washing in May, reference CM-0526. The receipt was kept separately.",
+          "amount": 0,
+          "role": "info"
+        },
+        {
+          "id": "N1-where",
+          "label": "Original record",
+          "value": "The original payment record is at the stall.",
+          "amount": 0,
+          "role": "info"
+        }
+      ]
+    },
+    {
+      "id": "D1",
+      "kind": "record",
+      "title": "Clothes Collections",
+      "documentName": "Collection Sheet (D1)",
+      "issuer": "Rosa's Laundry",
+      "reference": "May 2026",
+      "date": "May 31, 2026",
+      "footer": "",
+      "lines": [
+        {
+          "id": "D1-bank",
+          "label": "Month / work",
+          "value": "May, clothes only",
+          "amount": 9000,
+          "role": "info"
+        },
+        {
+          "id": "D1-cash",
+          "label": "Cash receipt RC-0531",
+          "value": "₱3,000",
+          "amount": 3000,
+          "role": "info"
+        },
+        {
+          "id": "D1-total",
+          "label": "Monthly total",
+          "value": "₱12,000",
+          "amount": 12000,
+          "role": "info"
+        }
+      ]
+    },
+    {
+      "id": "D2",
+      "kind": "record",
+      "title": "Bank Statement",
+      "documentName": "Bank Statement (D2)",
+      "issuer": "Plaza Savings Bank",
+      "reference": "****4821",
+      "date": "May 31, 2026",
+      "footer": "",
+      "lines": [
+        {
+          "id": "D2-bt",
+          "label": "BT-0905 service collections",
+          "value": "₱9,000",
+          "amount": 9000,
+          "role": "info"
+        },
+        {
+          "id": "D2-ln",
+          "label": "LN-0510 loan release",
+          "value": "₱20,000",
+          "amount": 20000,
+          "role": "info"
+        },
+        {
+          "id": "D2-credits",
+          "label": "Total credits shown",
+          "value": "₱29,000",
+          "amount": 29000,
+          "role": "info"
+        }
+      ]
+    },
+    {
+      "id": "D3",
+      "kind": "record",
+      "title": "Blanket Wash Receipt",
+      "documentName": "Laundry Receipt (D3)",
+      "issuer": "Rosa's Laundry",
+      "reference": "CM-0526",
+      "date": "May 26, 2026",
+      "footer": "",
+      "lines": [
+        {
+          "id": "D3-for",
+          "label": "Blanket washing",
+          "value": "Market Guesthouse",
+          "amount": 0,
+          "role": "info"
+        },
+        {
+          "id": "D3-amount",
+          "label": "Amount, paid in cash",
+          "value": "₱5,000",
+          "amount": 5000,
+          "role": "info"
+        }
+      ]
+    },
+    {
+      "id": "D4",
+      "kind": "record",
+      "title": "Rental Receipt",
+      "documentName": "Rental Receipt (D4)",
+      "issuer": "Rosa's Laundry",
+      "reference": "RA-0520",
+      "date": "May 20, 2026",
+      "footer": "",
+      "lines": [
+        {
+          "id": "D4-item",
+          "label": "Spare washer, May 18 to 20",
+          "value": "Rented",
+          "amount": 0,
+          "role": "info"
+        },
+        {
+          "id": "D4-amount",
+          "label": "Amount, paid in cash",
+          "value": "₱3,000",
+          "amount": 3000,
+          "role": "info"
+        }
+      ]
+    },
+    {
+      "id": "D5",
+      "kind": "record",
+      "title": "Loan Agreement",
+      "documentName": "Loan Agreement (D5)",
+      "issuer": "Bayan Credit Coop",
+      "reference": "LN-0510",
+      "date": "May 10, 2026",
+      "footer": "",
+      "lines": [
+        {
+          "id": "D5-principal",
+          "label": "Principal released to bank",
+          "value": "₱20,000",
+          "amount": 20000,
+          "role": "info"
+        },
+        {
+          "id": "D5-repay",
+          "label": "Repayment",
+          "value": "Monthly, 10 months",
+          "amount": 0,
+          "role": "info"
+        }
+      ]
+    },
+    {
+      "id": "D6",
+      "kind": "record",
+      "title": "Cash Receipt",
+      "documentName": "Cash Receipt (D6)",
+      "issuer": "Rosa's Laundry",
+      "reference": "RC-0531",
+      "date": "May 31, 2026",
+      "footer": "",
+      "lines": [
+        {
+          "id": "D6-amount",
+          "label": "Clothes washing, paid in cash",
+          "value": "₱3,000",
+          "amount": 3000,
+          "role": "info"
+        },
+        {
+          "id": "D6-recorded",
+          "label": "Included in",
+          "value": "May collection sheet",
+          "amount": 0,
+          "role": "info"
+        }
+      ]
+    }
+  ]
+}

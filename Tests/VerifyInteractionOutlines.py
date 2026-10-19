@@ -43,7 +43,8 @@ for path in renderer_assets:
     assert "outlineColor: {r: 0.68, g: 0.7, b: 0.72, a: 0.58}" in feature_doc, (
         f"{path}: wrong outline color or alpha"
     )
-    assert "widthPixels: 5" in feature_doc, f"{path}: wrong outline width"
+    expected_width = 3.5 if path.endswith("Mobile_Renderer.asset") else 5
+    assert f"widthPixels: {expected_width}" in feature_doc, f"{path}: wrong outline width"
     feature_id = re.match(r"--- !u!\d+ &(\d+)", feature_doc)[1]
     renderer_doc = next(doc for doc in docs if "m_RendererFeatures:" in doc)
     feature_list = renderer_doc.split("m_RendererFeatures:", 1)[1].split("m_RendererFeatureMap:", 1)[0]
