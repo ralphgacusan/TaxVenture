@@ -2,13 +2,12 @@
   "_readme": [
     "Level 2 main case: Aling Rosa Santos. All names, numbers and references are fictional design fixtures, not tax advice.",
     "Full content key: Documentation/Level2SomethingDoesNotMatch/CONTENT.md. Edit text freely; IDs (caseId, review ids, document and line ids) are stable keys used by code and saves.",
-    "documents: the pages the existing case folder shows at the start (cover, prepared summary S1, referral note N1). Supporting records D1-D6 arrive from Rosa at her stall (T04).",
+    "documents: the pages the existing case folder shows at the start (cover, prepared summary S1, payment note N1). Four supporting records arrive from Rosa at her stall (T04): D1 and D4 back the two summary lines, D3 is the separate paid job missing from the summary, D5 explains the borrowed deposit. D2 and D6 stay defined for old saves only and are never handed over.",
     "review.documents[].documentName: which 'documents' entry is printed as that page of the case folder (must match exactly). Held pages follow Taxpayer Information, in this order.",
     "review: the prepared-packet review data (CaseReviewDefinition). It is validated when the case loads: unique ids, starting pages that exist, summary income rows that add up to the printed subtotal.",
     "No answer key, finding or stamp choice is printed on any page. potentialIssues stays empty because the case folder shows that list to the player.",
     "Fields starting with '_' are notes and are ignored by the game."
   ],
-
   "caseId": "L2-ROSA-001",
   "caseNumber": "L2-ROSA-001",
   "clientId": "",
@@ -17,8 +16,7 @@
   "dateReceived": "June 10, 2026",
   "assignedConsultant": "Player",
   "caseTitle": "Aling Rosa Santos - May 2026 Income Summary Review",
-  "caseSummary": "Aling Rosa Santos runs Rosa's Alterations at Plaza Market, Stall 04. The Taxpayer Assistance Desk helped her prepare a May 2026 income summary. Check that the summary accounts for the records behind it before recommending whether the work is ready for the Auditor.",
-
+  "caseSummary": "Aling Rosa Santos runs Rosa's Laundry at Plaza Market, Stall 04. Review her prepared May summary against the notes and receipts behind it.",
   "fullName": "Rosa Santos",
   "tin": "246-813-579-000",
   "birthdate": "August 2, 1978",
@@ -28,7 +26,6 @@
   "spouseName": "",
   "spouseTin": "",
   "citizenship": "Filipino",
-
   "answerKey": {
     "residencyStatus": "ResidentCitizen",
     "taxpayerType": "SelfEmployed",
@@ -48,7 +45,6 @@
     "businessAddress": "Plaza Market, Stall 04, Town Proper",
     "dependentCount": 0
   },
-
   "_requiredFields": "The inherited taxpayer facts the Auditor still checks (Level 1 tools). Hints never give the answer. The income schedule, findings and stamp reason are graded by later Level 2 tickets.",
   "requiredFields": [
     {
@@ -67,112 +63,371 @@
       "mistakeCost": "The wrong income source would misdescribe her business income."
     }
   ],
-  "missingFieldKeys": ["ResidencyStatus", "TaxpayerType", "IncomeSource"],
-
+  "missingFieldKeys": [
+    "ResidencyStatus",
+    "TaxpayerType",
+    "IncomeSource"
+  ],
   "_documents": "Printed as case-folder pages after Taxpayer Information, in page 1's font. Keep each page to 5 rows and each value short (about 20 characters) so it fits like page 1.",
   "documents": [
     {
       "documentName": "Case Cover - L2-ROSA-001",
       "fields": [
-        { "label": "Client", "displayValue": "Aling Rosa Santos", "correctValue": "Aling Rosa Santos", "type": "Text", "semanticKey": "FullName" },
-        { "label": "Works as", "displayValue": "Stall owner-operator", "correctValue": "Stall owner-operator", "type": "Text", "semanticKey": "TaxpayerType" },
-        { "label": "Residence", "displayValue": "Filipino, Town Proper", "correctValue": "Filipino, Town Proper", "type": "Text", "semanticKey": "ResidencyStatus" },
-        { "label": "Earns from", "displayValue": "Alteration services", "correctValue": "Alteration services", "type": "Text", "semanticKey": "IncomeSource" },
-        { "label": "Other months", "displayValue": "₱120,000 verified", "correctValue": "₱120,000 verified", "type": "Text", "semanticKey": "PriorVerifiedAggregate" }
+        {
+          "label": "Client",
+          "displayValue": "Aling Rosa Santos",
+          "correctValue": "Aling Rosa Santos",
+          "type": "Text",
+          "semanticKey": "FullName"
+        },
+        {
+          "label": "Works as",
+          "displayValue": "Stall owner-operator",
+          "correctValue": "Stall owner-operator",
+          "type": "Text",
+          "semanticKey": "TaxpayerType"
+        },
+        {
+          "label": "Residence",
+          "displayValue": "Filipino, Town Proper",
+          "correctValue": "Filipino, Town Proper",
+          "type": "Text",
+          "semanticKey": "ResidencyStatus"
+        },
+        {
+          "label": "Earns from",
+          "displayValue": "Laundry services",
+          "correctValue": "Laundry services",
+          "type": "Text",
+          "semanticKey": "IncomeSource"
+        },
+        {
+          "label": "Other months",
+          "displayValue": "₱120,000 verified",
+          "correctValue": "₱120,000 verified",
+          "type": "Text",
+          "semanticKey": "PriorVerifiedAggregate"
+        }
       ]
     },
     {
       "documentName": "Prepared May Income Summary (S1)",
       "fields": [
-        { "label": "Alterations", "displayValue": "₱12,000", "correctValue": "₱12,000", "type": "Number", "semanticKey": "SummaryServices" },
-        { "label": "Equip. rental", "displayValue": "₱3,000", "correctValue": "₱3,000", "type": "Number", "semanticKey": "SummaryRental" },
-        { "label": "May subtotal", "displayValue": "₱15,000", "correctValue": "₱15,000", "type": "Number", "semanticKey": "SummarySubtotal" },
-        { "label": "Memo, not income", "displayValue": "Loan LN-0510 ₱20,000", "correctValue": "Loan LN-0510 ₱20,000", "type": "Text", "semanticKey": "LoanMemo" },
-        { "label": "Prepared with", "displayValue": "Assistance Desk", "correctValue": "Assistance Desk", "type": "Text", "semanticKey": "SummaryPreparer" }
+        {
+          "label": "Clothes washing",
+          "displayValue": "₱12,000",
+          "correctValue": "₱12,000",
+          "type": "Number",
+          "semanticKey": "SummaryServices"
+        },
+        {
+          "label": "Washer rental",
+          "displayValue": "₱3,000",
+          "correctValue": "₱3,000",
+          "type": "Number",
+          "semanticKey": "SummaryRental"
+        },
+        {
+          "label": "May total",
+          "displayValue": "₱15,000",
+          "correctValue": "₱15,000",
+          "type": "Number",
+          "semanticKey": "SummarySubtotal"
+        },
+        {
+          "label": "Memo, not income",
+          "displayValue": "Loan LN-0510 ₱20,000",
+          "correctValue": "Loan LN-0510 ₱20,000",
+          "type": "Text",
+          "semanticKey": "LoanMemo"
+        },
+        {
+          "label": "Prepared with",
+          "displayValue": "Assistance Desk",
+          "correctValue": "Assistance Desk",
+          "type": "Text",
+          "semanticKey": "SummaryPreparer"
+        }
       ]
     },
     {
-      "documentName": "Referral Note (N1)",
+      "documentName": "Payment Note (N1)",
       "fields": [
-        { "label": "Please confirm", "displayValue": "Paid referral fee", "correctValue": "Paid referral fee", "type": "Text", "semanticKey": "ReferralNote" },
-        { "label": "Reference", "displayValue": "CM-0526", "correctValue": "CM-0526", "type": "Text", "semanticKey": "ReferralReference" },
-        { "label": "Ask", "displayValue": "Aling Rosa", "correctValue": "Aling Rosa", "type": "Text", "semanticKey": "ReferralContact" },
-        { "label": "Original record", "displayValue": "At her stall", "correctValue": "At her stall", "type": "Text", "semanticKey": "ReferralRecordLocation" }
+        {
+          "label": "Payment for",
+          "displayValue": "Blanket washing",
+          "correctValue": "Blanket washing",
+          "type": "Text",
+          "semanticKey": "ReferralNote"
+        },
+        {
+          "label": "Status",
+          "displayValue": "Paid in May",
+          "correctValue": "Paid in May",
+          "type": "Text",
+          "semanticKey": "PaymentStatus"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "CM-0526",
+          "correctValue": "CM-0526",
+          "type": "Text",
+          "semanticKey": "ReferralReference"
+        },
+        {
+          "label": "Ask",
+          "displayValue": "Aling Rosa",
+          "correctValue": "Aling Rosa",
+          "type": "Text",
+          "semanticKey": "ReferralContact"
+        },
+        {
+          "label": "Original record",
+          "displayValue": "At her shop",
+          "correctValue": "At her shop",
+          "type": "Text",
+          "semanticKey": "ReferralRecordLocation"
+        }
       ]
     },
     {
       "documentName": "Collection Sheet (D1)",
       "fields": [
-        { "label": "Month", "displayValue": "May 2026", "correctValue": "May 2026", "type": "Text", "semanticKey": "D1Month" },
-        { "label": "Bank BT-0905", "displayValue": "₱9,000", "correctValue": "₱9,000", "type": "Number", "semanticKey": "D1Bank" },
-        { "label": "Cash RC-0531", "displayValue": "₱3,000", "correctValue": "₱3,000", "type": "Number", "semanticKey": "D1Cash" },
-        { "label": "Month total", "displayValue": "₱12,000", "correctValue": "₱12,000", "type": "Number", "semanticKey": "D1Total" },
-        { "label": "Signed", "displayValue": "R. Santos", "correctValue": "R. Santos", "type": "Text", "semanticKey": "D1Signed" }
+        {
+          "label": "Work",
+          "displayValue": "Clothes washing only",
+          "correctValue": "Clothes washing only",
+          "type": "Text",
+          "semanticKey": "D1Month"
+        },
+        {
+          "label": "Month",
+          "displayValue": "May 1 to 31",
+          "correctValue": "May 1 to 31",
+          "type": "Text",
+          "semanticKey": "D1Period"
+        },
+        {
+          "label": "Paid by customers",
+          "displayValue": "₱12,000",
+          "correctValue": "₱12,000",
+          "type": "Number",
+          "semanticKey": "D1Total"
+        },
+        {
+          "label": "Signed",
+          "displayValue": "R. Santos",
+          "correctValue": "R. Santos",
+          "type": "Text",
+          "semanticKey": "D1Signed"
+        }
       ]
     },
     {
       "documentName": "Bank Statement (D2)",
       "fields": [
-        { "label": "Account", "displayValue": "Plaza Savings ****4821", "correctValue": "Plaza Savings ****4821", "type": "Text", "semanticKey": "D2Account" },
-        { "label": "BT-0905 May 9", "displayValue": "₱9,000", "correctValue": "₱9,000", "type": "Number", "semanticKey": "D2Services" },
-        { "label": "LN-0510 May 10", "displayValue": "₱20,000", "correctValue": "₱20,000", "type": "Number", "semanticKey": "D2Loan" },
-        { "label": "Credits shown", "displayValue": "₱29,000", "correctValue": "₱29,000", "type": "Number", "semanticKey": "D2Credits" },
-        { "label": "Note", "displayValue": "Bank activity only", "correctValue": "Bank activity only", "type": "Text", "semanticKey": "D2Note" }
+        {
+          "label": "Account",
+          "displayValue": "Plaza Savings ****4821",
+          "correctValue": "Plaza Savings ****4821",
+          "type": "Text",
+          "semanticKey": "D2Account"
+        },
+        {
+          "label": "BT-0905 May 9",
+          "displayValue": "₱9,000",
+          "correctValue": "₱9,000",
+          "type": "Number",
+          "semanticKey": "D2Services"
+        },
+        {
+          "label": "LN-0510 May 10",
+          "displayValue": "₱20,000",
+          "correctValue": "₱20,000",
+          "type": "Number",
+          "semanticKey": "D2Loan"
+        },
+        {
+          "label": "Credits shown",
+          "displayValue": "₱29,000",
+          "correctValue": "₱29,000",
+          "type": "Number",
+          "semanticKey": "D2Credits"
+        },
+        {
+          "label": "Note",
+          "displayValue": "Bank activity only",
+          "correctValue": "Bank activity only",
+          "type": "Text",
+          "semanticKey": "D2Note"
+        }
       ]
     },
     {
-      "documentName": "Commission Invoice (D3)",
+      "documentName": "Laundry Receipt (D3)",
       "fields": [
-        { "label": "Invoice", "displayValue": "CM-0526, May 26", "correctValue": "CM-0526, May 26", "type": "Text", "semanticKey": "D3Invoice" },
-        { "label": "Billed to", "displayValue": "Tela Fabric Shop", "correctValue": "Tela Fabric Shop", "type": "Text", "semanticKey": "D3Payer" },
-        { "label": "For", "displayValue": "Customer referrals", "correctValue": "Customer referrals", "type": "Text", "semanticKey": "D3For" },
-        { "label": "Amount", "displayValue": "₱5,000", "correctValue": "₱5,000", "type": "Number", "semanticKey": "D3Amount" },
-        { "label": "Paid", "displayValue": "Cash, May 26", "correctValue": "Cash, May 26", "type": "Text", "semanticKey": "D3Paid" }
+        {
+          "label": "Receipt",
+          "displayValue": "CM-0526, May 26",
+          "correctValue": "CM-0526, May 26",
+          "type": "Text",
+          "semanticKey": "D3Invoice"
+        },
+        {
+          "label": "Customer",
+          "displayValue": "Market Guesthouse",
+          "correctValue": "Market Guesthouse",
+          "type": "Text",
+          "semanticKey": "D3Payer"
+        },
+        {
+          "label": "Work",
+          "displayValue": "Blanket washing",
+          "correctValue": "Blanket washing",
+          "type": "Text",
+          "semanticKey": "D3For"
+        },
+        {
+          "label": "Paid in cash",
+          "displayValue": "₱5,000",
+          "correctValue": "₱5,000",
+          "type": "Number",
+          "semanticKey": "D3Amount"
+        }
       ]
     },
     {
       "documentName": "Rental Receipt (D4)",
       "fields": [
-        { "label": "Receipt", "displayValue": "RA-0520, May 20", "correctValue": "RA-0520, May 20", "type": "Text", "semanticKey": "D4Receipt" },
-        { "label": "Item", "displayValue": "Sewing machine", "correctValue": "Sewing machine", "type": "Text", "semanticKey": "D4Item" },
-        { "label": "Rented", "displayValue": "May 18 to 20", "correctValue": "May 18 to 20", "type": "Text", "semanticKey": "D4Dates" },
-        { "label": "Amount", "displayValue": "₱3,000", "correctValue": "₱3,000", "type": "Number", "semanticKey": "D4Amount" },
-        { "label": "Paid", "displayValue": "Cash", "correctValue": "Cash", "type": "Text", "semanticKey": "D4Paid" }
+        {
+          "label": "Receipt",
+          "displayValue": "RA-0520, May 20",
+          "correctValue": "RA-0520, May 20",
+          "type": "Text",
+          "semanticKey": "D4Receipt"
+        },
+        {
+          "label": "Item",
+          "displayValue": "Spare washing machine",
+          "correctValue": "Spare washing machine",
+          "type": "Text",
+          "semanticKey": "D4Item"
+        },
+        {
+          "label": "Rented",
+          "displayValue": "May 18 to 20",
+          "correctValue": "May 18 to 20",
+          "type": "Text",
+          "semanticKey": "D4Dates"
+        },
+        {
+          "label": "Paid in cash",
+          "displayValue": "₱3,000",
+          "correctValue": "₱3,000",
+          "type": "Number",
+          "semanticKey": "D4Amount"
+        }
       ]
     },
     {
       "documentName": "Loan Agreement (D5)",
       "fields": [
-        { "label": "Loan", "displayValue": "LN-0510", "correctValue": "LN-0510", "type": "Text", "semanticKey": "D5Loan" },
-        { "label": "Lender", "displayValue": "Bayan Credit Coop", "correctValue": "Bayan Credit Coop", "type": "Text", "semanticKey": "D5Lender" },
-        { "label": "Principal", "displayValue": "₱20,000", "correctValue": "₱20,000", "type": "Number", "semanticKey": "D5Principal" },
-        { "label": "Released", "displayValue": "To bank, May 10", "correctValue": "To bank, May 10", "type": "Text", "semanticKey": "D5Released" },
-        { "label": "Repay", "displayValue": "Monthly, 10 months", "correctValue": "Monthly, 10 months", "type": "Text", "semanticKey": "D5Repay" }
+        {
+          "label": "Lender",
+          "displayValue": "Bayan Credit Coop",
+          "correctValue": "Bayan Credit Coop",
+          "type": "Text",
+          "semanticKey": "D5Lender"
+        },
+        {
+          "label": "Loan LN-0510",
+          "displayValue": "₱20,000",
+          "correctValue": "₱20,000",
+          "type": "Number",
+          "semanticKey": "D5Principal"
+        },
+        {
+          "label": "Released",
+          "displayValue": "To bank, May 10",
+          "correctValue": "To bank, May 10",
+          "type": "Text",
+          "semanticKey": "D5Released"
+        },
+        {
+          "label": "Must repay",
+          "displayValue": "Monthly, 10 months",
+          "correctValue": "Monthly, 10 months",
+          "type": "Text",
+          "semanticKey": "D5Repay"
+        }
       ]
     },
     {
       "documentName": "Cash Receipt (D6)",
       "fields": [
-        { "label": "Receipt", "displayValue": "RC-0531, May 31", "correctValue": "RC-0531, May 31", "type": "Text", "semanticKey": "D6Receipt" },
-        { "label": "For", "displayValue": "Alterations", "correctValue": "Alterations", "type": "Text", "semanticKey": "D6For" },
-        { "label": "Cash paid", "displayValue": "₱3,000", "correctValue": "₱3,000", "type": "Number", "semanticKey": "D6Amount" },
-        { "label": "Included in", "displayValue": "May collection sheet", "correctValue": "May collection sheet", "type": "Text", "semanticKey": "D6Recorded" },
-        { "label": "Issued by", "displayValue": "Rosa's Alterations", "correctValue": "Rosa's Alterations", "type": "Text", "semanticKey": "D6Issuer" }
+        {
+          "label": "Receipt",
+          "displayValue": "RC-0531, May 31",
+          "correctValue": "RC-0531, May 31",
+          "type": "Text",
+          "semanticKey": "D6Receipt"
+        },
+        {
+          "label": "For",
+          "displayValue": "Clothes washing",
+          "correctValue": "Clothes washing",
+          "type": "Text",
+          "semanticKey": "D6For"
+        },
+        {
+          "label": "Cash paid",
+          "displayValue": "₱3,000",
+          "correctValue": "₱3,000",
+          "type": "Number",
+          "semanticKey": "D6Amount"
+        },
+        {
+          "label": "Included in",
+          "displayValue": "May collection sheet",
+          "correctValue": "May collection sheet",
+          "type": "Text",
+          "semanticKey": "D6Recorded"
+        },
+        {
+          "label": "Issued by",
+          "displayValue": "Rosa's Laundry",
+          "correctValue": "Rosa's Laundry",
+          "type": "Text",
+          "semanticKey": "D6Issuer"
+        }
       ]
     }
   ],
-
   "potentialIssues": [],
-
   "clientPortraitDefault": "",
   "clientPortraitHappy": "",
   "clientPortraitSad": "",
-
   "receptionistGreeting": [
-    { "speaker": "Npc", "text": "Good morning! You have one client today: Aling Rosa Santos, from the market.", "portraitId": "default" },
-    { "speaker": "Npc", "text": "Rosa's folder is in the market-client drawer. Please check the prepared summary before today's review cutoff.", "portraitId": "default" },
-    { "speaker": "Npc", "text": "The filing cabinets are in the file storage room.", "portraitId": "default" },
-    { "speaker": "Player", "text": "Got it. I'll get her folder first.", "portraitId": "Auditor_Default" }
+    {
+      "speaker": "Npc",
+      "text": "Good morning! You have one client today: Aling Rosa Santos, from the market.",
+      "portraitId": "default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Rosa's folder is in the market-client drawer. Please check the prepared summary before today's review cutoff.",
+      "portraitId": "default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "The filing cabinets are in the file storage room.",
+      "portraitId": "default"
+    },
+    {
+      "speaker": "Player",
+      "text": "Got it. I'll get her folder first.",
+      "portraitId": "Auditor_Default"
+    }
   ],
   "clientFirstMeeting": [],
   "interviewLines": [],
@@ -181,24 +436,30 @@
   "outcomeWrongVerdict": [],
   "outcomeWrongVerdictWithIssues": [],
   "clientAfterFailedAudit": [],
-
   "auditorApprovedLines": [],
   "auditorRetryLines": [],
   "auditorSameAnswersLine": "",
-
-  "_clientFinale": "Rosa's ending (SM_Chr_Business_Female_03) is staged by a later ticket (T11). Off until then, so no Level 1 client is shown.",
+  "_clientFinale": "Rosa's ending (T11): a visual-only copy of her stall model (SM_Chr_Business_Female_03) in the conference room after approval. Lines by how the review went (great / good / okay); each ends with the neutral Desk provenance confirmation.",
   "clientFinale": {
-    "enabled": false,
+    "enabled": true,
     "name": "Rosa",
-    "modelPath": "",
+    "modelPath": "Level2Gameplay/RosaStall/Rosa",
     "spotPath": "Environment/OfficeBuilding/Rooms/ConferenceRoom/Client",
     "roomPath": "Environment/OfficeBuilding/Rooms/ConferenceRoom",
     "floorPath": "Environment/OfficeBuilding/Rooms/ConferenceRoom/Floors",
-    "great": [],
-    "good": [],
-    "okay": []
+    "great": [
+      "Thank you for explaining it. Now I know which records belong together.",
+      "And yes, the Taxpayer Assistance Desk prepared that first summary. I'll bring my receipts to you next time."
+    ],
+    "good": [
+      "It took a little longer than I hoped, but I'm glad you checked it properly.",
+      "And yes, the Taxpayer Assistance Desk prepared that first summary."
+    ],
+    "okay": [
+      "I thought it was finished before. Thank you for staying with it until it was right.",
+      "And yes, the Taxpayer Assistance Desk prepared that first summary."
+    ]
   },
-
   "review": {
     "reviewId": "L2-ROSA-001",
     "focusPeriod": "May 2026",
@@ -207,36 +468,699 @@
     "contentStatus": "educational-draft",
     "_contentStatus": "educational-draft: the loan-principal teaching rule has no confirmed Philippine primary-source passage yet (see CONTENT.md, Book additions and sources). It is NOT a legal citation.",
     "startPhase": "OfficeWelcome",
-    "_reasons": "Choices printed on the folder's Findings page. Labels must fit a folder row (about 18 characters).",
+    "_reasons": "Review principles transferred from the Tax Code Book. Stable ids travel as Enum values under FindingReason; labels are display copy.",
     "reasons": [
-      { "id": "unaccounted-payment", "label": "Not on summary" },
-      { "id": "amounts-differ", "label": "Amounts differ" },
-      { "id": "maybe-not-income", "label": "Maybe not income" }
+      {
+        "id": "unaccounted-payment",
+        "label": "Unlisted payment"
+      },
+      {
+        "id": "amounts-differ",
+        "label": "Different totals"
+      },
+      {
+        "id": "maybe-not-income",
+        "label": "Not earnings"
+      }
     ],
-    "_preliminaryRule": "ANSWER DATA (never printed): the guided initial review. A Not Ready stamp is recorded only when finding F1 names a line of S1 as the concern, a line of N1 as the related record, and reason unaccounted-payment. Other tries get Arthur's guided correction, free.",
-    "preliminaryRule": { "findingId": "F1", "concernDocument": "S1", "evidenceDocument": "N1", "reasonId": "unaccounted-payment" },
-    "initialDocumentIds": ["COVER", "S1", "N1"],
-    "_handoverDocumentIds": "Records Rosa hands over at her stall (T04), once, after the conversation.",
-    "handoverDocumentIds": ["D1", "D2", "D3", "D4", "D5", "D6"],
+    "_preliminaryRule": "Private rule: May total (SummarySubtotal), the paid-job statement (legacy semantic key ReferralNote), and unaccounted-payment. Check the complete link automatically; no reward or penalty. Semantic keys/references are stable compatibility identifiers, not display copy.",
+    "preliminaryRule": {
+      "findingId": "F1",
+      "concernDocument": "S1",
+      "evidenceDocument": "N1",
+      "reasonId": "unaccounted-payment",
+      "evidenceKeys": [
+        "ReferralNote"
+      ],
+      "supportedObservation": "The blanket-washing payment is missing from May's total. Check the original receipt before approving it.",
+      "concernKeys": [
+        "SummarySubtotal"
+      ]
+    },
+    "initialDocumentIds": [
+      "COVER",
+      "S1",
+      "N1"
+    ],
+    "_handoverDocumentIds": "Records Rosa hands over at her stall (T04), once, after the conversation. Two back the summary's listed lines (D1, D4), one is the separate paid job (D3), one explains the borrowed deposit (D5).",
+    "handoverDocumentIds": [
+      "D1",
+      "D3",
+      "D4",
+      "D5"
+    ],
     "_stall": "Rosa at her stall (T04). conversationLines play once in this order (the project has no dialogue choices, rule R4); the records are handed over when it completes. Portrait Rosa_Default has no art yet, so no portrait shows (no stand-in face).",
     "stall": {
       "speakerName": "Aling Rosa",
       "earlyLines": [
-        { "speaker": "Npc", "text": "Good morning! I'm Rosa. Did the office get my folder?", "portraitId": "Rosa_Default" },
-        { "speaker": "Npc", "text": "I'll be right here at the stall when you need me.", "portraitId": "Rosa_Default" }
+        {
+          "speaker": "Npc",
+          "text": "Good morning! I'm Rosa. Did the office get my folder?",
+          "portraitId": "Rosa_Default"
+        },
+        {
+          "speaker": "Npc",
+          "text": "I'll be right here at the stall when you need me.",
+          "portraitId": "Rosa_Default"
+        }
       ],
       "conversationLines": [
-        { "speaker": "Npc", "text": "The Desk helped me put that together. The originals are here by the stall.", "portraitId": "Rosa_Default" },
-        { "speaker": "Npc", "text": "Can this still be finished today? I had to close the stall when I came yesterday.", "portraitId": "Rosa_Default" },
-        { "speaker": "Player", "text": "What was the referral payment for?", "portraitId": "Auditor_Default" },
-        { "speaker": "Npc", "text": "They paid me for sending customers over. That payment has its own receipt.", "portraitId": "Rosa_Default" },
-        { "speaker": "Player", "text": "May I review the records behind the summary?", "portraitId": "Auditor_Default" },
-        { "speaker": "Npc", "text": "Some customers pay in cash; others send it to the account.", "portraitId": "Rosa_Default" },
-        { "speaker": "Npc", "text": "Everything for May is in this envelope. I'll put it on the desk for you.", "portraitId": "Rosa_Default" }
+        {
+          "speaker": "Npc",
+          "text": "The Desk helped me put that together. The originals are here by the stall.",
+          "portraitId": "Rosa_Default"
+        },
+        {
+          "speaker": "Npc",
+          "text": "Can this still be finished today? I had to close the stall when I came yesterday.",
+          "portraitId": "Rosa_Default"
+        },
+        {
+          "speaker": "Player",
+          "text": "Which job was this payment for?",
+          "portraitId": "Auditor_Default"
+        },
+        {
+          "speaker": "Npc",
+          "text": "A guesthouse paid me to wash a batch of blankets. I kept that receipt separate from the daily clothes list.",
+          "portraitId": "Rosa_Default"
+        },
+        {
+          "speaker": "Player",
+          "text": "May I review the records behind the summary?",
+          "portraitId": "Auditor_Default"
+        },
+        {
+          "speaker": "Npc",
+          "text": "There was also money from the coop in May. That one I have to pay back.",
+          "portraitId": "Rosa_Default"
+        },
+        {
+          "speaker": "Npc",
+          "text": "Everything for May is in this envelope: four papers. I'll put them on the desk for you.",
+          "portraitId": "Rosa_Default"
+        }
       ],
       "afterLines": [
-        { "speaker": "Npc", "text": "Your records are on the desk beside me. Take your time.", "portraitId": "Rosa_Default" }
+        {
+          "speaker": "Npc",
+          "text": "Your records are on the desk beside me. Take your time.",
+          "portraitId": "Rosa_Default"
+        }
       ]
+    },
+    "_annotation": "Income toolkit at the market desk (T05). typeOptions/treatmentOptions are the TYPE and TREATMENT note cards (general rules only, never Rosa-specific). tutorial is T0, an unrelated fictional payslip the guide demonstrates once and the player repeats; it is never scored. entries (Rosa's E1-E4) and their separate answer keys arrive with T06.",
+    "annotation": {
+      "typeOptions": [
+        {
+          "id": "compensation",
+          "label": "Compensation income",
+          "rule": "pay from an employer for work done as an employee."
+        },
+        {
+          "id": "business-service",
+          "label": "Business / service income",
+          "rule": "money earned from your own trade or from jobs done for customers."
+        },
+        {
+          "id": "rental",
+          "label": "Rental income",
+          "rule": "money received for letting someone use your property."
+        },
+        {
+          "id": "passive-interest",
+          "label": "Passive income (interest)",
+          "rule": "earnings from money or investments, such as bank interest. Check its own rule before deciding its treatment."
+        },
+        {
+          "id": "borrowed",
+          "label": "Borrowed funds",
+          "rule": "money that must be paid back. Borrowing is not earning."
+        }
+      ],
+      "treatmentOptions": [
+        {
+          "id": "regular-schedule",
+          "label": "Regular income schedule",
+          "rule": "earned income listed with the other income for the period."
+        },
+        {
+          "id": "separate-rule",
+          "label": "Separate rule",
+          "rule": "some income follows its own rule instead of the regular schedule. Check that rule first."
+        },
+        {
+          "id": "statutory-exclusion",
+          "label": "Statutory exclusion",
+          "rule": "only for items a law itself excludes. Use it only when a rule says so."
+        },
+        {
+          "id": "not-income",
+          "label": "Not income",
+          "rule": "money that was not earned, such as a loan that must be repaid."
+        }
+      ],
+      "tutorial": {
+        "id": "T0",
+        "title": "Payslip · April 2026",
+        "issuer": "Northwind Printing Co.",
+        "reference": "PS-0430",
+        "lines": [
+          {
+            "id": "T0-employer",
+            "label": "Employer",
+            "value": "Northwind Printing Co.",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "T0-employee",
+            "label": "Employee",
+            "value": "Jun Dela Cruz, press assistant",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "T0-period",
+            "label": "Pay period",
+            "value": "1-30 April 2026",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "T0-salary",
+            "label": "Salary for April work",
+            "value": "₱8,000",
+            "amount": 8000,
+            "role": "income"
+          },
+          {
+            "id": "T0-status",
+            "label": "Status",
+            "value": "Paid 30 April",
+            "amount": 0,
+            "role": "info"
+          }
+        ],
+        "evidenceOptions": [
+          {
+            "id": "payslip-ps0430",
+            "label": "Payslip PS-0430",
+            "rule": "the record of this pay: who paid, for what work, and when."
+          },
+          {
+            "id": "company-id",
+            "label": "Company ID card",
+            "rule": "shows where someone works, not what they were paid."
+          },
+          {
+            "id": "bank-passbook",
+            "label": "Bank passbook page",
+            "rule": "shows money arriving, not why it was paid."
+          }
+        ],
+        "maxEvidence": 1,
+        "demo": {
+          "highlightLineId": "T0-salary",
+          "typeId": "compensation",
+          "treatmentId": "regular-schedule",
+          "evidenceIds": [
+            "payslip-ps0430"
+          ],
+          "introLine": "Before Rosa's records, let me show you once on someone else's payslip. It's practice: nothing here is scored.",
+          "highlightLine": "First, pick up the yellow highlighter. Aim at the line that shows the money and what it was paid for, then swipe across it.",
+          "evidenceLine": "Last, clip the record that proves it: the payslip itself.",
+          "yourTurnLine": "Your turn. Tap the highlighter to lift it beside the paper, then drag it onto the salary line and sweep across. Add TYPE and TREATMENT cards, then clip the payslip. Tap a card and its place, or drag it.",
+          "doneLine": "Practice complete: your highlight, TYPE, TREATMENT and evidence match. Now try it on Rosa's four records."
+        }
+      },
+      "entries": [
+        {
+          "id": "E1",
+          "title": "E1 · Clothes-washing payments",
+          "issuer": "Rosa's Laundry",
+          "reference": "May 2026",
+          "lines": [
+            {
+              "id": "E1-work",
+              "label": "Work",
+              "value": "Washing clothes for customers",
+              "amount": 0,
+              "role": "info"
+            },
+            {
+              "id": "E1-period",
+              "label": "Period",
+              "value": "May 1 to 31, 2026",
+              "amount": 0,
+              "role": "info"
+            },
+            {
+              "id": "E1-total",
+              "label": "Paid in May",
+              "value": "₱12,000",
+              "amount": 12000,
+              "role": "income"
+            }
+          ],
+          "evidenceOptions": [
+            {
+              "id": "D1",
+              "label": "D1 Collection sheet",
+              "rule": "the monthly list of clothes-washing payments."
+            },
+            {
+              "id": "D3",
+              "label": "D3 Receipt CM-0526",
+              "rule": "the receipt written for the blanket-washing job."
+            },
+            {
+              "id": "D4",
+              "label": "D4 Rental receipt RA-0520",
+              "rule": "the receipt for letting someone use the spare washer."
+            },
+            {
+              "id": "D5",
+              "label": "D5 Loan agreement LN-0510",
+              "rule": "the signed loan and its repayment terms."
+            }
+          ],
+          "maxEvidence": 1
+        },
+        {
+          "id": "E2",
+          "title": "E2 · Blanket-washing job",
+          "issuer": "Rosa's Laundry",
+          "reference": "CM-0526",
+          "lines": [
+            {
+              "id": "E2-payer",
+              "label": "Paid by",
+              "value": "Market Guesthouse",
+              "amount": 0,
+              "role": "info"
+            },
+            {
+              "id": "E2-work",
+              "label": "Work",
+              "value": "Washing a batch of blankets",
+              "amount": 0,
+              "role": "info"
+            },
+            {
+              "id": "E2-amount",
+              "label": "Paid in cash",
+              "value": "₱5,000",
+              "amount": 5000,
+              "role": "income"
+            },
+            {
+              "id": "E2-date",
+              "label": "Date",
+              "value": "May 26, 2026",
+              "amount": 0,
+              "role": "info"
+            }
+          ],
+          "evidenceOptions": [
+            {
+              "id": "D1",
+              "label": "D1 Collection sheet",
+              "rule": "the monthly list of clothes-washing payments."
+            },
+            {
+              "id": "D3",
+              "label": "D3 Receipt CM-0526",
+              "rule": "the receipt written for the blanket-washing job."
+            },
+            {
+              "id": "D4",
+              "label": "D4 Rental receipt RA-0520",
+              "rule": "the receipt for letting someone use the spare washer."
+            },
+            {
+              "id": "D5",
+              "label": "D5 Loan agreement LN-0510",
+              "rule": "the signed loan and its repayment terms."
+            }
+          ],
+          "maxEvidence": 1
+        },
+        {
+          "id": "E3",
+          "title": "E3 · Spare washing machine",
+          "issuer": "Rosa's Laundry",
+          "reference": "RA-0520",
+          "lines": [
+            {
+              "id": "E3-item",
+              "label": "Item",
+              "value": "Rosa's spare washing machine",
+              "amount": 0,
+              "role": "info"
+            },
+            {
+              "id": "E3-use",
+              "label": "Rented",
+              "value": "May 18 to 20",
+              "amount": 0,
+              "role": "info"
+            },
+            {
+              "id": "E3-amount",
+              "label": "Paid in cash",
+              "value": "₱3,000",
+              "amount": 3000,
+              "role": "income"
+            }
+          ],
+          "evidenceOptions": [
+            {
+              "id": "D1",
+              "label": "D1 Collection sheet",
+              "rule": "the monthly list of clothes-washing payments."
+            },
+            {
+              "id": "D3",
+              "label": "D3 Receipt CM-0526",
+              "rule": "the receipt written for the blanket-washing job."
+            },
+            {
+              "id": "D4",
+              "label": "D4 Rental receipt RA-0520",
+              "rule": "the receipt for letting someone use the spare washer."
+            },
+            {
+              "id": "D5",
+              "label": "D5 Loan agreement LN-0510",
+              "rule": "the signed loan and its repayment terms."
+            }
+          ],
+          "maxEvidence": 1
+        },
+        {
+          "id": "E4",
+          "title": "E4 · Bank deposit LN-0510",
+          "issuer": "Plaza Savings Bank",
+          "reference": "****4821",
+          "lines": [
+            {
+              "id": "E4-credit",
+              "label": "Bank credit",
+              "value": "₱20,000",
+              "amount": 20000,
+              "role": "memo"
+            },
+            {
+              "id": "E4-desc",
+              "label": "Description",
+              "value": "Loan release LN-0510",
+              "amount": 0,
+              "role": "info"
+            },
+            {
+              "id": "E4-date",
+              "label": "Date",
+              "value": "May 10, 2026",
+              "amount": 0,
+              "role": "info"
+            }
+          ],
+          "evidenceOptions": [
+            {
+              "id": "D1",
+              "label": "D1 Collection sheet",
+              "rule": "the monthly list of clothes-washing payments."
+            },
+            {
+              "id": "D3",
+              "label": "D3 Receipt CM-0526",
+              "rule": "the receipt written for the blanket-washing job."
+            },
+            {
+              "id": "D4",
+              "label": "D4 Rental receipt RA-0520",
+              "rule": "the receipt for letting someone use the spare washer."
+            },
+            {
+              "id": "D5",
+              "label": "D5 Loan agreement LN-0510",
+              "rule": "the signed loan and its repayment terms."
+            }
+          ],
+          "maxEvidence": 1
+        }
+      ]
+    },
+    "_annotationKey": "Answer key for Mark the Money! (T06): one per entry, separate from the player-facing records. Hints go from a general rule to a specific one on later checks; they never mention summary totals, findings or the stamp.",
+    "annotationKey": [
+      {
+        "entryId": "E1",
+        "highlightLineId": "E1-total",
+        "typeId": "business-service",
+        "treatmentId": "regular-schedule",
+        "evidenceIds": [
+          "D1"
+        ],
+        "typeHints": [
+          "Customers pay Rosa for washing their clothes: money from her own trade.",
+          "Payments for her laundry work are Business / service income."
+        ],
+        "treatmentHints": [
+          "Money earned from ordinary work goes with the other income of the period.",
+          "Use Regular income schedule."
+        ],
+        "evidenceHints": [
+          "Which one record lists these clothes-washing payments for the month?",
+          "Clip only the monthly collection sheet, D1."
+        ],
+        "highlightHints": [
+          "Find the row that states how much customers paid for clothes washing.",
+          "Highlight the Paid in May row."
+        ]
+      },
+      {
+        "entryId": "E2",
+        "highlightLineId": "E2-amount",
+        "typeId": "business-service",
+        "treatmentId": "regular-schedule",
+        "evidenceIds": [
+          "D3"
+        ],
+        "typeHints": [
+          "A guesthouse paid Rosa to do a washing job for them.",
+          "A paid job done for a customer is Business / service income."
+        ],
+        "treatmentHints": [
+          "A paid job is earned money, like her other work.",
+          "Use Regular income schedule."
+        ],
+        "evidenceHints": [
+          "Which record was written for this job?",
+          "Clip receipt CM-0526, D3."
+        ],
+        "highlightHints": [
+          "Find the amount paid for the washing job.",
+          "Highlight the row that says what was paid."
+        ]
+      },
+      {
+        "entryId": "E3",
+        "highlightLineId": "E3-amount",
+        "typeId": "rental",
+        "treatmentId": "regular-schedule",
+        "evidenceIds": [
+          "D4"
+        ],
+        "typeHints": [
+          "She was paid for letting someone use her machine.",
+          "Letting someone use your property earns Rental income."
+        ],
+        "treatmentHints": [
+          "This is an ordinary rental with no special rule of its own.",
+          "Use Regular income schedule."
+        ],
+        "evidenceHints": [
+          "Which receipt shows the machine being rented?",
+          "Clip rental receipt RA-0520, D4."
+        ],
+        "highlightHints": [
+          "Find the row showing how much Rosa received for letting someone use the machine.",
+          "Highlight the rental amount row."
+        ]
+      },
+      {
+        "entryId": "E4",
+        "highlightLineId": "E4-credit",
+        "typeId": "borrowed",
+        "treatmentId": "not-income",
+        "evidenceIds": [
+          "D5"
+        ],
+        "typeHints": [
+          "Rosa has to pay this money back.",
+          "Money that must be repaid is Borrowed funds."
+        ],
+        "treatmentHints": [
+          "Borrowing is not earning.",
+          "Use Not income: it is not an exclusion, it was never earned."
+        ],
+        "evidenceHints": [
+          "The bank only shows money arriving. Which record says why it arrived?",
+          "Clip the loan agreement, D5."
+        ],
+        "highlightHints": [
+          "A bank credit shows money arriving, but check the description before treating it as income.",
+          "Highlight the credit row so you can compare it with the loan record."
+        ]
+      }
+    ],
+    "_office": "Office reconciliation: the Reviewed Schedule has two lines for the summary's listed entries plus one missing entry (scheduleSlotLabels, worded so they never name the work). Values come only from the highlighted lines of the four annotated papers (scheduleSources with entryId); moneyIds stop the same payment being counted twice. F1 is the conclusion beneath the totals. officeRule is answer data for the Auditor and is never printed.",
+    "conclusions": [
+      {
+        "id": "corrected-included",
+        "label": "Corrected: included"
+      },
+      {
+        "id": "explained-no-adjustment",
+        "label": "Explained: no change"
+      },
+      {
+        "id": "unresolved",
+        "label": "Still unresolved"
+      }
+    ],
+    "scheduleSlots": 3,
+    "scheduleSources": [
+      {
+        "semanticKey": "AnnotatedE1",
+        "entryId": "E1",
+        "amount": 12000,
+        "moneyIds": [
+          "clothes-May"
+        ]
+      },
+      {
+        "semanticKey": "AnnotatedE2",
+        "entryId": "E2",
+        "amount": 5000,
+        "moneyIds": [
+          "job-CM0526"
+        ]
+      },
+      {
+        "semanticKey": "AnnotatedE3",
+        "entryId": "E3",
+        "amount": 3000,
+        "moneyIds": [
+          "rental-RA0520"
+        ]
+      },
+      {
+        "semanticKey": "AnnotatedE4",
+        "entryId": "E4",
+        "amount": 20000,
+        "moneyIds": [
+          "loan-LN0510"
+        ]
+      }
+    ],
+    "officeFindings": [
+      {
+        "id": "F1",
+        "title": "Finding F1 · Missing entry",
+        "continuesFinding": "F1",
+        "parts": [
+          {
+            "id": "conclusion",
+            "label": "Conclusion",
+            "accepts": "conclusion"
+          }
+        ]
+      }
+    ],
+    "officeRule": {
+      "requiredMoney": [
+        "clothes-May",
+        "job-CM0526",
+        "rental-RA0520"
+      ],
+      "forbiddenMoney": [
+        "loan-LN0510"
+      ],
+      "omittedMoney": "job-CM0526",
+      "findings": [
+        {
+          "findingId": "F1",
+          "rootCause": "f1-unsupported",
+          "needsScheduleMoney": "job-CM0526",
+          "parts": [
+            {
+              "partId": "conclusion",
+              "accepted": [
+                "corrected-included"
+              ]
+            }
+          ],
+          "unorderedParts": [],
+          "falseFlagConclusions": []
+        }
+      ]
+    },
+    "_finalAndAudit": "T08 uses a generated summary of the player-entered schedule and F1 source/conclusion, stamped as a recommendation for the Auditor. T09 audit lines per outcome and root cause point to the record or rule, never fix it. T10 review cutoff clock (active seconds per day, warnings, one late consequence).",
+    "audit": {
+      "approved": [
+        "Approved. Every earned payment has a supported place, and the loan stays out.",
+        "Rosa's review can go forward."
+      ],
+      "justifiedHold": "You have a reason to hold this. Use the collected records to finish the unresolved item.",
+      "prematureApproval": "This isn't ready yet. Look at this before you approve it again.",
+      "falseHold": "Everything in this review is supported. Check your annotated papers before holding it again.",
+      "reasonError": "Your recommendation and its reason don't match what this review shows. Check the reason you chose.",
+      "unchanged": "Nothing has changed since I last looked. Change the review, stamp it again, then bring it back.",
+      "rosaHold": "Rosa: \"Can this still be finished today? Tell me what you need.\"",
+      "rosaPremature": "Rosa: \"I thought it was finished. Please tell me what still needs fixing.\"",
+      "rosaFalseHold": "Rosa: \"I brought all my papers already. Can we use them to finish this?\"",
+      "feedback": [
+        {
+          "root": "omission",
+          "line": "The missing entry still has no supported payment. Check the annotated paper for the separate blanket-washing job."
+        },
+        {
+          "root": "missing-income",
+          "line": "A listed line of the summary is missing from your schedule. Check each annotated paper's highlighted amount."
+        },
+        {
+          "root": "not-income-counted",
+          "line": "Money that must be repaid is not earnings. Check the loan agreement before counting it."
+        },
+        {
+          "root": "double-counted",
+          "line": "One payment is counted twice."
+        },
+        {
+          "root": "f1-unsupported",
+          "line": "Your conclusion below the totals should say what you did with the missing entry."
+        },
+        {
+          "root": "field:",
+          "line": "One of Rosa's taxpayer facts on the first page needs another look."
+        }
+      ]
+    },
+    "clock": {
+      "allowanceSeconds": 720,
+      "warnSeconds": [
+        120,
+        30
+      ],
+      "lateExp": 3,
+      "lateHearts": 1,
+      "announceLine": "Today's review cutoff is {deadline}. Keep an eye on the office clock while you check Rosa's records.",
+      "warnLine": "Today's review cutoff is coming up: {minutes} minutes left.",
+      "missedLine": "The review window closed for today. Your work is safe.",
+      "nextMorningLine": "A new morning. Your work is right where you left it. Today's review cutoff is {deadline}.",
+      "onTimeLine": "On time! Approved before the first cutoff."
     },
     "documents": [
       {
@@ -249,11 +1173,41 @@
         "date": "June 10, 2026",
         "footer": "",
         "lines": [
-          { "id": "COVER-client", "label": "Client", "value": "Aling Rosa Santos, Rosa's Alterations", "amount": 0, "role": "info" },
-          { "id": "COVER-stall", "label": "Address", "value": "Plaza Market, Stall 04", "amount": 0, "role": "info" },
-          { "id": "COVER-year", "label": "Tax Year", "value": "2026", "amount": 0, "role": "info" },
-          { "id": "COVER-focus", "label": "Review Focus", "value": "May 2026 income schedule", "amount": 0, "role": "info" },
-          { "id": "COVER-prior", "label": "Other Periods (verified)", "value": "₱120,000", "amount": 120000, "role": "info" }
+          {
+            "id": "COVER-client",
+            "label": "Client",
+            "value": "Aling Rosa Santos, Rosa's Laundry",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "COVER-stall",
+            "label": "Address",
+            "value": "Plaza Market, Stall 04",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "COVER-year",
+            "label": "Tax Year",
+            "value": "2026",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "COVER-focus",
+            "label": "Review Focus",
+            "value": "May 2026 income schedule",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "COVER-prior",
+            "label": "Other Periods (verified)",
+            "value": "₱120,000",
+            "amount": 120000,
+            "role": "info"
+          }
         ]
       },
       {
@@ -261,44 +1215,91 @@
         "kind": "summary",
         "title": "May Income Summary",
         "documentName": "Prepared May Income Summary (S1)",
-        "issuer": "Rosa's Alterations",
+        "issuer": "Rosa's Laundry",
         "reference": "S1",
         "date": "May 2026",
         "footer": "Prepared with assistance: Taxpayer Assistance Desk",
         "lines": [
-          { "id": "S1-services", "label": "Alteration services", "value": "₱12,000", "amount": 12000, "role": "income" },
-          { "id": "S1-rental", "label": "Small equipment rental", "value": "₱3,000", "amount": 3000, "role": "income" },
-          { "id": "S1-subtotal", "label": "May income subtotal", "value": "₱15,000", "amount": 15000, "role": "subtotal" },
-          { "id": "S1-loan-memo", "label": "Memorandum (not income): loan deposit LN-0510", "value": "₱20,000, pending verification", "amount": 20000, "role": "memo" }
+          {
+            "id": "S1-services",
+            "label": "Clothes washing",
+            "value": "₱12,000",
+            "amount": 12000,
+            "role": "income"
+          },
+          {
+            "id": "S1-rental",
+            "label": "Washer rental",
+            "value": "₱3,000",
+            "amount": 3000,
+            "role": "income"
+          },
+          {
+            "id": "S1-subtotal",
+            "label": "May total",
+            "value": "₱15,000",
+            "amount": 15000,
+            "role": "subtotal"
+          },
+          {
+            "id": "S1-loan-memo",
+            "label": "Memorandum (not income): loan deposit LN-0510",
+            "value": "₱20,000, pending verification",
+            "amount": 20000,
+            "role": "memo"
+          }
         ]
       },
       {
         "id": "N1",
         "kind": "note",
-        "title": "Referral Note",
-        "documentName": "Referral Note (N1)",
+        "title": "Payment Note",
+        "documentName": "Payment Note (N1)",
         "issuer": "Town Tax Consultancy Office",
         "reference": "N1",
         "date": "June 9, 2026",
         "footer": "",
         "lines": [
-          { "id": "N1-note", "label": "Note", "value": "Please confirm the paid referral commission, reference CM-0526, with Rosa.", "amount": 0, "role": "info" },
-          { "id": "N1-where", "label": "Original record", "value": "The original payment record is at the stall.", "amount": 0, "role": "info" }
+          {
+            "id": "N1-note",
+            "label": "Note",
+            "value": "A customer paid for blanket washing in May, reference CM-0526. The receipt was kept separately.",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "N1-where",
+            "label": "Original record",
+            "value": "The original payment record is at the stall.",
+            "amount": 0,
+            "role": "info"
+          }
         ]
       },
       {
         "id": "D1",
         "kind": "record",
-        "title": "Collection Sheet",
+        "title": "Clothes Collections",
         "documentName": "Collection Sheet (D1)",
-        "issuer": "Rosa's Alterations",
+        "issuer": "Rosa's Laundry",
         "reference": "May 2026",
         "date": "May 31, 2026",
         "footer": "",
         "lines": [
-          { "id": "D1-bank", "label": "Bank transfer BT-0905", "value": "₱9,000", "amount": 9000, "role": "info" },
-          { "id": "D1-cash", "label": "Cash receipt RC-0531", "value": "₱3,000", "amount": 3000, "role": "info" },
-          { "id": "D1-total", "label": "Monthly total", "value": "₱12,000", "amount": 12000, "role": "info" }
+          {
+            "id": "D1-work",
+            "label": "Work",
+            "value": "Clothes washing, May 1 to 31",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "D1-total",
+            "label": "Paid by customers",
+            "value": "₱12,000",
+            "amount": 12000,
+            "role": "info"
+          }
         ]
       },
       {
@@ -311,23 +1312,53 @@
         "date": "May 31, 2026",
         "footer": "",
         "lines": [
-          { "id": "D2-bt", "label": "BT-0905 service collections", "value": "₱9,000", "amount": 9000, "role": "info" },
-          { "id": "D2-ln", "label": "LN-0510 loan release", "value": "₱20,000", "amount": 20000, "role": "info" },
-          { "id": "D2-credits", "label": "Total credits shown", "value": "₱29,000", "amount": 29000, "role": "info" }
+          {
+            "id": "D2-bt",
+            "label": "BT-0905 service collections",
+            "value": "₱9,000",
+            "amount": 9000,
+            "role": "info"
+          },
+          {
+            "id": "D2-ln",
+            "label": "LN-0510 loan release",
+            "value": "₱20,000",
+            "amount": 20000,
+            "role": "info"
+          },
+          {
+            "id": "D2-credits",
+            "label": "Total credits shown",
+            "value": "₱29,000",
+            "amount": 29000,
+            "role": "info"
+          }
         ]
       },
       {
         "id": "D3",
         "kind": "record",
-        "title": "Commission Invoice",
-        "documentName": "Commission Invoice (D3)",
-        "issuer": "Rosa's Alterations",
+        "title": "Blanket Wash Receipt",
+        "documentName": "Laundry Receipt (D3)",
+        "issuer": "Rosa's Laundry",
         "reference": "CM-0526",
         "date": "May 26, 2026",
         "footer": "",
         "lines": [
-          { "id": "D3-for", "label": "Customer referrals", "value": "Tela Fabric Shop", "amount": 0, "role": "info" },
-          { "id": "D3-amount", "label": "Amount, paid in cash", "value": "₱5,000", "amount": 5000, "role": "info" }
+          {
+            "id": "D3-for",
+            "label": "Blanket washing",
+            "value": "Market Guesthouse",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "D3-amount",
+            "label": "Paid in cash",
+            "value": "₱5,000",
+            "amount": 5000,
+            "role": "info"
+          }
         ]
       },
       {
@@ -335,13 +1366,25 @@
         "kind": "record",
         "title": "Rental Receipt",
         "documentName": "Rental Receipt (D4)",
-        "issuer": "Rosa's Alterations",
+        "issuer": "Rosa's Laundry",
         "reference": "RA-0520",
         "date": "May 20, 2026",
         "footer": "",
         "lines": [
-          { "id": "D4-item", "label": "Sewing machine, May 18 to 20", "value": "Rented", "amount": 0, "role": "info" },
-          { "id": "D4-amount", "label": "Amount, paid in cash", "value": "₱3,000", "amount": 3000, "role": "info" }
+          {
+            "id": "D4-item",
+            "label": "Spare washer, May 18 to 20",
+            "value": "Rented",
+            "amount": 0,
+            "role": "info"
+          },
+          {
+            "id": "D4-amount",
+            "label": "Paid in cash",
+            "value": "₱3,000",
+            "amount": 3000,
+            "role": "info"
+          }
         ]
       },
       {
@@ -354,8 +1397,20 @@
         "date": "May 10, 2026",
         "footer": "",
         "lines": [
-          { "id": "D5-principal", "label": "Principal released to bank", "value": "₱20,000", "amount": 20000, "role": "info" },
-          { "id": "D5-repay", "label": "Repayment", "value": "Monthly, 10 months", "amount": 0, "role": "info" }
+          {
+            "id": "D5-principal",
+            "label": "Loan LN-0510, released to bank",
+            "value": "₱20,000",
+            "amount": 20000,
+            "role": "info"
+          },
+          {
+            "id": "D5-repay",
+            "label": "Must repay",
+            "value": "Monthly, 10 months",
+            "amount": 0,
+            "role": "info"
+          }
         ]
       },
       {
@@ -363,15 +1418,33 @@
         "kind": "record",
         "title": "Cash Receipt",
         "documentName": "Cash Receipt (D6)",
-        "issuer": "Rosa's Alterations",
+        "issuer": "Rosa's Laundry",
         "reference": "RC-0531",
         "date": "May 31, 2026",
         "footer": "",
         "lines": [
-          { "id": "D6-amount", "label": "Alterations, paid in cash", "value": "₱3,000", "amount": 3000, "role": "info" },
-          { "id": "D6-recorded", "label": "Included in", "value": "May collection sheet", "amount": 0, "role": "info" }
+          {
+            "id": "D6-amount",
+            "label": "Clothes washing, paid in cash",
+            "value": "₱3,000",
+            "amount": 3000,
+            "role": "info"
+          },
+          {
+            "id": "D6-recorded",
+            "label": "Included in",
+            "value": "May collection sheet",
+            "amount": 0,
+            "role": "info"
+          }
         ]
       }
+    ],
+    "simplifiedAssessment": true,
+    "scheduleSlotLabels": [
+      "Summary line 1",
+      "Summary line 2",
+      "Missing entry"
     ]
   }
 }

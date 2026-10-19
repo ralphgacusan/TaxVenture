@@ -1,28 +1,75 @@
 {
   "_readme": [
-    "Level 2 objectives (same format as Level_01/objectives.json; see its _readme and _triggers).",
-    "The office is open from the start: no plaza profiles and no side quest before the case.",
-    "event:CaseFolderRetrieved is raised when the player takes Rosa's folder out of the market-client drawer (cabinet retrieval, ticket T02).",
-    "state:ReviewDocumentsState: the case folder was opened at the desk the first time, by tap or by drag.",
-    "event:FindingRecorded: the Findings page has a concern, a related record and a reason (T03).",
-    "event:PreliminaryHoldStamped: a supported initial Not Ready stamp was recorded (T03).",
-    "event:RosaRecordsCollected: Rosa's conversation finished and she handed over records D1-D6 (T04).",
-    "event:MarketDeskOpened: the player sat at the records desk beside the stall the first time (T04).",
-    "Later Level 2 tickets add steps for the preliminary finding, Rosa's stall, Mark the Money!, reconciliation and the final stamp.",
-    "Fields starting with '_' are notes and are ignored by the game."
+    "Level 2 uses three short objective chapters; Notes shows one chapter at a readable size.",
+    "Triggers retain the full gameplay milestones. The active HUD step remains automatic."
   ],
   "objectives": [
     {
-      "title": "Review Rosa's Income Summary",
+      "title": "Check Rosa’s folder",
       "steps": [
-        { "text": "Talk to the receptionist.", "trigger": "event:ReceptionistTalkedTo" },
-        { "text": "Get Rosa's folder from the market-client drawer in the file storage room.", "trigger": "event:CaseFolderRetrieved" },
-        { "text": "Sit at your desk and drag Rosa's folder from your folder icon onto the desk to open it.", "trigger": "state:ReviewDocumentsState" },
-        { "text": "On the Findings page, record your concern: a summary line, the related record and a reason.", "trigger": "event:FindingRecorded" },
-        { "text": "Stamp the initial review on Rosa's folder with the stamps on your desk.", "trigger": "event:PreliminaryHoldStamped" },
-        { "text": "Visit Aling Rosa at Stall 04 near the plaza and talk to her.", "trigger": "event:RosaRecordsCollected" },
-        { "text": "Sit at the records desk beside Rosa's stall.", "trigger": "event:MarketDeskOpened" },
-        { "text": "Submit the case folder to the Auditor in his office.", "trigger": "state:CaseCompleteState" }
+        {
+          "text": "Meet the receptionist.",
+          "trigger": "event:ReceptionistTalkedTo"
+        },
+        {
+          "text": "Collect Rosa’s folder.",
+          "trigger": "event:CaseFolderRetrieved"
+        },
+        {
+          "text": "Open the folder at your desk.",
+          "trigger": "state:ReviewDocumentsState"
+        },
+        {
+          "text": "Link the clue on the Findings slip.",
+          "trigger": "event:FindingRecorded"
+        },
+        {
+          "text": "Stamp the initial review.",
+          "trigger": "event:PreliminaryHoldStamped"
+        }
+      ]
+    },
+    {
+      "title": "Mark the Money!",
+      "steps": [
+        {
+          "text": "Collect Rosa’s records at Stall 04.",
+          "trigger": "event:RosaRecordsCollected"
+        },
+        {
+          "text": "Sit at the records desk.",
+          "trigger": "event:MarketDeskOpened"
+        },
+        {
+          "text": "Practise with Arthur’s payslip.",
+          "trigger": "event:AnnotationTutorialCompleted"
+        },
+        {
+          "text": "Mark four records, then CHECK.",
+          "trigger": "event:AnnotationsChecked"
+        },
+        {
+          "text": "Correct the red notes.",
+          "trigger": "event:IncomeQuestCompleted"
+        }
+      ]
+    },
+    {
+      "title": "Finish the review",
+      "steps": [
+        {
+          "text": "Restore the missing entry on the schedule.",
+          "trigger": "event:OfficeReviewCompleted"
+        },
+        {
+          "text": "Stamp your final assessment.",
+          "trigger": "event:FinalAssessmentStamped",
+          "undoneBy": "event:AuditReturned"
+        },
+        {
+          "text": "Deliver the folder to the Auditor.",
+          "trigger": "state:CaseCompleteState"
+        }
       ]
     }
   ]

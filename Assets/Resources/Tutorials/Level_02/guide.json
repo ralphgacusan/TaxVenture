@@ -3,29 +3,41 @@
     "LEVEL 2 GUIDE: same format as Tutorials/Level_01/guide.json (see its _readme, _targets and _triggers, and Documentation/LevelGuideTutorial/README.md).",
     "Level 2 teaches only what is new. Movement, looking, the HUD and the desk were taught in Level 1, so they are not repeated here.",
     "The guide only observes: it never changes the case, the review phase, rewards or documents.",
-    "Later Level 2 tickets add short lessons for the first finding, the toolkit and the stamp reason.",
+    "Short lessons cover the first finding, the toolkit and the final assessment.",
     "Fields starting with '_' are notes and are ignored by the game."
   ],
-
   "enabled": true,
   "platform": "touch",
   "rememberFinishedLessons": false,
   "startDelay": 0.8,
   "lettersPerSecond": 55,
-
   "guide": {
     "name": "Arthur",
     "role": "Senior Tax Consultant",
     "portraitFolder": "Tutorials/Portraits",
     "portraits": [
-      { "mood": "default", "file": "Arthur-Default" },
-      { "mood": "wow", "file": "Arthur-Wow" },
-      { "mood": "confused", "file": "Arthur-Confused" },
-      { "mood": "sad", "file": "Arthur-Sad" },
-      { "mood": "angry", "file": "Arthur-Angry" }
+      {
+        "mood": "default",
+        "file": "Arthur-Default"
+      },
+      {
+        "mood": "wow",
+        "file": "Arthur-Wow"
+      },
+      {
+        "mood": "confused",
+        "file": "Arthur-Confused"
+      },
+      {
+        "mood": "sad",
+        "file": "Arthur-Sad"
+      },
+      {
+        "mood": "angry",
+        "file": "Arthur-Angry"
+      }
     ]
   },
-
   "welcome": {
     "kicker": "LEVEL 2",
     "title": "Something Does Not Match",
@@ -35,7 +47,6 @@
     "listObjectives": true,
     "button": "START"
   },
-
   "trail": {
     "enabled": true,
     "waitForGuide": true,
@@ -48,28 +59,96 @@
     "arriveDistance": 2.2,
     "minimapReminderSeconds": 8
   },
-
   "_waypoints": "Where the arrows lead for each Level_02/objectives.json step. 'step' must match the step's trigger exactly.",
   "waypoints": [
-    { "step": "event:ReceptionistTalkedTo", "target": "Environment/OfficeBuilding/Rooms/Reception/Receptionist", "label": "Receptionist" },
-    { "step": "event:CaseFolderRetrieved", "target": "Environment/OfficeBuilding/Rooms/FileStorageRoom/Filing_Cabinet_1", "label": "Market-client drawer" },
-    { "step": "state:ReviewDocumentsState", "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk", "label": "Your desk" },
-    { "step": "event:FindingRecorded", "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk", "label": "Your desk" },
-    { "step": "event:PreliminaryHoldStamped", "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/Stamps", "label": "Stamps" },
-    { "step": "event:RosaRecordsCollected", "target": "Level2Gameplay/RosaStall/Rosa", "label": "Aling Rosa" },
-    { "step": "event:MarketDeskOpened", "target": "Level2Gameplay/RosaStall/MarketRecordsDesk", "label": "Records desk" },
-    { "step": "state:CaseCompleteState", "target": "Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "label": "Auditor" }
+    {
+      "step": "event:ReceptionistTalkedTo",
+      "target": "Environment/OfficeBuilding/Rooms/Reception/Receptionist",
+      "label": "Receptionist"
+    },
+    {
+      "step": "event:CaseFolderRetrieved",
+      "target": "Environment/OfficeBuilding/Rooms/FileStorageRoom/Filing_Cabinet_1",
+      "label": "Market-client drawer"
+    },
+    {
+      "step": "state:ReviewDocumentsState",
+      "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk",
+      "label": "Your desk"
+    },
+    {
+      "step": "event:FindingRecorded",
+      "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk",
+      "label": "Your desk"
+    },
+    {
+      "step": "event:PreliminaryHoldStamped",
+      "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/Stamps",
+      "label": "Stamps"
+    },
+    {
+      "step": "event:RosaRecordsCollected",
+      "target": "Level2Gameplay/RosaStall/Rosa",
+      "label": "Aling Rosa"
+    },
+    {
+      "step": "event:MarketDeskOpened",
+      "target": "Level2Gameplay/RosaStall/MarketRecordsDesk",
+      "label": "Records desk"
+    },
+    {
+      "step": "event:AnnotationTutorialCompleted",
+      "target": "Level2Gameplay/RosaStall/MarketRecordsDesk",
+      "label": "Income toolkit"
+    },
+    {
+      "step": "event:AnnotationsChecked",
+      "target": "Level2Gameplay/RosaStall/MarketRecordsDesk",
+      "label": "Mark the Money!"
+    },
+    {
+      "step": "event:IncomeQuestCompleted",
+      "target": "Level2Gameplay/RosaStall/MarketRecordsDesk",
+      "label": "Mark the Money!"
+    },
+    {
+      "step": "event:OfficeReviewCompleted",
+      "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk",
+      "label": "Your desk"
+    },
+    {
+      "step": "event:FinalAssessmentStamped",
+      "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/Stamps",
+      "label": "Stamps"
+    },
+    {
+      "step": "state:CaseCompleteState",
+      "target": "Environment/OfficeBuilding/Rooms/AuditOffice/Auditor",
+      "label": "Auditor"
+    }
   ],
-
   "lessons": [
     {
       "id": "welcome",
       "when": "start",
       "pages": [
-        { "show": "welcome" },
-        { "mood": "wow", "text": "Welcome back! Today you have one client: Aling Rosa, who runs an alterations stall at the market." },
-        { "text": "Someone already filled in her income summary. Your job is to check it, not just accept it." },
-        { "point": "waypoint", "gesture": "none", "revealArrows": true, "text": "Start at the front desk. Follow the arrows to the receptionist and tap to talk." }
+        {
+          "show": "welcome",
+          "text": ""
+        },
+        {
+          "mood": "wow",
+          "text": "Welcome back! Today you have one client: Aling Rosa, who runs a laundry shop at the market."
+        },
+        {
+          "text": "Someone already filled in her income summary. Your job is to check it, not just accept it."
+        },
+        {
+          "point": "waypoint",
+          "gesture": "none",
+          "revealArrows": true,
+          "text": "Start at the front desk. Follow the arrows to the receptionist and tap to talk."
+        }
       ]
     },
     {
@@ -78,7 +157,10 @@
       "when": "event:ReceptionistTalkedTo",
       "after": "welcome",
       "pages": [
-        { "style": "hint", "text": "Rosa's folder is in the market-client drawer. Follow the arrows to the file storage room." }
+        {
+          "style": "hint",
+          "text": "Rosa's folder is in the market-client drawer. Follow the arrows to the file storage room."
+        }
       ]
     },
     {
@@ -87,7 +169,10 @@
       "when": "event:CaseFolderRetrieved",
       "after": "to-cabinet",
       "pages": [
-        { "style": "hint", "text": "Got it! Rosa's folder is in your folder icon. Sit at your desk, then drag it from the icon onto the desk." }
+        {
+          "style": "hint",
+          "text": "Got it! Rosa's folder is in your folder icon. Sit at your desk, then tap the icon to open it."
+        }
       ]
     },
     {
@@ -96,7 +181,10 @@
       "when": "state:ReviewDocumentsState",
       "after": "to-desk",
       "pages": [
-        { "style": "hint", "text": "Tap the arrow at the bottom right of the paper to turn the page. Read the cover, Rosa's May summary and the referral note." }
+        {
+          "style": "hint",
+          "text": "Compare Rosa's May summary and Payment Note on their separate pages. Then lift the Findings paper from its page to work on it."
+        }
       ]
     },
     {
@@ -105,11 +193,14 @@
       "when": "lesson:first-look",
       "after": "first-look",
       "pages": [
-        { "mood": "confused", "text": "A filled page can still need checking. Find the record behind the entry." },
-        { "text": "The referral note asks about a paid commission. Look at Rosa's May summary. Is that payment on it?" },
-        { "text": "When something doesn't match, write a finding. Turn to the last page of the folder: Findings." },
-        { "text": "Here's the first step. Tap a line on the May summary to pick it up, turn to Findings and tap Concern." },
-        { "style": "hint", "waitFor": "event:FindingRecorded", "text": "Your turn: put a referral note line in Related record, then tap a Choice and put it in Reason." }
+        {
+          "text": "By the way, that Tax Code Book doesn't have to stay on the desk. Slide it onto its icon and it travels with you. I have a feeling it will come in handy before this case is closed."
+        },
+        {
+          "style": "hint",
+          "waitFor": "event:FindingRecorded",
+          "text": "Some jobs are recorded separately. Keep a clue beside the entry it may affect."
+        }
       ]
     },
     {
@@ -118,8 +209,14 @@
       "when": "event:FindingRecorded",
       "after": "first-finding",
       "pages": [
-        { "text": "Good. While that concern is open, this work isn't ready. Let's say so on the folder." },
-        { "style": "hint", "waitFor": "event:PreliminaryHoldStamped", "text": "Your turn: tap the stamp set on your desk, then drag a stamp onto the front page of Rosa's folder." }
+        {
+          "text": "An original record is still needed. Record this review on the folder."
+        },
+        {
+          "style": "hint",
+          "waitFor": "event:PreliminaryHoldStamped",
+          "text": "Your turn: tap the stamp set on your desk, then drag a stamp onto the front page of Rosa's folder."
+        }
       ]
     },
     {
@@ -128,7 +225,10 @@
       "when": "event:PreliminaryHoldStamped",
       "after": "initial-stamp",
       "pages": [
-        { "style": "hint", "text": "Rosa's stall is near the plaza. Follow the arrows and talk to her about the records." }
+        {
+          "style": "hint",
+          "text": "Rosa's stall is near the plaza. Follow the arrows and talk to her about the records."
+        }
       ]
     },
     {
@@ -137,7 +237,102 @@
       "when": "event:RosaRecordsCollected",
       "after": "to-rosa",
       "pages": [
-        { "style": "hint", "text": "Rosa gave you six records. Sit at the records desk beside her stall to look at them." }
+        {
+          "style": "hint",
+          "text": "Rosa gave you four supporting records. Sit at her records desk to begin Mark the Money!."
+        }
+      ]
+    },
+    {
+      "id": "toolkit-practice",
+      "title": "YOUR TURN",
+      "when": "event:ToolkitDemoFinished",
+      "after": "records-desk",
+      "pages": [
+        {
+          "style": "hint",
+          "waitFor": "event:AnnotationTutorialCompleted",
+          "hintSeconds": 6,
+          "text": "Tap the yellow highlighter to lift it beside the paper. Drag it onto the salary line and sweep across. Add TYPE and TREATMENT cards, then clip the payslip."
+        }
+      ]
+    },
+    {
+      "id": "mark-the-money",
+      "title": "MARK THE MONEY!",
+      "when": "event:AnnotationTutorialCompleted",
+      "after": "toolkit-practice",
+      "pages": [
+        {
+          "style": "hint",
+          "waitFor": "event:AnnotationsChecked",
+          "hintSeconds": 6,
+          "text": "Use the tabs to switch between Rosa's four records. Swipe the money line, add TYPE, TREATMENT and a record, then press CHECK. Unsure what a card means? The Tax Code Book explains every one."
+        }
+      ]
+    },
+    {
+      "id": "mark-the-money-fix",
+      "title": "FIX THE RED NOTES",
+      "when": "event:AnnotationsChecked",
+      "after": "mark-the-money",
+      "pages": [
+        {
+          "style": "hint",
+          "waitFor": "event:IncomeQuestCompleted",
+          "hintSeconds": 5,
+          "text": "Green notes are locked in. Tap a red note for a hint, swap it, then CHECK again. Your badge is already decided."
+        }
+      ]
+    },
+    {
+      "id": "office-review",
+      "title": "BACK AT THE OFFICE",
+      "when": "event:IncomeQuestCompleted",
+      "after": "mark-the-money-fix",
+      "pages": [
+        {
+          "style": "hint",
+          "waitFor": "event:OfficeReviewCompleted",
+          "text": "Back at your desk, open Rosa's folder to the Reviewed Schedule. Tap an empty line to bring out your annotated papers, tap a highlighted amount, then tap the line. Finish with a conclusion below the totals."
+        }
+      ]
+    },
+    {
+      "id": "final-assessment",
+      "title": "YOUR RECOMMENDATION",
+      "when": "event:OfficeReviewCompleted",
+      "after": "office-review",
+      "pages": [
+        {
+          "style": "hint",
+          "waitFor": "event:FinalAssessmentStamped",
+          "text": "Read your handwritten summary on Final Assessment. Decide whether the packet is ready, then use a desk stamp on that page."
+        }
+      ]
+    },
+    {
+      "id": "to-auditor",
+      "title": "THE AUDITOR",
+      "when": "event:FinalAssessmentStamped",
+      "after": "final-assessment",
+      "pages": [
+        {
+          "style": "hint",
+          "text": "Hand Rosa's folder to the Auditor. If he returns it, change what he points to, stamp again, then bring it back."
+        }
+      ]
+    },
+    {
+      "id": "audit-returned",
+      "title": "BACK TO WORK",
+      "when": "event:AuditReturned",
+      "after": "to-auditor",
+      "pages": [
+        {
+          "style": "hint",
+          "text": "Your work is still here. Fix what the Auditor pointed to, read the updated summary, stamp again, then return the folder."
+        }
       ]
     }
   ]

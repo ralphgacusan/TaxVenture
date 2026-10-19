@@ -1,25 +1,61 @@
 {
   "_readme": [
-    "Level 2 Tax Code Book leaves (LevelBookLeaves). They appear after the shared book's sections in Office_Level2 only; Level 1's book is unchanged.",
+    "Level 2 Tax Code Book leaves (LevelBookLeaves). They appear after the shared book's three sections in Office_Level2 only; Level 1's book is unchanged. In Level 2 the book first opens on the first leaf below.",
+    "Sections 4-6 are reference pages for Mark the Money! and the office review: each term is printed like the shared pages' values (readOnly: true, so it cannot be picked up) with its explanation underneath. Sections 7-8 hold the selectable finding reasons and conclusions.",
+    "A leaf whose body has one paragraph (blank-line separated) per value prints each paragraph under its value; keep those counts equal.",
     "Leaves explain concepts. Never put a client's amounts, a finding, the summary answer or the stamp to choose here.",
     "Simplified classroom rules, not legal advice. The loan-principal rule is an EDUCATIONAL DRAFT: no confirmed Philippine primary-source passage yet (see Documentation/Level2SomethingDoesNotMatch/CONTENT.md).",
     "Fields starting with '_' are notes and are ignored by the game."
   ],
   "sections": [
     {
-      "heading": "Level 2 · Where Income Comes From",
-      "body": "Ask first: what was this money paid for?\n\nServices: payment for work done, like sewing or alterations.\n\nCommission: payment for arranging a sale or sending customers to someone else.\n\nRent: payment for letting someone use your property or equipment for a time.\n\nCompensation: pay an employee earns from an employer, like a salary shown on a payslip.\n\nName the source and type before you decide how it is treated.",
-      "clickableValues": []
+      "heading": "Section 4 – Income Types",
+      "body": "Pay from an employer for work done as an employee.\n\nPayment for your own trade or for a job done for a customer.\n\nPayment for letting someone use your property.\n\nEarnings from money or investments, such as bank interest. Check its own rule first.\n\nMoney that must be paid back. Borrowing is not earning.",
+      "clickableValues": [
+        { "displayText": "Compensation Income", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
+        { "displayText": "Business / Service Income", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
+        { "displayText": "Rental Income", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
+        { "displayText": "Passive Income (Interest)", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
+        { "displayText": "Borrowed Funds", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true }
+      ]
     },
     {
-      "heading": "Level 2 · Is It Income?",
-      "body": "Type and treatment are two separate questions.\n\nRegular income schedule: earned income that belongs with the period's other income.\n\nSeparate treatment: some income has its own rule. Check that rule before adding it to a schedule.\n\nStatutory exclusion: only when a specific rule excludes it. Do not guess.\n\nNot income: money you must pay back, like the principal of a genuine loan. Receiving it does not mean you earned it.\n\n(Classroom rule. The loan rule is an educational simplification.)",
-      "clickableValues": []
+      "heading": "Section 5 – Income Treatment",
+      "body": "Earned income, listed with the other income of the same period.\n\nIncome that follows its own rule instead of the regular schedule.\n\nOnly for items a law itself excludes.\n\nMoney that was never earned, such as a loan that must be repaid. An educational simplification.",
+      "clickableValues": [
+        { "displayText": "Regular Income Schedule", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
+        { "displayText": "Separate Rule", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
+        { "displayText": "Statutory Exclusion", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
+        { "displayText": "Not Income", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true }
+      ]
     },
     {
-      "heading": "Level 2 · Checking a Record",
-      "body": "A filled page can still need checking.\n\nSource: who paid, and for what?\n\nPeriod: do the dates fall in the period being reviewed?\n\nPayment channel: cash, bank transfer or both. A bank statement shows only what went through the bank.\n\nDuplicates: one payment can appear on two records, like a receipt that is also counted on a monthly sheet. Count it once.\n\nA deposit alone does not tell you what the money was for. Find the record behind it.",
-      "clickableValues": []
+      "heading": "Section 6 – Checking a Summary",
+      "body": "Match each line the summary lists with the record behind it.\n\nAn earned payment with no summary line. Add it once, in its month.\n\nMoney arriving in the bank is not proof it was earned. Read why it arrived.\n\nThe one record written for that payment. Your annotated papers already hold it.",
+      "clickableValues": [
+        { "displayText": "Listed Line", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
+        { "displayText": "Missing Entry", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
+        { "displayText": "Bank Deposit", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
+        { "displayText": "Evidence", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true }
+      ]
+    },
+    {
+      "heading": "Section 7 – Finding Reasons",
+      "body": "A monthly sum should include every earned payment for that month, including separate jobs.\n\nA difference matters when dates and scope match.\n\nA deposit may be borrowed money, rather than pay.",
+      "clickableValues": [
+        { "displayText": "Unlisted payment", "enumValue": "unaccounted-payment", "type": 2, "semanticKey": "FindingReason" },
+        { "displayText": "Different totals", "enumValue": "amounts-differ", "type": 2, "semanticKey": "FindingReason" },
+        { "displayText": "Not earnings", "enumValue": "maybe-not-income", "type": 2, "semanticKey": "FindingReason" }
+      ]
+    },
+    {
+      "heading": "Section 8 – Review Conclusions",
+      "body": "The record confirms an earned payment belongs in this period, so you added it.\n\nThe records explain the difference; no change is needed.\n\nThe difference still needs investigation.",
+      "clickableValues": [
+        { "displayText": "Corrected: included", "enumValue": "corrected-included", "type": 2, "semanticKey": "FindingConclusion" },
+        { "displayText": "Explained: no change", "enumValue": "explained-no-adjustment", "type": 2, "semanticKey": "FindingConclusion" },
+        { "displayText": "Still unresolved", "enumValue": "unresolved", "type": 2, "semanticKey": "FindingConclusion" }
+      ]
     }
   ]
 }

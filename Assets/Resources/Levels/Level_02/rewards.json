@@ -3,7 +3,7 @@
     "Level 2 reward rules (same format as Level_01/rewards.json; see its _readme for every field).",
     "requireSideQuestBeforeOffice: false = the office is open from the start (Level 2 starts inside it). officeDoors: none are held shut.",
     "Maxima follow Documentation/Level2SomethingDoesNotMatch/REWARDS_AND_VALIDATION.md: Rosa talk 1 heart, Mark the Money 60 EXP + 3 hearts, case 100 EXP + 5 hearts = 160 EXP, 9 hearts; 80% to pass.",
-    "PROVISIONAL (T01): the Level 2 per-decision scoring, accuracy badge tiers and capped audit deductions are added by T06/T09. Until then these numbers only set the maxima and the badge identity.",
+    "T06: Mark the Money! scores 16 first-check decisions, including the highlighted source line. EXP = 60 minus wrong (minExp 48); 3 hearts for finishing all corrections. Badge from accuracy: Gold 16/16 (goldAtCorrect), Silver 14-15 (silverAtCorrect), Bronze 0-13. Capped audit deductions arrive with T09.",
     "Fields starting with '_' are notes and are ignored by the game."
   ],
   "passingPercent": 80,
@@ -14,6 +14,9 @@
     "exp": 60,
     "hearts": 3,
     "expPerWrong": 1,
+    "minExp": 48,
+    "goldAtCorrect": 16,
+    "silverAtCorrect": 14,
     "heartsLostAtWrong": [],
     "badgeId": "mark_the_money_2",
     "badgeName": "Mark the Money!",
@@ -26,7 +29,9 @@
     "expPerMistake": 2,
     "heartsPerMistake": 0,
     "expPerRetry": 1,
-    "heartsPerRetry": 0,
+    "heartsPerRetry": 1,
+    "maxExpLoss": 15,
+    "maxHeartLoss": 1,
     "wrongVerdictExp": 20
   }
 }
