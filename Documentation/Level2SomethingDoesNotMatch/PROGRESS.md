@@ -1,10 +1,10 @@
 # Progress and handoff
 
-Updated 2026-10-17.
+Updated 2026-10-19.
 
 ## Current state
 
-T01 and T02: T02 is user accepted. T03 and T04 are implemented and internally verified; the user tests both in one Play Mode run. T05 is next. See the handoff sections below.
+T01 and T02: T02 is user accepted. T03 to T12 are implemented and internally verified; the user tests them in Play Mode. All tickets are built; see "Final handoff" at the end.
 
 | Ticket | Owner | Source/internal status | User Play Mode |
 |---|---|---|---|
@@ -12,14 +12,14 @@ T01 and T02: T02 is user accepted. T03 and T04 are implemented and internally ve
 | 02 | Claude (session 2026-10-17) | User accepted | PASS (2026-10-17): drawer, flight to the HUD icon, drop-to-open on the desk, bottom page buttons and page text all work |
 | 03 | Claude (session 2026-10-17) | Implemented — internally verified | Pending (tested together with T04) |
 | 04 | Claude (session 2026-10-17) | Implemented — internally verified | Pending (tested together with T03) |
-| 05 | Unassigned | Planned | Not run |
-| 06 | Unassigned | Planned | Not run |
-| 07 | Unassigned | Planned | Not run |
-| 08 | Unassigned | Planned | Not run |
-| 09 | Unassigned | Planned | Not run |
-| 10 | Unassigned | Planned | Not run |
-| 11 | Unassigned | Planned | Not run |
-| 12 | Unassigned | Planned | Not run |
+| 05 | Claude (session 2026-10-19) | Implemented — internally verified | Pending |
+| 06 | Claude (session 2026-10-19) | Implemented — internally verified | Pending |
+| 07 | Claude (session 2026-10-19) | Implemented — internally verified | Pending |
+| 08 | Claude (session 2026-10-19) | Implemented — internally verified | Pending |
+| 09 | Claude (session 2026-10-19) | Implemented — internally verified | Pending |
+| 10 | Claude (session 2026-10-19) | Implemented — internally verified | Pending |
+| 11 | Claude (session 2026-10-19) | Implemented — internally verified | Pending |
+| 12 | Claude (session 2026-10-19) | Implemented — internally verified | Pending |
 
 ## Planning evidence
 
@@ -470,3 +470,403 @@ Scene-guidance documentation verification: PASS. All local Markdown links resolv
   - Tapping the stand, closing the folder and leaving the desk still put them away too.
 - **Files:** `Level2StampDrag.cs`, `Level2DeskStamps.cs`, new `PutAwayButton.cs` (+ meta), Level2Regression.
 - **Results:** scratch build 0 errors, 29 warnings. Level2Regression: 448 PASS. Controls and Guide suites: PASS.
+
+
+## T03 follow-up — removable Findings sheet (2026-10-18)
+
+- **Owner/status:** Codex; implemented — internally verified; user Play Mode pending. This is the requested T03 presentation improvement; T05 remains next.
+- **Behavior:** Findings is now a cream working paper with a printed heading, margin, tape, subtle paper stack/shadow and the existing source/destination rows. Tap its heading/blank paper or drag it to lift it from the page. The same sheet stays outside the folder while other pages are read; its fields still accept the existing tap transfer and value drags. Clicking it participates in FloatingWindow/HudWindowFocus/Doc3DLayer's shared order with Notes, the folder and the book.
+- **Return:** Drag the sheet's heading/blank area and release the pointer inside any visible folder paper. The footer highlights compatible return placement, the folder flips to Findings, and the sheet arcs/scales home before an attached copy redraws from the same CaseReviewState. A book/Notes covering the folder blocks a drop through it. Dropping elsewhere keeps the paper loose and within screen reach.
+- **Lifecycle:** Release the overlay from page ownership before lifting, so turning pages cannot delete it. Detached rows are refreshed independently from folder pages. Closing the folder hides the loose paper and reopening restores it; settings also hides it. A cancelled return recovers the loose sheet. Case changes and level teardown dispose it. No domain answer, score, revision or save schema is added by moving paper.
+- **Files changed:** `Assets/Scripts/Level2/Level2FindingsSheet.cs` (+ fresh `.meta`), `Assets/Scripts/Level2/Level2FindingsPage.cs`, `Assets/Scripts/Level2/FindingSlot.cs`, `Assets/Scripts/UI/CaseFolderUI.cs`, `Assets/Resources/Tutorials/Level_02/guide.json`; this initiative's PROGRESS, SPEC, KNOWN_ISSUES and T03 ticket.
+- **Checks:** scratch C# build: 0 errors, 29 pre-existing warnings; Level2Regression: 448 PASS. Controls: 5,734 PASS; Dialogue: 799 PASS; Guide: 714 PASS; Training: 513 PASS; Progression: PASS; Settings: 93 PASS; Career: 69 PASS; Intro: 29 PASS. VerifyLevel2Scene: PASS (existing warning that Level1 has changed since its original copy); VerifyGuideTargets: 17 paths, none missing. The initial no-restore build needed generated restore assets; normal scratch build succeeded. Guide's temporary save replacement was denied inside the sandbox and passed when rerun with authorized access.
+- **Manual checks pending:** lift by heading/blank paper; compare summary/referral pages beside the loose sheet; tap and drag values into all three boxes; switch front layer between sheet, folder, book and Notes; drop onto Findings and another page; close/reopen folder and settings; repeat detach/reattach; confirm read-only content after preliminary stamp. Check text size, framing, tape/peel/return motion and touch feel on device. No Unity editor or Play Mode was launched.
+- **Next:** user verifies this follow-up and the T03/T04 flow; then T05 hands-on toolkit. No Git commands run for this change.
+
+
+## T03 follow-up — larger raised paper and detach-first editing (2026-10-18)
+
+- **User direction:** loose Findings paper should feel more 3D, have bigger paper/text, and accept no value transfers while attached.
+- **Implementation:** detached footprint is 672 x 896 reference units (previously 480 x 640), with 34-unit field type (minimum 29, previously 25/minimum 20), larger headings/footer, a resting X/Y/Z tilt, movement lean, deeper cast shadow and lit/shaded paper edges. The folder retains its fitted attached preview. Peel, cancelled-return recovery and reopening all restore the enlarged loose pose; filing still scales to the original attached fit.
+- **Editing:** attached field CanvasGroup blocks source selection, value dragging and destination taps/drops. Tap/drag its heading or paper to lift it first. Destinations additionally gate CanAccept and mutation on the actual sheet's CanTransfer state (detached, active, not returning). Returning disables fields and clears only selections originating from this sheet, preventing an attached sheet's reason from remaining selected for transfer.
+- **Files:** `Assets/Scripts/Level2/Level2FindingsSheet.cs`, `Assets/Scripts/Level2/Level2FindingsPage.cs`, and this initiative's PROGRESS/SPEC/KNOWN_ISSUES/T03 ticket.
+- **Internal verification:** scratch build 0 errors, same 29 existing warnings. Level2Regression: 448 PASS; ControlsRegression: 5,734 PASS. Source review checked attached pointer blocking plus destination guards, larger bounds/clamping, and enlarged pose restoration paths. Unity Play Mode remains user-owned.
+- **User checks:** attached fields cannot receive a selected value or drag; tap paper to detach, then all three fields accept normal taps/drops; check larger text, depth/tilt, side-by-side placement, and repeated return/reopen sizing on your screen. Next remains T05 after user acceptance of T03/T04.
+
+
+## Business wording decision — Rosa's Laundry (2026-10-18)
+
+- **Owner/status:** Codex; documentation update complete. User requested documentation only. Historical implementation logs above retain their original wording.
+- **Approved direction:** Rosa's Laundry; laundry payments 12,000; payment for sending customers to another shop 5,000; spare washing machine rental 3,000; same repayable loan 20,000. Keep all IDs, evidence links, totals, rewards, scoring, character/store assets and ticket order.
+- **Files changed:** README.md, CONTENT.md, SPEC.md, WORLD_AND_FEEDBACK.md, tickets/T02-retrieve-and-inspect.md, tickets/T04-rosa-stall.md, tickets/T07-office-reconciliation.md, KNOWN_ISSUES.md and PROGRESS.md, all within this initiative.
+- **Scope:** no Assets, scenes, runtime JSON or scripts edited; no Git commands or Unity testing. The Findings statement/field redesign was discussed but is not included in this wording approval.
+- **Verification:** checked current wording consistency, unchanged fixed totals/evidence mapping, local Markdown links and CRLF. No gameplay build required for documentation only.
+- **Next:** runtime laundry text/signage migration awaits a separate user request. Existing T03/T04 manual acceptance and T05 remain tracked above; this documentation change does not complete them.
+
+
+## T03 findings comparison redesign — implementation (2026-10-18)
+
+- **Owner:** Codex, current session. User authorized a three-drop findings sheet, book-based reason sources and general tips, explicit game-like discrepancy validation, and animated handwritten conclusions.
+- **Touched areas planned:** preliminary finding data/rules, Findings page/sheet, optional Level 2 book leaves, guide content, regression tests and this initiative's handoff documents. Keep existing paper focus/drag/return, detach-first editing, IDs, scene assets, rewards and later ticket boundaries.
+- **Next:** implement/test a pure comparison rule; wire comparison feedback and book sources. Unity Play Mode remains user-owned.
+
+
+### Findings comparison handoff — 2026-10-18
+
+- **Status:** Implemented — internally verified; user Play Mode pending. This supersedes the earlier three-box auto-completion and on-sheet reason-choice instructions.
+- **Playable source:** detach the paper; identify a summary page, transfer a supporting statement, and take a Review Principle from the book. Compare records gives visible incomplete/unsupported/supported status. Only a supported explicit comparison raises FindingRecorded. A correct observation writes itself in the Notes handwriting font; edits reset confirmation and the old note. Return/reopen restores confirmed text without restarting the reveal. Stamps enforce the same meaningful-statement rule and require confirmation. Comparing never changes amounts, awards rewards or stamps a case.
+- **Exact runtime files:** new `Assets/Scripts/Data/FindingComparison.cs` (+ unique `.meta`); changed `Assets/Scripts/Data/CaseReviewState.cs`, `Assets/Scripts/Data/PreliminaryReview.cs`, `Assets/Scripts/Data/Definitions/CaseReviewDefinition.cs`, `Assets/Scripts/Level2/Level2FindingsPage.cs`, `Assets/Scripts/Level2/Level2FindingsSheet.cs`, `Assets/Scripts/Level2/FindingSlot.cs`, `Assets/Resources/Levels/Level_02/book.json`, `Assets/Resources/Levels/Level_02/cases/case_rosa_001.json`, `Assets/Resources/Tutorials/Level_02/guide.json`.
+- **Tests/docs:** `Tests/Level2Regression/Program.cs`; this pack's README, SPEC, CONTENT, WORLD_AND_FEEDBACK, REWARDS_AND_VALIDATION, TICKETS, tickets/T03-preliminary-finding, KNOWN_ISSUES and PROGRESS.
+- **Internal checks actually run:** `python Tests/make_scratch_build.py`; `dotnet build Temp/ScratchBuild/Scratch.csproj` (and final no-restore build): 0 errors, same 29 pre-existing warnings. `dotnet run --project Tests/Level2Regression --no-restore`: **470 PASS**, including 22 additional checks for meaningful evidence, incorrect/incomplete combinations, explicit confirmation, idempotence, invalidation, round-trip persistence and book principle contracts. Controls 5,734 PASS; Dialogue 799 PASS; Training 513 PASS; Progression PASS; Guide 714 PASS; Settings 93 PASS; Career 69 PASS; Intro 29 PASS. Guide's temporary save replacement was blocked inside the sandbox and passed with authorized access. VerifyLevel2Scene PASS (one existing warning about Level1 edits since the original copy); VerifyGuideTargets: 17 targets, none missing. One-off validation: 24 local documentation links, CRLF/JSON, fresh unique script GUID and evidence keys matching the actual source document all PASS.
+- **Manual checks:** attached fields remain noninteractive; detached sheet has exactly three fields; both new book pages fit and each principle supports tap/drag; incomplete and random combinations do not advance the guide; a valid combination shows the handwritten paragraph and advances once; edit then attempt stamping (must require a new supported comparison); repeat detach/return/reopen/settings and check focus, readability and reveal timing. No Unity editor or Play Mode was launched by Codex.
+- **Scope/next:** existing paper system, stable IDs, amounts, rewards, selected models/store and scenes are preserved. Laundry wording remains a separately pending runtime content migration. User acceptance of these T03/T04 changes is next; T05 remains the next implementation ticket. No Git commands run.
+
+
+## T03 compact automatic findings polish — implementation (2026-10-18)
+
+- **Owner:** Codex. User requests two concise book leaves, no level-number headings, a smaller desk-aligned slip, automatic three-field validation, minimal feedback copy, and working tap/drag transfers with shared aiming/drop feedback. This supersedes the explicit Compare button design.
+- **Scope:** Findings source/UI/rules, Level 2 book/guide copy, bounded opt-in per-point paper raycast handling in shared FloatingWindow/HudWindowFocus, targeted regression and this initiative's docs. Preserve detach-first editing, amounts, IDs and paper return/focus. User retains Unity/Git checks.
+- **Diagnosis:** FindingSlot removes the normal transfer feedback; HudWindowFocus blocks an entire paper for any overlapping higher 3D document. These source paths plausibly explain missing feedback and unresponsive uncovered fields; actual Unity pointer checks remain user-owned.
+
+
+### Compact automatic Findings polish handoff — 2026-10-18
+
+- **Status:** Implemented — internally verified; user Play Mode pending. Latest user direction supersedes the explicit Compare button, five added book leaves, long field labels and oversized slip.
+- **Behavior:** the slip uses Page / Clue / Reason, a one-sentence introduction and automatic checks after field edits. Partial drafts are neutral; unsupported links show No link yet; supported links show Needs checking plus the short handwritten note. Attached fields remain blocked. Existing meaningful-evidence and stamp gates, amounts, IDs and rewards remain intact.
+- **Presentation:** detached footprint is approximately 564 x 639 reference units (was 672 x 896); paper orientation derives from the source folder relative to the camera, with only slight drag lean. The book adds exactly Reading Records and Review Notes, totaling 69 body words, no level-number headings, and the same three stable reason IDs. Guide bubbles and supplementary stamp messages are shorter.
+- **Transfer fixes:** FindingSlot retains ValueTypeValidationFeedback and uses its shared accepted/rejected pulses/DropFeedbackFX. It also reuses hover cues. Slot instances are reused while values update so the badge/pulse can finish. FloatingWindow/HudWindowFocus has a default-off per-point filtering opt-in used by this slip, both for focus and raycasts. A higher overlapping 3D book only blocks the covered pointer location, preserving exposed destinations for the existing DropAimIndicator and tap/drag placement. Actual Unity pointer routing remains unverified by Codex.
+- **Exact runtime paths:** `Assets/Scripts/Level2/{Level2FindingsPage,Level2FindingsSheet,FindingSlot}.cs`; `Assets/Scripts/Data/{FindingComparison,CaseReviewState,PreliminaryReview}.cs`; `Assets/Scripts/UI/HUD/{FloatingWindow,HudWindowFocus}.cs`; `Assets/Resources/Levels/Level_02/book.json`, `Assets/Resources/Levels/Level_02/cases/case_rosa_001.json`, `Assets/Resources/Tutorials/Level_02/guide.json`. Tests: `Tests/Level2Regression/Program.cs`. Current design/content/validation/T03 docs and this log updated within this initiative only.
+- **Verification actually run:** scratch generator and build: 0 errors, same 29 baseline warnings. Level2Regression **474 PASS** (including source wiring guards for feedback/per-point coverage and content limits). Controls 5,734 PASS; Dialogue 799 PASS; Training 513 PASS; Progression PASS; Guide 714 PASS; Settings 93 PASS; Career 69 PASS; Intro 29 PASS. Guide temp save replacement was blocked in the sandbox and passed on authorized rerun. VerifyGuideTargets: 17 targets, none missing. One-off checks: all 24 local doc links resolve; edited sources use CRLF; JSON parses; exactly two book leaves/69 body words/no level-number headings. No scenes, source assets, packages or new script GUIDs were needed. No Git commands or Unity Play Mode run.
+- **User checklist:** check matching paper angle and compact readability; click a source then each slot; drag source values from folder/book while watching the aim frame; test accepted and wrong-kind badges; touch/overlap the book and verify exposed fields still work; fill a bad complete link then a supported one; edit to invalidate; repeat file/reopen/settings and initial stamp handoff. Source checks do not replace these UI checks.
+- **Next:** user acceptance of T03/T04, then T05. Runtime laundry wording migration remains separately pending; this change polishes the Findings interaction rather than claiming all Level 2 is complete.
+
+
+## T03 concrete total/payment finding and desk slant — internally verified (2026-10-18)
+
+- **Owner:** Codex. User requests a stronger backward-leaning slip with matching desk-paper feel, always-stacked labels/values, a simpler paid-laundry-job omission, a specific May total as the entry, a payment statement as the clue, the existing book reason, and brief Arthur/book hints.
+- **Decision:** Entry to check = May total; clue = a paid blanket-washing job; reason = Unlisted payment. Preserve case/evidence IDs, semantic keys, amounts and game flow. Runtime laundry content is now in scope, replacing the prior referral scenario; the second paid job remains separate from the ordinary clothes collection sheet.
+- **Next:** tighten the rule to the total semantic key, simplify case/records/dialogue coherently, then polish the live slip geometry and stacked typography. No Git or Unity Play Mode commands.
+
+- **Completed:** runtime Rosa's Laundry, separate paid blanket job and clothes-only daily list; specific May-total concern guard; stacked captions in all states; backward pitch and tapered sheet/control geometry; short book principle and indirect Arthur introduction. Preserve IDs, amounts, stamps, rewards and transfer/focus systems.
+- **Exact source files:** `Assets/Scripts/Data/Definitions/CaseReviewDefinition.cs`, `Assets/Scripts/Data/FindingComparison.cs`, `Assets/Scripts/Data/PreliminaryReview.cs`, `Assets/Scripts/Level2/{FindingSlot,Level2FindingsPage,Level2FindingsSheet,Level2RosaStall,Level2PreliminaryStamp,RosaInteractable}.cs`; new `Assets/Scripts/Level2/FindingsPaperPerspective.cs` and unique `.meta`. Content: `Assets/Resources/Levels/Level_02/{book.json,cases/case_rosa_001.json}`, `Assets/Resources/Tutorials/Level_02/guide.json`. Tests: `Tests/Level2Regression/Program.cs`. Updated current design/content/validation/ticket/handoff docs within this initiative.
+- **Verification:** `python Tests/make_scratch_build.py` (397 files); `dotnet build Temp/ScratchBuild/Scratch.csproj` (0 errors, 29 baseline warnings); Level2Regression 485 PASS; Controls 5,734 PASS; Dialogue 799 PASS; Training 513 PASS; Progression PASS; Guide 714 PASS; Settings 93 PASS; Career 69 PASS; Intro 29 PASS. Guide temp-file replacement required authorized sandbox escalation, then passed. VerifyLevel2Scene PASS with the existing Level1-copy drift warning; VerifyGuideTargets 17 paths, none missing. No Git commands or Unity Play Mode.
+- **Manual pending / next:** user verifies stronger backward lean against both folder/book, text fit with captions always above values, wrong-row rejection then total/payment/reason success, handwriting timing, drag and tap transfer/aim feedback, overlap focus, repeat detach/return and Arthur's book hint. T03/T04 user acceptance remains pending, then T05; no whole-level completion claim.
+
+- **Final static checks:** 24 local documentation links resolve; Level 2 JSON and guide JSON parse; exactly two added book leaves with 74 body words and no level-number headings; edited C# files use CRLF. New perspective-script GUID is unique under Assets. Final scratch rebuild repeats 0 errors/29 baseline warnings and Level2Regression repeats 485 PASS.
+
+
+## T03/T02 paper, stamps and cabinet polish — implemented; user Play Mode pending (2026-10-18)
+
+- **Owner:** Codex. User reports clipped handwriting, mismatched attached/loose paper transforms, offset stamp grabs, unstable stamp size/rotation and an overlay drawer front that does not fit the authored cabinet. Scope: Findings layout/transition, Level 2 stamp picking/drag/feedback, cabinet presentation; preserve rule/state/rewards and Level 1.
+- **Next:** trace projection and transform ownership before editing; internally build/regress; user performs Unity visual/feel checks.
+
+- **Fixes:** the handwriting block doubles from 98 to 198 units with font locked at 28, extending the paper and footer. Lift size follows the attached projection (+6 percent), preserving its plane with a slight peel; return blends from the current pose. Stamps keep camera-plane depth/pose while held, preserve the grabbed point, use a drag threshold (tap only focuses), and apply uniform depth compensation during a press. One scale owner composes the smaller impact pulse; no pickup/press scale contention. Model bounds and projected hit rectangles are cached, excluding text; the shared outline and matching pointer surface provide visible, accurate interaction without dragging papers underneath. Pause/modal and canceled-touch guards avoid accidental submission. The drag plane is ahead of the nearest paper corner. A default-off Doc3DLayer option lets held stamps cover overlapping composited documents. The runtime cabinet front is thin, dark and sized to one authored drawer row.
+- **Exact files:** `Assets/Scripts/Level2/Level2FindingsSheet.cs`, `Level2StampDrag.cs`, `Level2DeskStamps.cs`, `Level2CaseRetrieval.cs`; new `Assets/Scripts/Level2/Level2StampHitTarget.cs` plus unique `.meta`; narrowly extended `Assets/Scripts/UI/HUD/Doc3DLayer.cs`; `Tests/Level2Regression/Program.cs`. Updated this initiative's SPEC, WORLD_AND_FEEDBACK, REWARDS_AND_VALIDATION, KNOWN_ISSUES, T02 and T03 ticket checklists and PROGRESS only. No scene/prefab/content/reward/state files changed.
+- **Evidence:** the three new source guards first failed on the old stamp/paper implementation. The revised source and pure depth-size invariants pass. Scratch generator includes 398 files; final build is recorded below. Existing domain tests remain intact; UI/3D contact and performance cannot be verified by these tests. New script GUID is unique; edited text is CRLF; all 24 local documentation links resolve.
+- **User checks / next:** full handwriting at target resolution, matching paper size/angle at detach/return (including early return), stamp center/edge/touch grabs, outline and focus over book/notes/folder, steady shape through press/rebound, ink landing, supported/rejected/tap-only/canceled/paused/close behavior, repeated reopen and drawer alignment/open/close. User Play Mode acceptance of T02/T03/T04 remains pending; then T05. No Unity editor or Git command run.
+
+- **Final verification:** `python Tests/make_scratch_build.py` → 398 files; `dotnet build Temp/ScratchBuild/Scratch.csproj --verbosity quiet` → 0 errors, 29 baseline warnings. `dotnet run --project Tests/Level2Regression/Level2Regression.csproj --verbosity quiet` → 497 PASS; ControlsRegression → 5,734 PASS; DialogueRegression → 799 PASS; ProgressionRegression → PASS. Visual/feel/performance checks remain user-owned.
+
+
+## Desk follow-up — implemented; user Play Mode pending (2026-10-18)
+
+Owner: Codex. User reports remaining handwriting clipping, stand-stamp highlight/hit and lifted occlusion problems, book grab/open-centre drift, conflicting automatic page turns, hint overlap and unsupported-link retry friction. Scope: these desk interactions; preserve rules/rewards/Level 1 defaults where optional. Next: repair measured layout, capture/pose and animation lifecycle, then internal checks. User retains Unity and Git checks.
+
+- **Implemented:** real-font preferred-height layout at fixed size 28, shared paper/footer growth; desktop settle; clear unsupported editable drafts and preserve stamped records. Replacement stamp stand affordance, expanded projected handle/body target, same-frame toggle guard, and always-visible isolated rendering without received shadows. Auto page-turn cancellation/index/midpoint/current-page lifecycle and delayed stamp lift. Book lifted-plane finger tracking separated from safe rest placement; open/closed visible centres aligned. Arthur hint slides upward in desk/profile-reading mode.
+- **Exact files:** `Assets/Scripts/Data/CaseReviewState.cs`; `Assets/Scripts/Level2/{Level2FindingsPage,Level2FindingsSheet,Level2StampDrag,Level2DeskStamps,Level2StampSet}.cs`; `Assets/Scripts/UI/CaseFolderUI.cs`, `Assets/Scripts/UI/HUD/Doc3DLayer.cs`, `Assets/Scripts/UI/Guide/GuideCoachView.cs`, `Assets/Scripts/TaxCodeBook/TaxCodeBook3DDrag.cs`, `Assets/Scripts/Interactables/DeskMotion.cs`; `Tests/Level2Regression/Program.cs`. Current initiative docs/tickets updated. No scene, prefab, font, JSON content, new GUID, reward or final-assessment changes.
+- **Verification:** scratch generator 398 files; build 0 errors/29 baseline warnings. Level2Regression 507 PASS; GuideRegression 714 PASS (sandbox temp-save replacement failed, authorized rerun passed); Controls 5,734 PASS; Dialogue 799 PASS; Progression PASS; VerifyGuideTargets 17 paths/none missing. Direct domain tests cover retry clearing/idempotence and stamped immutability; source guards cover presentation wiring. No Unity/Git commands.
+- **Next/user acceptance:** check all reported screenshots in Unity: entire handwritten conclusion at target resolution; actual stamp outlines and handle/body touches on stand, visible aim/press, book finger and opening centre, auto/manual flips and canceled/repeated requests, hint travel, unsupported retry and free paper settle/filing. Device frame pacing with both stamps out remains unmeasured. Then resume existing ticket order (T03/T04 acceptance, T05).
+
+The loose paper retains a minimum 0.94 visual scale when the measured note makes the fitted folder preview taller. This prevents extra writing room from indirectly shrinking the detached handwriting; the attached preview still fits its folder.
+
+
+## Stamp tool-plane visibility and aiming repair — implemented; user Play Mode pending (2026-10-18)
+
+Owner: Codex. User still sees the ink preview without the stamp while aiming, and mispositioned lifted stamps. Initial hypothesis that Camera.CopyFrom omitted the transform was disproved by Unity documentation; no such defect is claimed. The previous plane was positioned relative to the paper, leaving the tool behind foreground desk geometry, and pressing moved the model back into paper/world depth. Scope: move floating/dragging/pressing to a near-camera tool plane, align the render viewport and capture after movement, and add a readable pad-over-preview pose. Preserve stamp rules and input ownership. User owns Unity/Git checks.
+
+- **Final change:** stamp home/drag/press/rebound stay in the near-camera tool plane; actual ink/decision remain at the real paper-local point. Slots raised to 0.69/0.45 viewport height; aiming and pressing partially align toward the paper normal with a visible pad above the preview. Rendering executes after tool motion and maps the render texture to the main camera viewport.
+- **Investigation correction:** Unity documents that Camera.CopyFrom already copies its transform. The initial transform hypothesis and its redundant assignment/assertion were removed after checking https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Camera.CopyFrom.html. The failed source guard was not evidence of a runtime defect.
+- **Files:** `Assets/Scripts/Level2/Level2DeskStamps.cs`, `Assets/Scripts/Level2/Level2StampDrag.cs`, `Assets/Scripts/UI/HUD/Doc3DLayer.cs`, `Tests/Level2Regression/Program.cs`; current initiative SPEC, WORLD_AND_FEEDBACK, KNOWN_ISSUES, T03 and PROGRESS. No assets/scenes/GUIDs/rules/rewards changed.
+- **Verification:** final scratch build 0 errors/29 baseline warnings; Level2Regression 509 PASS (the earlier 510 included the subsequently removed transform guard); ControlsRegression 5,734 PASS. Source guards cover capture ordering/viewport and angled pad-over-preview aiming; pure/domain rules still pass. No Unity/Git commands.
+- **Next:** user checks both complete stamp models, both handles, all folder aiming regions, visible angle/contact/press/rebound, correct ink and wrong/correct stamp outcomes, layered book/notes interaction, repeated put-away/reopen and device frame pacing. These remain rendered/feel checks, not established by internal tests. Then existing T03/T04 acceptance and T05 order.
+
+
+## Stamp viewport capture and tap pickup follow-up — implemented; user Play Mode pending (2026-10-18)
+
+Owner: Codex. User still loses the held model while aiming and needs dragging rather than a tap to open the desk stamps. Scope: actual viewport bounds, held front order, stable isolated render layers and EventSystem tap pickup. Preserve stamp validation/ink and user-owned Unity/Git checks.
+
+- **Changes:** open-only pickup reconciles custom press-down with legacy touch-release world taps; EventSystem stand targets and current Input System edges support a stationary tap. Full-model pixelRect/near-clip fitting with coach clearance, held/press front-order retention without scale pop, stable renderer isolation on unused layers 29/30 and restoration on cleanup. Existing ink coordinates, validation, scoring, rewards and ordinary document defaults remain.
+- **Files:** `Assets/Scripts/Level2/Level2DeskStamps.cs`, `Level2StampDrag.cs`, `Level2StampHitTarget.cs`, `Level2StampSet.cs`; `Assets/Scripts/UI/HUD/Doc3DLayer.cs`; `Tests/Level2Regression/Program.cs`. Current initiative SPEC, WORLD_AND_FEEDBACK, KNOWN_ISSUES, T03 and PROGRESS updated. No new assets/GUIDs, scene, prefab, TagManager or content edits.
+- **Verification:** `dotnet build Temp/ScratchBuild/Scratch.csproj --verbosity quiet` → 0 errors/29 baseline warnings; `dotnet run --project Tests/Level2Regression/Level2Regression.csproj --verbosity quiet` → 524 PASS; ControlsRegression → 5,734 PASS. New pure tests cover both viewport edges, oversized centering and three offset/letterboxed viewport ranges. Source guards cover tap/open-only routing, stable render isolation and held front order. These tests do not verify rendered visibility. No Unity/Git commands run.
+- **Next/user checks:** stationary tap on both handles; no open/close double trigger; complete model during aim at all page edges/top and during press/rebound; indicator/ink consistency where visual bounds are constrained; focus against book/notes, touch/mouse, repeat put-away/reopen, pause/cancel, desk/scene exit and frame pacing. T03/T04 acceptance remains pending, followed by T05.
+
+
+## Folder tap centering and shared stamp capture/contact — implemented; user Play Mode pending (2026-10-19)
+
+Owner: Codex. User asks for centred folder-button placement with unchanged entrance animation, matching Ready highlight, Not Ready visibility equal to Ready, and exact pad-to-indicator/ink contact. Scope: folder endpoint, one shared tool compositor, shared highlight refresh, projective pad anchor during press/pulse. Preserve state/rewards; user owns Unity and Git checks.
+
+- **Changes:** folder button centres the visible paper on initial placement and reopening; explicit drag placement and entrance animation remain. Both stamps share one capture on stable layer 29 and refresh outline targets. Pad projection is solved at the held depth, then locked to the actual ink anchor throughout pulse/paper thump. No new assets, scene/prefab/GUID, scoring or reward changes.
+- **Exact files:** `Assets/Scripts/Level2/Level2DeskStamps.cs`, `Level2StampDrag.cs`, `Level2FolderHandoff.cs`; `Assets/Scripts/Interactables/DeskMotion.cs`; `Assets/Scripts/UI/HUD/CaseFolder3DView.cs`; `Assets/Scripts/CaseFolder/CaseFolder3DDrag.cs`; `Assets/Resources/Tutorials/Level_02/guide.json`; `Tests/Level2Regression/Program.cs`. This initiative's README, SPEC, WORLD_AND_FEEDBACK, KNOWN_ISSUES, T02, T03 and PROGRESS updated.
+- **Verification:** `dotnet build Temp/ScratchBuild/Scratch.csproj --verbosity quiet` → 0 errors/29 baseline warnings. Level2Regression → 546 PASS (18 new mathematical pad-anchor cases plus wiring guards); ControlsRegression → 5,734 PASS; DialogueRegression → 799 PASS; ProgressionRegression → PASS; GuideRegression → 714 PASS after authorized rerun for sandbox-blocked replacement of its temporary save fixture. Source guards verify wiring rather than rendered behavior.
+- **Next/user checks:** first/repeated folder-button centering and unchanged entrance, chosen drag position, Ready outline, full Not Ready model while floating/aiming over folder/book/notes, both pad/indicator/ink landings through impact/rebound, rejected/accepted presses, cancellation/put-away/reopen and device frame pacing. T03/T04 user acceptance remains pending, then T05. No Unity or Git commands run.
+
+- **Content/document checks:** `python Tests/VerifyGuideTargets.py` -> 17 paths, none missing; 24 local documentation links resolve; guide JSON parses and edited text passes CRLF validation.
+
+## Stamp overlay camera, exact landing and feel polish — implemented; user Play Mode pending (2026-10-19)
+
+Owner: Claude. User screenshots: floating stamps drawn behind the open case folder, and the held stamp invisible while aiming (only the ghost imprint shows). Several earlier capture/sort-order repairs (Doc3DLayer `AlwaysComposite`, tool plane, layer 29) did not fix it in Play Mode, so the visibility no longer depends on the capture's sort order at all.
+
+- **Root-cause reasoning (not confirmed in Unity):** the lifted stamps were drawn by the main camera at `1.6 × near clip` depth (0.16–0.48 m) while the desk folder can sit closer, and the only "on top" path was the Doc3DLayer capture, which loses to the folder whenever the folder takes the front (any press on the paper, page turns). Over the folder the held stamp was therefore fully covered while its UI ghost stayed visible.
+- **Fix — layering:** lifted stamps (and stamps flying back) move to `Level2DeskStamps.StampLayer = 28` (unused, checked in TagManager and Office_Level2). The main camera skips that layer and a URP Overlay camera ("Desk Stamp Camera", child of the main camera, first in its camera stack so the settings board stays above, near clip 0.1 × main) draws only it after the whole 3D world. The Doc3DLayer capture is kept with `AlwaysComposite = false`, only for screen paper windows / captured documents, and is raised to the front every frame while the stamps are up. `HudWindowFocus` treats a press on a layer's own UI (the stamp pointer surface) as touching that layer, so grabbing a stamp no longer raises the folder.
+- **Fix — exact landing:** the stamp now physically lands on the paper. Its pad is built with the imprint's proportions and the stamp is sized at contact so the pad covers `ReviewInkMark.Size` (440 × 160 paper units) at the imprint's angle (`TryContactPose`). Press = anticipation lift → straighten → slam (ease-in) → pad pinned to the live paper point during squash/spring and paper thump → peel off → home. The decision/ink still happens once at impact with the same paper-local point the ghost showed. An aimed imprint near the edge is nudged fully onto the page (`KeepInkOnPage` / `FitInk`).
+- **Feel:** model parts hang off a `Body` child pivoted on the rubber face (squash keeps the pad on the ink); pick-up pop + click; drag sway that leans into the motion; over the front page the stamp blends (smoothed) from the hand pose to a hover just past the ghost, leaning back so the ghost and label stay readable; on touch the imprint is aimed 7.5% of the screen above the finger; ghost pulses; click when the ghost first appears; impact = paper + click sounds, ink ring burst, squash-and-spring; rejected press = small "no" wobble plus the existing fading faint mark; mouse hover grows/lifts a floating stamp.
+- **Exact files:** `Assets/Scripts/Level2/Level2StampDrag.cs` (rewritten), `Assets/Scripts/Level2/Level2DeskStamps.cs`, `Assets/Scripts/UI/ReviewInkMark.cs` (public `Size`), `Assets/Scripts/UI/HUD/HudWindowFocus.cs`, `Tests/Level2Regression/Program.cs`. No scene, prefab, TagManager, GUID, content, rule or reward changes.
+- **Verification:** `python Tests/make_scratch_build.py` + scratch build → 0 errors / 29 baseline warnings. Level2Regression → 542 PASS (old source-string guards for the replaced tool-plane/PadRootAxis design were rewritten; new numeric checks: pad face lands on the imprint point at several sizes/rotations, edge imprints fit the page, in-page imprints are untouched). `python Tests/VerifyLevel2Scene.py` → PASS (existing Office_Level1 copy warning). Play Mode NOT RUN; no rendered result is claimed.
+- **Next/user checks:** stamps above the folder while floating, held, aiming and pressing; pad lands exactly on the ghost (center and edges of the page, both stamps); feel of lift/sway/hover/slam/squash/burst; rejected vs recorded press; put away/reopen; Notes or Findings sheet overlapping the stamps (capture path); settings opened while stamps are out (board must stay above); device frame pacing. Tune constants at the top of `Level2StampDrag` (timings, `HoverLift`, `HoverBack`, `HoverTilt`, `TouchAimLift`, sway).
+
+
+## T05 hands-on income toolkit — implemented; user Play Mode pending (2026-10-19)
+
+Owner: Claude. Scope: the physical toolkit on Rosa's records desk, one guided example and the player's own repeat, built as the single annotation view and action set that T06 reuses. No scores, rewards, scene/prefab edits; four new script `.meta` files with unique GUIDs.
+
+- **Behavior:** after Rosa's handover, sitting at the records desk opens a navy case on the desk's left (hinged lid swings ~100 degrees in 0.45 s with a slight overshoot). TYPE cards (blue left tab) and TREATMENT cards (amber top bar) rise out into two columns, record tags (grey edge, punched hole) sit right of the paper, and a clipboard with the T0 payslip lies on Rosa's record tray. First visit only: Arthur demonstrates (the marker lifts and traces the salary line, leaving a translucent highlighter stroke; each card flies to its place and settles; the clip flies over and bites the payslip tag), with one short rule line per step, then everything goes back. Player: tap a line to highlight; tap a card then its place, or drag it there; tap a placed card to take it off (or select another card of its kind and tap the placed one to swap). A wrong-kind place returns the card softly with a hint; while a card is held its place tints green ("fits", never "correct"); "Placed" shows briefly with a paper tick. Each placement gives the card's rule; a note that differs from the demonstration says so (practice only). Matching all four calls `TryCompleteTutorial` (Tutorial to Challenge), shows Arthur's done line, plays the achievement sound and raises `AnnotationTutorialCompleted`.
+- **Ownership/cleanup:** input is read directly only while seated at this desk, with no demonstration running, nothing animating and not `TeachingPaused` (settings, dialogue, game pause). Presses on HUD buttons, open paper windows or 3D documents are ignored. Leaving the desk closes the case, cancels a held card and returns loose cards; placed notes stay on the paper; an interrupted demonstration replays next visit. Built once per desk (`IncomeToolkit.Create` reuses an existing child); runtime materials are released on destroy. No `Time.timeScale` use.
+- **Data:** `review.annotation` in `Levels/Level_02/cases/case_rosa_001.json`: 5 TYPE options and 4 TREATMENT options with general rule lines (passive income is not called tax-free or final-taxed; "Not income" is separate from "Statutory exclusion"); tutorial T0 (fictional Northwind Printing payslip PS-0430, 5 lines, 3 record tags, the demonstration and its guide lines); `entries: []` for T06. `CaseReviewValidator` checks option ids/labels, entry lines/tags, maxEvidence 1–2, and that the demonstration uses its own entry's line and options.
+- **State:** `CaseReviewState.toolkitDemoSeen`, `tutorialAnnotation` (`AnnotationEntryState`), `tutorialCompleted`; `TutorialActive`, `TutorialWork`, `TryMarkToolkitDemoSeen`, `TryCompleteTutorial`. Practice never changes `packetRevision`. New events `ToolkitDemoFinished` and `AnnotationTutorialCompleted` (objective/guide triggers). New objective step with a records-desk waypoint, and guide lesson `toolkit-practice`.
+- **Exact files:** new `Assets/Scripts/Data/IncomeAnnotation.cs`, `Assets/Scripts/Level2/IncomeToolkit.cs`, `Assets/Scripts/Level2/AnnotationPaper.cs`, `Assets/Scripts/Level2/ToolkitTarget.cs` (each with a `.meta`); edited `Assets/Scripts/Data/Definitions/CaseReviewDefinition.cs`, `Assets/Scripts/Data/CaseReviewState.cs`, `Assets/Scripts/Data/CaseReviewValidator.cs`, `Assets/Scripts/Data/ObjectiveTriggers.cs`, `Assets/Scripts/Core/GameplayEvents.cs`, `Assets/Scripts/UI/Guide/GuideDirector.cs`, `Assets/Scripts/UI/HUD/OfficeObjectives.cs`, `Assets/Scripts/Level2/Level2RosaStall.cs`, `Assets/Scripts/Level2/MarketRecordsDesk.cs`, `Assets/Scripts/Level2/Level2DeskStamps.cs` (`TryReadPointer` made public for reuse); content `Assets/Resources/Levels/Level_02/cases/case_rosa_001.json`, `Assets/Resources/Levels/Level_02/objectives.json`, `Assets/Resources/Tutorials/Level_02/guide.json`; `Tests/Level2Regression/Program.cs`.
+- **Verification:** `python Tests/make_scratch_build.py` + scratch build: 0 errors / 29 baseline warnings. Level2Regression: 616 PASS (new: content/validator cases; every annotation action including kind fit, replace, swap, bundle and removal; a data-defined second entry; tutorial transition, once-only, no packet change; JSON round trip; triggers; presentation-only demonstration; pause predicate; timings; no score/reward calls; cleanup). GuideRegression 714 PASS; DialogueRegression 799 PASS; ControlsRegression 5,734 PASS; ProgressionRegression PASS; `python Tests/VerifyGuideTargets.py` 17 paths, 0 missing; `python Tests/VerifyLevel2Scene.py` PASS (existing Office_Level1 copy warning). Play Mode NOT RUN.
+- **Next/user checks:** sit at the records desk after Rosa: lid/card/marker/clip motion and layout on the desk (nothing floating or clipping the tray, bundles or desk edge), phone text readability, demonstration pacing and Arthur's lines; then tap/tap and drag for each action, wrong-kind return, replace/remove, completion line and objective tick; leave mid-demonstration and mid-drag, then reopen; open settings during the demonstration. Then **T06** (Rosa's E1–E4 entries, 12 scored decisions, frozen tier), reusing `IncomeToolkit` and `AnnotationActions`.
+
+
+## T06 Mark the Money! challenge + toolkit feel pass — implemented; user Play Mode pending (2026-10-19)
+
+Owner: Claude. User asked to make the toolkit feel satisfying and game-like (highlighting looked yellow before inking, cards looked off, dull animation, add validations), then implement T06. Note: between this session's T05 and this work, another session had edited the toolkit (marker pickup, `HighlighterSweep`, card captions, layout tests, desk depth 0.82 and folded laundry). This pass rebuilt `IncomeToolkit`/`AnnotationPaper` on top of that state, keeping `HighlighterSweep`, `CardCaption`, `CardHome`, `PracticeHint` and their tests. Also: this session ran one read-only `git diff --stat` by mistake (AGENTS forbids any git command); nothing was changed by it.
+
+- **Feel/visuals:** swipe-to-ink highlighter (ink only where the nib passed, uneven segments, wet-ink dot, completion burst + SOURCE flag, tap draws it for you); pale blue row hover instead of yellow; cards with border, header band, drawn icons/ticks (no font glyphs), shadows that follow height, pickup glow, deal-out flips, squash-and-spring landing, sparkles (`ToolkitFx`: runtime ParticleSystems), shake-back for wrong-kind places, idle breathing and idle nudges; dashed note places that light up only for a fitting held card; lid now opens up/back (was rotating down into the case) with a scoreboard underneath; lid closes with a bounce.
+- **Validations:** wrong-kind places refused with a hint and red flash; locked (confirmed right) notes cannot be removed; CHECK with missing items names the first record's missing parts, flashes its tabs/places and scores nothing; the two-record clip says when it swaps out the oldest record; tutorial gives a rule line per action; hints only for red notes.
+- **T06 rules:** `IncomeChallenge` (pure): 4 entries x TYPE/TREATMENT/EVIDENCE = 12 decisions; highlight required but unscored; incomplete check changes nothing; first complete check frozen (`firstCorrect`, `firstWrong`); evidence must be the exact record set (E4 = D2 + D5; E1 = D1 only); confirmed/flagged notes until edited; hints general then specific; mastery required; `TryAward` once (phase to OfficeReconciliation). Rewards: `rewards.json` `minExp 48`, `goldAtCorrect 12`, `silverAtCorrect 10`; `LevelScoring.AccuracyBadge`; `LevelScoreLedger.AddSideQuest(..., accuracyTier)` (Level 1 call and badge rule unchanged). Reward card through new `SideQuestCompleteUI.ShowScreen(RewardScreenData)`.
+- **Content:** E1–E4 records (player-facing, no answers printed) and `annotationKey` with hints that never mention summary totals, findings, the omission or the stamp. Validator checks keys, options, bundle size and hints. Objectives: two new steps (`AnnotationsChecked`, `IncomeQuestCompleted`) with records-desk waypoints; guide lessons `mark-the-money` and `mark-the-money-fix`.
+- **Exact files:** new `Assets/Scripts/Data/IncomeChallenge.cs`, `Assets/Scripts/Level2/ToolkitFx.cs` (+ `.meta`); rewritten `Assets/Scripts/Level2/IncomeToolkit.cs`, `Assets/Scripts/Level2/AnnotationPaper.cs`, `Assets/Scripts/Level2/ToolkitTarget.cs`; edited `Assets/Scripts/Data/CaseReviewState.cs`, `Assets/Scripts/Data/CaseReviewValidator.cs`, `Assets/Scripts/Data/Definitions/CaseReviewDefinition.cs`, `Assets/Scripts/Data/ObjectiveTriggers.cs`, `Assets/Scripts/Core/GameplayEvents.cs`, `Assets/Scripts/UI/Guide/GuideDirector.cs`, `Assets/Scripts/UI/HUD/OfficeObjectives.cs`, `Assets/Scripts/RewardsSystem/LevelRewardRules.cs`, `LevelScoring.cs`, `LevelScoreLedger.cs`, `Assets/Scripts/SideQuest1/SideQuestCompleteUI.cs`, `Assets/Scripts/Level2/MarketRecordsDesk.cs`; content `Assets/Resources/Levels/Level_02/cases/case_rosa_001.json`, `rewards.json`, `objectives.json`, `Assets/Resources/Tutorials/Level_02/guide.json`; `Tests/Level2Regression/Program.cs`.
+- **Verification:** scratch build 0 errors / 29 baseline warnings. Level2Regression 806 PASS (new: tier boundaries 0/9/10/11/12, EXP floor, Level 1 badge unchanged, key vs CONTENT, no answers on records, hint leakage words, incomplete/partial checks, complete runs with 0/1/2/3/12 wrong, frozen score through corrections, locks/flags/hints, award once, save round trip, bundle rules, Annotated List without totals, source guards). GuideRegression 714, DialogueRegression 799, ControlsRegression 5,734, ProgressionRegression, CareerBoardRegression 69, SettingsRegression 93, TrainingRegression 513 all PASS; VerifyGuideTargets 17/0 missing; VerifyLevel2Scene PASS (existing warning). Play Mode NOT RUN.
+- **Next/user checks:** toolkit feel (swipe ink, card look/readability on phone, deal/flip/squash/sparkles, lid scoreboard readable), tutorial then challenge transition, three runs for Gold (12/12), Silver (one or two wrong) and Bronze (three or more wrong), CHECK with missing notes, red-note hints and locks, mastery spread/pack-up, EXP/hearts and medal card once, leaving mid-sequence and returning. Then **T07** (office reconciliation).
+
+
+## T07 office reconciliation — implemented; user Play Mode pending (2026-10-19)
+
+Owner: Claude. Scope: the player-reviewed schedule and findings F1/F2 in Rosa's folder, a pure evaluator with root causes for T09, and meaningful revision tracking. No scene, prefab, GUID (beyond two new script `.meta` files), reward or stamp changes.
+
+- **Behavior:** after the quest award (phase OfficeReconciliation) the folder shows, after Findings: Annotated Income List, Reviewed Schedule, Finding F1 · Unlisted payment, Finding F2 · Do two records disagree?. Boxes use the existing FindingSlot tap/drag transfer; a tap with nothing picked up empties a box. Schedule boxes take money lines from Rosa's records only (not S1); totals are summed from the player's lines. The same payment cannot be counted twice (moneyIds per record line; the refusal names the line already holding it). Any other line, including the loan, can be added (complete wrong reviews stand until review). Reasons/conclusions come from the book. `OfficeReviewCompleted` fires once when structurally complete.
+- **Rules (pure `OfficeReview`):** CanEdit from OfficeReconciliation until Audit/Completed; `SetScheduleRow`/`ClearScheduleRow`/`SetPart`/`ClearPart` each count one packet revision only on a real change; `StructurallyComplete`; `Evaluate` returns May/annual totals and root causes once each: `omission`, `missing-income:<money>`, `not-income-counted:<money>`, `double-counted`, `f1-unsupported`, `f2-unexplained`, `f2-false-flag` (F1 "corrected" without the scheduled job is the omission, counted once). Blank rows restored by Unity JSON count as empty.
+- **Data:** `review.conclusions`, `scheduleSources` (10 record lines with amounts and moneyIds), `scheduleSlots` 4, `officeFindings` (F1, F2 player-facing) and `officeRule` (answer data); new reason `paid-another-way`; book Review Notes gains that reason, one 7-word paragraph and three conclusion values (82 words total across the two leaves). Validator checks sources, pages, parts and that rule answers exist.
+- **Exact files:** new `Assets/Scripts/Data/OfficeReview.cs`, `Assets/Scripts/Level2/Level2OfficeReview.cs` (+ `.meta`); edited `Assets/Scripts/Data/Definitions/CaseReviewDefinition.cs`, `Assets/Scripts/Data/CaseReviewState.cs`, `Assets/Scripts/Data/CaseReviewValidator.cs`, `Assets/Scripts/Data/ObjectiveTriggers.cs`, `Assets/Scripts/Core/GameplayEvents.cs`, `Assets/Scripts/UI/Guide/GuideDirector.cs`, `Assets/Scripts/UI/HUD/OfficeObjectives.cs`, `Assets/Scripts/Level2/FindingSlot.cs` (optional `Cleared`), `Assets/Scripts/Level2/Level2FindingsPage.cs` (appends the office pages), `Assets/Scripts/Level2/Level2OfficeStart.cs` (part + SetupVersion 8); content `Assets/Resources/Levels/Level_02/cases/case_rosa_001.json`, `book.json`, `objectives.json`, `Assets/Resources/Tutorials/Level_02/guide.json`; `Tests/Level2Regression/Program.cs`.
+- **Verification:** scratch build 0 errors / 29 baseline warnings. Level2Regression 907 PASS (new: data/record-line amount match, no answers in player text, supported review = 20,000 / 140,000, split bank+cash lines, either-order F2, omitted/loan/double-count/false-flag/unexplained/F1-unsupported/missing-income packets, idempotent transfer, revision counting, edit window, save round trip, blank rows, S1 unchanged, Gold quest alone incomplete, no-rule cases, validator negatives, source guards). GuideRegression 714, DialogueRegression 799, ControlsRegression 5,734, ProgressionRegression PASS; VerifyGuideTargets 17/0 missing; VerifyLevel2Scene PASS (existing warning). Play Mode NOT RUN.
+- **Next/user checks:** after the quest, open Rosa's folder at the office desk: the four new pages read clearly; picking a record line and tapping a schedule box (and dragging) works; totals update; adding D6 after D1's total is refused with a clear message; F1/F2 boxes take record lines, Review Notes reasons and conclusions; tapping a filled box empties it; the objective ticks once when everything is filled. Then **T08** (final stamp with reason, bound to the packet revision).
+
+
+## T08 final stamp, T09 Auditor outcomes, T10 review cutoff — implemented; user Play Mode pending (2026-10-19)
+
+Owner: Claude. The user asked for three tickets in one go with internal tests before each; they run the Unity checks. Each ticket was compiled and tested before the next (T08: 963 PASS, T09: 993 PASS, T10: 1,018 PASS).
+
+- **T08:** pure `FinalAssessment` (reason required, structural prerequisites only, commit once at impact to the packet revision, same verdict on a current stamp ignored, stale after any graded change, history of 3, initial stamp untouched). Final Assessment folder page (recommendation, Reason box, revision, history) and its ink (faded when stale). Desk stamps turn to and stamp that page once the review is back at the office; `Level2PreliminaryStamp` routes final stamps. Hand-in gate (`Level2FolderHandoff.CanHandInReview`): current stamp, changed since a returned/held review, window open. Book Reading Records offers 5 generic assessment reasons.
+- **T09:** pure `FinalAudit` (Approved / SupportedHold / PrematureApproval / FalseHold / ReasonError; NotStamped / Unchanged refused; defects = office root causes + inherited field issues; false flag folded into one `false-hold`; root causes charged once; holds free; award once). `AuditorInteractable.LevelAudit` hook + `RunLevelDialogue` / `ReturnFolderForReview` / `CompleteLevelReview`; `Level2Audit` records once before the dialogue, then Auditor lines (data, per root cause) and Rosa's reaction. Rewards: `caseFile.maxExpLoss/maxHeartLoss` caps (0 = off for Level 1), `LevelScoring.Case(..., extraExpLoss, extraHeartLoss)`, `CaseProgressionManager.CaseExtraExpLoss/HeartLoss`; Level 2 `heartsPerRetry` 1. Worst completed run: 133 EXP / 8 hearts (passes).
+- **T10:** pure `ReviewClock` + `Level2ReviewClock` part (chip, warnings, deferred rollover with fade, desk placement, single late consequence, on-time recognition flag). Level 1 `OfficeHours` untouched.
+- **Events/objectives/guide:** `FinalAssessmentStamped`, `AuditReturned`, `ReviewDayRolled`; objective step for the final stamp (waypoint: desk stamps); guide lessons `final-assessment`, `to-auditor`, `audit-returned`. The last objective (state:CaseCompleteState, Auditor) is reached through approval.
+- **Exact files:** new `Assets/Scripts/Data/FinalAssessment.cs`, `FinalAudit.cs`, `ReviewClock.cs`, `Assets/Scripts/Level2/Level2Audit.cs`, `Level2ReviewClock.cs` (+ `.meta` each); edited `Assets/Scripts/Data/Definitions/CaseReviewDefinition.cs`, `Data/CaseReviewState.cs`, `Data/ObjectiveTriggers.cs`, `Data/CaseProgressionManager.cs`, `Core/GameplayEvents.cs`, `Interactables/AuditorInteractable.cs`, `RewardsSystem/LevelRewardRules.cs`, `LevelScoring.cs`, `LevelScoreLedger.cs`, `UI/Guide/GuideDirector.cs`, `UI/HUD/OfficeObjectives.cs`, `Level2/Level2OfficeReview.cs`, `Level2FindingsPage.cs`, `Level2PreliminaryStamp.cs`, `Level2DeskStamps.cs`, `Level2StampDrag.cs`, `Level2FolderHandoff.cs`, `Level2OfficeStart.cs` (SetupVersion 10); content `cases/case_rosa_001.json`, `book.json`, `rewards.json`, `objectives.json`, `Tutorials/Level_02/guide.json`; `Tests/Level2Regression/Program.cs`.
+- **Verification:** scratch build 0 errors / 29 baseline warnings. Level2Regression 1,018 PASS. GuideRegression 714, ProgressionRegression PASS, CareerBoardRegression 69, ControlsRegression 5,734, DialogueRegression 799, SettingsRegression 93, TrainingRegression 513; VerifyGuideTargets 17/0 missing; VerifyLevel2Scene PASS (existing warning). Play Mode NOT RUN.
+- **Next/user checks:** Final Assessment page readable; reason box takes Reading Records reasons; stamps turn to that page, ink lands there, a change fades it and the hand-in asks for a restamp. Auditor: approval (completion + case card once), justified hold (Payment not counted while the blanket job is missing), premature Ready, false hold (Difference unexplained on a supported packet), wrong reason; unchanged resubmission refused; Rosa's reactions; folder comes back each time with all work. Clock: chip at the top after the receptionist, pauses during dialogue/guide/demonstration, warnings, cutoff during a stamp or drag waits, next-morning fade at the desk, the 3 EXP / 1 heart late loss once. Then **T11** (save/checkpoint and finale).
+
+
+## T11 resume, Rosa's ending and story fact — implemented; user Play Mode pending (2026-10-19)
+
+Owner: Claude. Note: between T10 and T11 another session changed Mark the Money! to score the highlighted source line too (16 decisions; rewards.json Gold 16 / Silver 14), and edited the guide, book and toolkit. That design was kept; T11/T12 tests use it.
+
+- **Checkpoint:** `LevelCheckpoint` in `PlayerProgressData.activeCheckpoint` (same signed save, version 4 unchanged); `Level2Checkpointer` saves at milestones / 30 s / pause / quit (not after approval) and restores review, taxpayer facts, folder, stall records, objectives and earned score without raising events. `ApplyLevelResult` clears the checkpoint in the result's write.
+- **Finale:** `OfficeFeature.Finale` (Level 2 level.json "finale"); `CaseFinale` gated by the level profile, tier from the review's returned submissions and cutoff; Rosa's lines from case JSON `clientFinale` with the Desk confirmation; story fact `rosa-desk-provenance` saved once on approval.
+- **Files:** new `Assets/Scripts/Data/Level2Checkpoint.cs`, `Assets/Scripts/Level2/Level2Checkpointer.cs` (+ `.meta`); edited `RewardsSystem/PlayerProgressData.cs`, `PlayerProgressManager.cs`, `Data/CaseProgressionManager.cs` (`RestoreAuditCounters`), `Data/OfficeLevelCatalog.cs`, `UI/HUD/CaseFinale.cs`, `Level2/Level2Audit.cs`, `Level2FolderHandoff.cs` (`RestorePlacedFolder`), `Level2OfficeStart.cs` (SetupVersion 11); content `cases/case_rosa_001.json` (clientFinale), `level.json`.
+- **Verification:** build 0 errors / 29 warnings; Level2Regression 1,047 PASS at T11 (round trip of a mid-run checkpoint, blank-record normalization, implied triggers, old-save defaults, story fact once, career result once + Level 3 gate, 160/9 maximum, source guards); Progression, CareerBoard 69, Guide 714, Training 513, Settings 93, Dialogue 799, Controls 5,734 PASS.
+
+## T12 integration — implemented; user Play Mode pending (2026-10-19)
+
+- Whole-level pure flows (correct 160/160 EXP + 9/9 hearts + Gold; wrong income Bronze; premature Ready then fixed; justified hold; false hold; late with one loss; resumed at the office) and content/leakage checks in Level2Regression (1,065 PASS). New `Tests/VerifyLevel2Assets.py`: 11,659 unique `.meta` GUIDs; 36 Level 2 scripts and 7 content files have `.meta` and CRLF (fixed `Level2DeskStamps.cs`, which was LF-only).
+- Commands (project root): `python Tests/make_scratch_build.py`; `dotnet build Temp/ScratchBuild/Scratch.csproj` (0 errors / 29 baseline warnings); `dotnet run` in Tests/Level2Regression, GuideRegression, ProgressionRegression, CareerBoardRegression, ControlsRegression, DialogueRegression, SettingsRegression, TrainingRegression (all PASS); `python Tests/VerifyLevel2Scene.py` (PASS, existing Office_Level1-copy warning); `python Tests/VerifyGuideTargets.py` (17 paths, 0 missing); `python Tests/VerifyLevel2Assets.py` (PASS). Unity import, Play Mode and device checks: NOT RUN (user-owned).
+
+## Final handoff (2026-10-19)
+
+**Playable flow (source-complete, user Play Mode pending):** reception (cutoff announced) -> market-client drawer -> desk (folder from HUD icon) -> Findings slip -> initial Not Ready stamp -> Rosa's stall (records) -> income toolkit (demo, practice, Mark the Money! E1-E4, frozen first check, corrections, medal card) -> office: Annotated Income List, Reviewed Schedule, F1, F2 -> Final Assessment (reason + stamp) -> Auditor (approve / hold / return) -> Rosa's ending -> Level Complete. Review cutoff, next-morning rollover and resume work throughout.
+
+**Runtime parts (all built by `Level2OfficeStart` under `Level2Gameplay`, no manual scene assembly):** CaseRetrieval, FolderHandoff, FindingsPage, PreliminaryStamp, DeskStamps (overlay stamp camera, layer 28), RosaStall (Building_4 store, SM_Chr_Business_Female_03 Rosa, records desk, IncomeToolkit), OfficeReview, Audit, ReviewClock, Checkpoint. Shared hooks added: `AuditorInteractable.LevelAudit`, `StampUI.StampOverride` (T03), `AuditorSubmissionTray.SubmissionBlocked`, `CaseFolderUI.ExtraPages/PageDecorator`, `OfficeFeature.Finale`, reward caps/accuracy badge fields (0 = off for Level 1).
+
+**Pure rule models (tested outside Unity):** `CaseReviewState`, `PreliminaryReview`, `FindingComparison`, `AnnotationActions`, `IncomeChallenge`, `OfficeReview`, `FinalAssessment`, `FinalAudit`, `ReviewClock`, `Level2Checkpoint`, `CaseReviewValidator`, `LevelScoring`.
+
+**Content (Resources/Levels/Level_02):** `level.json`, `rewards.json`, `objectives.json`, `office_start.json`, `book.json` (2 leaves), `cases/case_rosa_001.json` (documents, review, annotation + key, office review + rule, assessment reasons, audit lines, clock, clientFinale), `scene_assets.asset`; `Resources/Tutorials/Level_02/guide.json`.
+
+**Ordered user checks (Play Mode / device):**
+1. Start Level 2 from the career board: one HUD, receptionist, cutoff chip appears after the talk.
+2. Drawer -> folder -> desk -> Findings slip -> initial stamp (stamps visible above the folder, exact landing).
+3. Stall: Rosa idle (no T-pose), conversation, records in the tray.
+4. Toolkit: lid/cards/marker feel, demo, practice, Mark the Money! three runs (Gold / Silver / Bronze), medal card once.
+5. Office: four new folder pages readable on phone; D6-after-D1 refusal; F1/F2 boxes; Final Assessment reason + stamp; edit -> stamp fades -> hand-in asks to restamp.
+6. Auditor: approve, justified hold, premature Ready, false hold, wrong reason, unchanged resubmission refused; Rosa's reactions; folder returns with work.
+7. Clock: pauses in dialogue/guide/demo; warnings; cutoff during a stamp/drag waits; next-morning fade at the desk; late loss once.
+8. Quit mid-quest and mid-office, relaunch Level 2: work, grade, penalties and objectives restored; no reward repeats.
+9. Approval: Rosa's ending in the conference room, Level Complete card, Continue to the menu, Level 3 unlocked when passed; replay farms nothing.
+10. Revisit Level 1: original quest, gate, Marie case, office hours, rewards unchanged.
+
+**Not claimed:** Unity import success, visuals, timing, readability, device performance, audio balance. Git is user-owned.
+
+
+## Level 1 consistency follow-up — in progress (2026-10-19)
+
+Owner: Codex. User requested shared office-hours presentation, physical detachable records, a compact folder, fresh direct Editor Play starts, annotated-paper collection and the shared side-quest splash. Preserve existing work and Level 1 defaults. Scope: clock presentation, Level2 papers/rewards/startup and focused shared UI seams. Internal build/regression checks only; user owns Play Mode. Read-only exploration delegated under the astra-orchestrator skill; implementation ownership will remain separated by file. One read-only git status was run before discovering the local prohibition; no further git commands.
+
+
+## Level 1 consistency follow-up — 2026-10-19
+
+Implemented — internally verified; user Play Mode pending. This supersedes the older separate top-centre review-chip and 16-page folder descriptions.
+
+- Shared OfficeHoursChip and OfficeMorningOverlay now present Level 2 time in the minimap, an analog cutoff chip below progression, and the same next-morning fade/title/day layout and timing. Day one begins 7:30 AM, subsequent days 8:00 AM; 12 active minutes map to two game hours. Auditor remains present. Existing one-time late penalty and case state are retained. Modal/teaching pauses and gesture boundaries prevent rollover during interaction.
+- Folder now has three initial pages and six after the quest: Taxpayer Information, Prepared Packet (S1/N1 tabs), Findings (Finding and D1–D6 tabs after collection), Reviewed Schedule, Office Findings (F1/F2 tabs), Final Assessment. Stable records, evidence keys and grading remain intact. The obsolete page-6 document links are suppressed for review cases.
+- Records reuse the existing removable Findings paper: attached world-space preview with layered paper edges/shadow, lift, independent floating comparison, selectable source rows, and animated filing. Detached papers use the existing perspective/composited UI system, not new free-standing mesh simulations.
+- Annotated papers have a third HUD icon below Notes/Folder, saved-state contents, tap/drag opening, and a reward-card-following preview, flatten, return-to-icon and pulse. The shared SideQuestSplash shows Mark the Money content before the scored challenge.
+- Direct Editor Play in Office_Level2 starts fresh and bypasses checkpoint reads/writes. Completing that attempt also preserves the existing checkpoint. Career-board entry and player builds retain normal resume. Existing career best-result saving remains enabled; this is checkpoint isolation, not a separate career-save sandbox.
+
+Pending user checks: direct Play fresh cabinet start; career-board resume; readable S1/N1 and F1/F2 tabs; detach multiple receipts, transfer values and file them; splash and reward-to-icon animation; cutoff while reading/dragging/stamping and next-morning preservation. No Unity Play/device/visual verification was performed.
+
+Validation: scratch build 0 errors / 29 existing warnings; Level2Regression 1,075 PASS; GuideRegression 714 PASS; ControlsRegression 5,734 PASS; ProgressionRegression PASS; VerifyLevel2Assets PASS (11,662 unique GUIDs); VerifyLevel2Scene PASS with existing baseline-drift warning; VerifyGuideTargets 17/0 missing. GuideRegression initially could not move its temp save under the host temp directory; rerun with TEMP/TMP set to workspace Temp/ConsistencyTests passed. Reviewer found completion clearing the preserved checkpoint; fixed in PlayerProgressManager. Review initially interrupted by usage limit, then resumed and completed. Final post-animation scratch compile passed: 0 errors / 29 existing warnings.
+
+Touched files this follow-up: Level2ReviewClock, ReviewClock, OfficeHoursChip, OfficeHours, new OfficeMorningOverlay (+meta); Level2Checkpointer, Level2Checkpoint, PlayerProgressManager, Level2OfficeStart; CaseFolderUI, Level2FindingsPage, Level2FindingsSheet, new Level2RecordPaper (+meta), Level2OfficeReview; SideQuestSplash, IncomeToolkit, HudIconArt, new Level2AnnotatedPapers (+meta), GuideDirector; Level_02 case/objectives, guide.json; Tests/Level2Regression/Program.cs and this documentation pack. Scene files were not edited. Next: user Play Mode acceptance of this consistency pass.
+
+
+## Paper desk interaction redesign — in progress (2026-10-19)
+
+Owner: Codex. User requests chaptered readable objectives, separate prepared pages, desk-entry splash before teaching, four individually floating annotated quest papers, Supporting Documents stack (Finding + five records) with 3-second hold gather/drop return, simplified schedule/unlisted-payment review and handwritten final summary without final-reason selection. Ownership split across paper stacks, annotation cards and domain review; root handles objectives/splash/integration/tests. No scene regeneration, git or Unity Play.
+
+
+## Paper desk interaction redesign — implementation and verification (2026-10-20)
+
+Implemented — internally verified; user Play Mode pending. The newer SPEC section supersedes the prior tabbed folder, single reward list and F2/final-reason flow. All requested source/content work is runtime-built; no scene regeneration or manual assembly is required.
+
+Changed paths in this pass:
+- Objectives/splash: Assets/Scripts/UI/HUD/NotesPaperView.cs; Assets/Resources/Levels/Level_02/objectives.json; Assets/Scripts/Level2/IncomeToolkit.cs; Assets/Scripts/SideQuest1/SideQuestSplash.cs; Assets/Scripts/Data/CaseReviewState.cs.
+- Paper stack: Assets/Scripts/UI/CaseFolderUI.cs; Assets/Scripts/Level2/Level2FindingsPage.cs, Level2FindingsSheet.cs, Level2RecordPaper.cs, Level2SupportingStack.cs (+meta), Level2SupportingStackCover.cs (+meta); Assets/Scripts/UI/HUD/FloatingWindow.cs; Assets/Scripts/Level2/Level2ReviewClock.cs.
+- Annotated collection: Assets/Scripts/Level2/Level2AnnotatedPapers.cs, AnnotationPaper.cs, AnnotationPaperCollectionFace.cs (+meta).
+- Compact review: Assets/Scripts/Data/Definitions/CaseReviewDefinition.cs; Assets/Scripts/Data/OfficeReview.cs, FinalAssessment.cs, FinalAudit.cs; Assets/Scripts/Level2/Level2OfficeReview.cs; Assets/Resources/Levels/Level_02/cases/case_rosa_001.json and book.json.
+- Guidance/handover: Assets/Resources/Tutorials/Level_02/guide.json; Assets/Scripts/Level2/Level2FolderHandoff.cs, MarketRecordsDesk.cs, Level2RosaStall.cs.
+- Verification/docs: Tests/Level2Regression/Program.cs and LegacyReview.json; this documentation pack. The legacy fixture preserves regression coverage for non-simplified cases while current-content tests exercise the compact flow.
+
+Internal verification: python Tests/make_scratch_build.py; dotnet build Temp/ScratchBuild/Scratch.csproj --no-restore -v:q (0 errors, 29 baseline warnings); Level2Regression 1,086 PASS; GuideRegression 714 PASS; ControlsRegression 5,734 PASS; ProgressionRegression PASS; VerifyLevel2Assets PASS (11,665 unique meta GUIDs); VerifyLevel2Scene PASS (existing Level1-baseline drift warning); VerifyGuideTargets 17 paths, zero missing. Guide tests use workspace Temp/ConsistencyTests for TEMP/TMP. Scene hashes are unchanged from the previous pass, including Office_Level2_OLD.
+
+Review fixes included objective re-completion after audit return, readable final summary, shorter schedule labels, paper resting scale preserved across focus/reopen, cancelled hidden-stack holds/filing, actual AnnotationPaper models for saved rewards and collection input protection. The summary uses player entries only; malformed or wrong work still reaches the auditor rather than being silently corrected.
+
+User acceptance sequence:
+1. Direct Editor Play begins fresh; career-board entry resumes a saved attempt.
+2. Notes has three readable chapters; Summary and Payment Note are separate pages.
+3. First records-desk visit shows splash before tutorial; completing the quest collects four actual papers to the new icon.
+4. Open all four, reveal annotations, drag/focus each above/below folder/book, then toggle the icon to return them.
+5. Drag Supporting Documents out; hold a paper three seconds, miss a folder drop, then gather/file successfully. Repeat with settings and folder close during hold/filing.
+6. Fill the schedule and unlisted-payment task; read summary, stamp final, edit/restamp, submit. Test an incorrect submission and corrections.
+7. Cutoff waits for paper/stamp actions, shows next morning, preserves work; revisit Level1 profile papers/office hours.
+
+No Unity editor launch, Play Mode, touch/device, visual, timing or performance checks were performed. User-owned git operations were not run in this redesign. Next: user Play Mode acceptance; tune only reproduced visual/interaction issues.
+
+
+## Polish and completion pass — implemented; user Play Mode pending (2026-10-20)
+
+Owner: Claude (session 2026-10-20). User request: polish and complete Level 2 (visuals, layout, simplified case logic, annotated paper as knowledge/value source, Tax Code Book icon with cheat sheets, learning support, internal tests). Three interpretations were confirmed in chat (see SPEC "Polish and completion pass").
+
+Changed paths:
+- Content: Assets/Resources/Levels/Level_02/cases/case_rosa_001.json, book.json, objectives.json; Assets/Resources/Tutorials/Level_02/guide.json.
+- Data/rules: Assets/Scripts/Data/Definitions/CaseReviewDefinition.cs (scheduleSlotLabels, ScheduleSourceDefinition.entryId, lookups), Data/CaseReviewValidator.cs, Data/OfficeReview.cs (DropRetiredRows).
+- Office review and papers: Assets/Scripts/Level2/Level2OfficeReview.cs, AnnotationPaperCollectionFace.cs (AnnotatedValueRow), AnnotationPaper.cs (ToolkitBuilder.Unlit, TryLineBand), Level2AnnotatedPapers.cs, Level2SupportingStack.cs, Level2FindingsSheet.cs, Level2RecordPaper.cs, Level2RosaStall.cs, Level2OfficeStart.cs (SetupVersion 13).
+- Book: new Assets/Scripts/Level2/Level2TaxCodeBookIcon.cs (+ .meta, unique GUID); Assets/Scripts/TaxCodeBook/TaxCodeBook3DDrag.cs (OpenFromHud and accessors); Assets/Scripts/UI/TaxCodeBookUI.cs (IsShowing, first-leaf opening, FitBody); Assets/Scripts/UI/HUD/HudIconArt.cs ("book" glyph).
+- Tests/docs: Tests/Level2Regression/Program.cs; this pack (README, SPEC, CONTENT, PROGRESS, KNOWN_ISSUES).
+
+Internal verification (all run 2026-10-20): python Tests/make_scratch_build.py; dotnet build Temp/ScratchBuild/Scratch.csproj --no-restore -v:q (0 errors, 29 baseline warnings); Level2Regression 1,107 PASS (was 1,086; content checks rewritten for the simplified case, plus new checks for the annotated schedule, retired-row migration, slot captions/validator, book icon order, cheat sheets and source wiring); GuideRegression 714 PASS; ControlsRegression 5,734 PASS; ProgressionRegression PASS; DialogueRegression 799 PASS; TrainingRegression 513/513; SettingsRegression 93/93; CareerBoardRegression 69/69; IntroCutsceneRegression 29/29; VerifyLevel2Assets PASS (11,666 unique GUIDs); VerifyLevel2Scene PASS (existing Level1-drift warning); VerifyGuideTargets 17 paths, 0 missing; VerifyOfficeNpcMarkers PASS. No scene, prefab or TagManager file was edited.
+
+Process note: at the start of this session one read-only `git status` ran before AGENTS.md was read, which breaks the git-ownership rule. No other git command was run.
+
+Pending user Play Mode checks:
+1. Tax Code Book icon sits between Case Folder and Annotated Papers; at the desk it opens and returns the desk book; while walking and at Rosa's records desk it floats, turns pages, swipes closed, and flies back on a second tap; leaving or entering a desk while it floats puts it back.
+2. The book opens on "Cheat Sheet: The Cards"; every Level 2 leaf fits its page.
+3. Rosa's envelope shows four sheets (D1, D3, D4, D5); Mark the Money! offers four record tags and a one-record clip; the practice ends with the new line.
+4. The annotated papers look cream and bright (unlit), not grey; they are larger and do not overlap.
+5. At the office the Reviewed Schedule shows three captioned lines, totals and one conclusion, all inside the page. Tapping an empty line opens the annotated papers to the left of the folder with their highlights showing. A highlighted amount pulses; tap it, then tap a line (and also try dragging). It turns green once scheduled, and a record row is refused with the pointer message.
+6. Supporting Documents spreads Findings large on the left and four records in a 2 x 2 grid with readable text; gather, file and re-scatter still work.
+7. Correct path: 12,000 + 3,000 + 5,000 and `Corrected: included`, approved. Loan in the missing line returns targeted feedback. Resume a checkpoint saved mid-review under the old layout and confirm the schedule note.
+
+Next: user Play Mode acceptance; tune only reproduced visual or interaction issues.
+
+
+## Additional Level 2 fixes — implemented; user Play Mode pending (2026-10-20)
+
+Owner: Claude (same session). Covers the user's follow-up: book page styling, the Findings paper and folder, Tax Code Book storing and toggling, the exact annotated papers, and internal tests.
+
+Changed paths: Assets/Resources/Levels/Level_02/book.json; Assets/Resources/Tutorials/Level_02/guide.json; Assets/Scripts/Data/TaxCodeSection.cs (readOnly); Data/DragDrop/TaxCodeValueChip.cs; Data/CaseReviewState.cs (taxBookStored); TaxCodeBook/TaxCodeBook3DDrag.cs (store hooks, ParkClosedBook, reset guards); Level2/Level2TaxCodeBookIcon.cs; Level2/Level2FindingsPage.cs; Level2/Level2FindingsSheet.cs; Level2/Level2OfficeReview.cs (summary last); Level2/IncomeToolkit.cs (BuildCardVisual, public PlacedScale/PaperScale); Level2/AnnotationPaper.cs (SelfLight, cardsAttached); Level2/AnnotationPaperCollectionFace.cs; Level2/Level2AnnotatedPapers.cs; Level2/Level2ReviewClock.cs; Tests/Level2Regression/Program.cs; this pack. Level2SupportingStack and Level2RecordPaper remain in the project but are no longer used by the Findings page.
+
+Internal verification: scratch build 0 errors (29 baseline warnings); Level2Regression 1,118 PASS; GuideRegression 714; ControlsRegression 5,734; ProgressionRegression PASS; DialogueRegression 799; TrainingRegression 513/513; SettingsRegression 93/93; CareerBoardRegression 69/69; IntroCutsceneRegression 29/29; VerifyLevel2Assets PASS; VerifyLevel2Scene PASS (existing Level1-drift warning); VerifyGuideTargets 0 missing; VerifyOfficeNpcMarkers PASS. No git commands were run in this pass. No scene or prefab edits were made.
+
+Pending user Play Mode checks:
+1. The book opens on Section 4. Sections 4-6 look like Sections 1-3 (highlighted terms with explanations, readable size), and their terms cannot be dragged.
+2. At the desk the empty book icon pulses with "Drag the book here". Drag the desk book onto it: it flies in, the icon fills, and the desk copy is gone. Leave and return to the desk: the book stays in the icon.
+3. Tap the icon to open the book in the centre, tap again to close it, and drag it out to a spot. Do this idle, walking, at the office desk and during Mark the Money!. Before storing, the icon cannot be dragged.
+4. The Findings page shows the attached paper smaller, with the page visible around it. Lift it (peel animation), work on it, then drop it on the folder while another page is showing: it hovers, the folder turns to Findings, and it attaches smoothly. Close the folder mid-drop and the paper stays loose.
+5. The record pages (Clothes Collections, Blanket Wash Receipt, Rental Receipt, Loan Agreement) are readable, and their rows can still be used as the Clue.
+6. Final Assessment: the handwritten summary is the last row.
+7. Annotated papers: four in one row, with highlights and the attached cards (ticks when mastered), no flip, lit with shadows. Tap to bring one forward, drag them anywhere, and check the highlighted-amount bands still line up.
+
+
+## Book, annotated paper and folder follow-up — implemented; user Play Mode pending (2026-10-20)
+
+Changed: Assets/Scripts/Level2/Level2TaxCodeBookIcon.cs (prompt removed, FloatingBookGrab, composited while out); TaxCodeBook/TaxCodeBook3DDrag.cs (SetHeldTint, drag tint); UI/TaxCodeBookUI.cs (page 1, PaperRoot); Level2/AnnotationPaper.cs (ink under text, larger rows); Level2/AnnotationPaperCollectionFace.cs (AlwaysComposite, lighter value band, PresentSchedule on pick-up); Level2/Level2AnnotatedPapers.cs (size); Level2/Level2OfficeReview.cs (PresentSchedule); Level2/Level2FindingsPage.cs (no record pages); Resources case_rosa_001.json (row labels, schedule captions), guide.json (Arthur's clue, side quest line); Tests/Level2Regression/Program.cs.
+
+Internal verification: scratch build 0 errors; Level2Regression 1,133 PASS; GuideRegression 714; ControlsRegression 5,734; ProgressionRegression PASS; DialogueRegression 799; TrainingRegression 513/513; SettingsRegression 93/93; CareerBoardRegression 69/69; IntroCutsceneRegression 29/29; VerifyLevel2Assets, VerifyLevel2Scene (existing warning), VerifyGuideTargets and VerifyOfficeNpcMarkers PASS. No git or Unity was run.
+
+Pending user Play Mode checks:
+1. No drag tag on screen; Arthur's line hints at the icon.
+2. Drag the desk book: it is red-tinted while held, then flies into the icon.
+3. Open the book from the icon: it is on page 1 and in front of everything. Drag it by the page (red tint) and drop it on the icon to put it away. Taps on page edges and Review Notes values still work.
+4. After the side quest, all four papers, E1 included, show in front of the HUD and desk at the larger size. Rows are readable, the highlights sit under the text, and the cards are attached.
+5. At the office, tap or drag a highlighted amount: the folder turns to the Reviewed Schedule and comes forward; drop or tap a line. The captions read Summary line 1/2 and Missing entry.
+6. The folder has six pages, with no record pages.
+
+
+## Book pose, red book and paper-drag performance — implemented; user Play Mode pending (2026-10-20)
+
+Changed: Assets/Scripts/Level2/Level2TaxCodeBookIcon.cs (page-based reading pose, grip on the book root, red ghost); UI/HUD/HudIconArt.cs (red book glyph); UI/HUD/Doc3DLayer.cs (opt-in RenderOnlyWhenChanged, FootprintRect, MarkDirty); Level2/AnnotationPaperCollectionFace.cs (per-paper layers 23-26, change-only captures, window footprint, main camera skips paper layers); Level2/AnnotationPaper.cs and Level2/Level2AnnotatedPapers.cs (pass the paper index); Tests/Level2Regression/Program.cs.
+
+Internal verification: scratch build 0 errors; Level2Regression 1,138 PASS; GuideRegression 714; ControlsRegression 5,734; ProgressionRegression PASS; DialogueRegression 799; TrainingRegression 513/513; SettingsRegression 93/93; CareerBoardRegression 69/69; IntroCutsceneRegression 29/29; VerifyLevel2Assets, VerifyLevel2Scene (existing warning), VerifyGuideTargets and VerifyOfficeNpcMarkers PASS. No git or Unity was run.
+
+Pending user Play Mode checks: open the stored book while walking, at the office desk and at Rosa's desk. It should read upright and centred with the whole book visible. Drag it by its page (red tint), drop it on the icon, take it out again, and repeat. The icon and drag ghost are red. With all four annotated papers open, drag each one: it should follow the finger without stutter, come to the front on tap, and show no paper twice or behind the desk. Watch the editor frame time and the device.
+
+
+## Tax Code Book on the Case Folder system — implemented; user Play Mode pending (2026-10-20)
+
+Changed: Assets/Scripts/Level2/Level2TaxCodeBookIcon.cs (Case Folder framing, camera-local hold, open desk book storing); TaxCodeBook/TaxCodeBookFloatingModel3D.cs (TryStoreAt hook, red tint while held); TaxCodeBook/TaxCodeBook3DDrag.cs (ParkOpenBook); Tests/Level2Regression/Program.cs. Scratch build 0 errors; Level2Regression 1,139 PASS; Guide 714, Controls 5,734, Progression, Dialogue 799, Training 513, Settings 93, CareerBoard 69, Intro 29, VerifyLevel2Assets and VerifyLevel2Scene PASS.
+
+Pending user checks: at the desk, drag the open book onto the icon (red while held), and also the closed book. Tap the icon while walking, then look around and walk: the book stays upright and readable in front of you. Drag it by its page and drop it on the icon. Take it out by dragging from the icon. Repeat at the office desk and at Rosa's records desk.
+
+
+## Records desk, book colour, folder return and audit summary — implemented; user Play Mode pending (2026-10-20)
+
+Changed: Assets/Scripts/UI/WorkstationUI.cs (ExitBlocked); UI/Guide/GuideCoachView.cs (HintAtBottom); Level2/IncomeToolkit.cs (exit hold, bottom hint, higher paper/pen); TaxCodeBook/TaxCodeBook3DDrag.cs (ApplyRedCover, no colour-changing hold tint); Level2/Level2FolderHandoff.cs (stored folder back to the desk); UI/AuditSummaryPopupUI.cs (ShowScreen, null-safe hands); Interactables/AuditorInteractable.cs (ShowLevelSummary); Level2/Level2Audit.cs (Summary card before completion and returns); Tests/Level2Regression/Program.cs.
+
+Internal verification: scratch build 0 errors; Level2Regression 1,147 PASS; Guide 714; Controls 5,734; Progression PASS; Dialogue 799; Training 513; Settings 93; CareerBoard 69; Intro 29; VerifyLevel2Assets, VerifyLevel2Scene (existing warning), VerifyGuideTargets, VerifyOfficeNpcMarkers PASS.
+
+Pending user checks: at Rosa's desk there is no Exit Desk during practice or the challenge, and it comes back afterwards. Arthur's lines are at the bottom and the paper and highlighter are fully visible. Touching or dragging the Tax Code Book keeps it red. Store the folder in its icon, then drag it onto the desk (and tap the icon at the desk). An approved hand-in shows the Audit Summary, then the case reward and Level Complete. A returned one shows the summary with what to fix.
+
+
+## Side quest finish and Auditor order — implemented; user Play Mode pending (2026-10-20)
+
+Changed: Assets/Scripts/Level2/IncomeToolkit.cs (BoxScale, stowed bodies hidden, exit hold over the reward card and collection); Level2/Level2Audit.cs (TalkWhenFree, totals line, no on-time line); Tests/Level2Regression/Program.cs. Scratch build 0 errors; Level2Regression 1,149 PASS; the other suites and the Level 2 asset and scene validators PASS.
+
+Pending user checks: no small cards in the case when the toolkit opens or packs up. No Exit Desk over Side Quest Complete; Continue does not leave the desk, and Exit Desk appears after the papers are collected. Hand in the folder: the Auditor talks first, then the Audit Summary, then the reward and Level Complete, with no "On time!" bubble.
+
+
+## Leaving the records desk and the reasons page — implemented; user Play Mode pending (2026-10-20)
+
+Changed: Assets/Scripts/Level2/IncomeToolkit.cs, Level2/Level2OfficeReview.cs, Data/FinalAssessment.cs, Resources/Levels/Level_02/book.json, Tests/Level2Regression/Program.cs. Scratch build 0 errors; Level2Regression 1,151 PASS; Guide, Controls, Progression and Training PASS; VerifyLevel2Assets PASS. Pending: press Continue on Side Quest Complete. The papers should fly to their icon and the player should stand up from the desk. Then check that the book page reads "Section 7 – Finding Reasons".
+
+
+## Book back onto the desk; summary after the dialogue closes — implemented; user Play Mode pending (2026-10-20)
+
+Changed: Assets/Scripts/Level2/Level2TaxCodeBookIcon.cs (OverOfficeDesk, ReturnToDesk), TaxCodeBook/TaxCodeBook3DDrag.cs (UnparkClosedBook, RestingClosedPosition), UI/DialogueUI.cs (read-only IsPanelShowing), Level2/Level2Audit.cs (AfterDialogueCloses), Tests/Level2Regression/Program.cs. Scratch build 0 errors; Level2Regression 1,153 PASS; Guide, Controls, Dialogue, Progression and Training PASS; VerifyLevel2Assets PASS. Pending: at the desk, drag the book from its icon onto the desk and it restacks; open it from the icon, drag it onto the desk and it restacks. Hand in the folder: the Audit Summary appears only after the last Auditor line is continued and the box is gone.

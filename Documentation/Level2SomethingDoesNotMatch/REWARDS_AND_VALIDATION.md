@@ -73,3 +73,30 @@ AI reports these as pending until the user confirms results. Provide this checkl
 | Revisit Level1 | Original quest, gate, Marie case, clock, tutorial and rewards unchanged |
 
 Performance and visual QA: check on intended phone orientation/device, paper readability, two-document comparison, frame pacing, material allocations, audio volume, reduced-motion behavior, modal close/back and pause/resume. Do not declare performance budgets measured from source inspection.
+
+
+## Automatic Findings checks — 2026-10-18
+
+Checking a complete link is an automatic, unscored response to a field edit. A partial draft is neutral; `No link yet` describes these selections, never certifies the whole packet. Test meaningful statements versus reference metadata, unrelated reasons, unavailable evidence, repeated checking, edit invalidation, confirmation serialization and the stamp's no-bypass gate. Supported checking creates no stamp, packet revision, correction or reward. User verifies tap-source/tap-slot, drag/drop, aim frame, accepted/rejected badges, overlapping book focus, the three-field layout, two concise book leaves, Notes-font reveal and repeated detach/return/reopen flow.
+
+
+Latest concrete-entry checks: S1's May total (`SummarySubtotal`) plus N1's paid-job statement (`ReferralNote`) plus Unlisted payment succeeds; another S1 row fails as WrongConcern at the stamp gate. No new reward or penalty is introduced. D1 is explicitly clothes-only, so the separate blanket job is not counted twice. All three field captions must remain above their values in editable and read-only states. Check the backward lean, tapered fields and pointer/aim alignment in Unity.
+
+
+Paper/stamp follow-up checks: handwritten font is fixed at 28 with a 198-unit block; projected lift size differs by only 6 percent. Pure stamp-depth checks verify size/depth remains constant across five depths and invalid depths stay finite/positive. Source guards cover model-only hit bounds, same-bound pointer capture, focus/highlight and a stationary drag plane. A tap does not submit, touch cancellation returns without submission, and pause/settings/dialogue block new grabs. Domain finding/stamp tests continue unchanged. Rendering, text fit, target accuracy and motion quality are user Play Mode checks.
+
+
+Latest retry checks cover all three fields clearing as one draft edit, an empty clear doing nothing, a correct retry passing the same stamp rules, and stamped findings remaining immutable. Presentation guards cover measured fixed-font height, free-drop settling, stand affordance/expanded picking, tool compositing, current-page/canceled turn lifecycle and book centre/lift compensation. Automatic clearing has no score or reward; stamps still commit only through PreliminaryReview. User checks book finger alignment and opening centre, full handwriting, stand/lifted outlines and handle targets, tool visibility through aim/press, automatic page flips, hint movement and wrong-link retry.
+
+
+## Level 1 consistency follow-up — 2026-10-19
+
+Implemented — internally verified; user Play Mode pending. This supersedes the older separate top-centre review-chip and 16-page folder descriptions.
+
+- Shared OfficeHoursChip and OfficeMorningOverlay now present Level 2 time in the minimap, an analog cutoff chip below progression, and the same next-morning fade/title/day layout and timing. Day one begins 7:30 AM, subsequent days 8:00 AM; 12 active minutes map to two game hours. Auditor remains present. Existing one-time late penalty and case state are retained. Modal/teaching pauses and gesture boundaries prevent rollover during interaction.
+- Folder now has three initial pages and six after the quest: Taxpayer Information, Prepared Packet (S1/N1 tabs), Findings (Finding and D1–D6 tabs after collection), Reviewed Schedule, Office Findings (F1/F2 tabs), Final Assessment. Stable records, evidence keys and grading remain intact. The obsolete page-6 document links are suppressed for review cases.
+- Records reuse the existing removable Findings paper: attached world-space preview with layered paper edges/shadow, lift, independent floating comparison, selectable source rows, and animated filing. Detached papers use the existing perspective/composited UI system, not new free-standing mesh simulations.
+- Annotated papers have a third HUD icon below Notes/Folder, saved-state contents, tap/drag opening, and a reward-card-following preview, flatten, return-to-icon and pulse. The shared SideQuestSplash shows Mark the Money content before the scored challenge.
+- Direct Editor Play in Office_Level2 starts fresh and bypasses checkpoint reads/writes. Completing that attempt also preserves the existing checkpoint. Career-board entry and player builds retain normal resume. Existing career best-result saving remains enabled; this is checkpoint isolation, not a separate career-save sandbox.
+
+Pending user checks: direct Play fresh cabinet start; career-board resume; readable S1/N1 and F1/F2 tabs; detach multiple receipts, transfer values and file them; splash and reward-to-icon animation; cutoff while reading/dragging/stamping and next-morning preservation. No Unity Play/device/visual verification was performed.

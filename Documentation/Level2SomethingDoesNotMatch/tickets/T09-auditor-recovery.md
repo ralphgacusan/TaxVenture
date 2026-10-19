@@ -1,6 +1,6 @@
 # T09 — Review decisions and recover without restarting
 
-Status: Planned. Blocked by: T08.
+Status: Implemented — internally verified; user Play Mode pending (2026-10-19). Blocked by: T08.
 
 ## Visible accomplishment
 
@@ -16,12 +16,18 @@ Wire reward caps from REWARDS_AND_VALIDATION instead of stacking default Level1 
 
 ## Acceptance
 
-- [ ] All four verdict outcomes work, with reason/evidence correctness evaluated.
-- [ ] Supported hold never finishes the level or charges a failed-attempt penalty.
-- [ ] False findings and missed correction produce targeted, different feedback.
-- [ ] Documents/quest/mastery retained; revised packet requires current stamp.
-- [ ] Root causes deduplicate; combined case deduction <=15EXP/1heart.
-- [ ] Only accepted final packet can award case completion once.
+Internal status (source/data checks only; each box also needs the user's Play Mode check):
+
+- [x] All four verdict outcomes work, with reason/evidence correctness evaluated. *(Approved, SupportedHold, PrematureApproval, FalseHold, plus ReasonError)*
+- [x] Supported hold never finishes the level or charges a failed-attempt penalty.
+- [x] False findings and missed correction produce targeted, different feedback. *(per-root Auditor lines from data; Rosa's reaction per outcome)*
+- [x] Documents/quest/mastery retained; revised packet requires current stamp. *(no Level 1 retry reset; unchanged packets are refused)*
+- [x] Root causes deduplicate; combined case deduction <=15EXP/1heart. *(rewards.json maxExpLoss 15, maxHeartLoss 1)*
+- [x] Only accepted final packet can award case completion once.
+
+## Implementation (2026-10-19)
+
+`AuditorInteractable.LevelAudit` lets Level 2 judge the hand-in (Level 1 unchanged when no hook handles it). `Level2Audit` checks the gate (current stamp, changed since a returned/held review, window open), collects inherited required-field issues (ComplianceChecker), then `FinalAudit.Submit` decides and records ONCE before any dialogue. Approved: case award through `CalculateAndStoreCaseReward` (charged root causes x2 EXP, returned submissions x1 EXP and 1 heart, late consequence, capped 15 EXP / 1 heart) and the existing CaseCompleteState (finale staging for T11). Supported hold: acknowledged, folder back, no reward or cost. Premature approval / false hold / reason error: folder back with targeted lines; new root causes charged once each. Next: T10.
 
 ## Verification/handoff
 

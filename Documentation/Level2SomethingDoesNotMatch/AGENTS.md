@@ -27,3 +27,5 @@ Follow ticket dependencies. Each ticket delivers a usable, visible slice and mea
 After each ticket update PROGRESS, its acceptance boxes, KNOWN_ISSUES, and any design change in SPEC with rationale. Record exact files changed, commands run and results, unavailable checks, pending user checks, and exact next ticket. Mark `Implemented — internally verified; user Play Mode pending` where appropriate. Never mark a ticket fully accepted from a scratch build alone.
 
 If blocked by a missing Unity-only capability, complete the source/content/validator work, document the precise limitation and needed action, and do not silently substitute flat UI or ask the user to build the feature.
+
+Level 2 asset hygiene check (T12): `python Tests/VerifyLevel2Assets.py` (unique .meta GUIDs, Level 2 script .meta files, CRLF).

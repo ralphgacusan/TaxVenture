@@ -1,12 +1,12 @@
 # Ordered implementation tickets
 
-All tickets are **planned**. Each delivers an observable playable slice with logic, presentation, content and internal verification as appropriate. No tracker issues were published and no git commands are part of this workflow. Twelve tickets keep the level concrete without creating separate horizontal model/UI/backend projects.
+All twelve tickets are **implemented and internally verified** (2026-10-19); T02 is user accepted and T03-T12 await the user's Play Mode checks (see PROGRESS). Each delivers an observable playable slice with logic, presentation, content and internal verification as appropriate. No tracker issues were published and no git commands are part of this workflow. Twelve tickets keep the level concrete without creating separate horizontal model/UI/backend projects.
 
 | Ticket | Blocked by | Visible accomplishment |
 |---|---|---|
 | [01 — Office start](tickets/T01-office-start.md) | None | New Level2 scene reuses current Level1 world/office and opens with Rosa's one case and functioning HUD |
 | [02 — Retrieve and inspect](tickets/T02-retrieve-and-inspect.md) | 01 | Player opens drawer, collects folder and compares prepared pages |
-| [03 — Preliminary finding](tickets/T03-preliminary-finding.md) | 02 | Player links the first concern, applies an initial hold and gets a destination |
+| [03 — Preliminary finding](tickets/T03-preliminary-finding.md) | 02 | Player links a entry, clue and book reason; the slip checks the link automatically before the initial hold |
 | [04 — Rosa's stall](tickets/T04-rosa-stall.md) | 03 | Player visits a complete 3D encounter and receives her records |
 | [05 — Hands-on toolkit](tickets/T05-toolkit-tutorial.md) | 04 | Physical toolkit opens and teaches one annotation example |
 | [06 — Scored income challenge](tickets/T06-income-challenge.md) | 05 | Four records produce learning feedback, frozen tier, corrections and badge |

@@ -1,6 +1,6 @@
 # T06 — Complete the scored Mark the Money challenge
 
-Status: Planned. Blocked by: T05.
+Status: Implemented — internally verified; user Play Mode pending (2026-10-19). Blocked by: T05.
 
 ## Visible accomplishment
 
@@ -16,13 +16,24 @@ Quest completion packs papers, closes toolkit and activates office return. Grant
 
 ## Acceptance
 
-- [ ] Exactly four entries/12 graded answers; objective right/wrong keys and meaningful rule feedback.
-- [ ] All tier boundaries correct; corrections/reopening never upgrade or reroll frozen tier.
-- [ ] Incomplete check is unscored; free drafts and tutorial do not penalize.
-- [ ] All mastery corrections required; badge/reward delivered exactly once.
-- [ ] Gold completion leaves office reconciliation and final stamp undone.
-- [ ] Physical completion spread and existing-style medal card are wired.
+Internal status (source/data checks only; each box also needs the user's Play Mode check):
+
+- [x] Exactly four entries/12 graded answers; objective right/wrong keys and meaningful rule feedback. *(E1–E4 in `review.annotation.entries`, separate `review.annotationKey` with two-step hints per note)*
+- [x] All tier boundaries correct; corrections/reopening never upgrade or reroll frozen tier. *(0/9 Bronze, 10/11 Silver, 12 Gold; frozen in `ChallengeState`, survives a JSON round trip)*
+- [x] Incomplete check is unscored; free drafts and tutorial do not penalize. *(Incomplete lists what is missing and changes nothing)*
+- [x] All mastery corrections required; badge/reward delivered exactly once. *(`IncomeChallenge.TryAward` + ledger `SideQuestScored`)*
+- [x] Gold completion leaves office reconciliation and final stamp undone. *(no packet revision, findings or stamp change; phase moves to OfficeReconciliation)*
+- [x] Physical completion spread and existing-style medal card are wired. *(Annotated Income List sheet, pack-up into the case, `SideQuestCompleteUI.ShowScreen` reward card)*
+
+## Implementation (2026-10-19)
+
+After the T0 practice, the payslip flips away and Rosa's four records are dealt onto the clipboard with tabs E1–E4 (three progress pips each) and a CHECK button. The player swipes each record's money line, places TYPE and TREATMENT cards and clips one or two record tags (D1–D6). CHECK with anything missing shakes and names it (unscored). The first complete CHECK is frozen: pips flip green/red one by one, the lid scoreboard counts up to X/12 and shows the Bronze/Silver/Gold medal. Right notes lock with a green tick; red notes give a hint when tapped (general first, specific on later checks); re-checking is free and never changes the badge. All twelve right: confetti, the Annotated Income List, everything packs into the case and the lid shuts, then the award (EXP 60 minus first-check wrong, floor 48; 3 hearts; accuracy medal) and the existing reward card. The review moves to OfficeReconciliation and `IncomeQuestCompleted` fires. See PROGRESS for files and checks.
 
 ## Verification/handoff
 
 Test complete submissions at 0/9/10/11/12 correct, incorrect evidence bundles, free draft revisions, frozen grade, quest award duplication and no case-answer leakage in player copy. Compile and reward/progression tests. User later checks three tier runs, satisfying annotation/reward and return route. Next T07.
+
+
+### Consistency follow-up (2026-10-19)
+
+Implemented — internally verified; user Play Mode pending. See SPEC and PROGRESS, “Level 1 consistency follow-up”, for the current six-page folder, shared clock/splash, receipt papers, annotated HUD collection and direct-Editor checkpoint policy. Earlier implementation descriptions above remain historical.

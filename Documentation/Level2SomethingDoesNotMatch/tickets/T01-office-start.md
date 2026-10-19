@@ -12,7 +12,7 @@ Read SCENE_REUSE.md and inventory current saved Office_Level1's hierarchy, prefa
 
 Configure Level_02 as `Something Does Not Match`, one Rosa case. Add safe optional level capability/configuration for shared HUD, map, guide and fade; explicitly opt Level2 in without activating them in menu/training scenes. Reuse current presentation, not copied HUD frameworks. Start at reception, with objectives leading to receptionist then cabinet. Disable only Level2's profile/corkboard startup and side-quest-before-office gate.
 
-Add initial Rosa cover/summary/referral fixtures and three Level2 book leaves through existing content pipeline. Validate IDs, bounded tax assumptions and course/primary basis for loan treatment; record source status in CONTENT. Do not implement tax rates or an official annual-return calculation. Seed review state under current case ownership, with absent optional data preserving old cases.
+Add initial Rosa cover/summary/payment-note fixtures and two concise book leaves through existing content pipeline. Validate IDs, bounded tax assumptions and course/primary basis for loan treatment; record source status in CONTENT. Do not implement tax rates or an official annual-return calculation. Seed review state under current case ownership, with absent optional data preserving old cases.
 
 ## Acceptance
 

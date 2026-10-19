@@ -1,6 +1,6 @@
 # T08 — Apply a satisfying reason-backed final stamp
 
-Status: Planned. Blocked by: T07.
+Status: Implemented — internally verified; user Play Mode pending (2026-10-19). Blocked by: T07.
 
 ## Visible accomplishment
 
@@ -16,11 +16,17 @@ Changes to graded work invalidate current final stamp and require reassessment; 
 
 ## Acceptance
 
-- [ ] Physical press, rebound, sound and persistent paper ink are wired for both choices.
-- [ ] Reason is mandatory; unsupported but complete decision remains submittable.
-- [ ] Commit happens exactly once and refers to the correct packet revision.
-- [ ] Edits invalidate final approval; page turns do not; restamp earns nothing.
-- [ ] Interrupted animation/invalid drop/repeated taps cannot corrupt case state.
+Internal status (source/data checks only; each box also needs the user's Play Mode check):
+
+- [x] Physical press, rebound, sound and persistent paper ink are wired for both choices. *(the polished desk stamps; ink on the Final Assessment page via the page decorator)*
+- [x] Reason is mandatory; unsupported but complete decision remains submittable.
+- [x] Commit happens exactly once and refers to the correct packet revision.
+- [x] Edits invalidate final approval; page turns do not; restamp earns nothing. *(stale ink fades to 30% with "Review changed: stamp again"; history keeps the last 3)*
+- [x] Interrupted animation/invalid drop/repeated taps cannot corrupt case state. *(decision at impact only; same verdict on a current stamp is ignored)*
+
+## Implementation (2026-10-19)
+
+After the office review is structurally complete the review moves to FinalAssessment and the folder gains a **Final Assessment** page: "Your recommendation (the Auditor decides)", a **Reason** box (assessment reasons from Reading Records in the book: Income supported, Payment not counted, Non-income counted, Difference unexplained, Taxpayer facts wrong), "Reviewed work: Revision N" and "Earlier stamps". Tapping the stamp set turns to that page; the READY / NOT READY stamp commits once at impact through `FinalAssessment.TryStamp` (structural prerequisites only, reason required, current packet revision). Any graded change (schedule, findings, reason) makes the stamp stale; the hand-in then asks for a new stamp. The initial stamp record is untouched. Next: T09.
 
 ## Verification/handoff
 

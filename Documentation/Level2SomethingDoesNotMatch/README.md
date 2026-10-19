@@ -1,6 +1,6 @@
 # Level 2 — Something Does Not Match
 
-Status: approved design direction, implementation NOT STARTED. Prepared 2026-10-17. This pack is the implementation brief, not evidence that the game has been built or tested.
+Status: all 12 tickets implemented and internally verified (2026-10-19). The polish and completion pass (2026-10-20, see SPEC "Polish and completion pass") simplified the case, made the annotated papers the schedule's value source and added the Tax Code Book icon with cheat sheets; user Play Mode acceptance is pending. Details in [PROGRESS.md](PROGRESS.md) ("Final handoff"). Prepared 2026-10-17; business wording updated 2026-10-18. Rosa's Laundry and the simpler blanket-washing payment are now implemented in runtime content; user Play Mode acceptance is pending.
 
 ## The experience
 
@@ -22,10 +22,13 @@ One client, one required excursion, one scored side quest, one omission, one exp
 
 ## Accepted decisions
 
+- Rosa runs **Rosa's Laundry**. Main earnings are laundry payments; the other receipts are payment for a separate blanket-washing job and payment for renting out her spare washing machine. Preserve all IDs, amounts, evidence relationships and level mechanics; see CONTENT for the exact mapping.
+
 - Preserve Level 1's core tools and touch vocabulary. Use `SM_Chr_Business_Female_03` for Aling Rosa, as shown under `TaxVentureWithCompliance > Characters`. Reuse `Building_4 (1)` from `TownEnvironment > Env > Town` as her store near the plaza. See WORLD_AND_FEEDBACK for exact prefab paths; other characters may reuse existing placeholders.
 - Create a fresh Office_Level2 scene through a one-time copy of current saved Office_Level1; reuse asset references, then replace level-specific behavior. Preserve Office_Level2_OLD. Follow SCENE_REUSE rather than rebuilding the office or migrating the whole project.
 - Start inside the office. Office access is available before the side quest.
-- Partly completed work must be checked; a filled field is not proof of correctness.
+- Partly completed work must be checked; a filled field is not proof of correctness. Findings uses three detached-paper fields (Entry to check, Clue, Reason), reasons sourced from two concise book leaves, and automatic link checking with quiet paper feedback and a handwritten supported note.
+- At the desk, tapping the folder icon centres and opens its paper with the existing entrance animation; dragging still places it where dropped.
 - Initial guided Not Ready assessment; later independent reassessment of the same case.
 - Side quest has objective right/wrong answers and Bronze/Silver/Gold. Its topic is income recognition and treatment, not summary reconciliation.
 - Side quest gives classification feedback and authentic-looking records; it does not identify the office omission, resolve the mismatch, choose the final stamp, or fill the case.
@@ -34,6 +37,8 @@ One client, one required excursion, one scored side quest, one omission, one exp
 - Mistakes retain documents and work. Review feedback creates targeted correction tasks.
 - The Auditor remains present; the review window closes. A next-morning transition preserves work.
 - AI implementers do code, scene wiring, procedural models, animation, content and internal tests. The user does Unity Play Mode/device testing and ALL git commands.
+
+- Polish pass (2026-10-20, user direction): Supporting Documents = Findings + four records (D1 and D4 back the two listed summary lines, D3 is the missing paid job, D5 explains the borrowed deposit). The Reviewed Schedule has the two listed lines plus one Missing entry and a conclusion. Its values come only from the highlighted lines of the four Side Quest 2 annotated papers (the same AnnotationPaper model). A Tax Code Book icon (below Case Folder, above Annotated Papers) opens the real book, whose first three Level 2 leaves are cheat sheets.
 
 ## Completion definition
 
