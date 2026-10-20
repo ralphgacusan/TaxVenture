@@ -1671,8 +1671,8 @@ string stallSrc = Src("Scripts/Level2/Level2RosaStall.cs");
 string rosaSrc = Src("Scripts/Level2/RosaInteractable.cs");
 string deskSrc = Src("Scripts/Level2/MarketRecordsDesk.cs");
 string assetsYaml = File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Levels", "Level_02", "scene_assets.asset"));
-Check(assetsYaml.Contains("guid: f78a881d3ec75d945ac878527dc26674") && assetsYaml.Contains("guid: 4c701139b81d9c140b18bb741804c1ec"),
-    "scene assets reference the selected Rosa (SM_Chr_Business_Female_03) and store (Building_4) prefabs");
+Check(assetsYaml.Contains("rosaPrefab: {fileID: 919132149155446097, guid: d39f95956aeb5ea40bc6d4060080e829") && assetsYaml.Contains("guid: 4c701139b81d9c140b18bb741804c1ec"),
+    "Rosa wears Marie's former model (npc_cora_static, swapped 2026-10-20); the store prefab stays for scenes without an anchor");
 Check(assetsYaml.Contains("guid: 0b1fbdea34f261f4eacc93aa45b49b92"), "Rosa's idle is the project's humanoid Standing Idle controller (no T-pose)");
 Check(stallSrc.Contains("Instantiate(assets.storePrefab, transform)") && stallSrc.Contains("Instantiate(assets.rosaPrefab, holder.transform)"),
     "store and Rosa are instances of the originals (prefabs and source scenes untouched)");
@@ -2443,6 +2443,38 @@ Check(chaptersDoc.GetProperty("sideQuests").EnumerateArray().Any(q => Str(q, "ch
     "the 3D menu lists Mark the Money! as side quest 2 (its medal shows after Level Complete)");
 Check(Src("Scripts/Data/CaseProgressionManager.cs").Contains("GameplayEvents.OnMarketDeskOpened += HandleMarketDeskOpened;"),
     "the Mark the Money! time starts at Rosa's records desk");
+
+// Outside environment from Level 1, Rosa at Zorbix's spot, Rosa/Marie model swap (2026-10-20).
+string stallSrcA = Src("Scripts/Level2/Level2RosaStall.cs");
+Check(Level2RosaStall.AnchorPath == "Environment/Outside/Plaza/RosaStallAnchor" && stallSrcA.Contains("if (anchor != null)") &&
+      stallSrcA.Contains("BuildAtAnchor(assets, anchor);") && Regex.IsMatch(stallSrcA, @"private void BuildAtAnchor[\s\S]*?BuildRosa[\s\S]*?BuildDesk[\s\S]*?BuildSign") &&
+      !Regex.IsMatch(stallSrcA, @"private void BuildAtAnchor[\s\S]*?storePrefab[\s\S]*?private static Bounds RendererBounds"),
+    "with the scene anchor, Rosa stands on it with her desk and sign beside her, and no shop building is built");
+Check(Level2RosaStall.RosaHeight > 1.4f && Level2RosaStall.RosaHeight < 1.9f && stallSrcA.Contains("FitHeight(model, position.y);"),
+    "Rosa's model is fitted to a person's height whatever its import scale");
+string syncSrc = Src("Editor/Level2EnvironmentSync.cs");
+Check(File.Exists(Path.Combine(root, "Assets", "Editor", "Level2EnvironmentSync.cs.meta")) &&
+      syncSrc.Contains("[MenuItem(\"TaxVenture/Level 2/Copy Outside Environment From Level 1\")]") &&
+      syncSrc.Contains("Unsupported.CopyGameObjectsToPasteboard()") && syncSrc.Contains("\"npc_\"") &&
+      syncSrc.Contains("NPC_Zorbix") && syncSrc.Contains("SM_Chr_Business_Female_03.prefab") && syncSrc.Contains("RemapReferences"),
+    "the editor tool copies Level 1's Env (without its NPCs), anchors Rosa at Zorbix's spot and gives Marie Rosa's former model");
+foreach (string forbidden in new[] { "OfficeBuilding/Rooms", "Level2Gameplay", "case_rosa_001", "guide.json", "objectives.json" })
+    Check(!syncSrc.Contains(forbidden), "the environment tool leaves the office, gameplay and data alone: " + forbidden);
+
+// Rosa's stall at the town's Building_4 (2026-10-20).
+string stallSrcB = Src("Scripts/Level2/Level2RosaStall.cs");
+Check(Level2RosaStall.SceneStorePath == "Env/Town/Building_4" &&
+      stallSrcB.IndexOf("BuildAtSceneStore(assets, sceneStore);") < stallSrcB.IndexOf("BuildAtAnchor(assets, anchor);"),
+    "the town's own Building_4 hosts Rosa's stall when the scene has it (before the Zorbix anchor)");
+Check(Regex.Matches(stallSrcB, @"BuildRosa\(assets, rosa, FacingTo\(rosa, desk, front\)\)").Count == 2,
+    "Rosa faces her records table (she still turns to the player while talking)");
+Check(stallSrcB.Contains("if (!Blocked(spot + Vector3.up * (SignHalfExtents.y + 0.15f), SignHalfExtents, rotation)) return spot;") &&
+      Regex.Matches(stallSrcB, @"\}, rosa, desk(, door \+ front \* 0\.6f)?\), front\);").Count == 2,
+    "the sign goes on the first spot that hits nothing solid and stays clear of Rosa and the table");
+Check(!Regex.IsMatch(stallSrcB, @"Destroy\(Store"), "the stall never destroys the town's building");
+Check(stallSrcB.Contains("Vector3 front = DetectFrontAround(store, b);") && stallSrcB.Contains("SurfaceOut(colliders, b, side, extent, 0.66f)") &&
+      stallSrcB.Contains("Vector3 doorSide = store.lossyScale.x < 0f ? side : -side;") && stallSrcB.Contains("Vector3 rosa = Ground(door + front * 1.1f - doorSide * 1.1f, groundY);"),
+    "the stall is on Building_4's real front (awning side, measured at awning height), with Rosa beside the door");
 
 Console.WriteLine(fails == 0 ? $"Level2Regression: {checks} checks PASS" : $"Level2Regression: {fails} of {checks} checks FAILED");
 return fails == 0 ? 0 : 1;
