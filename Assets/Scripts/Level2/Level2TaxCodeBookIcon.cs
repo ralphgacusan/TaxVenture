@@ -306,6 +306,7 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         desk.ParkClosedBook();
         CaseReviewState review = Level2OfficeStart.Review;
         if (review != null) review.taxBookStored = true;
+        GameplayEvents.RaiseGuideCue("TaxBookStored");
         storing = false;
         punchStarted = Time.unscaledTime;
         if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
@@ -345,6 +346,7 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         desk.ParkOpenBook();
         CaseReviewState review = Level2OfficeStart.Review;
         if (review != null) review.taxBookStored = true;
+        GameplayEvents.RaiseGuideCue("TaxBookStored");
         storing = false;
         punchStarted = Time.unscaledTime;
         if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();

@@ -221,7 +221,8 @@ public sealed class Level2FindingsSheet : MonoBehaviour, IPointerDownHandler, IP
         renderedPreliminary = boundCase?.review?.preliminary != null;
     }
 
-    public static void StyleRow(GameObject row, int index) => StyleRow(row, index, 183f, 94f, 86f, 34f, 29f);
+    // Long picks such as "Payment for: Blanket washing" shrink to fit their box instead of being cut off.
+    public static void StyleRow(GameObject row, int index) => StyleRow(row, index, 183f, 94f, 86f, 34f, 21f);
 
     /// <summary>A record paper row: fewer, larger lines than the Findings fields.</summary>
     public static void StyleRecordRow(GameObject row, int index) =>
@@ -383,6 +384,7 @@ public sealed class Level2FindingsSheet : MonoBehaviour, IPointerDownHandler, IP
         page.ReleaseOverlay(gameObject); // page turns must never destroy the lifted paper
         IsDetached = true;
         lifted?.Invoke(this);
+        if (!recordPaper) GameplayEvents.RaiseGuideCue("FindingsPaperLifted");
         supportingStack?.PaperDetached(this);
         folders = FindObjectsByType<CaseFolderUI>(FindObjectsInactive.Include);
         RectTransform host = HudTheme.CreateRect("Level 2 Findings Paper Canvas", null);
@@ -544,6 +546,7 @@ public sealed class Level2FindingsSheet : MonoBehaviour, IPointerDownHandler, IP
     {
         if (!IsDetached || !returning) return;
         IsDetached = false;
+        if (!recordPaper) GameplayEvents.RaiseGuideCue("FindingsPaperFiled");
         Dispose();
     }
 
@@ -758,10 +761,69 @@ public sealed class Level2FindingsSheet : MonoBehaviour, IPointerDownHandler, IP
             visual.localScale = Vector3.one * looseScale;
             visual.localRotation = looseTilt;
         }
-        gameObject.SetActive(visible);
+        // Tuck away with the folder and pop back when it reopens (no instant blink).
+        if (!visible && gameObject.activeSelf && !hiding)
+        {
+            if (gameObject.activeInHierarchy) tuck = StartCoroutine(TuckAway());
+            else gameObject.SetActive(false);
+        }
+        else if (visible && !gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+            StartCoroutine(PopBack());
+        }
+        else if (visible && hiding)
+        {
+            if (tuck != null) StopCoroutine(tuck);
+            tuck = null;
+            hiding = false;
+            StartCoroutine(PopBack());
+        }
         supportingStack?.OnOwnerVisibilityChanged(visible);
         if (visible && ((boundCase.review?.packetRevision ?? 0) != renderedRevision ||
             (boundCase.review?.preliminary != null) != renderedPreliminary)) RefreshContent();
+    }
+
+    private bool hiding;
+    private Coroutine tuck;
+
+    private IEnumerator TuckAway()
+    {
+        hiding = true;
+        Vector3 from = visual.localScale;
+        Vector2 start = visual.anchoredPosition;
+        const float seconds = 0.2f;
+        for (float elapsed = 0f; elapsed < seconds; elapsed += Mathf.Min(Time.unscaledDeltaTime, 1f / 30f))
+        {
+            float t = Mathf.Clamp01(elapsed / seconds);
+            float e = t * t;
+            visual.localScale = Vector3.Lerp(from, from * 0.7f, e);
+            visual.anchoredPosition = start + Vector2.down * (40f * e);
+            if (group != null) group.alpha = 1f - e;
+            yield return null;
+        }
+        visual.localScale = Vector3.one * looseScale;
+        visual.anchoredPosition = Vector2.zero;
+        if (group != null) group.alpha = 1f;
+        hiding = false;
+        gameObject.SetActive(false);
+    }
+
+    private IEnumerator PopBack()
+    {
+        Vector3 rest = Vector3.one * looseScale;
+        const float seconds = 0.3f;
+        for (float elapsed = 0f; elapsed < seconds; elapsed += Mathf.Min(Time.unscaledDeltaTime, 1f / 30f))
+        {
+            float t = Mathf.Clamp01(elapsed / seconds);
+            visual.localScale = rest * Mathf.LerpUnclamped(0.75f, 1f, DeskMotion.EaseOutBack(t, 1.2f));
+            visual.anchoredPosition = Vector2.down * (30f * (1f - DeskMotion.EaseOutCubic(t)));
+            if (group != null) group.alpha = Mathf.Clamp01(t * 2.5f);
+            yield return null;
+        }
+        visual.localScale = rest;
+        visual.anchoredPosition = Vector2.zero;
+        if (group != null) group.alpha = 1f;
     }
 
     public void Dispose()
@@ -796,8 +858,8 @@ public sealed class Level2FindingsSheet : MonoBehaviour, IPointerDownHandler, IP
     public void ShowTransferHint(string part)
     {
         if (!CanTransfer) return;
-        hint.text = part == ReviewFindingState.Reason ? "Reasons are in the book" :
-            part == ReviewFindingState.Concern ? "Choose a reported entry" : "Choose a document line";
+        hint.text = part == ReviewFindingState.Reason ? "Reasons: Tax Code Book, Section 7" :
+            part == ReviewFindingState.Concern ? "Entry: a line from the Summary page" : "Clue: a line from the Payment Note";
     }
 
     public void ShowComparison(FindingComparison.Result result, string conclusion, bool animate)
@@ -814,7 +876,7 @@ public sealed class Level2FindingsSheet : MonoBehaviour, IPointerDownHandler, IP
         observation.text = supported ? (string.IsNullOrWhiteSpace(conclusion)
             ? "The records raise a question. The original record is still needed." : conclusion)
             : result == FindingComparison.Result.Incomplete ? ""
-            : "These entries don't show the same issue.";
+            : string.IsNullOrWhiteSpace(conclusion) ? "These don't point to the same issue yet. Swap one box and compare again." : conclusion;
         if (animate && gameObject.activeInHierarchy) writing = StartCoroutine(RevealObservation(supported));
     }
 

@@ -56,6 +56,8 @@ public sealed class Level2OfficeStart : MonoBehaviour
         public string spawn;
         public string face;
         public float blend = PlayerPlacement.DefaultBlend;
+        public string fallbackSpawn;
+        public float fallbackBlend = PlayerPlacement.DefaultBlend;
         public List<string> hide = new List<string>();
         public List<string> disableComponents = new List<string>();
     }
@@ -118,9 +120,73 @@ public sealed class Level2OfficeStart : MonoBehaviour
         Debug.Log($"[Level2] Office start v{SetupVersion}: switched off {HiddenCount} Level 1 object(s) and {DisabledCount} component(s).");
     }
 
-    private void OnEnable() => GameplayEvents.OnNotesUnlockRequested += HandleReceptionistTalkedTo;
+    private void OnEnable()
+    {
+        GameplayEvents.OnNotesUnlockRequested += HandleReceptionistTalkedTo;
+        GuideFlags.Source = Flag;
+    }
 
-    private void OnDisable() => GameplayEvents.OnNotesUnlockRequested -= HandleReceptionistTalkedTo;
+    private void OnDisable()
+    {
+        GameplayEvents.OnNotesUnlockRequested -= HandleReceptionistTalkedTo;
+        if (GuideFlags.Source == (Func<string, bool>)Flag) GuideFlags.Source = null;
+    }
+
+    /// <summary>Level 2 facts for guide.json "flag:" conditions (read only).</summary>
+    public static bool Flag(string name)
+    {
+        CaseReviewState review = Review;
+        if (review == null) return false;
+        switch (name)
+        {
+            case "folderRetrieved": return review.FolderRetrieved;
+            case "bookStored": return review.taxBookStored;
+            case "initialStamped": return review.preliminary != null;
+            case "recordsCollected": return review.HandoverDone;
+            case "questDone": return review.challenge != null && review.challenge.awarded;
+            case "officeReview": return review.phase >= ReviewPhase.OfficeReconciliation;
+            case "inFileRoom": return Instance != null && Instance.PlayerInFileRoom();
+            case "findingRecorded": return review.preliminary != null || (review.findings != null && review.findings.Exists(f => f != null && f.comparisonConfirmed));
+            case "tutorialDone": return review.tutorialCompleted;
+            case "firstChecked": return review.challenge != null && review.challenge.firstChecked;
+            case "redNotes": return review.challenge != null && review.challenge.firstChecked && !review.challenge.mastered;
+            case "officeDone": return review.officeReviewAnnounced;
+            case "finalStamped": return review.finalStamp != null && !string.IsNullOrEmpty(review.finalStamp.verdict) && FinalAssessment.IsCurrent(review);
+            case "stampsUp":
+            {
+                Level2DeskStamps stamps = Instance != null ? Instance.GetComponentInChildren<Level2DeskStamps>() : null;
+                return stamps != null && stamps.Active;
+            }
+            case "auditApproved": return review.audit != null && review.audit.approved;
+            default: return false;
+        }
+    }
+
+    private const string FileRoomFloorPath = "Environment/OfficeBuilding/Rooms/FileStorageRoom/Floors";
+    private Bounds fileRoom;
+    private bool fileRoomKnown;
+    private bool fileRoomLooked;
+
+    /// <summary>The player stands on the file storage room floor (its renderers' footprint).</summary>
+    private bool PlayerInFileRoom()
+    {
+        Transform player = CameraController.Instance != null ? CameraController.Instance.PlayerRoot : null;
+        if (player == null) return false;
+        if (!fileRoomLooked)
+        {
+            fileRoomLooked = true;
+            Transform floors = PlayerPlacement.Find(gameObject.scene, FileRoomFloorPath);
+            if (floors != null)
+                foreach (Renderer r in floors.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (!fileRoomKnown) { fileRoom = r.bounds; fileRoomKnown = true; }
+                    else fileRoom.Encapsulate(r.bounds);
+                }
+        }
+        if (!fileRoomKnown) return false;
+        Vector3 p = player.position;
+        return p.x > fileRoom.min.x + 0.3f && p.x < fileRoom.max.x - 0.3f && p.z > fileRoom.min.z + 0.3f && p.z < fileRoom.max.z - 0.3f;
+    }
 
     private void OnDestroy()
     {
@@ -140,6 +206,9 @@ public sealed class Level2OfficeStart : MonoBehaviour
             Debug.LogWarning("[Level2] The level did not start; Rosa's case is not loaded (see the Console).");
 
         PlayerPlaced = PlayerPlacement.PlaceBetween(gameObject.scene, config.spawn, config.face, config.blend);
+        if (!PlayerPlaced && !string.IsNullOrWhiteSpace(config.fallbackSpawn))
+            PlayerPlaced = PlayerPlacement.PlaceBetween(gameObject.scene, config.fallbackSpawn, config.face,
+                config.fallbackBlend > 0f && config.fallbackBlend <= 1f ? config.fallbackBlend : PlayerPlacement.DefaultBlend);
         if (!PlayerPlaced)
             Debug.LogWarning($"[Level2] Could not stand the player at '{config.spawn}'; the player keeps the scene start.");
     }
@@ -246,8 +315,11 @@ public sealed class Level2OfficeStart : MonoBehaviour
     /// <summary>Mirrors office_start.json.</summary>
     private static StartConfig BuiltInConfig() => new StartConfig
     {
-        spawn = "Environment/OfficeBuilding/Rooms/Reception/Doors",
+        spawn = "Environment/OfficeBuilding/Rooms/Reception/Doors/Office_Entrance_Door_2",
         face = "Environment/OfficeBuilding/Rooms/Reception/Receptionist",
+        blend = 0.16f,
+        fallbackSpawn = "Environment/OfficeBuilding/Rooms/Reception/Doors",
+        fallbackBlend = 0.12f,
         hide = new List<string>
         {
             "Environment/Outside/Plaza/NPCS",

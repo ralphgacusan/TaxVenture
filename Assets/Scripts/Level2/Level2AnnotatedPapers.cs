@@ -26,6 +26,11 @@ public sealed class Level2AnnotatedPapers : MonoBehaviour
     private const float RowLift = 30f;
     private const float PaperGap = 28f;
     private static readonly float[] Tilts = { -1.6f, 1.4f, 1.9f, -1.2f };
+    // Hold any open paper this long (finger still) to gather them all into one stack.
+    public const float StackHoldSeconds = 2f;
+    private const float StackHoldSlop = 34f;
+    private const float StackRingDelay = 0.3f;
+    private static readonly Vector2[] StackOffsets = { new Vector2(0f, 0f), new Vector2(9f, -7f), new Vector2(-8f, -13f), new Vector2(6f, -19f) };
 
     public static Level2AnnotatedPapers Instance { get; private set; }
     public bool IsCollecting { get; private set; }
@@ -53,6 +58,25 @@ public sealed class Level2AnnotatedPapers : MonoBehaviour
     private string builtReviewId;
     private int builtEntryCount;
 
+    // Hold-to-stack gesture.
+    private int holdPaper = -1;
+    private float holdStarted;
+    private Vector2 holdOrigin;
+    private bool stacked;
+    private readonly List<Vector2> scatterSpots = new List<Vector2>();
+    private Coroutine scatterMotion;
+    private RectTransform holdRing;
+    private Image holdRingFill;
+    private TextMeshProUGUI holdLabel;
+    private Vector3 iconRestScale = Vector3.one;
+
+    /// <summary>The papers are gathered in one stack under the finger.</summary>
+    public bool IsStacked => stacked;
+
+    /// <summary>A long press just ended: the release is not a tap on an amount.</summary>
+    public bool SwallowTap => Time.unscaledTime < swallowTapUntil;
+    private float swallowTapUntil = -1f;
+
     private void OnEnable()
     {
         Instance = this;
@@ -75,10 +99,15 @@ public sealed class Level2AnnotatedPapers : MonoBehaviour
         if (holdingWindows && !AnyPaperOpen()) ReleaseWindowHold();
     }
 
+    // After the EventSystem moved the touched window, so the stack wins.
+    private void LateUpdate() => UpdateStackHold();
+
     private void OnDisable()
     {
         GameplayEvents.OnIncomeQuestCompleted -= HandleIncomeQuestCompleted;
         StopAllCoroutines();
+        scatterMotion = null;
+        EndHold(false);
         IsCollecting = false;
         PlayerControlHold.Release(this);
         ReleaseWindowHold();
@@ -369,6 +398,7 @@ public sealed class Level2AnnotatedPapers : MonoBehaviour
             paper.OpenWindowWithOffset((i < slots.Count ? slots[i] : Vector2.zero) + shift);
         }
         if (!IsCollecting) ShowAnnotationsForReview();
+        if (!IsCollecting) GameplayEvents.RaiseGuideCue("AnnotatedPapersOpened");
         if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
     }
 
@@ -449,6 +479,243 @@ public sealed class Level2AnnotatedPapers : MonoBehaviour
             if (faces[i] != null) faces[i].SetInputLocked(false);
         PlayerControlHold.Release(this);
         if (!AnyPaperOpen()) ReleaseWindowHold();
+    }
+
+    // =========================================================
+    // HOLD TO STACK
+    // =========================================================
+
+    /// <summary>
+    /// Hold any open paper still for StackHoldSeconds: every open paper glides
+    /// into one stack under the finger. Drop the stack on the icon to put them
+    /// away; let go anywhere else and they scatter back to where they were.
+    /// </summary>
+    private void UpdateStackHold()
+    {
+        if (paperLayer == null || papers.Count == 0) return;
+        bool pressed = Input.GetMouseButton(0) || Input.touchCount > 0;
+        Vector2 finger = Input.touchCount > 0 ? Input.GetTouch(0).position : (Vector2)Input.mousePosition;
+
+        if (!pressed)
+        {
+            if (stacked) DropStack(finger);
+            else if (holdPaper >= 0) EndHold(false);
+            return;
+        }
+
+        if (stacked)
+        {
+            FollowFinger(finger, Time.unscaledDeltaTime);
+            return;
+        }
+
+        if (holdPaper < 0)
+        {
+            bool began = Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began);
+            if (!began || IsCollecting || scatterMotion != null || ValueDragSource.IsAnyDragActive) return;
+            holdPaper = TopPaperAt(finger);
+            if (holdPaper < 0) return;
+            holdStarted = Time.unscaledTime;
+            holdOrigin = finger;
+            return;
+        }
+
+        // A drag (the paper follows the finger) or another drag cancels the hold.
+        if (Vector2.Distance(finger, holdOrigin) > StackHoldSlop || ValueDragSource.IsAnyDragActive || IsCollecting ||
+            holdPaper >= papers.Count || papers[holdPaper] == null || !papers[holdPaper].IsOpen())
+        {
+            EndHold(false);
+            return;
+        }
+
+        float held = Time.unscaledTime - holdStarted;
+        ShowHoldRing(finger, Mathf.Clamp01((held - StackRingDelay) / (StackHoldSeconds - StackRingDelay)), held >= StackRingDelay);
+        if (held >= StackHoldSeconds) Gather(finger);
+    }
+
+    private int TopPaperAt(Vector2 screen)
+    {
+        int best = -1;
+        int bestOrder = int.MinValue;
+        for (int i = 0; i < papers.Count; i++)
+        {
+            FloatingWindow paper = papers[i];
+            if (paper == null || !paper.IsOpen() || !paper.ContainsScreenPoint(screen)) continue;
+            if (paper.SortingOrder > bestOrder)
+            {
+                bestOrder = paper.SortingOrder;
+                best = i;
+            }
+        }
+        return best;
+    }
+
+    private void Gather(Vector2 finger)
+    {
+        stacked = true;
+        scatterSpots.Clear();
+        for (int i = 0; i < papers.Count; i++)
+            scatterSpots.Add(papers[i] != null ? papers[i].WindowRect.anchoredPosition : Vector2.zero);
+        // The touched paper ends on top of the stack.
+        for (int i = 0; i < papers.Count; i++)
+            if (i != holdPaper && papers[i] != null && papers[i].IsOpen()) papers[i].BringToFront();
+        papers[holdPaper].BringToFront();
+        if (icon != null) iconRestScale = icon.localScale;
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        ShowHoldRing(finger, 1f, false);
+        SetHoldLabel(finger, "Drop on the icon to put them away");
+        GameplayEvents.RaiseGuideCue("AnnotatedPapersStacked");
+    }
+
+    private void FollowFinger(Vector2 finger, float dt)
+    {
+        Vector2 centre = LocalAnchored(finger);
+        float follow = 1f - Mathf.Exp(-16f * dt);
+        int order = 0;
+        for (int i = 0; i < papers.Count; i++)
+        {
+            FloatingWindow paper = papers[i];
+            if (paper == null || !paper.IsOpen()) continue;
+            Vector2 offset = i == holdPaper ? Vector2.zero : StackOffsets[(++order) % StackOffsets.Length];
+            RectTransform rect = paper.WindowRect;
+            rect.anchoredPosition = Vector2.Lerp(rect.anchoredPosition, centre + offset, follow);
+        }
+        bool overIcon = OverIcon(finger);
+        if (icon != null)
+            icon.localScale = iconRestScale * (overIcon ? 1.18f : 1f + 0.06f * Mathf.Sin(Time.unscaledTime * 8f));
+        SetHoldLabel(finger, overIcon ? "Let go to put them away" : "Drop on the icon to put them away");
+    }
+
+    private void DropStack(Vector2 finger)
+    {
+        bool intoIcon = OverIcon(finger);
+        stacked = false;
+        EndHold(false);
+        if (icon != null) icon.localScale = iconRestScale;
+        if (intoIcon)
+        {
+            CloseAllPapers();
+            GameplayEvents.RaiseGuideCue("AnnotatedPapersPutAway");
+            return;
+        }
+        if (scatterMotion != null) StopCoroutine(scatterMotion);
+        scatterMotion = StartCoroutine(Scatter());
+    }
+
+    private IEnumerator Scatter()
+    {
+        var from = new List<Vector2>();
+        for (int i = 0; i < papers.Count; i++)
+            from.Add(papers[i] != null ? papers[i].WindowRect.anchoredPosition : Vector2.zero);
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        const float seconds = 0.42f;
+        for (float elapsed = 0f; elapsed < seconds + 0.12f; elapsed += Time.unscaledDeltaTime)
+        {
+            for (int i = 0; i < papers.Count && i < scatterSpots.Count; i++)
+            {
+                FloatingWindow paper = papers[i];
+                if (paper == null || !paper.IsOpen()) continue;
+                float t = Mathf.Clamp01((elapsed - i * 0.03f) / seconds);
+                paper.WindowRect.anchoredPosition = Vector2.LerpUnclamped(from[i], scatterSpots[i], DeskMotion.EaseOutBack(t, 0.8f));
+            }
+            yield return null;
+        }
+        for (int i = 0; i < papers.Count && i < scatterSpots.Count; i++)
+            if (papers[i] != null && papers[i].IsOpen()) papers[i].WindowRect.anchoredPosition = scatterSpots[i];
+        scatterMotion = null;
+    }
+
+    private void EndHold(bool keepStack)
+    {
+        if (holdPaper >= 0 && Time.unscaledTime - holdStarted >= StackRingDelay) swallowTapUntil = Time.unscaledTime + 0.2f;
+        holdPaper = -1;
+        if (!keepStack && stacked)
+        {
+            stacked = false;
+            if (icon != null) icon.localScale = iconRestScale;
+        }
+        if (holdRing != null) holdRing.gameObject.SetActive(false);
+        if (holdLabel != null) holdLabel.gameObject.SetActive(false);
+    }
+
+    private bool OverIcon(Vector2 screen)
+    {
+        if (icon == null) return false;
+        Camera camera = HudEventCamera();
+        Vector2 centre = RectTransformUtility.WorldToScreenPoint(camera, icon.TransformPoint(icon.rect.center));
+        Vector3[] corners = new Vector3[4];
+        icon.GetWorldCorners(corners);
+        float radius = Vector2.Distance(RectTransformUtility.WorldToScreenPoint(camera, corners[0]),
+            RectTransformUtility.WorldToScreenPoint(camera, corners[2])) * 0.5f;
+        return Vector2.Distance(screen, centre) <= Mathf.Max(70f, radius * 1.4f);
+    }
+
+    private Camera HudEventCamera() =>
+        hudCanvas != null && hudCanvas.renderMode != RenderMode.ScreenSpaceOverlay
+            ? hudCanvas.worldCamera != null ? hudCanvas.worldCamera : Camera.main
+            : null;
+
+    /// <summary>Screen point -> anchoredPosition of a centre-anchored paper in the paper layer.</summary>
+    private Vector2 LocalAnchored(Vector2 screen)
+    {
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(paperLayer, screen, HudEventCamera(), out Vector2 local);
+        return local - paperLayer.rect.center;
+    }
+
+    private void ShowHoldRing(Vector2 finger, float fill, bool visible)
+    {
+        if (overlay == null) return;
+        if (holdRing == null)
+        {
+            holdRing = HudTheme.CreateRect("Stack Hold Ring", overlay);
+            holdRing.anchorMin = holdRing.anchorMax = holdRing.pivot = new Vector2(0.5f, 0.5f);
+            holdRing.sizeDelta = new Vector2(96f, 96f);
+            Image back = HudTheme.AddImage(holdRing, HudTheme.Circle, new Color(0.04f, 0.06f, 0.1f, 0.45f));
+            back.raycastTarget = false;
+            RectTransform fillRect = HudTheme.CreateRect("Fill", holdRing);
+            HudTheme.Stretch(fillRect, 6f);
+            holdRingFill = HudTheme.AddImage(fillRect, HudTheme.Circle, new Color32(255, 214, 92, 230));
+            holdRingFill.type = Image.Type.Filled;
+            holdRingFill.fillMethod = Image.FillMethod.Radial360;
+            holdRingFill.fillOrigin = (int)Image.Origin360.Top;
+            holdRingFill.fillClockwise = true;
+            holdRingFill.raycastTarget = false;
+            Canvas top = holdRing.gameObject.AddComponent<Canvas>();
+            top.overrideSorting = true;
+            top.sortingOrder = 32000;
+        }
+        holdRing.gameObject.SetActive(visible || stacked);
+        holdRing.anchoredPosition = LocalOverlay(finger);
+        holdRingFill.fillAmount = fill;
+        holdRing.localScale = Vector3.one * (stacked ? 0.6f : 1f);
+        if (!stacked && visible) SetHoldLabel(finger, "Keep holding to stack the papers");
+    }
+
+    private void SetHoldLabel(Vector2 finger, string text)
+    {
+        if (overlay == null) return;
+        if (holdLabel == null)
+        {
+            holdLabel = HudTheme.CreateLabel("Stack Hold Label", overlay, text, 26f, Color.white,
+                TextAlignmentOptions.Center, FontStyles.Bold);
+            holdLabel.rectTransform.anchorMin = holdLabel.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            holdLabel.rectTransform.sizeDelta = new Vector2(560f, 44f);
+            holdLabel.raycastTarget = false;
+            holdLabel.outlineWidth = 0.22f;
+            holdLabel.outlineColor = new Color32(10, 14, 22, 255);
+            Canvas top = holdLabel.gameObject.AddComponent<Canvas>();
+            top.overrideSorting = true;
+            top.sortingOrder = 32000;
+        }
+        holdLabel.gameObject.SetActive(true);
+        holdLabel.text = text;
+        holdLabel.rectTransform.anchoredPosition = LocalOverlay(finger) + new Vector2(0f, 82f);
+    }
+
+    private Vector2 LocalOverlay(Vector2 screen)
+    {
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(overlay, screen, HudEventCamera(), out Vector2 local);
+        return local - overlay.rect.center;
     }
 
     private void UpdateCount()

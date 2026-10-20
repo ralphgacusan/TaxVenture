@@ -225,7 +225,10 @@ public sealed class Level2OfficeReview : MonoBehaviour
             {
                 if (!ResolveRecord(v, out string documentId, out string label)) return;
                 if (OfficeReview.SetScheduleRow(Level2OfficeStart.Review, Definition.review, index, v.SemanticKey, documentId, label, out _))
+                {
                     Changed(page);
+                    GameplayEvents.RaiseGuideCue("ScheduleLineFilled");
+                }
             };
             slot.Cleared = () =>
             {
@@ -332,13 +335,16 @@ public sealed class Level2OfficeReview : MonoBehaviour
             slot.Rejected = () => Level2Say.Line(captured.accepts == OfficeFindingPartDefinition.Record
                 ? "This box takes a line from one of Rosa's records."
                 : captured.accepts == OfficeFindingPartDefinition.Reason
-                    ? "This box takes a reason from Finding Reasons in your book."
-                    : "This box takes a conclusion from Review Conclusions in your book.", null, 4f);
+                    ? "This box takes a reason from Section 7, Finding Reasons, in your book."
+                    : "This box takes a conclusion from Section 8, Review Conclusions, in your book.", null, 4f);
             slot.Received = v =>
             {
                 if (!Resolve(v, captured.accepts, out string documentId, out string key, out string label)) return;
                 if (OfficeReview.SetPart(Level2OfficeStart.Review, Definition.review, definition.id, captured.id, documentId, key, label))
+                {
                     Changed(page);
+                    GameplayEvents.RaiseGuideCue("OfficeConclusionSet");
+                }
             };
             slot.Cleared = () =>
             {

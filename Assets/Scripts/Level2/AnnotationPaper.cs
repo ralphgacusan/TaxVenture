@@ -319,7 +319,8 @@ public sealed class AnnotationPaper
         paper.inkMaterial = b.Clear(InkYellow, "Highlighter Ink");
         paper.inkMaterial.renderQueue = UnderTextQueue;
         int count = entry.lines != null ? entry.lines.Count : 0;
-        float step = count > 0 ? Mathf.Min(0.042f, 0.222f / count) : 0.042f;
+        // Taller rows than before (0.042), but the last row always ends above the card slots' labels (z -0.10).
+        float step = count > 0 ? Mathf.Min(0.05f, 0.198f / Mathf.Max(1f, count - 0.5f)) : 0.05f;
         paper.rowStep = step;
         for (int i = 0; i < count; i++)
         {
@@ -346,8 +347,11 @@ public sealed class AnnotationPaper
                 line.segments[s] = node;
             }
             // Fixed sizes for every row: long values wrap instead of shrinking to tiny print.
-            b.Text(root, new Vector3(-0.105f, y + 0.0005f, z), new Vector2(0.12f, step * 0.99f), row.label, MutedInk, RowFont(count), TextAlignmentOptions.Left, false, null, false);
-            line.value = b.Text(root, new Vector3(0.065f, y + 0.0005f, z), new Vector2(0.2f, step * 0.99f), row.value, InkColor, RowFont(count), TextAlignmentOptions.Right, false, null, false);
+            // Big print that shrinks (never below RowFontMin) or wraps for long values, instead of being cut off.
+            TextMeshPro rowLabel = b.Text(root, new Vector3(-0.11f, y + 0.0005f, z), new Vector2(0.115f, step * 0.96f), row.label, MutedInk, RowFont(count), TextAlignmentOptions.Left, false, null, true);
+            rowLabel.fontSizeMin = RowFontMin;
+            line.value = b.Text(root, new Vector3(0.066f, y + 0.0005f, z), new Vector2(0.21f, step * 0.96f), row.value, InkColor, RowFont(count), TextAlignmentOptions.Right, false, null, true);
+            line.value.fontSizeMin = RowFontMin;
             // SOURCE flag that pops in at the margin once the line is marked.
             line.sourceTag = b.Node("SourceTag", root, new Vector3(-Width * 0.5f - 0.002f, 0.0018f, z), Quaternion.identity);
             line.sourceMaterial = b.Lit(new Color32(255, 214, 40, 255), "Source Flag");
@@ -395,7 +399,10 @@ public sealed class AnnotationPaper
     }
 
     /// <summary>Row type size: larger when a record has few rows (the short records of Level 2), never below the original 0.17.</summary>
-    private static float RowFont(int rows) => rows <= 4 ? 0.205f : 0.17f;
+    private static float RowFont(int rows) => rows <= 4 ? 0.25f : 0.2f;
+
+    /// <summary>Long values shrink to fit their row, but never below this.</summary>
+    private const float RowFontMin = 0.15f;
 
     /// <summary>Applies saved annotation content to this same 3D paper model.</summary>
     public void SetSavedAnnotations(AnnotationDefinition definition, AnnotationEntryDefinition entry,

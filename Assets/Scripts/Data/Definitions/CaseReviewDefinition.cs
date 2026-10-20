@@ -39,6 +39,13 @@ public class CaseReviewDefinition
     /// <summary>Review phase the case starts in (ReviewPhase name). Empty = OfficeWelcome.</summary>
     public string startPhase;
 
+    /// <summary>
+    /// Optional Taxpayer Profile page printed right after Taxpayer Information:
+    /// one sentence describing the client, worded so the page-1 answers can be
+    /// worked out with the book (never naming them). Empty = no profile page.
+    /// </summary>
+    public string profileText;
+
     /// <summary>Pages the player can read from the start (the rest arrive through play).</summary>
     public List<string> initialDocumentIds = new List<string>();
 

@@ -252,6 +252,16 @@ public class CaseReviewState
     /// Tutorial phase, only once, only when their work matches the
     /// demonstration. Moves on to Challenge. No score, reward or revision.
     /// </summary>
+    /// <summary>The player chose to skip Arthur's demonstration and the practice: straight to Challenge (no score, reward or revision).</summary>
+    public bool TrySkipTutorial()
+    {
+        if (!TutorialActive) return false;
+        toolkitDemoSeen = true;
+        tutorialCompleted = true;
+        TryAdvance(ReviewPhase.Challenge);
+        return true;
+    }
+
     public bool TryCompleteTutorial(AnnotationEntryDefinition entry)
     {
         if (!TutorialActive || !AnnotationActions.MatchesDemonstration(tutorialAnnotation, entry)) return false;

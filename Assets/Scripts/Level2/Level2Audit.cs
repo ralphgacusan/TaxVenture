@@ -32,6 +32,9 @@ public sealed class Level2Audit : MonoBehaviour
 
     private static Level2Audit instance;
 
+    /// <summary>A hand-in is being explained or summarised: further hand-in calls wait for it.</summary>
+    private static bool inProgress;
+
     private void OnEnable()
     {
         instance = this;
@@ -41,6 +44,7 @@ public sealed class Level2Audit : MonoBehaviour
     private void OnDisable()
     {
         if (instance == this) instance = null;
+        inProgress = false;
         if (AuditorInteractable.LevelAudit == (System.Func<AuditorInteractable, bool>)Handle)
             AuditorInteractable.LevelAudit = null;
     }
@@ -51,6 +55,8 @@ public sealed class Level2Audit : MonoBehaviour
         CaseDefinition definition = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
         CaseData data = CaseManager.Instance != null ? CaseManager.Instance.CurrentCase : null;
         if (review == null || definition == null || !definition.HasReview || data == null) return false;
+        // One hand-in at a time: a repeated call never replays the Auditor or decides twice.
+        if (inProgress) return true;
 
         if (!Level2FolderHandoff.CanHandInReview(review, true))
         {
@@ -105,6 +111,7 @@ public sealed class Level2Audit : MonoBehaviour
             CaseProgressionManager.Instance.RecordAuditAttempt(result.NewlyCharged.Count, false);
 
         // The summary (or the return) follows only when the Auditor's last line is closed and his box has left the screen.
+        inProgress = true;
         System.Action conclude = () => Conclude(auditor, review, data, result, rosa, definition.review);
         System.Action after = () =>
         {
@@ -165,11 +172,12 @@ public sealed class Level2Audit : MonoBehaviour
     {
         if (result.Outcome == FinalAudit.Outcome.Approved)
         {
-            if (!FinalAudit.TryReward(review)) return;
+            if (!FinalAudit.TryReward(review)) { inProgress = false; return; }
             // On time is recorded and shown on the Audit Summary (no separate Arthur line).
             if (review.clock != null && review.clock.started && !review.clock.missed) review.audit.onTime = true;
             void Finish()
             {
+                inProgress = false;
                 if (CaseProgressionManager.Instance != null) CaseProgressionManager.Instance.CalculateAndStoreCaseReward(data);
                 // One neutral story fact (no accusation): Rosa confirms who prepared the first summary.
                 if (PlayerProgressManager.Instance != null) PlayerProgressManager.Instance.RecordStoryFact(Level2Checkpoint.StoryFactDeskProvenance);
@@ -181,6 +189,7 @@ public sealed class Level2Audit : MonoBehaviour
         }
         void Return()
         {
+            inProgress = false;
             auditor.ReturnFolderForReview();
             GameplayEvents.RaiseAuditReturned();
             if (!string.IsNullOrWhiteSpace(rosa)) Level2Say.Line(rosa, null, 6f);

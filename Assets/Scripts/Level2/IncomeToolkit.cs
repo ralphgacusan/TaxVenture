@@ -530,6 +530,7 @@ public sealed class IncomeToolkit : MonoBehaviour
             return;
         }
         if (wantOpen && !open) Open();
+        UpdateSkipButton();
         if (!open) return;
 
         if (placedUntil > 0f && Time.unscaledTime > placedUntil)
@@ -561,7 +562,7 @@ public sealed class IncomeToolkit : MonoBehaviour
         // This records desk owns the exit hold and the bottom hint while it is the one in use.
         active = this;
         WorkstationUI.ExitBlocked = () => QuestInProgress || HoldingExitAfterQuest;
-        GuideCoachView.HintAtBottom = AtRecordsDesk;
+        GuideCoachView.HintAtBottom = () => AtRecordsDesk() && active.mode != Mode.Done;
         if (!EnsureContent())
         {
             wantOpen = false;
@@ -611,6 +612,14 @@ public sealed class IncomeToolkit : MonoBehaviour
             }
         }
         if (!open) { Release(); yield break; }
+        if (mode == Mode.Done)
+        {
+            // Finished: the case stays shut and the papers are already in their icon.
+            if (paper != null) paper.SetVisible(false);
+            Release();
+            flow = null;
+            yield break;
+        }
         if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
         SetLid(LidOpenAngle, LidOpenSeconds);
         yield return Wait(LidOpenSeconds * 0.45f, ignorePause: true);
@@ -634,7 +643,6 @@ public sealed class IncomeToolkit : MonoBehaviour
             else if (challenge.firstChecked) Level2Say.Line("Fix the red notes, then CHECK again. Tap a red one for a hint.", null, 5f);
             else Level2Say.Line("Finish Rosa's four records, then press CHECK.", null, 4f);
         }
-        else if (mode == Mode.Done) Level2Say.Line("Mark the Money! is done. Take what you learned back to the office.", null, 4f);
         flow = null;
     }
 
@@ -1799,8 +1807,6 @@ public sealed class IncomeToolkit : MonoBehaviour
         Award(challenge);
         mode = Mode.Done;
         Release();
-        yield return Wait(0.6f, ignorePause: true);
-        if (open) SetLid(LidOpenAngle, LidOpenSeconds);
     }
 
     private void ShowList(ChallengeState challenge)
@@ -2360,6 +2366,90 @@ public sealed class IncomeToolkit : MonoBehaviour
 
     private void Release() => busy = Mathf.Max(0, busy - 1);
 
+    // =========================================================
+    // SKIP PRACTICE (Arthur's demonstration and the player's try)
+    // =========================================================
+
+    private GameObject skipCanvas;
+    private CanvasGroup skipGroup;
+    private bool skipping;
+
+    /// <summary>Shown at the open records desk while the payslip demonstration or practice is on.</summary>
+    private void UpdateSkipButton()
+    {
+        bool show = open && mode == Mode.Tutorial && !skipping && !SideQuestSplash.IsShowing && !HudRewardScreen.AnyOpen &&
+                    Review != null && Review.TutorialActive;
+        if (show && skipCanvas == null) BuildSkipButton();
+        if (skipGroup == null) return;
+        skipGroup.alpha = Mathf.MoveTowards(skipGroup.alpha, show ? 1f : 0f, Time.unscaledDeltaTime * 5f);
+        skipGroup.blocksRaycasts = show && skipGroup.alpha > 0.5f;
+        skipGroup.interactable = skipGroup.blocksRaycasts;
+    }
+
+    private void BuildSkipButton()
+    {
+        skipCanvas = new GameObject("Records Desk Skip Practice", typeof(RectTransform));
+        var canvas = skipCanvas.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 950;
+        var scaler = skipCanvas.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+        skipCanvas.AddComponent<GraphicRaycaster>();
+        skipGroup = skipCanvas.AddComponent<CanvasGroup>();
+        skipGroup.alpha = 0f;
+
+        RectTransform button = HudTheme.CreateRect("Skip Practice", skipCanvas.transform);
+        button.anchorMin = button.anchorMax = button.pivot = new Vector2(0f, 1f);
+        button.anchoredPosition = new Vector2(40f, -150f);
+        button.sizeDelta = new Vector2(300f, 84f);
+        Image back = HudTheme.AddImage(button, HudTheme.Rounded, new Color32(32, 40, 54, 235), 18f);
+        back.raycastTarget = true;
+        var outline = button.gameObject.AddComponent<Outline>();
+        outline.effectColor = new Color(HudTheme.Brass.r, HudTheme.Brass.g, HudTheme.Brass.b, 0.9f);
+        outline.effectDistance = new Vector2(2f, -2f);
+        TextMeshProUGUI label = HudTheme.CreateLabel("Label", button, "SKIP PRACTICE  ▶▶", 28f, HudTheme.BrassSoft,
+            TextAlignmentOptions.Center, FontStyles.Bold);
+        HudTheme.Stretch(label.rectTransform, 8f);
+        label.raycastTarget = false;
+        var b = button.gameObject.AddComponent<Button>();
+        b.targetGraphic = back;
+        b.onClick.AddListener(SkipPractice);
+    }
+
+    /// <summary>Skips Arthur's payslip demonstration and the practice try, straight to Rosa's four records.</summary>
+    public void SkipPractice()
+    {
+        CaseReviewState review = Review;
+        if (!open || mode != Mode.Tutorial || skipping || review == null || !review.TutorialActive) return;
+        bool demoWasSeen = review.toolkitDemoSeen;
+        if (!review.TrySkipTutorial()) return;
+        skipping = true;
+        if (flow != null) StopCoroutine(flow);
+        flow = null;
+        if (markerMotion != null) StopCoroutine(markerMotion);
+        markerMotion = null;
+        demoRunning = false;
+        busy = 0;
+        CancelInk(instant: true);
+        CancelDrag();
+        Deselect();
+        ReturnMarker();
+        if (paper != null) paper.ClearStrokes();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        if (!demoWasSeen) GameplayEvents.RaiseToolkitDemoFinished();
+        GameplayEvents.RaiseAnnotationTutorialCompleted();
+        Level2Say.Line("Practice skipped. Straight to Rosa's four records!", "wow", 4f);
+        StartCoroutine(SkipToChallenge());
+    }
+
+    private IEnumerator SkipToChallenge()
+    {
+        if (options.entries != null && options.entries.Count > 0 && open) yield return BeginChallenge();
+        skipping = false;
+    }
+
     private IEnumerator Busy(IEnumerator routine)
     {
         busy++;
@@ -2424,6 +2514,10 @@ public sealed class IncomeToolkit : MonoBehaviour
         }
         if (challengeSplash != null && SideQuestSplash.IsShowing) challengeSplash.Cancel();
         challengeSplash = null;
+        if (skipCanvas != null) Destroy(skipCanvas);
+        skipCanvas = null;
+        skipGroup = null;
+        skipping = false;
         if (dragging != null) dragging.hit.enabled = true;
         StopAllCoroutines();
         if (marker != null) ReturnMarker();

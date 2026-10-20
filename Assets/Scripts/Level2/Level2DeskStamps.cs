@@ -417,6 +417,7 @@ public sealed class Level2DeskStamps : MonoBehaviour
                 if (!Active || Folder == null || !Folder.IsShowing) return;
                 ready.Lift(0, LiftSeconds);
                 notReady.Lift(1, LiftSeconds + 0.1f);
+                GameplayEvents.RaiseGuideCue("StampsUp");
             });
         }
         else

@@ -20,6 +20,7 @@ public sealed class Level2FindingsPage : MonoBehaviour
     public const string InkText = "INITIAL REVIEW\nNOT READY";
 
     private bool announced;
+    private string lastNote;
     private CaseFolderUI.PageBuilder pendingRefresh;
     private Level2FindingsSheet sheet;
     private CaseData observedCase;
@@ -166,12 +167,13 @@ public sealed class Level2FindingsPage : MonoBehaviour
         PreliminaryRuleDefinition rule = Definition.review.preliminaryRule;
         bool confirmed = review.FindFinding(rule.findingId)?.comparisonConfirmed == true;
         FindingComparison.Result result = FindingComparison.Check(review, rule);
-        if (result == FindingComparison.Result.NoDiscrepancy)
-        {
-            review.ClearFindingDraft(rule.findingId);
-            paper.RefreshContent();
-        }
-        paper.ShowComparison(result, rule.supportedObservation, !confirmed && result != FindingComparison.Result.Incomplete);
+        // A wrong link keeps all three answers; the slip writes a clue for the box to look at again.
+        string note = result == FindingComparison.Result.NoDiscrepancy
+            ? FindingComparison.Clue(FindingComparison.FirstMismatch(review, rule))
+            : rule.supportedObservation;
+        bool changed = note != lastNote;
+        lastNote = note;
+        paper.ShowComparison(result, note, (changed || !confirmed) && result != FindingComparison.Result.Incomplete);
         if (!announced && result == FindingComparison.Result.Supported)
         {
             announced = true;

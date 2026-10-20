@@ -88,7 +88,7 @@ public sealed class AnnotationPaperCollectionFace : MonoBehaviour, ICanvasRaycas
             view.paperLayer = layer;
         }
 
-        view.BuildCloseButton();
+        // No close control: hold any paper to stack them all, then drop the stack on the icon.
         return view;
     }
 
@@ -203,6 +203,19 @@ public sealed class AnnotationPaperCollectionFace : MonoBehaviour, ICanvasRaycas
         {
             documentLayer.AssignSortingOrder(window.SortingOrder);
             if (controlsCanvas != null) controlsCanvas.sortingOrder = window.SortingOrder + 1;
+        }
+        // The highlighted-amount band sits in this paper's own layer just above its face:
+        // over its own paper, under any paper brought in front of it.
+        if (valueRow != null && valueRow.gameObject.activeInHierarchy)
+        {
+            Canvas band = valueRow.GetComponent<Canvas>();
+            if (band == null)
+            {
+                band = valueRow.gameObject.AddComponent<Canvas>();
+                valueRow.gameObject.AddComponent<GraphicRaycaster>();
+            }
+            band.overrideSorting = true;
+            band.sortingOrder = window.SortingOrder + 1;
         }
     }
 
@@ -382,6 +395,7 @@ internal sealed class AnnotatedValueRow : MonoBehaviour, IDataValueSource, IPoin
     public void OnPointerClick(PointerEventData eventData)
     {
         if (eventData.dragging || ValueTransferManager.Instance == null) return;
+        if (Level2AnnotatedPapers.Instance != null && (Level2AnnotatedPapers.Instance.SwallowTap || Level2AnnotatedPapers.Instance.IsStacked)) return;
         ValueTransferManager.Instance.SelectValue(this, this);
         if (ReferenceEquals(ValueTransferManager.Instance.SelectedSourceComponent, this)) Level2OfficeReview.PresentSchedule();
     }
@@ -389,7 +403,17 @@ internal sealed class AnnotatedValueRow : MonoBehaviour, IDataValueSource, IPoin
     // Runs beside ValueDragSource on the same row: the schedule comes forward for the drop.
     public void OnBeginDrag(PointerEventData eventData) => Level2OfficeReview.PresentSchedule();
 
-    public void SetScheduled(bool value) => scheduled = value;
+    public void SetScheduled(bool value)
+    {
+        // Just landed on the schedule: a quick pop as it turns green.
+        if (value && !scheduled && wasShown) popUntil = Time.unscaledTime + PopSeconds;
+        scheduled = value;
+        wasShown = true;
+    }
+
+    private const float PopSeconds = 0.35f;
+    private float popUntil = -1f;
+    private bool wasShown;
 
     private void OnEnable() => Subscribe();
 
@@ -420,7 +444,9 @@ internal sealed class AnnotatedValueRow : MonoBehaviour, IDataValueSource, IPoin
         // A frame marks the value; the fill stays faint so the highlighted text is never covered.
         band.color = new Color(tint.r, tint.g, tint.b, selected ? 0.1f : scheduled ? 0.05f : 0.02f + 0.03f * wave);
         frame.color = new Color(tint.r, tint.g, tint.b, selected ? 1f : scheduled ? 0.7f : 0.45f + 0.4f * wave);
-        float pop = selected ? 1.03f : 1f;
-        transform.localScale = Vector3.Lerp(transform.localScale, Vector3.one * pop, 1f - Mathf.Exp(-14f * Time.unscaledDeltaTime));
+        float pop = selected ? 1.04f : 1f;
+        float landed = popUntil > Time.unscaledTime ? 1f - (popUntil - Time.unscaledTime) / PopSeconds : 1f;
+        if (landed < 1f) pop *= 1f + 0.14f * Mathf.Sin(landed * Mathf.PI);
+        transform.localScale = Vector3.Lerp(transform.localScale, Vector3.one * pop, 1f - Mathf.Exp(-18f * Mathf.Min(Time.unscaledDeltaTime, 1f / 30f)));
     }
 }
