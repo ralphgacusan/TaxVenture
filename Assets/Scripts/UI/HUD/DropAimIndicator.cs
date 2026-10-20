@@ -14,7 +14,8 @@ using UnityEngine.UI;
 /// </summary>
 public sealed class DropAimIndicator : MonoBehaviour
 {
-    private const int SortingOrder = 3000;
+    // Above every paper window and 3D document layer (1101-1900), under the dragged tag.
+    private const int SortingOrder = 29000;
 
     private RectTransform visual;
     private RectTransform root;
@@ -24,6 +25,9 @@ public sealed class DropAimIndicator : MonoBehaviour
     private RectTransform tagRect;
     private Image tagImage;
     private TextMeshProUGUI tagLabel;
+    private Image tagCheck;
+    private RectTransform checkBadge;
+    private float fitPop;
     private CanvasGroup group;
     private readonly List<RaycastResult> results = new List<RaycastResult>();
     private readonly Vector3[] corners = new Vector3[4];
@@ -75,13 +79,27 @@ public sealed class DropAimIndicator : MonoBehaviour
         tagLabel = HudTheme.CreateLabel("Label", tagRect, "DROP HERE", 18f, Color.white, TextAlignmentOptions.Center,
             FontStyles.Bold | FontStyles.UpperCase);
         HudTheme.Stretch(tagLabel.rectTransform, 4f);
+
+        // A round green check on the field's corner when this kind of value fits.
+        checkBadge = HudTheme.CreateRect("Fits Check", frame);
+        checkBadge.anchorMin = checkBadge.anchorMax = new Vector2(1f, 0.5f);
+        checkBadge.pivot = new Vector2(0.5f, 0.5f);
+        checkBadge.anchoredPosition = new Vector2(-26f, 0f);
+        checkBadge.sizeDelta = new Vector2(40f, 40f);
+        Image badge = HudTheme.AddImage(checkBadge, HudTheme.Circle, HudTheme.Complete);
+        badge.raycastTarget = false;
+        RectTransform tick = HudTheme.CreateRect("Tick", checkBadge);
+        HudTheme.Stretch(tick, 8f);
+        tagCheck = HudTheme.AddImage(tick, HudTheme.Check, Color.white);
+        tagCheck.preserveAspect = true;
+        tagCheck.raycastTarget = false;
     }
 
     private void LateUpdate()
     {
         float dt = Time.unscaledDeltaTime;
         bool dragging = visual != null && visual.gameObject.activeInHierarchy;
-        Component target = dragging ? FindDestination(visual.position) : null;
+        Component target = dragging ? FindDestination(DragVisualManager.PointerScreen) : null;
         bool show = target != null && TryScreenRect(target.transform as RectTransform, out Rect rect) && Place(rect);
 
         alpha = Mathf.MoveTowards(alpha, show ? 1f : 0f, dt * (show ? 12f : 8f));
@@ -93,15 +111,20 @@ public sealed class DropAimIndicator : MonoBehaviour
         {
             lastTarget = target;
             lastValue = value;
-            lastFits = Fits(target, value);
+            bool fits = Fits(target, value);
+            if (fits && (!lastFits || target != lastTarget)) fitPop = 1f;
+            lastFits = fits;
         }
+        fitPop = Mathf.MoveTowards(fitPop, 0f, dt * 4f);
+        checkBadge.gameObject.SetActive(lastFits);
+        checkBadge.localScale = Vector3.one * (1f + 0.35f * HudTheme.EaseOutBack(fitPop) * fitPop);
 
         Color c = lastFits ? HudTheme.Complete : HudTheme.Reputation;
         float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f);
         outline.color = new Color(c.r, c.g, c.b, 0.75f + 0.25f * pulse);
         fill.color = new Color(c.r, c.g, c.b, 0.12f + 0.06f * pulse);
         tagImage.color = new Color(c.r * 0.8f, c.g * 0.8f, c.b * 0.8f, 0.95f);
-        tagLabel.text = lastFits ? "DROP HERE" : "WON'T FIT";
+        tagLabel.text = lastFits ? "FITS" : "WON'T FIT";
     }
 
     private static bool Fits(Component target, DataValue value)

@@ -18,6 +18,13 @@ public static class DeskMotion
         return rootPosition + camera.ScreenToWorldPoint(new Vector3(centre.x, centre.y, depth)) - paperCentre;
     }
 
+    /// <summary>
+    /// Unscaled frame time, capped at 1/30 s: a single slow frame (content
+    /// rebuilt, a capture) slows an animation for a moment instead of
+    /// making it jump.
+    /// </summary>
+    public static float Step => Mathf.Min(Time.unscaledDeltaTime, 1f / 30f);
+
     public static float EaseInQuad(float t) => t * t;
     public static float EaseOutQuad(float t) => 1f - (1f - t) * (1f - t);
     public static float EaseInCubic(float t) => t * t * t;
@@ -59,7 +66,7 @@ public static class DeskMotion
         float half = Mathf.Max(0.01f, duration * 0.5f);
         float sign = direction >= 0 ? 1f : -1f;
 
-        for (float t = 0f; t < half; t += Time.unscaledDeltaTime)
+        for (float t = 0f; t < half; t += Step)
         {
             float angle = 90f * EaseInQuad(t / half);
             page.localRotation = restRotation * Quaternion.Euler(0f, -sign * angle, 0f);
@@ -72,10 +79,13 @@ public static class DeskMotion
         page.localRotation = restRotation * Quaternion.Euler(0f, -sign * 90f, 0f);
         page.localScale = restScale * 0.96f;
         onMidpoint?.Invoke();
+        // The new page's rows were just built: skip that (possibly slow) frame so
+        // the second half starts from the spine instead of jumping ahead.
+        yield return null;
 
-        for (float t = 0f; t < half; t += Time.unscaledDeltaTime)
+        for (float t = 0f; t < half; t += Step)
         {
-            float angle = 90f * (1f - EaseOutQuad(t / half));
+            float angle = 90f * (1f - EaseOutCubic(t / half));
             page.localRotation = restRotation * Quaternion.Euler(0f, sign * angle, 0f);
             page.localScale = restScale * Mathf.Lerp(0.96f, 1f, t / half);
             yield return null;

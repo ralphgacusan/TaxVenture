@@ -98,6 +98,8 @@ public class CaseFolderUI : MonoBehaviour
     public const string PreparedPacketPageTitle = "Prepared Packet";
     public const string PreparedSummaryPageTitle = "Summary";
     public const string PaymentNotePageTitle = "Payment Note";
+    public const string TaxpayerProfilePageTitle = "Taxpayer Profile";
+    private const float ProfileRowHeight = 250f;
 
     /// <summary>
     /// Optional level pages added after the case's own pages (Level 2's
@@ -222,8 +224,8 @@ public class CaseFolderUI : MonoBehaviour
     /// </summary>
     public void Show()
     {
-        Debug.Log("[CaseFolderUI] Show() was called");
-        Debug.Log("========== CASE FOLDER SHOW ==========");
+        DebugTrace.Log("[CaseFolderUI] Show() was called");
+        DebugTrace.Log("========== CASE FOLDER SHOW ==========");
 
         if (CaseManager.Instance == null)
         {
@@ -249,11 +251,11 @@ public class CaseFolderUI : MonoBehaviour
             return;
         }
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[CaseFolderUI] Opening panel: {folderPanelRoot.name}"
         );
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[CaseFolderUI] Before Open -> " +
             $"activeSelf={folderPanelRoot.activeSelf}, " +
             $"activeInHierarchy={folderPanelRoot.activeInHierarchy}"
@@ -279,7 +281,7 @@ public class CaseFolderUI : MonoBehaviour
         PrintedPaperStyle.Apply(GetPageTurnRoot(), headingText, bodyText, pageIndicatorText);
         CentreContentColumn();
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[CaseFolderUI] After Open -> " +
             $"activeSelf={folderPanelRoot.activeSelf}, " +
             $"activeInHierarchy={folderPanelRoot.activeInHierarchy}"
@@ -299,7 +301,7 @@ public class CaseFolderUI : MonoBehaviour
             }
         }
 
-        Debug.Log("========== CASE FOLDER SHOW COMPLETE ==========");
+        DebugTrace.Log("========== CASE FOLDER SHOW COMPLETE ==========");
     }
 
     // ============================================================
@@ -330,7 +332,7 @@ public class CaseFolderUI : MonoBehaviour
 
         CameraController.Instance?.UnlockPlayerControls();
 
-        Debug.Log("[CaseFolderUI] Case Folder hidden.");
+        DebugTrace.Log("[CaseFolderUI] Case Folder hidden.");
     }
 
     // ============================================================
@@ -575,7 +577,7 @@ public class CaseFolderUI : MonoBehaviour
         PlaceBottomPageButton(rightEdgeZone, true);
     }
 
-    private const float PageButtonSize = 130f;
+    private const float PageButtonSize = 150f;
     private const float PageButtonInset = 70f;
     private const float PageButtonBottom = 10f;
 
@@ -779,6 +781,54 @@ public class CaseFolderUI : MonoBehaviour
         }
 
         PageDecorator?.Invoke(index, new PageBuilder(this));
+        FitRowHeights();
+    }
+
+    /// <summary>Tallest a value row may grow to (an easier drag source / drop target).</summary>
+    public const float RowTargetHeight = 110f;
+
+    /// <summary>
+    /// Makes the page's value rows taller, sharing the page's spare room, up
+    /// to RowTargetHeight: bigger drag sources and drop targets that still
+    /// end inside the page. Tall custom rows (profile, summaries) keep their size.
+    /// </summary>
+    private void FitRowHeights()
+    {
+        RectTransform list = page1FieldRowListRoot as RectTransform;
+        if (list == null || !list.gameObject.activeInHierarchy) return;
+        Canvas.ForceUpdateCanvases();
+        float available = list.rect.height;
+        if (available <= 1f) return;
+        var group = list.GetComponent<HorizontalOrVerticalLayoutGroup>();
+        float spacing = group != null ? group.spacing : 0f;
+        float padding = group != null ? group.padding.top + group.padding.bottom : 0f;
+
+        var small = new List<LayoutElement>();
+        float fixedHeight = 0f;
+        int count = 0;
+        foreach (Transform child in list)
+        {
+            if (!child.gameObject.activeSelf || !(child is RectTransform rect)) continue;
+            LayoutElement element = child.GetComponent<LayoutElement>();
+            if (element != null && element.ignoreLayout) continue;
+            count++;
+            float natural = LayoutUtility.GetPreferredHeight(rect);
+            if (element != null && element.preferredHeight >= 150f) { fixedHeight += element.preferredHeight; continue; }
+            if (element == null) element = child.gameObject.AddComponent<LayoutElement>();
+            if (element.minHeight < 0f || element.minHeight > RowTargetHeight) element.minHeight = -1f;
+            fixedHeight += 0f;
+            small.Add(element);
+        }
+        if (small.Count == 0) return;
+        float room = available - padding - spacing * Mathf.Max(0, count - 1) - fixedHeight;
+        float each = Mathf.Min(RowTargetHeight, room / small.Count);
+        foreach (LayoutElement element in small)
+        {
+            float natural = LayoutUtility.GetPreferredHeight((RectTransform)element.transform);
+            // Never shorter than the row's own text needs.
+            element.minHeight = Mathf.Max(each, Mathf.Min(natural, RowTargetHeight));
+        }
+        LayoutRebuilder.MarkLayoutForRebuild(list);
     }
 
     // ============================================================
@@ -892,6 +942,16 @@ public class CaseFolderUI : MonoBehaviour
             definition.documents == null || definition.review.documents == null)
             return;
 
+        // One-sentence client profile, right after Taxpayer Information.
+        if (!string.IsNullOrWhiteSpace(definition.review.profileText))
+        {
+            string profile = definition.review.profileText.Trim();
+            list.Add(new CaseFolderPageContent(TaxpayerProfilePageTitle, "")
+            {
+                Render = page => BuildProfileRows(data, profile)
+            });
+        }
+
         var preparedDocuments = new List<ReviewDocumentDefinition>();
         foreach (ReviewDocumentDefinition document in definition.review.documents)
         {
@@ -915,6 +975,41 @@ public class CaseFolderUI : MonoBehaviour
                 Render = page => BuildReviewPageRows(data, document)
             });
         }
+    }
+
+    /// <summary>The Taxpayer Profile page: the client's name, then the profile sentence as a printed paragraph.</summary>
+    private void BuildProfileRows(CaseData data, string profile)
+    {
+        ClearRows(page1Rows);
+        AddSourceOnlyRow(page1Rows, page1FieldRowListRoot, "Name", data.fullName, DataValueType.Text, "FullName");
+
+        GameObject row = new PageBuilder(this).AddRowObject();
+        foreach (MonoBehaviour behaviour in row.GetComponents<MonoBehaviour>())
+            if (behaviour is CaseFolderFieldRow || behaviour is ValueDragSource ||
+                behaviour is ValueSelectionHighlighter || behaviour is ValueTypeValidationFeedback ||
+                behaviour is ValueHoverFeedback)
+                Destroy(behaviour);
+        TMP_Text text = row.GetComponentInChildren<TMP_Text>(true);
+        if (text == null) return;
+        Image background = row.GetComponent<Image>();
+        if (background == null) background = row.GetComponentInChildren<Image>(true);
+        PaperInkStyle.StyleFieldRow(background, text, false, null, null);
+        if (background != null) background.raycastTarget = false;
+        text.text = PaperInkStyle.FieldTextStacked("About the taxpayer", profile, false);
+        text.alignment = TextAlignmentOptions.TopLeft;
+        text.textWrappingMode = TextWrappingModes.Normal;
+        // Large and readable, but auto-sized to the space left on the page so it never runs off the paper.
+        text.enableAutoSizing = true;
+        // A fixed height the page's row list always has room for (taller rows overflowed onto the Name row).
+        text.fontSizeMin = 24f;
+        text.fontSizeMax = 38f;
+        text.lineSpacing = 4f;
+        text.overflowMode = TextOverflowModes.Truncate;
+        LayoutElement layout = row.GetComponent<LayoutElement>();
+        if (layout == null) layout = row.AddComponent<LayoutElement>();
+        layout.minHeight = ProfileRowHeight;
+        layout.preferredHeight = ProfileRowHeight;
+        layout.flexibleHeight = 0f;
     }
 
     /// <summary>Marks a held review document as read when its printed paper is opened.</summary>
@@ -1390,7 +1485,7 @@ public class CaseFolderUI : MonoBehaviour
 
                 data.folderTransferredFields.Add(key);
 
-                Debug.Log(
+                DebugTrace.Log(
                     $"[CaseData Updated] " +
                     $"Field: {key} | Value: {v}"
                 );
@@ -1436,7 +1531,7 @@ public class CaseFolderUI : MonoBehaviour
 
                 data.folderTransferredFields.Add(key);
 
-                Debug.Log(
+                DebugTrace.Log(
                     $"[CaseData Updated] " +
                     $"Field: {key} | Value: {value}"
                 );

@@ -49,7 +49,7 @@ public class ValueDragSource : MonoBehaviour,
         source = valueSource;
         ownerComponent = owner;
 
-        Debug.Log(
+        DebugTrace.Log(
             $"ValueDragSource initialized on {gameObject.name} " +
             $"with source: {source?.GetType().Name}"
         );
@@ -63,7 +63,7 @@ public class ValueDragSource : MonoBehaviour,
         PointerEventData eventData
     )
     {
-        Debug.Log(
+        DebugTrace.Log(
             $"Pointer down on {gameObject.name}"
         );
     }
@@ -127,7 +127,7 @@ public class ValueDragSource : MonoBehaviour,
         if (!manager.HasSelection ||
             manager.SelectedSourceComponent != ownerComponent)
         {
-            Debug.Log(
+            DebugTrace.Log(
                 $"[{gameObject.name}] " +
                 "Source is not currently selected. " +
                 "Selecting it for drag."
@@ -140,7 +140,7 @@ public class ValueDragSource : MonoBehaviour,
         }
         else
         {
-            Debug.Log(
+            DebugTrace.Log(
                 $"[{gameObject.name}] " +
                 "Source is already selected. " +
                 "Keeping existing selection for drag."
@@ -222,7 +222,7 @@ public class ValueDragSource : MonoBehaviour,
             eventData.position
         );
 
-        Debug.Log(
+        DebugTrace.Log(
             $"Started dragging: " +
             $"{dragDisplayText}"
         );
@@ -246,7 +246,7 @@ public class ValueDragSource : MonoBehaviour,
             eventData.position
         );
 
-        Debug.Log(
+        DebugTrace.Log(
             $"Dragging {gameObject.name} | " +
             $"Position: {eventData.position}"
         );
@@ -289,7 +289,7 @@ public class ValueDragSource : MonoBehaviour,
          * the transfer succeeds.
          */
 
-        Debug.Log(
+        DebugTrace.Log(
             $"Stopped dragging {gameObject.name}"
         );
     }

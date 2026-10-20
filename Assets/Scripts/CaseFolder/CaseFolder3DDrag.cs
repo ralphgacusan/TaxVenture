@@ -253,24 +253,17 @@ public class CaseFolder3DDrag :
         if (deskSurface != null)
             heldPosition += deskSurface.DragLiftOffset;
 
-        if (animateDragging && !hasMovedDuringDrag)
+        // Always a stiff exponential follow: responsive, but finger jitter and
+        // uneven frames never shake the held object (it used to snap once moved).
+        if (animateDragging)
         {
-            float interpolation =
-                1f - Mathf.Exp(
-                    -dragSmoothness * Time.deltaTime
-                );
-
-            closedFolder.transform.position =
-                Vector3.Lerp(
-                    closedFolder.transform.position,
-                    heldPosition,
-                    interpolation
-                );
+            float stiffness = hasMovedDuringDrag ? Mathf.Max(dragSmoothness, 28f) : dragSmoothness;
+            float interpolation = 1f - Mathf.Exp(-stiffness * Mathf.Min(Time.unscaledDeltaTime, 1f / 30f));
+            closedFolder.transform.position = Vector3.Lerp(closedFolder.transform.position, heldPosition, interpolation);
         }
         else
         {
-            closedFolder.transform.position =
-                heldPosition;
+            closedFolder.transform.position = heldPosition;
         }
 
         if (preserveClosedFolderRotation)

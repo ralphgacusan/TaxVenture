@@ -65,7 +65,7 @@ public class ValueTransferManager : MonoBehaviour
         SelectedValue = source.GetDataValue();
         SelectedSourceComponent = sourceComponent;
 
-        Debug.Log(
+        DebugTrace.Log(
             $"Selected: {SelectedValue.DisplayText} | " +
             $"Key: {SelectedValue.SemanticKey} | " +
             $"Type: {SelectedValue.Type}"
@@ -114,7 +114,7 @@ public class ValueTransferManager : MonoBehaviour
     {
         if (!HasSelection)
         {
-            Debug.Log(
+            DebugTrace.Log(
                 "TryPlaceOnDestination called but no value is selected."
             );
 
@@ -131,7 +131,7 @@ public class ValueTransferManager : MonoBehaviour
         }
 
 
-        Debug.Log(
+        DebugTrace.Log(
             $"Trying to place {SelectedValue.DisplayText} " +
             $"into {destination.GetType().Name}"
         );
@@ -146,14 +146,14 @@ public class ValueTransferManager : MonoBehaviour
                 SelectedValue
             );
 
-        Debug.Log(
+        DebugTrace.Log(
             $"CanAccept: {canAccept}"
         );
 
 
         if (!canAccept)
         {
-            Debug.Log(
+            DebugTrace.Log(
                 $"Rejected: {SelectedValue.SemanticKey} " +
                 $"({SelectedValue.Type})"
             );
@@ -178,7 +178,7 @@ public class ValueTransferManager : MonoBehaviour
                 SelectedValue
             );
 
-        Debug.Log(
+        DebugTrace.Log(
             $"TryReceiveValue returned: {accepted}"
         );
 
@@ -189,7 +189,7 @@ public class ValueTransferManager : MonoBehaviour
 
         if (accepted)
         {
-            Debug.Log(
+            DebugTrace.Log(
                 "Transfer successful!"
             );
 
@@ -218,7 +218,7 @@ public class ValueTransferManager : MonoBehaviour
         // DESTINATION REFUSED
         // =====================================================
 
-        Debug.Log(
+        DebugTrace.Log(
             "Destination refused value after CanAccept."
         );
 

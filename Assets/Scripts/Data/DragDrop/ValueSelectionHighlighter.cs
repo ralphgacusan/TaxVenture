@@ -72,7 +72,7 @@ public class ValueSelectionHighlighter : MonoBehaviour
         subscribed = true;
         RefreshSelection();
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[ValueSelectionHighlighter] " +
             $"Subscribed successfully: {gameObject.name}"
         );

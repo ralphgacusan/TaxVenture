@@ -369,7 +369,7 @@ public class FloatingWindow :
             baseSortingOrder;
 
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[FloatingWindow] Initialized: " +
             $"{gameObject.name} | " +
             $"Sorting Order = " +
@@ -441,9 +441,15 @@ public class FloatingWindow :
 
 
         isDragging = true;
+        heldMoved = false;
+        if (settleRoutine != null)
+        {
+            StopCoroutine(settleRoutine);
+            settleRoutine = null;
+        }
 
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[FloatingWindow] " +
             $"{gameObject.name}: " +
             "TOUCHED -> FRONT"
@@ -476,10 +482,12 @@ public class FloatingWindow :
 
 
         // -----------------------------------------------------
-        // Increase global document layer
+        // Increase global document layer. Steps of two: every
+        // window owns the layer just above it for its own
+        // decorations (e.g. a value band over a captured 3D face).
         // -----------------------------------------------------
 
-        currentSortingOrder++;
+        currentSortingOrder += LayerStep;
 
 
         // -----------------------------------------------------
@@ -529,7 +537,7 @@ public class FloatingWindow :
         window.SetAsLastSibling();
 
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[FloatingWindow] " +
             $"{gameObject.name}: " +
             $"NOW FRONT | Sorting Order = " +
@@ -570,7 +578,8 @@ public class FloatingWindow :
         int next = 1101;
         for (int i = 0; i < layered.Count; i++)
         {
-            layered[i].assign(next++);
+            layered[i].assign(next);
+            next += LayerStep;
         }
 
         currentSortingOrder = next;
@@ -630,6 +639,44 @@ public class FloatingWindow :
         window.anchoredPosition =
             localPointer +
             dragOffset;
+
+        // Paper windows lift a little and lean into the motion while held.
+        heldMoved = true;
+        if (paperMotion && popRoutine == null && !paperOpening)
+        {
+            float lean = Mathf.Clamp(-eventData.delta.x * 0.18f, -5f, 5f);
+            dragLean = Mathf.Lerp(dragLean, lean, 0.25f);
+            window.localRotation = Quaternion.Euler(0f, 0f, paperTilt + dragLean);
+            float lift = paperRestScale * HeldLift;
+            window.localScale = Vector3.Lerp(window.localScale, new Vector3(lift, lift, 1f), 0.35f);
+        }
+    }
+
+    private const float HeldLift = 1.035f;
+    private float dragLean;
+    private bool heldMoved;
+    private Coroutine settleRoutine;
+
+    /// <summary>Released paper settles: leans back, dips a hair and springs to rest.</summary>
+    private IEnumerator PaperSettle()
+    {
+        float fromLean = dragLean;
+        float fromScale = window.localScale.x;
+        const float duration = 0.28f;
+        for (float elapsed = 0f; elapsed < duration; elapsed += Mathf.Min(Time.unscaledDeltaTime, 1f / 30f))
+        {
+            float t = Mathf.Clamp01(elapsed / duration);
+            float spring = Mathf.Exp(-7f * t) * Mathf.Cos(t * 16f);
+            window.localRotation = Quaternion.Euler(0f, 0f, paperTilt + fromLean * spring);
+            float dip = 1f - 0.022f * Mathf.Sin(t * Mathf.PI);
+            float scale = Mathf.Lerp(fromScale, paperRestScale, DeskMotion.EaseOutCubic(t)) * dip;
+            window.localScale = new Vector3(scale, scale, 1f);
+            yield return null;
+        }
+        dragLean = 0f;
+        window.localRotation = Quaternion.Euler(0f, 0f, paperTilt);
+        window.localScale = Vector3.one * paperRestScale;
+        settleRoutine = null;
     }
 
 
@@ -660,7 +707,7 @@ public class FloatingWindow :
                 eventData.position
             ))
         {
-            Debug.Log(
+            DebugTrace.Log(
                 $"[FloatingWindow] " +
                 $"{gameObject.name}: " +
                 "DROPPED ON CASE FOLDER ICON"
@@ -676,11 +723,19 @@ public class FloatingWindow :
         }
 
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[FloatingWindow] " +
             $"{gameObject.name}: " +
             "DRAG FINISHED"
         );
+
+        if (paperMotion && heldMoved && !paperOpening && gameObject.activeInHierarchy)
+        {
+            heldMoved = false;
+            if (settleRoutine != null) StopCoroutine(settleRoutine);
+            settleRoutine = StartCoroutine(PaperSettle());
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        }
     }
 
 
@@ -776,7 +831,7 @@ public class FloatingWindow :
                closeAnimationDuration)
         {
             elapsed +=
-                Time.deltaTime;
+                DeskMotion.Step;
 
 
             float t =
@@ -867,7 +922,7 @@ public class FloatingWindow :
         StartPaperOpen();
 
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[FloatingWindow] " +
             $"{gameObject.name}: " +
             $"OPENED | Sorting Order = " +
@@ -967,7 +1022,7 @@ public class FloatingWindow :
         StartPaperOpen();
 
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[FloatingWindow] " +
             $"{gameObject.name}: " +
             $"OPENED AT POSITION | " +
@@ -1140,7 +1195,7 @@ public class FloatingWindow :
         gameObject.SetActive(false);
 
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[FloatingWindow] " +
             $"{gameObject.name}: CLOSED"
         );
@@ -1270,7 +1325,7 @@ public class FloatingWindow :
         float elapsed = 0f;
         while (elapsed < PopDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += DeskMotion.Step;
             float t = Mathf.Clamp01(elapsed / PopDuration);
             float scale = paperRestScale * (1f + 0.045f * Mathf.Sin(t * Mathf.PI));
             window.localScale = new Vector3(scale, scale, 1f);
@@ -1320,13 +1375,16 @@ public class FloatingWindow :
     /// Next top layer for something that is not a FloatingWindow (the 3D
     /// desk documents), so everything shares one front-to-back order.
     /// </summary>
+    /// <summary>Windows and 3D document layers are two orders apart (see BringWindowToFront).</summary>
+    public const int LayerStep = 2;
+
     public static int TakeTopSortingOrder()
     {
-        currentSortingOrder = Mathf.Max(currentSortingOrder + 1, 1101);
+        currentSortingOrder = Mathf.Max(currentSortingOrder + LayerStep, 1101);
         if (currentSortingOrder >= 1900)
         {
             RebuildSortingOrders(null);
-            currentSortingOrder++;
+            currentSortingOrder += LayerStep;
         }
         return currentSortingOrder;
     }
@@ -1469,7 +1527,7 @@ public class FloatingWindow :
         float elapsed = 0f;
         while (elapsed < PaperOpenDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += DeskMotion.Step;
             float t = Mathf.Clamp01(elapsed / PaperOpenDuration);
 
             // Travel eases out; size and swing overshoot slightly, then settle.
@@ -1500,7 +1558,7 @@ public class FloatingWindow :
         float elapsed = 0f;
         while (elapsed < PaperCloseDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += DeskMotion.Step;
             float t = Mathf.Clamp01(elapsed / PaperCloseDuration);
             float ease = t * t;
 
@@ -1535,7 +1593,7 @@ public class FloatingWindow :
             originalPosition;
 
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[FloatingWindow] " +
             $"{gameObject.name}: " +
             "POSITION RESET"

@@ -26,7 +26,7 @@ public class ValueClickSource : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        Debug.Log($"Clicked {gameObject.name}");
+        DebugTrace.Log($"Clicked {gameObject.name}");
         ValueTransferManager.Instance.SelectValue(source, ownerComponent);
     }
 }

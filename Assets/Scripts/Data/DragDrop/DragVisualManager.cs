@@ -154,6 +154,7 @@ public class DragVisualManager : MonoBehaviour
         dragVisualCanvasGroup.blocksRaycasts = false;
         dragVisualCanvasGroup.interactable = false;
 
+
         // -----------------------------------------------------
         // Disable Content Size Fitter
         // -----------------------------------------------------
@@ -170,7 +171,7 @@ public class DragVisualManager : MonoBehaviour
         {
             dragVisualContentSizeFitter.enabled = false;
 
-            Debug.Log(
+            DebugTrace.Log(
                 "[DragVisualManager] Disabled ContentSizeFitter " +
                 "on DraggedValueVisual."
             );
@@ -183,7 +184,7 @@ public class DragVisualManager : MonoBehaviour
         {
             textContentSizeFitter.enabled = false;
 
-            Debug.Log(
+            DebugTrace.Log(
                 "[DragVisualManager] Disabled ContentSizeFitter " +
                 "on ValueText."
             );
@@ -228,7 +229,7 @@ public class DragVisualManager : MonoBehaviour
 
         dragVisual.SetActive(false);
 
-        Debug.Log(
+        DebugTrace.Log(
             "DragVisualManager initialized successfully."
         );
     }
@@ -280,6 +281,8 @@ public class DragVisualManager : MonoBehaviour
         // -----------------------------------------------------
 
         dragVisual.SetActive(true);
+        followStarted = false;
+        KeepOnTop();
 
         // -----------------------------------------------------
         // Raycasts
@@ -297,7 +300,7 @@ public class DragVisualManager : MonoBehaviour
 
         ResizeToText();
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[DragVisualManager] " +
             $"Drag visual shown: {dragVisualText.text}"
         );
@@ -449,7 +452,7 @@ public class DragVisualManager : MonoBehaviour
         // Debug
         // -----------------------------------------------------
 
-        Debug.Log(
+        DebugTrace.Log(
             "[DragVisualManager] " +
             $"Text: \"{dragVisualText.text}\" | " +
             $"TextSize: {textWidth}x{textHeight} | " +
@@ -467,8 +470,9 @@ public class DragVisualManager : MonoBehaviour
             return;
 
         dragVisual.SetActive(false);
+        followStarted = false;
 
-        Debug.Log(
+        DebugTrace.Log(
             "[DragVisualManager] Drag visual hidden."
         );
     }
@@ -485,8 +489,72 @@ public class DragVisualManager : MonoBehaviour
         if (dragVisualRect == null)
             return;
 
-        dragVisualRect.position =
-            screenPosition;
+        // Smooth, lively follow (see LateUpdate); the first position after Show snaps.
+        followTarget = screenPosition;
+        PointerScreen = screenPosition;
+        if (!followStarted)
+        {
+            followStarted = true;
+            dragVisualRect.position = screenPosition;
+        }
+    }
+
+    /// <summary>Where the finger is (the drop point); the tag itself trails it slightly.</summary>
+    public static Vector2 PointerScreen { get; private set; }
+
+    public const int TopSortingOrder = 30000;
+
+    private Vector2 followTarget;
+    private bool followStarted;
+    private Canvas topCanvas;
+
+    private void LateUpdate()
+    {
+        if (dragVisual == null || dragVisualRect == null || !dragVisual.activeInHierarchy || !followStarted) return;
+        KeepOnTop();
+        // Smooth follow; DragGhostSkin adds the pick-up pop and the lean.
+        float dt = Mathf.Min(Time.unscaledDeltaTime, 1f / 30f);
+        dragVisualRect.position = Vector2.Lerp(dragVisualRect.position, followTarget, 1f - Mathf.Exp(-34f * dt));
+    }
+
+    /// <summary>
+    /// The dragged value draws over every paper window, 3D document layer
+    /// (1101-1900) and the drop aim frame (29000). The tag moves (once) onto
+    /// its own top-level overlay canvas, scaled like the HUD, because
+    /// top-level canvases always draw in sorting order.
+    /// </summary>
+    private void KeepOnTop()
+    {
+        if (dragVisual == null) return;
+        if (topCanvas == null)
+        {
+            Canvas original = dragVisual.GetComponentInParent<Canvas>(true);
+            Canvas rootCanvas = original != null ? original.rootCanvas : null;
+            var host = new GameObject("Drag Value Overlay", typeof(RectTransform));
+            host.layer = dragVisual.layer;
+            if (rootCanvas != null) host.transform.SetParent(rootCanvas.transform.parent, false);
+            topCanvas = host.AddComponent<Canvas>();
+            topCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            var scaler = host.AddComponent<CanvasScaler>();
+            CanvasScaler hud = rootCanvas != null ? rootCanvas.GetComponent<CanvasScaler>() : null;
+            if (hud != null)
+            {
+                scaler.uiScaleMode = hud.uiScaleMode;
+                scaler.referenceResolution = hud.referenceResolution;
+                scaler.screenMatchMode = hud.screenMatchMode;
+                scaler.matchWidthOrHeight = hud.matchWidthOrHeight;
+                scaler.scaleFactor = hud.scaleFactor;
+                scaler.referencePixelsPerUnit = hud.referencePixelsPerUnit;
+            }
+            else
+            {
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920f, 1080f);
+                scaler.matchWidthOrHeight = 0.5f;
+            }
+            dragVisual.transform.SetParent(host.transform, false);
+        }
+        topCanvas.sortingOrder = TopSortingOrder;
     }
 
     // ---------------------------------------------------------
@@ -535,5 +603,7 @@ public class DragVisualManager : MonoBehaviour
         {
             Instance = null;
         }
+        // The tag's own overlay canvas (and the tag in it) goes with this manager.
+        if (topCanvas != null) Destroy(topCanvas.gameObject);
     }
 }

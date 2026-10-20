@@ -166,7 +166,7 @@ public class ValueTypeValidationFeedback : MonoBehaviour
                 image.color;
         }
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[Type Feedback] {gameObject.name} found " +
             $"{targetImages.Length} UI Image target(s)."
         );
@@ -181,7 +181,7 @@ public class ValueTypeValidationFeedback : MonoBehaviour
         {
             if (targetImages[i] != null)
             {
-                Debug.Log(
+                DebugTrace.Log(
                     $"[Type Feedback] Target {i}: " +
                     $"{targetImages[i].gameObject.name} | " +
                     $"Original Color: " +
@@ -223,7 +223,7 @@ public class ValueTypeValidationFeedback : MonoBehaviour
             SetupVisualTargets();
         }
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[Type Feedback] INITIALIZED | " +
             $"Object={gameObject.name} | " +
             $"Expected Type={expectedType} | " +
@@ -316,7 +316,7 @@ public class ValueTypeValidationFeedback : MonoBehaviour
         // Debug
         // -----------------------------------------------------
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[Type Feedback CHECK] " +
             $"Destination={gameObject.name} | " +
             $"Type: {value.Type} == {expectedType} -> {typeMatches} | " +
@@ -361,7 +361,7 @@ public class ValueTypeValidationFeedback : MonoBehaviour
         bool correct =
             IsCorrectValue(value);
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[Type Feedback] " +
             $"SHOW FEEDBACK | " +
             $"Destination={gameObject.name} | " +
@@ -382,6 +382,10 @@ public class ValueTypeValidationFeedback : MonoBehaviour
     {
         if (!isActiveAndEnabled)
             return;
+
+        // The right kind of value: a green check pops on the field's corner.
+        if (correct && transform is RectTransform)
+            StartCoroutine(PopCheck());
 
         // -----------------------------------------------------
         // Stop previous feedback
@@ -581,5 +585,33 @@ public class ValueTypeValidationFeedback : MonoBehaviour
 
             feedbackCoroutine = null;
         }
+    }
+
+    /// <summary>A round green check that pops in on the right of the field, then fades.</summary>
+    private IEnumerator PopCheck()
+    {
+        RectTransform badge = HudTheme.CreateRect("Placed Check", transform);
+        badge.anchorMin = badge.anchorMax = new Vector2(1f, 0.5f);
+        badge.pivot = new Vector2(0.5f, 0.5f);
+        badge.anchoredPosition = new Vector2(-30f, 0f);
+        badge.sizeDelta = new Vector2(44f, 44f);
+        badge.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+        CanvasGroup fade = badge.gameObject.AddComponent<CanvasGroup>();
+        fade.blocksRaycasts = false;
+        Image disc = HudTheme.AddImage(badge, HudTheme.Circle, HudTheme.Complete);
+        disc.raycastTarget = false;
+        RectTransform tick = HudTheme.CreateRect("Tick", badge);
+        HudTheme.Stretch(tick, 9f);
+        Image mark = HudTheme.AddImage(tick, HudTheme.Check, Color.white);
+        mark.preserveAspect = true;
+        mark.raycastTarget = false;
+        for (float t = 0f; t < 1.1f && badge != null; t += Time.unscaledDeltaTime)
+        {
+            float pop = Mathf.Clamp01(t / 0.28f);
+            badge.localScale = Vector3.one * Mathf.LerpUnclamped(0.2f, 1f, HudTheme.EaseOutBack(pop));
+            fade.alpha = t < 0.8f ? 1f : 1f - (t - 0.8f) / 0.3f;
+            yield return null;
+        }
+        if (badge != null) Destroy(badge.gameObject);
     }
 }

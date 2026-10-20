@@ -39,8 +39,10 @@ public static class PaperInkStyle
 
     private const string DecorName = "PaperInkDecor";
 
-    private const float ChipHeight = 58f;
-    private const float ChipFontMax = 40f;
+    // Tall enough to grab and drop easily; TaxCodeBookUI falls back to ChipHeightCompact on a crowded page.
+    public const float ChipHeight = 68f;
+    public const float ChipHeightCompact = 58f;
+    private const float ChipFontMax = 44f;
     private const float ChipFontMin = 24f;
 
     /// <summary>Rich text for a printed field caption and its pen-ink value.</summary>

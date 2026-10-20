@@ -108,7 +108,7 @@ public class DocumentFieldRow : MonoBehaviour, IDataValueSource
             );
         }
 
-        Debug.Log(
+        DebugTrace.Log(
             $"DocumentFieldRow initialized: " +
             $"{field.Label} = {field.DisplayValue}"
         );

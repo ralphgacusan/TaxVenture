@@ -88,14 +88,14 @@ public class Interactor : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, interactRange, interactableLayer))
         {
             // Debugging: log the name of the object hit by the raycast
-            // Debug.Log("Hit: " + hit.collider.name);
+            // DebugTrace.Log("Hit: " + hit.collider.name);
 
             hitInteractable = hit.collider.GetComponentInParent<IInteractable>();
 
             if (hitInteractable != null)
             {
                 // Debugging: Log that we found an interactable object
-                // Debug.Log("Interactable Found!");
+                // DebugTrace.Log("Interactable Found!");
             }
         }
 

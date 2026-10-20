@@ -47,7 +47,7 @@ public class ValueClickDestination :
         typeFeedback =
             GetComponent<ValueTypeValidationFeedback>();
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[ValueClickDestination] Awake on " +
             $"{gameObject.name} | " +
             $"Feedback={(typeFeedback != null ? "FOUND" : "NOT FOUND")}"
@@ -70,7 +70,7 @@ public class ValueClickDestination :
                 GetComponent<ValueTypeValidationFeedback>();
         }
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[ValueClickDestination] Initialized | " +
             $"Object={gameObject.name} | " +
             $"Destination={destination?.GetType().Name} | " +
@@ -105,7 +105,7 @@ public class ValueClickDestination :
             typeFeedback =
                 gameObject.AddComponent<ValueTypeValidationFeedback>();
 
-            Debug.Log(
+            DebugTrace.Log(
                 $"[ValueClickDestination] Added " +
                 $"ValueTypeValidationFeedback to " +
                 $"{gameObject.name}"
@@ -117,7 +117,7 @@ public class ValueClickDestination :
             expectedKey
         );
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[ValueClickDestination] Feedback initialized | " +
             $"Object={gameObject.name} | " +
             $"Expected Type={expectedType} | " +
@@ -133,7 +133,7 @@ public class ValueClickDestination :
     public void OnPointerClick(
         PointerEventData eventData)
     {
-        Debug.Log(
+        DebugTrace.Log(
             $"[ValueClickDestination] Clicked: " +
             $"{gameObject.name}"
         );
@@ -149,7 +149,7 @@ public class ValueClickDestination :
     public void OnDrop(
         PointerEventData eventData)
     {
-        Debug.Log(
+        DebugTrace.Log(
             $"[ValueClickDestination] Dropped on: " +
             $"{gameObject.name}"
         );
@@ -204,7 +204,7 @@ public class ValueClickDestination :
 
         if (!manager.HasSelection)
         {
-            Debug.Log(
+            DebugTrace.Log(
                 "[ValueClickDestination] " +
                 "No selected value."
             );
@@ -231,7 +231,7 @@ public class ValueClickDestination :
         }
 
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[ValueClickDestination] Attempting placement | " +
             $"Value={selectedValue.DisplayText} | " +
             $"Type={selectedValue.Type} | " +
@@ -250,7 +250,7 @@ public class ValueClickDestination :
             );
 
 
-        Debug.Log(
+        DebugTrace.Log(
             $"[ValueClickDestination] CanAccept = {accepted}"
         );
 

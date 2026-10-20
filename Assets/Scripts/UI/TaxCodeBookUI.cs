@@ -142,7 +142,7 @@ public class TaxCodeBookUI : MonoBehaviour
 
     public void Show()
     {
-        Debug.Log("[TaxCodeBookUI] Show() was called.");
+        DebugTrace.Log("[TaxCodeBookUI] Show() was called.");
 
         if (bookPanelRoot == null)
         {
@@ -164,10 +164,10 @@ public class TaxCodeBookUI : MonoBehaviour
         if (openBookCollider != null)
         {
             openBookCollider.enabled = false;
-            Debug.Log("[TaxCodeBookUI] Open book collider disabled.");
+            DebugTrace.Log("[TaxCodeBookUI] Open book collider disabled.");
         }
 
-        Debug.Log(
+        DebugTrace.Log(
             "[TaxCodeBookUI] Panel activated: " +
             bookPanelRoot.name
         );
@@ -184,12 +184,12 @@ public class TaxCodeBookUI : MonoBehaviour
         if (openBookCollider != null)
         {
             openBookCollider.enabled = true;
-            Debug.Log("[TaxCodeBookUI] Open book collider enabled.");
+            DebugTrace.Log("[TaxCodeBookUI] Open book collider enabled.");
         }
 
         CameraController.Instance?.UnlockPlayerControls();
 
-        Debug.Log("[TaxCodeBookUI] Tax Code Book UI hidden.");
+        DebugTrace.Log("[TaxCodeBookUI] Tax Code Book UI hidden.");
     }
 
     public void NextPage()
@@ -408,14 +408,26 @@ public class TaxCodeBookUI : MonoBehaviour
             return;
 
         float available = viewport.rect.height;
-        for (float size = descriptionFontSize; size >= minDescriptionFontSize; size -= 2f)
+        // First with the tall (easy to drag) chips, then, if a crowded page still
+        // overflows at the smallest captions, with the compact chips.
+        foreach (float chipHeight in new[] { PaperInkStyle.ChipHeight, PaperInkStyle.ChipHeightCompact })
         {
-            foreach (TextMeshProUGUI caption in captions)
-                caption.fontSize = size;
+            foreach (TaxCodeValueChip chip in spawnedChips)
+            {
+                LayoutElement element = chip != null ? chip.GetComponent<LayoutElement>() : null;
+                if (element == null) continue;
+                element.minHeight = chipHeight;
+                element.preferredHeight = chipHeight;
+            }
+            for (float size = descriptionFontSize; size >= minDescriptionFontSize; size -= 2f)
+            {
+                foreach (TextMeshProUGUI caption in captions)
+                    caption.fontSize = size;
 
-            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
-            if (LayoutUtility.GetPreferredHeight(content) <= available)
-                return;
+                LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+                if (LayoutUtility.GetPreferredHeight(content) <= available)
+                    return;
+            }
         }
     }
 

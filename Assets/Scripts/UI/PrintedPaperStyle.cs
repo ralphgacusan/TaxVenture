@@ -234,7 +234,7 @@ public sealed class PrintedPaperStyle : MonoBehaviour
             RectTransform disc = NewImage((RectTransform)text.transform, "ArrowDisc", Brass).rectTransform;
             disc.GetComponent<Image>().sprite = HudTheme.Circle;
             disc.anchorMin = disc.anchorMax = new Vector2(0.5f, 0.5f);
-            disc.sizeDelta = new Vector2(74f, 74f);
+            disc.sizeDelta = new Vector2(98f, 98f); // big enough to hit with a thumb
             disc.anchoredPosition = Vector2.zero;
             Shadow shadow = disc.gameObject.AddComponent<Shadow>();
             shadow.effectColor = new Color(0f, 0f, 0f, 0.3f);
@@ -254,7 +254,7 @@ public sealed class PrintedPaperStyle : MonoBehaviour
             TextMeshProUGUI chevron = go.AddComponent<TextMeshProUGUI>();
             chevron.font = HudTheme.Font;
             chevron.text = left ? "<" : ">";
-            chevron.fontSize = 44f;
+            chevron.fontSize = 56f;
             chevron.fontStyle = FontStyles.Bold;
             chevron.color = Cream;
             chevron.alignment = TextAlignmentOptions.Center;

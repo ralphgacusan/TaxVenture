@@ -214,7 +214,7 @@ public class CameraController : MonoBehaviour
         if (firstPersonHands != null)
             firstPersonHands.Show();
 
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] Initialized in FirstPerson mode."
         );
     }
@@ -228,7 +228,7 @@ public class CameraController : MonoBehaviour
         string exitLabel = "Exit Desk",
         bool showHands = true)
     {
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] EnterFirstPerson called."
         );
 
@@ -280,22 +280,22 @@ public class CameraController : MonoBehaviour
         // DEBUG VIEWPOINT TRANSFORM
         // ---------------------------------------------------------
 
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] DeskViewpoint WORLD POSITION: "
             + viewpoint.position
         );
 
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] DeskViewpoint WORLD ROTATION: "
             + viewpoint.rotation.eulerAngles
         );
 
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] DeskViewpoint LOCAL POSITION: "
             + viewpoint.localPosition
         );
 
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] DeskViewpoint LOCAL ROTATION: "
             + viewpoint.localRotation.eulerAngles
         );
@@ -314,7 +314,7 @@ public class CameraController : MonoBehaviour
         {
             firstPersonCamera.enabled = false;
 
-            Debug.Log(
+            DebugTrace.Log(
                 "[CameraController] FirstPersonCamera disabled."
             );
         }
@@ -340,7 +340,7 @@ public class CameraController : MonoBehaviour
         {
             virtualJoystick.Hide();
 
-            Debug.Log(
+            DebugTrace.Log(
                 "[CameraController] Virtual joystick hidden."
             );
         }
@@ -385,7 +385,7 @@ public class CameraController : MonoBehaviour
         // MOVE CAMERA TO DESK VIEWPOINT
         // ---------------------------------------------------------
 
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] Moving camera to: "
             + viewpoint.name
         );
@@ -395,7 +395,7 @@ public class CameraController : MonoBehaviour
                 viewpoint,
                 () =>
                 {
-                    Debug.Log(
+                    DebugTrace.Log(
                         "[CameraController] Workstation view reached."
                     );
 
@@ -414,7 +414,7 @@ public class CameraController : MonoBehaviour
 
     private void ForceResetToFirstPerson()
     {
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] ForceResetToFirstPerson called."
         );
 
@@ -486,7 +486,7 @@ public class CameraController : MonoBehaviour
         // DEBUG START
         // ---------------------------------------------------------
 
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] Camera transition START\n" +
             "Camera Position: " + startPosition + "\n" +
             "Target Position: " + targetPosition + "\n" +
@@ -505,7 +505,7 @@ public class CameraController : MonoBehaviour
                 targetRotation
             );
 
-            Debug.Log(
+            DebugTrace.Log(
                 "[CameraController] Camera transition COMPLETE."
             );
 
@@ -578,7 +578,7 @@ public class CameraController : MonoBehaviour
         // FINAL TRANSITION DEBUG
         // ---------------------------------------------------------
 
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] Camera transition COMPLETE\n" +
             "Final Position: "
             + mainCamera.transform.position
@@ -640,7 +640,7 @@ public class CameraController : MonoBehaviour
                 actualRotation
             );
 
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] CAMERA CHECK - NEXT FRAME\n" +
             "Expected Position: " + expectedPosition + "\n" +
             "Actual Position: " + actualPosition + "\n" +
@@ -660,7 +660,7 @@ public class CameraController : MonoBehaviour
         }
         else
         {
-            Debug.Log(
+            DebugTrace.Log(
                 "[CameraController] Camera remained at the correct " +
                 "workstation viewpoint on the next frame."
             );
@@ -676,7 +676,7 @@ public class CameraController : MonoBehaviour
         if (CurrentMode != CameraMode.Workstation)
             return;
 
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] Exiting desk view."
         );
 
@@ -717,7 +717,7 @@ public class CameraController : MonoBehaviour
         if (firstPersonHands != null)
             firstPersonHands.Show();
 
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] Returned to normal first-person."
         );
 
@@ -761,7 +761,7 @@ public class CameraController : MonoBehaviour
             return;
         }
 
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] Entering interview."
         );
 
@@ -814,7 +814,7 @@ public class CameraController : MonoBehaviour
         if (CurrentMode != CameraMode.Interview)
             return;
 
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] Exiting interview."
         );
 
@@ -827,7 +827,7 @@ public class CameraController : MonoBehaviour
         if (firstPersonHands != null)
             firstPersonHands.Show();
 
-        Debug.Log(
+        DebugTrace.Log(
             "[CameraController] Returned to normal first-person."
         );
     }
@@ -862,7 +862,7 @@ public class CameraController : MonoBehaviour
         {
             virtualJoystick.Hide();
 
-            Debug.Log(
+            DebugTrace.Log(
                 "[CameraController] Player controls locked. " +
                 "Virtual joystick hidden."
             );
@@ -1023,7 +1023,7 @@ public class CameraController : MonoBehaviour
         {
             virtualJoystick.SetVisible(enabled);
 
-            Debug.Log(
+            DebugTrace.Log(
                 "[CameraController] Virtual joystick "
                 + (enabled ? "shown." : "hidden.")
             );
@@ -1080,7 +1080,7 @@ public class CameraController : MonoBehaviour
 
     public void EnterCorkboardSideQuest(Transform viewpoint, System.Action onComplete = null)
     {
-        Debug.Log("[CameraController] EnterCorkboardSideQuest called.");
+        DebugTrace.Log("[CameraController] EnterCorkboardSideQuest called.");
 
         if (viewpoint == null)
         {
@@ -1120,14 +1120,14 @@ public class CameraController : MonoBehaviour
 
         StopActiveTransition();
 
-        Debug.Log("[CameraController] Moving camera to corkboard viewpoint: " + viewpoint.name);
+        DebugTrace.Log("[CameraController] Moving camera to corkboard viewpoint: " + viewpoint.name);
 
         activeTransition = StartCoroutine(
             MoveCameraToViewpoint(
                 viewpoint,
                 () =>
                 {
-                    Debug.Log("[CameraController] Corkboard viewpoint reached.");
+                    DebugTrace.Log("[CameraController] Corkboard viewpoint reached.");
                     onComplete?.Invoke();
                 }
             )
@@ -1143,7 +1143,7 @@ public class CameraController : MonoBehaviour
         if (CurrentMode != CameraMode.CorkboardSideQuest)
             return;
 
-        Debug.Log("[CameraController] Exiting corkboard side quest.");
+        DebugTrace.Log("[CameraController] Exiting corkboard side quest.");
 
         StopActiveTransition();
 
@@ -1154,6 +1154,6 @@ public class CameraController : MonoBehaviour
         if (firstPersonHands != null)
             firstPersonHands.Show();
 
-        Debug.Log("[CameraController] Returned to normal first-person.");
+        DebugTrace.Log("[CameraController] Returned to normal first-person.");
     }
 }
