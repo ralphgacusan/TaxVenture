@@ -870,3 +870,143 @@ Changed: Assets/Scripts/Level2/IncomeToolkit.cs, Level2/Level2OfficeReview.cs, D
 ## Book back onto the desk; summary after the dialogue closes — implemented; user Play Mode pending (2026-10-20)
 
 Changed: Assets/Scripts/Level2/Level2TaxCodeBookIcon.cs (OverOfficeDesk, ReturnToDesk), TaxCodeBook/TaxCodeBook3DDrag.cs (UnparkClosedBook, RestingClosedPosition), UI/DialogueUI.cs (read-only IsPanelShowing), Level2/Level2Audit.cs (AfterDialogueCloses), Tests/Level2Regression/Program.cs. Scratch build 0 errors; Level2Regression 1,153 PASS; Guide, Controls, Dialogue, Progression and Training PASS; VerifyLevel2Assets PASS. Pending: at the desk, drag the book from its icon onto the desk and it restacks; open it from the icon, drag it onto the desk and it restacks. Hand in the folder: the Audit Summary appears only after the last Auditor line is continued and the box is gone.
+
+
+## Guided polish pass — implemented; user Play Mode pending (2026-10-20)
+
+Owner: Claude (session 2026-10-20). The user asked for:
+- a start at the office door, and the receptionist (not Arthur) telling the review cutoff;
+- a better-looking cabinet drawer and retrieval animation, with Arthur introducing the file storage room;
+- a Taxpayer Profile page after Taxpayer Information;
+- Arthur guiding the case step by step: profile, Findings slip lift/fill/file, a stamp tutorial, the toolkit colours and the book sections;
+- the side-quest case staying shut after it closes, and no Arthur line plus a visible Exit Desk when the finished records desk is revisited;
+- annotated papers with no × button: a 2-second hold stacks them, a drop on the icon puts them away, and a drop elsewhere scatters them;
+- detailed second-part tutorials and no office or receptionist arrows;
+- a Tax Code Book that guides like a cheat sheet without giving answers;
+- a fix for the Side Quest 2 medal missing from the 3D menu after Level Complete.
+
+Changed paths:
+- Start/receptionist: `Assets/Resources/Levels/Level_02/office_start.json` (blend 0.12); `Assets/Scripts/Level2/Level2OfficeStart.cs` (built-in blend; `GuideFlags` provider `Flag()`: folderRetrieved, bookStored, initialStamped, recordsCollected, questDone, officeReview, inFileRoom); `Assets/Scripts/Interactables/ReceptionistInteractable.cs` (`{deadline}` from the review clock); `case_rosa_001.json` (receptionist lines with the cutoff time; `clock.announceLine` empty).
+- Drawer: `Assets/Scripts/Level2/Level2CaseRetrieval.cs` (cabinet-grey front with seam and lip, chrome pull, brass label holder with an orange MARKET tab, drawer walls and rails, five hanging client folders, Rosa's folder with a red tab and name card); `Assets/Scripts/Level2/MarketClientDrawer.cs` (the label glows while the folder waits; unlatch, roll out with overshoot, riffle, lift and turn to the camera, a short beat, then an arc and spin into the HUD icon while the drawer closes with a bump).
+- Folder: `Assets/Scripts/Data/Definitions/CaseReviewDefinition.cs` (`profileText`); `Assets/Scripts/UI/CaseFolderUI.cs` (Taxpayer Profile page right after Taxpayer Information: a Name row and a printed "About the taxpayer" paragraph); `case_rosa_001.json` (`profileText`: one sentence with clues for Sections 1-3).
+- Guide engine (observation only): `Assets/Scripts/Core/GameplayEvents.cs` (`OnGuideCue` / `RaiseGuideCue`); `Assets/Scripts/UI/Guide/GuideTriggers.cs` (`cue:<name>` events, `flag:<name>` conditions, `GuideFlags`); `Assets/Scripts/UI/Guide/GuideDirector.cs`. Cues are raised in `Level2FindingsSheet` (FindingsPaperLifted, FindingsPaperFiled), `Level2DeskStamps` (StampsUp), `Level2TaxCodeBookIcon` (TaxBookStored), `Level2AnnotatedPapers` (AnnotatedPapersOpened, AnnotatedPapersStacked, AnnotatedPapersPutAway) and `Level2OfficeReview` (ScheduleLineFilled, OfficeConclusionSet).
+- Guide content: `Assets/Resources/Tutorials/Level_02/guide.json` rewritten as 21 lessons: welcome, file room introduction, profile, prepared pages, Findings slip (lift, fill, file), stamp tutorial, to Rosa, toolkit colours with book sections, practice, challenge, red notes, annotated papers with the stack gesture, Reviewed Schedule, final assessment, Auditor and returned folder. Waypoints remain only for Rosa's stall and records desk; `trail.waitForGuide` is off.
+- Book: `Assets/Resources/Levels/Level_02/book.json`. Sections 4-8 are rewritten to answer the questions the player meets, headings name what they help with, and a new Section 9 covers the Final Assessment. Findings hints, schedule and conclusion refusals, and Auditor feedback name the section to read (`Level2FindingsSheet`, `Level2OfficeReview`, `case_rosa_001.json` audit feedback).
+- Side quest: `Assets/Scripts/Level2/IncomeToolkit.cs`. The lid no longer reopens after pack-up. A finished desk stays shut with no Arthur line, and the bottom hint is off once the quest is done, so Exit Desk is clear.
+- Annotated papers: `Assets/Scripts/Level2/Level2AnnotatedPapers.cs` (hold 2 s to stack under the finger, with a fill ring and a label; the icon pulses; drop on the icon to put them away, anywhere else to scatter them back); `Assets/Scripts/Level2/AnnotationPaperCollectionFace.cs` (no × button; a long press does not count as a tap on an amount).
+- Career: `Assets/Resources/Career/chapters.json` lists Side Quest 2, Mark the Money!, for Level_02, so its medal, tier and time show on the 3D menu. `Assets/Scripts/Data/CaseProgressionManager.cs` starts the side-quest clock at Rosa's records desk.
+- Tests: `Tests/Level2Regression/Program.cs` (old arrow, hint and book-count checks updated; 66 new checks); `Tests/VerifyLevel2Scene.py` (runtime-built `Level2Gameplay/` guide points are listed, not failed).
+
+Internal verification (2026-10-20):
+
+| Check | Result |
+|---|---|
+| `python Tests/make_scratch_build.py` + scratch build | 0 errors (29 baseline warnings) |
+| Level2Regression | 1,226 PASS |
+| GuideRegression | 714 PASS |
+| ControlsRegression | 5,734 PASS |
+| ProgressionRegression | PASS |
+| DialogueRegression | 799 PASS |
+| TrainingRegression | 513/513 |
+| SettingsRegression | 93/93 |
+| CareerBoardRegression | 69/69 |
+| VerifyLevel2Assets | PASS (11,796 GUIDs) |
+| VerifyLevel2Scene | PASS (existing Level1-drift warning) |
+| VerifyGuideTargets | 17 paths, 0 missing |
+| VerifyOfficeNpcMarkers | PASS |
+
+No scene, prefab or .meta file was edited. No git command was run, and Unity Play Mode was not run.
+
+Pending user Play Mode checks:
+1. Level 2 starts just inside the office door, facing the receptionist. Her talk names the cutoff time; Arthur does not. There are no floor arrows, beacon or minimap pin to the receptionist, cabinet, desk or Auditor.
+2. Walking into the file storage room starts Arthur's introduction. The MARKET CLIENTS drawer matches the cabinet, and its label glows softly. Taking the folder plays the full sequence: roll out, riffle, Rosa's folder rising and turning to show her name, then flying into the folder icon while the drawer closes.
+3. The folder's second page is Taxpayer Profile, with one readable sentence. Arthur sends you to Sections 1-3 and waits for the three fields.
+4. Arthur walks through Summary, Payment Note and Findings. Lifting, filling and filing the slip each move him on. The stamp lesson waits for the stamps to rise.
+5. Toolkit: after the demo, Arthur explains yellow, blue, orange and purple and points at the book icon. After pack-up the case stays shut. Revisiting the finished desk shows no Arthur line, and Exit Desk is visible.
+6. Annotated papers: there is no ×. Hold a paper still for 2 s: the ring fills, the papers stack under the finger and the icon pulses. Drop on the icon: they all fly in. Drop elsewhere: they scatter back. A quick tap on an amount still selects it.
+7. Office: Arthur teaches the Reviewed Schedule, the conclusion and the final stamp, naming Sections 6, 8 and 9. Book Sections 4-9 fit their pages.
+8. Finish the level and press Continue: the 3D menu shows the Mark the Money! badge (side quest 2) with its tier and time.
+
+Next: user Play Mode acceptance; tune only reproduced visual or timing issues.
+
+
+## Follow-up fixes after first Play Mode feedback — implemented; user Play Mode pending (2026-10-20)
+
+Owner: Claude (same session). User feedback: profile text too small; the Auditor repeated his lines before the Audit Summary; Next Goal stuck on a passed chapter; laggy drags; Arthur stopped guiding after the side quest; start closer to the door.
+
+- **Arthur went silent after the side quest.** A "your turn" page only accepts events that happen after it appears. When the quest finished during Arthur's tap pages (for example all notes right on the first CHECK), `mark-the-money-fix` waited forever and blocked every later lesson. Every such wait now also accepts the done state (`flag:` firstChecked, questDone, officeDone, finalStamped, initialStamped, findingRecorded, tutorialDone, stampsUp). The red-notes lesson only runs when there are red notes (`flag:redNotes`), and the annotated-papers lesson follows `mark-the-money` directly and ends with a "head back to your desk" hint. Files: `Level2OfficeStart.cs` (`Flag`), `Tutorials/Level_02/guide.json`.
+- **Auditor repeated himself.** `AuditorSubmissionTray` called `auditor.BeginFinalAudit()` twice. Level 1 ignored the second call; Level 2's audit queued a second conversation, then the summary popped in. The call now runs once, and `Level2Audit` handles one hand-in at a time (`inProgress`).
+- **Next Goal.** When every open chapter is passed, the goal moves on to the next chapter (coming soon) instead of the last passed one; the card shows career totals and a "coming soon, replay for a better best or gold badge" line (`CareerProgress.FindGoal` / `NextStep`, `CareerBoardPresenter.ApplyGoalCard`).
+- **Profile text** auto-sizes from 26 to 44 pt into the space left on the page (truncates rather than overflowing) (`CaseFolderUI.BuildProfileRows`).
+- **Start position.** `Doors` holds both the street entrance and an inner door pair, so its centre was mid-room. The spawn is now the entrance leaf `Doors/Office_Entrance_Door_2`, blend 0.16 (about 1 m inside), with the old point as fallback (`office_start.json`, `Level2OfficeStart`).
+- **Smoother touches.** About 110 per-touch `Debug.Log` calls in the window, drag/drop, value transfer, interactor and camera scripts now go through `DebugTrace.Log` (new `Assets/Scripts/Core/DebugTrace.cs`, compiled out unless the `TAXVENTURE_TRACE` define is set). Warnings and errors are unchanged. No per-frame scene searches remain in Level 2, HUD, book or guide update loops.
+
+Internal verification: scratch build 0 errors (29 baseline warnings); Level2Regression 1,240 PASS; GuideRegression 714; ControlsRegression 5,734; ProgressionRegression PASS; DialogueRegression 799; TrainingRegression 513/513; SettingsRegression 93/93; CareerBoardRegression 69/69 (goal check updated); IntroCutsceneRegression 29/29; VerifyLevel2Assets PASS; VerifyLevel2Scene PASS (new warning: the entrance leaf is inside a prefab instance, so the file check cannot prove it; the fallback covers it); VerifyGuideTargets 0 missing. No git, no Unity.
+
+Pending user checks: the profile sentence is large and stays on the page; the start is about 1 m inside the entrance; one Auditor conversation, then the summary; Arthur keeps guiding after Mark the Money! (also with all notes right first time); the Next Goal reads Chapter 3 coming soon once Chapter 2 is passed; drags feel smoother in the Editor.
+
+
+## Third feedback round — implemented; user Play Mode pending (2026-10-20)
+
+User feedback: a floor path to the file storage room; the profile text overlapped; a laggy desk (book, folder, stamps, page turns); page arrows too small; Notes need drag/drop animation; the drop-field "fits" mark was not a check; skip the side-quest practice; Arthur's lines overlapped the lesson box; the Findings slip cleared answers; and the Side Quest Complete Continue could not be pressed.
+
+- **Continue could not be pressed.** No blocker was proven from source. As a safety net, `HudRewardScreen.LateUpdate` presses Continue itself when a tap starts and ends on the button but the EventSystem click did not arrive. Normal clicks are never doubled (same-frame guard).
+- **Overlapping dialogue.** `GuideDirector.Say` holds Arthur's short lines while a lesson box is up and shows the latest one once it is dismissed. At the records desk the lesson box sits at the top (`box: top`), so the TYPE/TREATMENT/RECORD slots stay visible.
+- **Skip practice.** At the records desk, a `SKIP PRACTICE` button shows during Arthur's payslip demo and the practice. It calls `CaseReviewState.TrySkipTutorial()` (Challenge phase, no score), raises the same guide events and deals Rosa's records. Arthur's colour lesson still plays.
+- **Findings slip.** A complete but wrong link no longer clears the three boxes. The slip shows "No link yet" with a clue for the first wrong box (`FindingComparison.FirstMismatch` / `Clue`; the reason clue names Section 7, never the answer). The domain `ClearFindingDraft` is kept for older callers and tests but is no longer called by the page.
+- **Profile page.** A shorter sentence (one sentence, same clues) and a fixed 250-unit row. The earlier list-sized row overflowed onto the Name row.
+- **File storage room path.** `event:CaseFolderRetrieved` has a waypoint again (`Filing_Cabinet_1`). Receptionist, desk and Auditor still have none.
+- **Check mark.** The drag aim tag shows a green round check (`HudTheme.Check`) when the value fits, with a pop. A correct tap-placement also pops a check on the field (`ValueTypeValidationFeedback.PopCheck`).
+- **Page arrows.** The disc is 98 units (was 74), the folder button 150, and `PageEdgeTapZone` adds an invisible touch pad 1.5x the button plus a press squash and spring (folder and book).
+- **Smoothness.**
+  - Page turns cap each frame step (`DeskMotion.Step`) and skip the content-rebuild frame, so the second half no longer jumps.
+  - The desk folder and book always use a stiff exponential follow (they snapped rigidly once moved).
+  - The value tag pops when picked up, follows smoothly and leans with the motion. The aim frame uses the finger point (`DragVisualManager.PointerScreen`).
+  - Paper windows (Notes, profiles, Findings, annotated papers) lift and lean while dragged and settle with a soft spring and a paper sound when dropped. Notes already flew out of and into their icon.
+- **Findings slip and folder.** A loose slip tucks away when the folder closes and pops back when it reopens, instead of blinking.
+
+Internal verification: scratch build 0 errors (29 baseline warnings); Level2Regression 1,253 PASS; GuideRegression 714; ControlsRegression 5,734; ProgressionRegression PASS; DialogueRegression 799; TrainingRegression 513/513; SettingsRegression 93/93; CareerBoardRegression 69/69; IntroCutsceneRegression 29/29; VerifyLevel2Assets PASS; VerifyLevel2Scene PASS (2 known warnings); VerifyGuideTargets 0 missing. No git, no Unity.
+
+Pending user checks:
+1. Side Quest Complete: Continue works.
+2. No Arthur line covers a lesson box.
+3. SKIP PRACTICE at Rosa's desk.
+4. A wrong Findings link keeps the boxes and shows a clue.
+5. The profile is readable with no overlap.
+6. The floor path to the file room shows on the first trip.
+7. Green check when a value fits.
+8. Bigger page arrows.
+9. Smoother page turns and drags.
+10. Notes and other papers settle when dropped.
+11. Closing and opening the folder with the slip out.
+
+
+## Annotated paper layering and rows — implemented; user Play Mode pending (2026-10-20)
+
+- **Layering.** Paper windows and 3D document layers now take sorting orders two apart (`FloatingWindow.LayerStep`). Each annotated paper's highlighted-amount band gets its own canvas at `window order + 1`: over its own paper, under any paper brought in front. Before, the band and the 3D face shared one order. The dragged value tag (`DragVisualManager.TopSortingOrder` 30000) and the aim frame (29000) draw over every paper.
+- **Rows.** Annotated paper rows are taller (up to 0.05, still ending above the card slots for any row count) with bigger print (0.25 for four or fewer rows). Long values such as "Washing clothes for customers" shrink to fit (minimum 0.15) or wrap, instead of being cut off. This also applies at Rosa's records desk, which uses the same paper.
+- **Feel.** An amount that lands on the schedule pops as it turns green. Paper open, close and close-to-icon motion uses the capped frame step (`DeskMotion.Step`), so a slow first capture frame no longer makes papers jump.
+- **Findings slip.** Long picks (for example "Payment for: Blanket washing") shrink to fit their box (minimum 21 instead of 29).
+
+Internal verification: scratch build 0 errors; Level2Regression 1,265 PASS; the other suites and Level 2 validators PASS. No git, no Unity.
+
+Pending user checks:
+1. Drag a highlighted amount across the papers: the tag stays on top.
+2. Bring each paper to the front: its band follows it and is never hidden by its own paper.
+3. The rows are bigger and fit inside each paper, here and at Rosa's desk.
+4. A long Clue on the Findings slip is fully readable.
+
+
+## Drag tag on top, bigger value fields — implemented; user Play Mode pending (2026-10-20)
+
+- **Dragged value behind the papers (still reported).** The nested canvas added in `Awake` (while the tag was hidden) did not hold its sorting. `DragVisualManager.KeepOnTop` now moves the tag, the first time it shows, onto its own top-level overlay canvas ("Drag Value Overlay", sorting 30000) with the HUD's `CanvasScaler` settings. Top-level overlay canvases always draw in sorting order, so the tag is above every paper, the folder and the book, wherever the drag starts. The duplicate pop and lean from the last pass were removed: `DragGhostSkin` already animates the tag, and the two fought.
+- **Bigger value fields.**
+  - **Case folder:** `CaseFolderUI.FitRowHeights` grows each value row into the page's spare room, up to 110 units. Tall custom rows (profile, handwritten summary) keep their size, so nothing runs past the page.
+  - **Tax Code Book:** value chips are 68 tall (was 58) with up to 44 pt text. On a page that would still overflow at the smallest captions, they fall back to 58 (`TaxCodeBookUI.FitDescriptions`). This is shared with Level 1's book.
+
+Internal verification: scratch build 0 errors; Level2Regression 1,267 PASS; other suites and validators PASS. No git, no Unity.
+
+Pending user checks:
+1. Drag an amount from each annotated paper and from the folder/book: the tag is always on top.
+2. Folder rows are taller on every page and stay inside it.
+3. Book chips are taller on Sections 1-9 with descriptions still inside the page.

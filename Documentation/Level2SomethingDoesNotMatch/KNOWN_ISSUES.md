@@ -217,3 +217,25 @@ Older notes about Prepared Packet tabs, D1–D6 handover, F1/F2 office pages and
 
 - The red cover picks grey materials by colour (saturation under 0.2, brightness 0.15-0.86). If a page-edge material is grey rather than white, it turns red too; tune the thresholds in `TaxCodeBook3DDrag.ApplyRedCover`.
 - The quest has no exit until it is finished. There is no way to leave Rosa's desk mid-quest by design (user direction).
+
+
+### Guided polish pass — 2026-10-20
+
+- The door start uses `blend 0.12` between `Reception/Doors` and the receptionist (`office_start.json`). The Doors centre comes from its renderers, so if the player spawns inside the door frame or outside, raise `blend` a little (0.2 is still at the door).
+- `flag:inFileRoom` uses the renderer footprint of `FileStorageRoom/Floors`. If that floor has no renderers or overlaps the hallway, the lesson falls back to `near:3.5` of `Filing_Cabinet_1`; tune in `Level2OfficeStart.PlayerInFileRoom`.
+- The drawer colours are fixed estimates of the cabinet grey (`Level2CaseRetrieval.FrontColor`). The cabinets use an atlas texture, so the colour cannot be sampled; adjust it after seeing it in Play Mode.
+- Hold-to-stack reads `Input` directly (one finger or the left mouse button). A second finger during the hold is ignored. Moving more than 34 px cancels the hold, because the touched paper follows the finger.
+- Gameplay lines from `Level2Say` (for example the toolkit's own challenge line) can show in Arthur's top bubble while a blocking lesson box is up. Both stay readable; trim one if it feels busy.
+- Lessons are not remembered between sessions (`rememberFinishedLessons: false`). After a checkpoint resume, early lessons can play again. Each waits on a condition that is already true (folder open, `case:filled`, ...), so they pass quickly, but their tap pages still show.
+
+- The start spawn names a door inside a prefab instance (`Doors/Office_Entrance_Door_2`). If that prefab is renamed, `fallbackSpawn` (the old mid-room point) is used instead.
+- Per-touch logs are compiled out. To see them again while debugging, add `TAXVENTURE_TRACE` to Scripting Define Symbols.
+- Drag smoothness was improved only by removing log overhead. The annotated papers still re-render their 3D face while they move; if they stutter on a device, profile `Doc3DLayer` captures next.
+
+- The Continue safety net in `HudRewardScreen` reads `Input` (left button or first touch). If something genuinely blocks the card, the press still goes through; finding that blocker would need a Play Mode UI raycast check (EventSystem debug) on the Side Quest Complete card.
+- `PageEdgeTapZone`'s touch pad is 1.5x the arrow button. On a page whose last row sits very near a bottom corner, the pad could take a tap meant for that row; lower `TouchPadScale` if so.
+
+- Sorting orders now advance by 2 (`FloatingWindow.LayerStep`). Code that assumes consecutive window orders should use `> / <` comparisons (all current code does). The rebuild threshold (1900) is reached after about 400 bring-to-fronts instead of 800, which is harmless.
+
+- The drag tag is re-parented at runtime to "Drag Value Overlay". If the HUD canvas scaler changes at runtime, the tag keeps the settings copied on first show.
+- `FitRowHeights` uses the row list's current height. If that list grows with its content (instead of having a fixed page area), rows simply keep their natural size.

@@ -40,6 +40,14 @@ One client, one required excursion, one scored side quest, one omission, one exp
 
 - Polish pass (2026-10-20, user direction): Supporting Documents = Findings + four records (D1 and D4 back the two listed summary lines, D3 is the missing paid job, D5 explains the borrowed deposit). The Reviewed Schedule has the two listed lines plus one Missing entry and a conclusion. Its values come only from the highlighted lines of the four Side Quest 2 annotated papers (the same AnnotationPaper model). A Tax Code Book icon (below Case Folder, above Annotated Papers) opens the real book, whose first three Level 2 leaves are cheat sheets.
 
+- Guided polish pass (2026-10-20, user direction):
+  - The player starts at the office door, and the receptionist states the cutoff.
+  - There are no arrows inside the office; only Rosa's stall gets arrows.
+  - A one-sentence Taxpayer Profile page follows Taxpayer Information.
+  - Arthur teaches each new tool before it is used. He sends the player to numbered book sections (1-3 shared, 4-9 in book.json) rather than giving answers.
+  - Annotated papers have no ×. Hold one for 2 s to stack them all, then drop the stack on the icon.
+  - Gameplay signals the guide through `cue:<name>` and `flag:<name>` (observation only).
+
 ## Completion definition
 
 Level 2 is fully wired and internally verified through the same presentation quality as current Level 1, including guidance, rewards, feedback, retry, saving, finale and level-select integration. Internal verification and user visual verification are separate statuses. No ticket may claim Unity appearance, timing, navigation or device performance was tested without the user's result.
