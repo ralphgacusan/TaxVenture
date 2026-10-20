@@ -1,2 +1,0 @@
-C:\Users\MY LAPTOP\Documents\GitHub\TaxVenture\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\CMakeLists.txt
-C:\Users\MY LAPTOP\Documents\GitHub\TaxVenture\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\GameActivity\CMakeLists.txt

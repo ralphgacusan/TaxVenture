@@ -25,3 +25,9 @@ MemoryCaptures/
 # OS files
 .DS_Store
 Thumbs.db
+# Android / build output
+.utmp/
+*.slnx
+*.apk
+*_BackUpThisFolder_ButDontShipItWithYourGame/
+*_BurstDebugInformation_DoNotShip/
