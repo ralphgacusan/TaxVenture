@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12d343033f5845969e1179ba657b194c, type: 3}
   m_Name: scene_assets
   m_EditorClassIdentifier: 
-  rosaPrefab: {fileID: 1822189464268616, guid: f78a881d3ec75d945ac878527dc26674, type: 3}
+  rosaPrefab: {fileID: 919132149155446097, guid: d39f95956aeb5ea40bc6d4060080e829, type: 3}
   storePrefab: {fileID: 1104469224843184, guid: 4c701139b81d9c140b18bb741804c1ec, type: 3}
   rosaIdleController: {fileID: 9100000, guid: 0b1fbdea34f261f4eacc93aa45b49b92, type: 2}

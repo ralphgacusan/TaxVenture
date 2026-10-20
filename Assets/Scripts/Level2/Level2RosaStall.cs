@@ -30,6 +30,21 @@ public sealed class Level2RosaStall : MonoBehaviour
     public const string PlazaPath = "Environment/Outside/Plaza";
     public const string OfficeDoorsPath = "Environment/OfficeBuilding/Rooms/Reception/Doors";
     public const string ReceptionistPath = "Environment/OfficeBuilding/Rooms/Reception/Receptionist";
+    /// <summary>
+    /// Optional scene marker (placed by TaxVenture > Level 2 > Copy Outside Environment From Level 1,
+    /// where Zorbix stands in Level 1). When present, Rosa stands on it with her records desk and
+    /// sign beside her, and no shop building is placed (user direction 2026-10-20).
+    /// </summary>
+    public const string AnchorPath = "Environment/Outside/Plaza/RosaStallAnchor";
+    /// <summary>
+    /// The town's own Building_4 shop (Level 1's environment, copied into Level 2). When the scene
+    /// has it, Rosa's stall is set up in front of it (user direction 2026-10-20); it wins over the anchor.
+    /// </summary>
+    public const string SceneStorePath = "Env/Town/Building_4";
+    /// <summary>Half size of the stall sign (metres), for the free-spot check.</summary>
+    private static readonly Vector3 SignHalfExtents = new Vector3(0.75f, 0.95f, 0.2f);
+    /// <summary>Rosa's model is fitted to this height (metres), whatever its import scale.</summary>
+    public const float RosaHeight = 1.62f;
 
     // Layout targets (metres), tunable after the user's visual check.
     public const float StoreHeight = 3.8f;
@@ -94,6 +109,20 @@ public sealed class Level2RosaStall : MonoBehaviour
 
     private void Build(Level2SceneAssets assets)
     {
+        Transform sceneStore = PlayerPlacement.Find(gameObject.scene, SceneStorePath);
+        if (sceneStore != null && sceneStore.gameObject.activeInHierarchy)
+        {
+            BuildAtSceneStore(assets, sceneStore);
+            return;
+        }
+
+        Transform anchor = PlayerPlacement.Find(gameObject.scene, AnchorPath);
+        if (anchor != null)
+        {
+            BuildAtAnchor(assets, anchor);
+            return;
+        }
+
         Transform plaza = PlayerPlacement.Find(gameObject.scene, PlazaPath);
         Vector3 plazaCenter = plaza != null ? plaza.position : Vector3.zero;
         Vector3 doors = PlayerPlacement.TryCenter(gameObject.scene, OfficeDoorsPath, out Vector3 d) ? d : plazaCenter + Vector3.back * 30f;
@@ -150,6 +179,138 @@ public sealed class Level2RosaStall : MonoBehaviour
         Built = true;
         Debug.Log($"[Level2] Rosa's stall: store at {pivot:F2}, yaw {yaw:F0}, scale {scale:F3} (mirrored X), " +
                   $"footprint {halfWidth * 2f:F1} x {halfDepth * 2f:F1} m, front {front:F2}, spot found: {found}.");
+    }
+
+    /// <summary>
+    /// Rosa on the scene marker, facing where it faces; the records desk to her
+    /// right and the stall sign to her left, both close by. No shop building.
+    /// </summary>
+    private void BuildAtAnchor(Level2SceneAssets assets, Transform anchor)
+    {
+        Vector3 front = anchor.forward;
+        front.y = 0f;
+        front = front.sqrMagnitude > 0.01f ? front.normalized : Vector3.forward;
+        Vector3 side = Vector3.Cross(Vector3.up, front);
+        float groundY = GroundNear(anchor.position, anchor.position.y, out float g) ? g : anchor.position.y;
+
+        Vector3 rosa = Ground(anchor.position, groundY);
+        Vector3 desk = Ground(anchor.position + side * 1.7f + front * 0.5f, groundY);
+        BuildDesk(desk, front, side);
+        BuildRosa(assets, rosa, FacingTo(rosa, desk, front));
+        BuildSign(FreeSignSpot(anchor.position, front, side, groundY, new[]
+        {
+            -side * 1.5f - front * 0.2f, -side * 1.6f + front * 1.2f, side * 3.4f + front * 0.5f,
+            front * 2.4f, -side * 2.6f + front * 1.8f, side * 1.7f + front * 2.6f
+        }, rosa, desk), front);
+
+        Built = true;
+        Debug.Log($"[Level2] Rosa's stall on {AnchorPath} at {anchor.position:F2}, front {front:F2} (no shop building).");
+    }
+
+    /// <summary>
+    /// The stall in front of the town's own shop, on its real front (the awning
+    /// side, with the window and door): Rosa stands just beside the door, her
+    /// records table in front of the window facing her, and the sign on the
+    /// first free spot on the window side. Seen from the street, Building_4's
+    /// door is on the right (mirrored instances: on the left).
+    /// </summary>
+    private void BuildAtSceneStore(Level2SceneAssets assets, Transform store)
+    {
+        Store = store;
+        Bounds b = RendererBounds(store.gameObject);
+        Vector3 front = DetectFrontAround(store, b);
+        Vector3 side = Vector3.Cross(Vector3.up, front);
+
+        // Measure along the shop's own axes (its world box is wider when it is turned).
+        MeshFilter mesh = store.GetComponentInChildren<MeshFilter>();
+        float halfDepth = Extent(b, front), halfWidth = Extent(b, side);
+        Vector3 center = b.center;
+        if (mesh != null && mesh.sharedMesh != null)
+        {
+            Bounds local = mesh.sharedMesh.bounds;
+            Transform t = mesh.transform;
+            Vector3 scale = t.lossyScale;
+            bool alongForward = Mathf.Abs(Vector3.Dot(front, Flat(t.forward))) > 0.7f;
+            halfDepth = alongForward ? local.extents.z * Mathf.Abs(scale.z) : local.extents.x * Mathf.Abs(scale.x);
+            halfWidth = alongForward ? local.extents.x * Mathf.Abs(scale.x) : local.extents.z * Mathf.Abs(scale.z);
+            center = t.TransformPoint(local.center);
+        }
+        float groundY = GroundNear(center + front * (halfDepth + 1f), b.min.y, out float g) ? g : b.min.y;
+        Vector3 face = new Vector3(center.x, groundY, center.z) + front * halfDepth;
+
+        // The door is on the street-right of the front (-side); a mirrored shop has it on the left.
+        Vector3 doorSide = store.lossyScale.x < 0f ? side : -side;
+        Vector3 door = face + doorSide * (halfWidth * 0.6f);
+        Vector3 rosa = Ground(door + front * 1.1f - doorSide * 1.1f, groundY);
+        Vector3 desk = Ground(door + front * 2.0f - doorSide * 2.7f, groundY);
+        BuildDesk(desk, front, side);
+        BuildRosa(assets, rosa, FacingTo(rosa, desk, front));
+        BuildSign(FreeSignSpot(face, front, side, groundY, new[]
+        {
+            front * 1.2f - doorSide * (halfWidth * 0.75f), front * 2.4f - doorSide * (halfWidth * 0.9f),
+            front * 3.4f - doorSide * (halfWidth * 0.4f), front * 1.2f - doorSide * (halfWidth + 1.2f),
+            front * 3.6f + doorSide * (halfWidth * 0.2f), front * 4.4f
+        }, rosa, desk, door + front * 0.6f), front);
+
+        Built = true;
+        Debug.Log($"[Level2] Rosa's stall at the front of {SceneStorePath} {store.position:F2}: front {front:F2}, " +
+                  $"{halfWidth * 2f:F1} x {halfDepth * 2f:F1} m, Rosa by the door.");
+    }
+
+    private static Vector3 Flat(Vector3 v)
+    {
+        v.y = 0f;
+        return v.sqrMagnitude > 1e-4f ? v.normalized : Vector3.forward;
+    }
+
+    /// <summary>
+    /// The store's awning side among its own four sides: the side whose surface sticks out
+    /// furthest at awning height (60-72% up) compared with its base.
+    /// </summary>
+    private static Vector3 DetectFrontAround(Transform store, Bounds b)
+    {
+        Collider[] colliders = store.GetComponentsInChildren<Collider>();
+        Vector3 f = Flat(store.forward);
+        Vector3 r = Vector3.Cross(Vector3.up, f);
+        Vector3[] sides = { f, -f, r, -r };
+        if (colliders.Length == 0) return f;
+        Vector3 best = f;
+        float bestOverhang = float.MinValue;
+        foreach (Vector3 side in sides)
+        {
+            float extent = Extent(b, side);
+            float baseOut = SurfaceOut(colliders, b, side, extent, 0.08f);
+            float awning = Mathf.Max(SurfaceOut(colliders, b, side, extent, 0.6f),
+                Mathf.Max(SurfaceOut(colliders, b, side, extent, 0.66f), SurfaceOut(colliders, b, side, extent, 0.72f)));
+            if (awning - baseOut > bestOverhang) { bestOverhang = awning - baseOut; best = side; }
+        }
+        return best;
+    }
+
+    /// <summary>Rosa looks at her records table (flat); she still turns to the player while talking.</summary>
+    private static Vector3 FacingTo(Vector3 from, Vector3 to, Vector3 fallback)
+    {
+        Vector3 d = to - from;
+        d.y = 0f;
+        return d.sqrMagnitude > 0.04f ? d.normalized : fallback;
+    }
+
+    /// <summary>The first candidate (offset from origin) where the sign touches no solid collider; the first one otherwise.</summary>
+    private Vector3 FreeSignSpot(Vector3 origin, Vector3 front, Vector3 side, float groundY, Vector3[] offsets, params Vector3[] keepClearOf)
+    {
+        Quaternion rotation = Quaternion.LookRotation(front, Vector3.up);
+        foreach (Vector3 offset in offsets)
+        {
+            Vector3 spot = Ground(origin + offset, groundY);
+            if (Mathf.Abs(spot.y - groundY) > 0.6f) continue;
+            bool crowded = false;
+            foreach (Vector3 other in keepClearOf)
+                if (new Vector2(spot.x - other.x, spot.z - other.z).magnitude < 1.4f) crowded = true;
+            if (crowded) continue;
+            if (!Blocked(spot + Vector3.up * (SignHalfExtents.y + 0.15f), SignHalfExtents, rotation)) return spot;
+        }
+        Debug.LogWarning("[Level2] No free spot for Rosa's sign; it uses the first one. Check it in Play Mode.");
+        return Ground(origin + offsets[0], groundY);
     }
 
     private static Bounds RendererBounds(GameObject root)
@@ -293,9 +454,10 @@ public sealed class Level2RosaStall : MonoBehaviour
         holder.transform.SetPositionAndRotation(position, Quaternion.LookRotation(front, Vector3.up));
 
         GameObject model = Instantiate(assets.rosaPrefab, holder.transform);
-        model.name = "SM_Chr_Business_Female_03";
+        model.name = "RosaModel";
         model.transform.localPosition = Vector3.zero;
         model.transform.localRotation = Quaternion.identity;
+        FitHeight(model, position.y);
         Animator animator = model.GetComponentInChildren<Animator>();
         if (animator != null && assets.rosaIdleController != null)
         {
@@ -314,6 +476,16 @@ public sealed class Level2RosaStall : MonoBehaviour
 
         Rosa = holder.AddComponent<RosaInteractable>();
         Rosa.Init(this);
+    }
+
+    /// <summary>Scales the model to RosaHeight and stands its feet on groundY, whatever its import scale.</summary>
+    private static void FitHeight(GameObject model, float groundY)
+    {
+        Bounds b = RendererBounds(model);
+        if (b.size.y < 0.01f) return;
+        model.transform.localScale *= RosaHeight / b.size.y;
+        b = RendererBounds(model);
+        model.transform.position += Vector3.up * (groundY - b.min.y);
     }
 
     // =========================================================

@@ -4,10 +4,11 @@ using UnityEngine;
 /// PURPOSE:
 /// The original assets Level 2 builds its market scene from, referenced (not
 /// copied) so they load at runtime and ship in builds:
-/// - Rosa: Assets/Synty/PolygonOffice/Prefabs/Characters/SM_Chr_Business_Female_03.prefab
-///   (as under TaxVentureWithCompliance > Characters)
+/// - Rosa: Assets/3D Models/npc_cora_static/npc_cora_static@Standing Idle.fbx (Marie's former
+///   model; swapped 2026-10-20, Level 1's Marie now wears SM_Chr_Business_Female_03).
+///   Level2RosaStall fits it to a person's height.
 /// - Her store: Assets/Flat_Style_Vehicles/Prefabs/Buildings/Building_4.prefab
-///   (as Building_4 (1) under TownEnvironment > Env > Town: mirrored on X)
+///   (used only when the scene has no RosaStallAnchor; with the anchor, no shop is built)
 /// - Rosa's idle: the project's humanoid "Standing Idle" controller
 ///   (npc_cora_static), because the Synty prefab's own controller asset is
 ///   not in the project (that is why she stood in a T-pose).
