@@ -84,7 +84,7 @@ var allData = new PlayerProgressData();
 allData.RecordLevelResult("Level_01", 150, 12, 150, 12, true, null);
 allData.RecordLevelResult("Level_02", 300, 20, 350, 22, true, null);
 var all = Build(allData);
-Check(all.Goal == all.Chapters[1] && all.Goal.Status == CareerChapterStatus.Passed, "all open chapters passed: goal is the last one");
+Check(all.Goal == all.Chapters[2] && all.Goal.Status == CareerChapterStatus.ComingSoon, "all open chapters passed: the goal moves on to the next chapter (coming soon)");
 Check(CareerProgress.NextStep(all).Contains("coming soon"), "all passed: next step says new chapters are coming");
 
 // A saved maximum beats the rules (older runs keep their own maximum).

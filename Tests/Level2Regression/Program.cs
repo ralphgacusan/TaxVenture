@@ -1380,7 +1380,7 @@ string auditorSrc = Src("Scripts/Interactables/AuditorInteractable.cs");
 Check(auditorSrc.Contains("if (LevelAudit != null && LevelAudit(this)) return;") && auditSrc.Contains("AuditorInteractable.LevelAudit = Handle"),
     "Level 2 judges hand-ins through a hook; Level 1's audit runs when no level hook handles it");
 Check(Regex.IsMatch(auditSrc, @"FinalAudit\.Result result = FinalAudit\.Submit\([\s\S]*?RunLevelDialogue\("), "the outcome is recorded once, before the dialogue");
-Check(auditSrc.Contains("if (!FinalAudit.TryReward(review)) return;") && auditSrc.Contains("CalculateAndStoreCaseReward(data)") &&
+Check(auditSrc.Contains("if (!FinalAudit.TryReward(review)) { inProgress = false; return; }") && auditSrc.Contains("CalculateAndStoreCaseReward(data)") &&
       Regex.Matches(auditSrc, @"CalculateAndStoreCaseReward\(").Count == 1, "only an accepted packet awards the case, once");
 Check(auditSrc.Contains("RecordAuditAttempt(result.NewlyCharged.Count, false)") && !auditSrc.Contains("ResetCurrentCaseForRetry"),
     "returns charge only new root causes and never reset the review work");
@@ -1764,8 +1764,8 @@ Check(GuideTriggers.TryParse("event:CaseFolderRetrieved", out _, out _), "the gu
 var guide = Json("Tutorials/Level_02/guide.json");
 foreach (string id in new[] { "toolkit-practice", "mark-the-money", "mark-the-money-fix" })
 {
-    var prompt = guide.GetProperty("lessons").EnumerateArray().Single(l => Str(l, "id") == id).GetProperty("pages")[0];
-    Check(prompt.GetProperty("hintSeconds").GetSingle() <= 6f && Str(prompt, "waitFor").StartsWith("event:"),
+    var prompt = guide.GetProperty("lessons").EnumerateArray().Single(l => Str(l, "id") == id).GetProperty("pages").EnumerateArray().Last();
+    Check(Str(prompt, "style") == "hint" && prompt.GetProperty("hintSeconds").GetSingle() <= 8f && Str(prompt, "waitFor").StartsWith("event:"),
         "side-quest prompt fades while continuing to wait for the player's action: " + id);
 }
 Check(guide.GetProperty("enabled").GetBoolean() && Str(guide, "platform") == "touch", "Level 2 guide is on and written for touch");
@@ -1778,7 +1778,9 @@ foreach (var w in guide.GetProperty("waypoints").EnumerateArray())
     foreach (string target in Str(w, "target").Split('|'))
         Check(!target.Contains("Plaza/NPCS"), "no waypoint leads to a hidden Level 1 plaza client: " + target);
 }
-foreach (string step in stepTriggers) Check(waypointSteps.Contains(step), "objective step has arrows: " + step);
+// Arrows only lead to places new in Level 2: the file storage room (first visit), Rosa's stall and her records desk (user direction 2026-10-20).
+Check(waypointSteps.SetEquals(new[] { "event:CaseFolderRetrieved", "event:RosaRecordsCollected", "event:MarketDeskOpened" }),
+    "arrows lead to the file storage room, the stall and the records desk; none to the receptionist, desk or Auditor");
 var lessonIds = guide.GetProperty("lessons").EnumerateArray().Select(l => Str(l, "id")).ToList();
 Check(lessonIds.Distinct().Count() == lessonIds.Count, "guide lesson ids are unique");
 foreach (var lesson in guide.GetProperty("lessons").EnumerateArray())
@@ -1792,15 +1794,15 @@ foreach (var lesson in guide.GetProperty("lessons").EnumerateArray())
         if (Str(page, "waitFor") != null) Check(GuideTriggers.Validate(Str(page, "waitFor"), true) == null, $"{id}: waitFor valid");
     }
 }
-Check(guide.GetProperty("lessons").EnumerateArray().SelectMany(l => l.GetProperty("pages").EnumerateArray()).Any(p => p.TryGetProperty("revealArrows", out var r) && r.GetBoolean()),
-    "the guide reveals the objective arrows");
+Check(!guide.GetProperty("trail").GetProperty("waitForGuide").GetBoolean(),
+    "the stall arrows show as soon as that step is active (no revealArrows page needed)");
 
 // ================= Book leaves and office start =================
 var book = Json("Levels/Level_02/book.json");
 var leaves = book.GetProperty("sections").EnumerateArray().ToList();
-Check(leaves.Count == 5 && leaves.All(l => !string.IsNullOrWhiteSpace(Str(l, "heading")) && !string.IsNullOrWhiteSpace(Str(l, "body"))) &&
+Check(leaves.Count == 6 && leaves.All(l => !string.IsNullOrWhiteSpace(Str(l, "heading")) && !string.IsNullOrWhiteSpace(Str(l, "body"))) &&
       leaves.Select((l, i) => Str(l, "heading").StartsWith("Section " + (i + 4) + " – ")).All(x => x),
-    "five leaves numbered after the shared book (Section 4 to 8), in its heading style");
+    "six leaves numbered after the shared book (Section 4 to 9), in its heading style");
 Check(leaves.All(l => Str(l, "heading").IndexOf("cheat", StringComparison.OrdinalIgnoreCase) < 0), "no leaf is called a cheat sheet");
 var referenceLeaves = leaves.Take(3).ToList();
 Check(referenceLeaves.All(l => l.GetProperty("clickableValues").GetArrayLength() > 0 &&
@@ -2104,7 +2106,7 @@ Check(bookIconSrc.Contains("TaxCodeBook3DDrag.TryStoreAt = StoreFromDesk") && bo
     "dragging the desk book onto its icon flies it in and stores it (saved with the review); the desk copy is parked");
 Check(bookIconSrc.Contains("iconDrag.CanDrag = () => Stored &&") && bookIconSrc.Contains("if (!Stored)") && !bookIconSrc.Contains("Drag the book here"),
     "an empty icon cannot be dragged out and a tap explains; there is no on-screen drag prompt");
-Check(File.ReadAllText(Res("Tutorials/Level_02/guide.json")).Contains("Slide it onto its icon and it travels with you"),
+Check(File.ReadAllText(Res("Tutorials/Level_02/guide.json")).Contains("drag it onto the red book icon so it travels with you"),
     "Arthur mentions carrying the book as a clue, not an order");
 Check(bookIconSrc.Contains("class FloatingBookGrab") && bookIconSrc.Contains("book.gameObject.AddComponent<FloatingBookGrab>()") && bookIconSrc.Contains("if (OverIcon(screen)) CloseFloating();") &&
       bookIconSrc.Contains("bookLayer.AlwaysComposite = true"),
@@ -2205,7 +2207,7 @@ Check(Src("Scripts/UI/WorkstationUI.cs").Contains("public static System.Func<boo
       toolkitSrcR.Contains("(active.mode == Mode.Tutorial || active.mode == Mode.Challenge)"),
     "no Exit Desk during the Mark the Money! practice and challenge; it returns once the quest is done");
 Check(Src("Scripts/UI/Guide/GuideCoachView.cs").Contains("public static System.Func<bool> HintAtBottom;") &&
-      toolkitSrcR.Contains("GuideCoachView.HintAtBottom = AtRecordsDesk;") && toolkitSrcR.Contains("WorkstationUI.ExitBlocked = null;"),
+      toolkitSrcR.Contains("GuideCoachView.HintAtBottom = () => AtRecordsDesk() && active.mode != Mode.Done;") && toolkitSrcR.Contains("WorkstationUI.ExitBlocked = null;"),
     "at the records desk Arthur's lines sit at the bottom, and both hooks are released when the desk is disabled");
 Check(toolkitSrcR.Contains("PaperCenter = new Vector3(0.04f, 0.052f, 0.025f)") && toolkitSrcR.Contains("new Vector3(0.04f, 0.023f, -0.27f)"),
     "the annotation paper and the highlighter sit a little higher, clear of Arthur's bubble");
@@ -2261,6 +2263,186 @@ Check(auditSrcR.Contains("auditor.ShowLevelSummary(Summary(result, review, defin
       auditSrcR.IndexOf("CalculateAndStoreCaseReward") > auditSrcR.IndexOf("void Finish()") &&
       Src("Scripts/Interactables/AuditorInteractable.cs").Contains("summaryPopupUI.ShowScreen(data, plainText, closed);"),
     "the case reward and level completion follow when the Audit Summary closes, as in Office Level 1");
+
+// ================= Guided polish pass (2026-10-20, user direction) =================
+// Start, receptionist and arrows.
+var startCfg = Json("Levels/Level_02/office_start.json");
+Check(startCfg.GetProperty("blend").GetSingle() <= 0.2f && Str(startCfg, "spawn").EndsWith("Reception/Doors/Office_Entrance_Door_2") &&
+      Str(startCfg, "fallbackSpawn").EndsWith("Reception/Doors"),
+    "the player starts just inside the street entrance, facing the receptionist (old point as fallback)");
+Check(Src("Scripts/Level2/Level2OfficeStart.cs").Contains("blend = 0.16f,") && Src("Scripts/Level2/Level2OfficeStart.cs").Contains("config.fallbackSpawn"),
+    "the built-in start matches office_start.json");
+Check(Regex.Matches(Src("Scripts/Data/AuditorSubmissionTray.cs"), @"auditor\.BeginFinalAudit\(\);").Count == 1,
+    "the tray starts the audit once (a second call replayed the Auditor's lines)");
+Check(Src("Scripts/Level2/Level2Audit.cs").Contains("if (inProgress) return true;"), "Level 2 handles one hand-in at a time");
+Check(File.ReadAllText(Res("Tutorials/Level_02/guide.json")).Contains("flag:questDone") && File.ReadAllText(Res("Tutorials/Level_02/guide.json")).Contains("flag:redNotes") && File.ReadAllText(Res("Tutorials/Level_02/guide.json")).Contains("flag:finalStamped"),
+    "guide waits also accept the already-done state, so a fast player never leaves Arthur stuck");
+Check(Src("Scripts/UI/HUD/FloatingWindow.cs").Contains("DebugTrace.Log(") && !Src("Scripts/UI/HUD/FloatingWindow.cs").Contains(" Debug.Log("),
+    "per-touch window logs are compiled out (smoother drags)");
+
+// Third feedback round (2026-10-20).
+Check(!Src("Scripts/Level2/Level2FindingsPage.cs").Contains("ClearFindingDraft") &&
+      Src("Scripts/Level2/Level2FindingsPage.cs").Contains("FindingComparison.Clue(FindingComparison.FirstMismatch(review, rule))"),
+    "a wrong Findings link keeps all three answers and writes a clue instead of clearing them");
+var clueDraft = Retrieved();
+clueDraft.SetFindingPart("F1", ReviewFindingState.Concern, "S1", "SummaryServices", "Clothes washing");
+clueDraft.SetFindingPart("F1", ReviewFindingState.Evidence, "N1", "ReferralNote", "Blanket washing");
+clueDraft.SetFindingPart("F1", ReviewFindingState.Reason, null, "unaccounted-payment", "Unlisted payment");
+Check(FindingComparison.Check(clueDraft, rule) == FindingComparison.Result.NoDiscrepancy &&
+      FindingComparison.FirstMismatch(clueDraft, rule) == ReviewFindingState.Concern && clueDraft.FindFinding("F1").IsComplete,
+    "the clue points at the first wrong box (here: Entry to check) and nothing is erased");
+clueDraft.SetFindingPart("F1", ReviewFindingState.Concern, "S1", "SummarySubtotal", "May total");
+clueDraft.SetFindingPart("F1", ReviewFindingState.Reason, null, "amounts-differ", "Different totals");
+Check(FindingComparison.FirstMismatch(clueDraft, rule) == ReviewFindingState.Reason &&
+      FindingComparison.Clue(ReviewFindingState.Reason).Contains("Section 7") &&
+      !FindingComparison.Clue(ReviewFindingState.Reason).Contains("Unlisted payment"),
+    "the reason clue sends the player to Section 7 without naming the answer");
+var skipState = new CaseReviewState { phase = ReviewPhase.Tutorial };
+Check(skipState.TrySkipTutorial() && skipState.tutorialCompleted && skipState.toolkitDemoSeen && skipState.phase == ReviewPhase.Challenge &&
+      !skipState.TrySkipTutorial(), "skipping the practice goes straight to the challenge, once");
+Check(Src("Scripts/Level2/IncomeToolkit.cs").Contains("\"SKIP PRACTICE") && Src("Scripts/Level2/IncomeToolkit.cs").Contains("review.TrySkipTutorial()"),
+    "the records desk offers SKIP PRACTICE during Arthur's demo and the practice");
+Check(Src("Scripts/UI/HUD/HudRewardScreen.cs").Contains("if (press && lastButtonClickFrame != Time.frameCount) sceneButton.onClick.Invoke();"),
+    "a reward card's Continue works even if an overlay swallows the click (never stuck)");
+Check(Src("Scripts/UI/Guide/GuideDirector.cs").Contains("pendingAside = text;"), "Arthur's short lines wait while a lesson box is up (no overlap)");
+Check(Src("Scripts/UI/HUD/DropAimIndicator.cs").Contains("HudTheme.Check") && Src("Scripts/Data/DragDrop/ValueTypeValidationFeedback.cs").Contains("PopCheck()"),
+    "a value that fits shows a green check while dragging and when placed");
+Check(Src("Scripts/UI/Books/PageEdgeTapZone.cs").Contains("TouchPadScale") && Src("Scripts/UI/PrintedPaperStyle.cs").Contains("new Vector2(98f, 98f)"),
+    "page arrows are larger, with a padded touch area and a press punch");
+Check(Src("Scripts/Interactables/DeskMotion.cs").Contains("public static float Step") && Src("Scripts/UI/HUD/FloatingWindow.cs").Contains("PaperSettle()") &&
+      Src("Scripts/Data/DragDrop/DragVisualManager.cs").Contains("private void LateUpdate()") &&
+      Src("Scripts/CaseFolder/CaseFolder3DDrag.cs").Contains("Mathf.Max(dragSmoothness, 28f)"),
+    "page turns, paper windows, the value tag and the desk folder/book move smoothly");
+Check(Src("Scripts/Level2/Level2FindingsSheet.cs").Contains("TuckAway()") && Src("Scripts/Level2/Level2FindingsSheet.cs").Contains("PopBack()"),
+    "a loose Findings slip tucks away with the folder and pops back when it reopens");
+
+// Annotated paper layering and rows (2026-10-20).
+Check(FloatingWindow.LayerStep == 2 && Src("Scripts/UI/HUD/FloatingWindow.cs").Contains("currentSortingOrder += LayerStep;"),
+    "paper windows take every other layer, so each owns the layer just above its 3D face");
+Check(Src("Scripts/Level2/AnnotationPaperCollectionFace.cs").Contains("band.sortingOrder = window.SortingOrder + 1;"),
+    "the highlighted-amount band draws over its own paper and under any paper in front of it");
+Check(DragVisualManager.TopSortingOrder > 29000 && Src("Scripts/UI/HUD/DropAimIndicator.cs").Contains("SortingOrder = 29000") &&
+      Src("Scripts/Data/DragDrop/DragVisualManager.cs").Contains("topCanvas.renderMode = RenderMode.ScreenSpaceOverlay;") &&
+      Src("Scripts/Data/DragDrop/DragVisualManager.cs").Contains("dragVisual.transform.SetParent(host.transform, false);"),
+    "the dragged value lives on its own top-level overlay canvas, over every paper; the aim frame sits just under it");
+Check(CaseFolderUI.RowTargetHeight == 110f && Src("Scripts/UI/CaseFolderUI.cs").Contains("FitRowHeights();"),
+    "folder value rows grow into the page's spare room (bigger drag sources and drop targets, never past the page)");
+Check(PaperInkStyle.ChipHeight == 68f && PaperInkStyle.ChipHeightCompact == 58f &&
+      Src("Scripts/UI/TaxCodeBookUI.cs").Contains("new[] { PaperInkStyle.ChipHeight, PaperInkStyle.ChipHeightCompact }"),
+    "book value chips are taller, falling back to the old height on a crowded page");
+string paperSrcRows = Src("Scripts/Level2/AnnotationPaper.cs");
+Check(paperSrcRows.Contains("Mathf.Min(0.05f, 0.198f / Mathf.Max(1f, count - 0.5f))") && paperSrcRows.Contains("rows <= 4 ? 0.25f : 0.2f") &&
+      paperSrcRows.Contains("RowFontMin = 0.15f"),
+    "annotated rows are taller with bigger print, and long values shrink to fit instead of being cut");
+for (int rowsN = 1; rowsN <= 8; rowsN++)
+{
+    float stepN = Math.Min(0.05f, 0.198f / Math.Max(1f, rowsN - 0.5f));
+    Check(0.098f - (rowsN - 1) * stepN - stepN * 0.5f >= -0.1001f, $"{rowsN} rows end above the card slots");
+}
+string greeting = string.Join("\n", rosa.receptionistGreeting.Select(l => l.text));
+Check(greeting.Contains("{deadline}") && greeting.Contains("cutoff"), "the receptionist tells today's review cutoff time");
+Check(Src("Scripts/Interactables/ReceptionistInteractable.cs").Contains("line.Text.Replace(\"{deadline}\", deadline)") &&
+      Src("Scripts/Interactables/ReceptionistInteractable.cs").Contains("ReviewClock.DeadlineSeconds(state, clock)"),
+    "the receptionist's {deadline} is the review clock's cutoff time");
+Check(string.IsNullOrEmpty(rosa.review.clock.announceLine), "Arthur no longer announces the cutoff (the receptionist does)");
+string guideText = File.ReadAllText(Res("Tutorials/Level_02/guide.json"));
+Check(!guideText.Contains("Follow the arrows to the receptionist") && !guideText.Contains("\"revealArrows\":"),
+    "no arrows to the receptionist or the office");
+
+// Taxpayer Profile page.
+string profile = rosa.review.profileText ?? "";
+Check(profile.Length > 40 && profile.Split('.').Count(s => s.Trim().Length > 0) == 1, "the Taxpayer Profile is one sentence");
+foreach (string answer in new[] { "Resident Citizen", "resident", "Self-Employed", "self-employed", "Business Income", "business income", "Compensation" })
+    Check(!profile.Contains(answer), "the profile hints without naming the answer: " + answer);
+foreach (string clue in new[] { "Filipino", "no boss", "runs her own", "customers" })
+    Check(profile.Contains(clue), "the profile carries the clue: " + clue);
+string folderSrcP = Src("Scripts/UI/CaseFolderUI.cs");
+Check(folderSrcP.Contains("public const string TaxpayerProfilePageTitle = \"Taxpayer Profile\";") &&
+      folderSrcP.IndexOf("TaxpayerProfilePageTitle, \"\")") < folderSrcP.IndexOf("string title = captured.kind == \"summary\"") &&
+      folderSrcP.Contains("BuildProfileRows(data, profile)") && folderSrcP.Contains("\"About the taxpayer\""),
+    "the Taxpayer Profile page comes right after Taxpayer Information, printed like the other rows");
+
+// Guide cues and flags.
+Check(GuideTriggers.TryParse("cue:FindingsPaperLifted", out var cueT, out _) && cueT.Kind == GuideTriggers.Kind.Event && cueT.Key == "cue:FindingsPaperLifted",
+    "cue:<name> is a counted guide event");
+Check(GuideTriggers.TryParse("flag:bookStored", out var flagT, out _) && flagT.Kind == GuideTriggers.Kind.Condition &&
+      GuideTriggers.TryParse("not:flag:bookStored", out var notFlag, out _) && notFlag.Negate && !GuideTriggers.TryParse("flag:", out _, out _),
+    "flag:<name> is a condition (and works with not:)");
+GuideFlags.Source = n => n == "bookStored";
+Check(GuideFlags.Get("bookStored") && !GuideFlags.Get("other") && !GuideFlags.Get(null), "GuideFlags reads the level's facts");
+GuideFlags.Source = null;
+Check(!GuideFlags.Get("bookStored"), "no level, no flags");
+var cueNames = Regex.Matches(guideText, "cue:([A-Za-z]+)").Select(m => m.Groups[1].Value).Distinct().ToList();
+string allSrc = string.Join("\n", Directory.GetFiles(Path.Combine(root, "Assets", "Scripts"), "*.cs", SearchOption.AllDirectories).Select(File.ReadAllText));
+foreach (string cue in cueNames)
+    Check(allSrc.Contains("RaiseGuideCue(\"" + cue + "\")"), "the guide's cue is raised by gameplay: " + cue);
+Check(cueNames.Count >= 6, "the guide waits on the new cues");
+string startSrcF = Src("Scripts/Level2/Level2OfficeStart.cs");
+foreach (string flag in Regex.Matches(guideText, "flag:([A-Za-z]+)").Select(m => m.Groups[1].Value).Distinct())
+    Check(startSrcF.Contains("case \"" + flag + "\":"), "Level2OfficeStart provides the guide flag: " + flag);
+Check(Src("Scripts/UI/Guide/GuideDirector.cs").Contains("GameplayEvents.OnGuideCue += HandleGuideCue;") &&
+      Src("Scripts/UI/Guide/GuideDirector.cs").Contains("GameplayEvents.OnGuideCue -= HandleGuideCue;") &&
+      Src("Scripts/UI/Guide/GuideDirector.cs").Contains("return GuideFlags.Get(t.Arg);"),
+    "the director listens to cues and reads flags (observation only)");
+
+// Guided case flow.
+var lessonList = guide.GetProperty("lessons").EnumerateArray().ToList();
+var orderIds = lessonList.Select(l => Str(l, "id")).ToList();
+string[] lessonFlow = { "welcome", "to-cabinet", "file-room", "to-desk", "desk-open", "profile", "prepared-pages", "findings-paper",
+    "file-findings", "initial-stamp", "to-rosa", "records-desk", "toolkit-colours", "toolkit-practice", "mark-the-money",
+    "mark-the-money-fix", "annotated-papers", "office-review", "final-assessment", "to-auditor", "audit-returned" };
+Check(lessonFlow.All(id => orderIds.Contains(id)) && lessonFlow.Select(id => orderIds.IndexOf(id)).SequenceEqual(lessonFlow.Select(id => orderIds.IndexOf(id)).OrderBy(i => i)),
+    "Arthur's lessons follow the case: file room, profile, findings, stamp, toolkit colours, papers, schedule, final stamp");
+string Lesson(string id) => string.Join("\n", lessonList.Single(l => Str(l, "id") == id).GetProperty("pages").EnumerateArray().Select(p => Str(p, "text")));
+Check(Lesson("file-room").Contains("file storage room") && Str(lessonList.Single(l => Str(l, "id") == "file-room"), "when").Contains("flag:inFileRoom"),
+    "Arthur introduces the file storage room when the player walks in");
+Check(Lesson("profile").Contains("Taxpayer Profile") && Lesson("profile").Contains("Section 1") && Lesson("profile").Contains("Section 3"),
+    "Arthur sends the player from the profile to book Sections 1 to 3");
+Check(Lesson("findings-paper").Contains("Section 7") && Lesson("prepared-pages").Contains("Payment Note"),
+    "the Findings lessons name the pages and the reasons section");
+Check(Lesson("initial-stamp").Contains("stamp set") && Lesson("initial-stamp").Contains("ghost"), "the stamp lesson teaches tapping the set and aiming the ghost");
+Check(Lesson("toolkit-colours").Contains("BLUE") && Lesson("toolkit-colours").Contains("ORANGE") && Lesson("toolkit-colours").Contains("PURPLE") &&
+      Lesson("toolkit-colours").Contains("Section 4") && Lesson("toolkit-colours").Contains("Section 5"),
+    "Arthur explains the card colours and the book sections for them early in the side quest");
+Check(Lesson("annotated-papers").Contains("two seconds") && Lesson("office-review").Contains("Section 6") &&
+      Lesson("office-review").Contains("Section 8") && Lesson("final-assessment").Contains("Section 9"),
+    "the second part teaches the stack gesture, the schedule rules and the final stamp with book sections");
+var bookHeadings = leaves.Select(l => Str(l, "heading")).ToList();
+foreach (Match m in Regex.Matches(guideText, @"Section (\d)"))
+{
+    int n = int.Parse(m.Groups[1].Value);
+    Check(n <= 3 || bookHeadings.Any(h => h.StartsWith("Section " + n + " –")), "a book section Arthur names exists: " + n);
+}
+Check(bookHeadings.Any(h => h.Contains("Blue Cards")) && bookHeadings.Any(h => h.Contains("Orange Cards")) && bookHeadings.Any(h => h.EndsWith("Final Assessment")),
+    "book headings name what they help with");
+Check(rosa.review.audit.feedback.All(f => Regex.IsMatch(f.line, "Section|annotated paper")),
+    "every Auditor correction points to a book section or the annotated papers");
+
+// Side quest box, desk exit, annotated papers.
+string toolkitSrcP = Src("Scripts/Level2/IncomeToolkit.cs");
+Check(!toolkitSrcP.Contains("if (open) SetLid(LidOpenAngle, LidOpenSeconds);") &&
+      toolkitSrcP.Contains("// Finished: the case stays shut and the papers are already in their icon."),
+    "once the toolkit packs up its lid stays shut, also when the desk is revisited");
+Check(!toolkitSrcP.Contains("Mark the Money! is done. Take what you learned back to the office."),
+    "revisiting the finished records desk shows no Arthur line over Exit Desk");
+string papersSrcP = Src("Scripts/Level2/Level2AnnotatedPapers.cs");
+Check(Level2AnnotatedPapers.StackHoldSeconds == 2f && papersSrcP.Contains("Gather(finger)") && papersSrcP.Contains("CloseAllPapers();") &&
+      papersSrcP.Contains("scatterMotion = StartCoroutine(Scatter());"),
+    "hold any annotated paper 2 s to stack them; drop on the icon puts them away, anywhere else scatters them back");
+Check(!Src("Scripts/Level2/AnnotationPaperCollectionFace.cs").Contains("view.BuildCloseButton();"), "annotated papers have no close (x) button");
+Check(Src("Scripts/Level2/AnnotationPaperCollectionFace.cs").Contains("Level2AnnotatedPapers.Instance.SwallowTap"),
+    "releasing a long press does not also pick up a highlighted amount");
+
+// Drawer, career board and side-quest time.
+string drawerSrcP = Src("Scripts/Level2/MarketClientDrawer.cs") + Src("Scripts/Level2/Level2CaseRetrieval.cs");
+Check(drawerSrcP.Contains("yield return Riffle();") && drawerSrcP.Contains("FacingCamera(view") && drawerSrcP.Contains("Ease.OutBack") &&
+      drawerSrcP.Contains("ALING ROSA SANTOS") && drawerSrcP.Contains("\"MarketTab\""),
+    "the drawer rolls out, riffles the folders and shows Rosa's named folder before it flies to the icon");
+var chaptersDoc = JsonDocument.Parse(File.ReadAllText(Res("Career/chapters.json"))).RootElement;
+Check(chaptersDoc.GetProperty("sideQuests").EnumerateArray().Any(q => Str(q, "chapterId") == "Level_02" && q.GetProperty("number").GetInt32() == 2),
+    "the 3D menu lists Mark the Money! as side quest 2 (its medal shows after Level Complete)");
+Check(Src("Scripts/Data/CaseProgressionManager.cs").Contains("GameplayEvents.OnMarketDeskOpened += HandleMarketDeskOpened;"),
+    "the Mark the Money! time starts at Rosa's records desk");
 
 Console.WriteLine(fails == 0 ? $"Level2Regression: {checks} checks PASS" : $"Level2Regression: {fails} of {checks} checks FAILED");
 return fails == 0 ? 0 : 1;

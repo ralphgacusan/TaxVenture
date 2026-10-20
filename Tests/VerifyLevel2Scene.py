@@ -164,7 +164,9 @@ for lesson in guide['lessons']:
     for page in lesson.get('pages', []):
         for key in ('point', 'to'):
             v = page.get(key) or ''
-            if v.startswith('world:'):
+            if v.startswith('world:' + RUNTIME_ROOT):
+                runtime_targets.append(v[6:])  # Level2CaseRetrieval / Level2RosaStall build these at runtime
+            elif v.startswith('world:'):
                 check(exists(v[6:]), f'guide {lesson["id"]} {key} exists: {v[6:]}')
 
 # ---------- single owners and the runtime root ----------
