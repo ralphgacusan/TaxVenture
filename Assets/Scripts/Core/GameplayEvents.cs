@@ -77,6 +77,10 @@ public static class GameplayEvents
     public static event Action OnAuditReturned;
     public static event Action OnReviewDayRolled;
 
+    // Small observation-only cues for the guide ("cue:<name>" in guide.json),
+    // e.g. FindingsPaperLifted. They never change gameplay state.
+    public static event Action<string> OnGuideCue;
+
 
     public static void RaiseCaseFolderOpened()
         => OnCaseFolderOpened?.Invoke();
@@ -137,4 +141,9 @@ public static class GameplayEvents
 
     public static void RaiseReviewDayRolled()
         => OnReviewDayRolled?.Invoke();
+
+    public static void RaiseGuideCue(string name)
+    {
+        if (!string.IsNullOrEmpty(name)) OnGuideCue?.Invoke(name);
+    }
 }

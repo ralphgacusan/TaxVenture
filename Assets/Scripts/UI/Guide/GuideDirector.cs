@@ -40,6 +40,9 @@ public sealed class GuideDirector : MonoBehaviour
     private GuidePage page;
     private List<GuideTriggers.Trigger> pageWait;
     private Dictionary<string, int> pageCounts;
+    private string pendingAside;
+    private string pendingAsideMood;
+    private float pendingAsideSeconds;
     private float pageStart;
     private float moved;
     private float looked;
@@ -144,6 +147,7 @@ public sealed class GuideDirector : MonoBehaviour
         GameplayEvents.OnFinalAssessmentStamped += HandleFinalAssessmentStamped;
         GameplayEvents.OnAnnotationsChecked += HandleAnnotationsChecked;
         GameplayEvents.OnRosaRecordsCollected += HandleRosaRecordsCollected;
+        GameplayEvents.OnGuideCue += HandleGuideCue;
     }
 
     private void OnDisable()
@@ -175,12 +179,14 @@ public sealed class GuideDirector : MonoBehaviour
         GameplayEvents.OnFinalAssessmentStamped -= HandleFinalAssessmentStamped;
         GameplayEvents.OnAnnotationsChecked -= HandleAnnotationsChecked;
         GameplayEvents.OnRosaRecordsCollected -= HandleRosaRecordsCollected;
+        GameplayEvents.OnGuideCue -= HandleGuideCue;
         if (stateMachine != null) stateMachine.OnStateChanged -= HandleState;
         stateMachine = null;
         UnhookTransfers();
         ReleaseControls();
     }
 
+    private void HandleGuideCue(string name) => Fire(GuideTriggers.CuePrefix + name);
     private void HandleProfileCollected(string id) => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.ProfileCollected));
     private void HandleAllProfiles() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.AllProfilesCollected));
     private void HandleGuideReady() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.TutorialGuideAppeared));
@@ -249,6 +255,12 @@ public sealed class GuideDirector : MonoBehaviour
         }
 
         PlayerControlHold.Refresh();
+        if (pendingAside != null && (!IsBlocking || suspended))
+        {
+            string line = pendingAside;
+            pendingAside = null;
+            Say(line, pendingAsideMood, pendingAsideSeconds);
+        }
         TickAside(Time.unscaledTime);
         if (!started) TryStart(now);
         if (skippedAll) return;
@@ -446,6 +458,8 @@ public sealed class GuideDirector : MonoBehaviour
                 return CardOpen(t.Arg);
             case GuideTriggers.DialogueActive:
                 return DialogueUI.IsAnyDialogueActive;
+            case GuideTriggers.FlagPrefix:
+                return GuideFlags.Get(t.Arg);
             case GuideTriggers.CaseCorrect:
             {
                 CaseManager cases = CaseManager.Instance;
@@ -652,6 +666,14 @@ public sealed class GuideDirector : MonoBehaviour
     private bool Say(string text, string mood, float seconds)
     {
         if (string.IsNullOrWhiteSpace(text)) return false;
+        // Never on top of a lesson box: the line waits until the box is dismissed (latest line wins).
+        if (IsBlocking && !suspended)
+        {
+            pendingAside = text;
+            pendingAsideMood = mood;
+            pendingAsideSeconds = seconds;
+            return true;
+        }
         view.SetPortrait(Portrait(string.IsNullOrEmpty(mood) ? "default" : mood), true);
         view.ShowHint(Format(text));
         asideActive = true;

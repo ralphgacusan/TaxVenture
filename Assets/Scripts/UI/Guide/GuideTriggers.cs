@@ -17,6 +17,7 @@ using System.Globalization;
 ///   dialogue:start / dialogue:end   a conversation began / ended
 ///   value:selected / value:placed / value:rejected   value transfer
 ///   corkboard:placed / corkboard:wrong               side-quest board
+///   cue:&lt;name&gt;                  a gameplay cue (GameplayEvents.RaiseGuideCue)
 ///
 /// CONDITIONS (true right now):
 ///   mode:&lt;FirstPerson|Workstation|CorkboardSideQuest|ProfileViewer|Interview&gt;
@@ -31,6 +32,7 @@ using System.Globalization;
 ///   active:&lt;target&gt;             the target object exists and is switched on
 ///   card:&lt;audit|sidequest|level|result|any&gt;  that reward/summary card is open
 ///   not:&lt;condition&gt;             the condition is false (e.g. not:open:notes)
+///   flag:&lt;name&gt;                 a level fact from GuideFlags.Source (false when no level provides it)
 ///
 /// WAIT-ONLY (page "waitFor"):
 ///   tap (default) · move:&lt;metres&gt; · look:&lt;degrees&gt; · seconds:&lt;n&gt;
@@ -66,6 +68,8 @@ public static class GuideTriggers
     public const string ValueRejected = "value:rejected";
     public const string CorkboardPlaced = "corkboard:placed";
     public const string CorkboardWrong = "corkboard:wrong";
+    /// <summary>A gameplay cue (GameplayEvents.RaiseGuideCue), e.g. cue:FindingsPaperLifted.</summary>
+    public const string CuePrefix = "cue:";
 
     public const string ModePrefix = "mode:";
     public const string StepPrefix = "step:";
@@ -80,6 +84,8 @@ public static class GuideTriggers
     public const string CardPrefix = "card:";
     public static readonly string[] Cards = { "audit", "sidequest", "level", "result", "any" };
     public const string NotPrefix = "not:";
+    /// <summary>A level fact the level provides through GuideFlags (e.g. flag:bookStored).</summary>
+    public const string FlagPrefix = "flag:";
     public static readonly string[] Windows = { "notes", "profiles", "folder" };
 
     public const string MovePrefix = "move:";
@@ -101,7 +107,7 @@ public static class GuideTriggers
     private static readonly string[] Prefixes =
     {
         Tap, Start, LessonPrefix, ObjectiveTriggers.EventPrefix, ObjectiveTriggers.StatePrefix, "dialogue:", "value:",
-        "corkboard:", OpenPrefix, ActivePrefix, CardPrefix, NotPrefix, ModePrefix, StepPrefix, NearPrefix, VisiblePrefix, ProfilesPrefix, "case:", MovePrefix,
+        "corkboard:", CuePrefix, FlagPrefix, OpenPrefix, ActivePrefix, CardPrefix, NotPrefix, ModePrefix, StepPrefix, NearPrefix, VisiblePrefix, ProfilesPrefix, "case:", MovePrefix,
         LookPrefix, SecondsPrefix
     };
 
@@ -321,6 +327,19 @@ public static class GuideTriggers
             trigger.Arg = window;
             return true;
         }
+        if (text.StartsWith(FlagPrefix, StringComparison.Ordinal))
+        {
+            string flag = text.Substring(FlagPrefix.Length).Trim();
+            if (flag.Length == 0)
+            {
+                problem = "flag: needs a name, e.g. flag:bookStored";
+                return false;
+            }
+            trigger.Kind = Kind.Condition;
+            trigger.Key = FlagPrefix;
+            trigger.Arg = flag;
+            return true;
+        }
         if (text == DialogueActive)
         {
             trigger.Kind = Kind.Condition;
@@ -349,7 +368,8 @@ public static class GuideTriggers
         }
 
         if (Array.IndexOf(FixedEvents, key) >= 0 ||
-            (key.StartsWith(LessonPrefix, StringComparison.Ordinal) && key.Length > LessonPrefix.Length))
+            (key.StartsWith(LessonPrefix, StringComparison.Ordinal) && key.Length > LessonPrefix.Length) ||
+            (key.StartsWith(CuePrefix, StringComparison.Ordinal) && key.Length > CuePrefix.Length))
         {
             trigger.Kind = Kind.Event;
             trigger.Key = key;
@@ -385,4 +405,16 @@ public static class GuideTriggers
         }
         return true;
     }
+}
+
+/// <summary>
+/// Level facts for "flag:&lt;name&gt;" guide conditions. The running level sets
+/// Source (Level 2: Level2OfficeStart); unknown names and no level read false.
+/// Observation only: the guide never changes these facts.
+/// </summary>
+public static class GuideFlags
+{
+    public static Func<string, bool> Source;
+
+    public static bool Get(string name) => Source != null && !string.IsNullOrEmpty(name) && Source(name);
 }
