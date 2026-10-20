@@ -8,6 +8,8 @@ using UnityEngine.Rendering.Universal;
 public sealed class OfficeMinimap : MonoBehaviour
 {
     private const float CameraHeight = 25f;
+    /// <summary>Highest point the map draws (metres above the floor). Below the office ceiling slabs (~2.53 m).</summary>
+    public const float MapTopHeight = 2.45f;
 
     private Camera mapCamera;
     private RenderTexture mapTexture;
@@ -132,7 +134,9 @@ public sealed class OfficeMinimap : MonoBehaviour
         mapCamera.orthographic = true;
         mapCamera.orthographicSize = 14f;
         mapCamera.aspect = 1f;
-        mapCamera.nearClipPlane = 22.2f;
+        // Draws only what lies between 1 m below the floor and MapTopHeight: office ceilings
+        // (slabs from about 2.53 m) and roofs are cut away, so rooms read from above.
+        mapCamera.nearClipPlane = CameraHeight - MapTopHeight;
         mapCamera.farClipPlane = 26f;
         mapCamera.clearFlags = CameraClearFlags.SolidColor;
         mapCamera.backgroundColor = new Color32(54, 69, 79, 255);

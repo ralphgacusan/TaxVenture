@@ -122,3 +122,12 @@ Modified:
 5. Minimap: a pulsing pin and route dots, a pop with a glow on each new objective, and reminder pops while far away.
 6. Corkboard and desk lessons: the hand drags from the card to a corner, from the folder pile, and from a value to a field. Check that the spotlight lines up with the 3D objects.
 7. SKIP TUTORIAL (tap twice) ends the lessons and the arrows stay.
+
+
+## Office welcome, minimap ceiling and drill scenery names (2026-10-20)
+
+- **Office welcome.** New Level 1 lesson `office-welcome` (`Tutorials/Level_01/guide.json`). The first time the player walks into the office ("Go to the office" step done), Arthur welcomes them and introduces the reception (pointing at the receptionist), the main office room and desk, the Auditor's office, the file storage and conference rooms, and the minimap. `reception` now follows it (`after: office-welcome`).
+- **Minimap showed a roof.** The environment update added ceiling slabs (`Environment/OfficeBuilding/Inside/Cube` to `Cube (4)`, 11 x 11 m, about 2.53-2.69 m high). These sat under the minimap's 2.8 m top cut. `OfficeMinimap.MapTopHeight` is now 2.45 m (`nearClipPlane = CameraHeight - MapTopHeight`), so ceilings and roofs are cut away in every office level.
+- **Training drills.** The environment update renamed Level 1's outdoor groups (`Env/Vegetation`, `Rocks`, `Props`, `Buildings` became `Env/Town`, `Nature`, `SeaProps`, `Coastal Town Improvements`). The `case_desk`, `case_values` and `case_handin` drill hide lists now use the new names. TrainingRegression is back to 513/513.
+
+Checks: scratch build 0 errors; GuideRegression 733 PASS; Level2Regression 1,267 PASS; Controls, Progression, Dialogue, Settings, CareerBoard and Training PASS; VerifyGuideTargets 0 missing. Pending user Play Mode: walk into the office in Level 1 to hear the welcome; the minimap shows rooms, not a ceiling, in Level 1 and Level 2; the Training Hub desk drills load without the outdoor scenery.

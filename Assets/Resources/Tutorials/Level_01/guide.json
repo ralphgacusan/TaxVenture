@@ -254,11 +254,27 @@
       ]
     },
     {
+      "id": "office-welcome",
+      "title": "WELCOME TO THE OFFICE",
+      "_note": "Plays once, the first time the player walks into the office (the 'Go to the office' step is done), before the receptionist.",
+      "when": "step:event:ReceptionistTalkedTo",
+      "onlyIn": "mode:FirstPerson",
+      "after": "to-office",
+      "delay": 0.4,
+      "pages": [
+        { "mood": "wow", "text": "Welcome to the Town Tax Consultancy Office! This is where the real work happens, and where you'll spend most of your career." },
+        { "point": "world:Environment/OfficeBuilding/Rooms/Reception/Receptionist", "gesture": "none", "text": "This is the reception. Every working day starts here: the receptionist hands you your case for the day." },
+        { "text": "Further in is the main office room with your very own desk. That's where you read your client's papers and fill in their case folder." },
+        { "text": "The Auditor has his own office. When your case is finished, you hand it to him for the final check. There's also a file storage room and a conference room for meeting clients." },
+        { "point": "hud:minimap", "gesture": "none", "text": "Lost? Your minimap shows every room from above, and the arrows always lead to your next step." }
+      ]
+    },
+    {
       "id": "reception",
       "title": "THE RECEPTION",
       "when": "step:event:ReceptionistTalkedTo",
       "onlyIn": "mode:FirstPerson",
-      "after": "to-office",
+      "after": "office-welcome",
       "pages": [
         { "point": "waypoint", "gesture": "tap", "waitFor": "dialogue:start", "text": "Here we are! Your turn: tap the receptionist to say hi. She'll hand you today's case." }
       ]

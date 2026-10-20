@@ -16,10 +16,10 @@
     "area:Environment/OfficeBuilding/Rooms/Reception/Floor|Environment/OfficeBuilding/Rooms/Reception/Doors"
   ],
   "hide": [
-    "Env/Vegetation",
-    "Env/Rocks",
-    "Env/Props",
-    "Env/Buildings",
+    "Env/Town",
+    "Env/Nature",
+    "Env/SeaProps",
+    "Env/Coastal Town Improvements",
     "Environment/Outside/Plaza/NPCS"
   ],
   "guided": {
