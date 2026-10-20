@@ -239,3 +239,7 @@ Older notes about Prepared Packet tabs, D1–D6 handover, F1/F2 office pages and
 
 - The drag tag is re-parented at runtime to "Drag Value Overlay". If the HUD canvas scaler changes at runtime, the tag keeps the settings copied on first show.
 - `FitRowHeights` uses the row list's current height. If that list grows with its content (instead of having a fixed page area), rows simply keep their natural size.
+
+- The environment copy is a snapshot. If the teammate changes Level 1's outside again, re-run **Copy Outside Environment From Level 1**. Any hand edits made to Level 2's `Env` in between are replaced.
+- Unity's paste drops references from the copied `Env` to objects that live only in Level 1 (cross-scene). The tool's dialog does not list them; check the Console after running it.
+- Rosa's desk and sign are placed by offsets from the anchor. If a new town prop stands in that spot, nudge `RosaStallAnchor` in the scene; no code change is needed.

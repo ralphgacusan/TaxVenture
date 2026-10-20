@@ -1010,3 +1010,57 @@ Pending user checks:
 1. Drag an amount from each annotated paper and from the folder/book: the tag is always on top.
 2. Folder rows are taller on every page and stay inside it.
 3. Book chips are taller on Sections 1-9 with descriptions still inside the page.
+
+
+## Outside environment from Level 1, Rosa at Zorbix's spot, model swap — implemented; user run + Play Mode pending (2026-10-20)
+
+User direction: give Level 2 Level 1's new outside environment (the teammate's environment update), keeping the Level 2 office, logic, side quest and data. Leave out Level 1's NPCs. Put Rosa where Zorbix stands in Level 1, with the side-quest table and stall sign close to her and no shop building. Swap Rosa's and Marie's 3D models only.
+
+- New editor tool `Assets/Editor/Level2EnvironmentSync.cs` (+ .meta, unique GUID), menu **TaxVenture > Level 2 > Copy Outside Environment From Level 1**:
+  - Replaces Office_Level2's `Env` root with Office_Level1's, using Unity's copy/paste so prefab links stay. Objects named `npc_*` or `Elijah*` are removed from the copy.
+  - Matches the transforms of `Environment/Outside`, `Plaza`, `Floor` and `TownProgression` to Level 1.
+  - Places `Environment/Outside/Plaza/RosaStallAnchor` at NPC_Zorbix's Level 1 pose.
+  - Swaps Level 1 Marie's model for `SM_Chr_Business_Female_03` (same height, feet and idle controller; references to the old model are remapped).
+  - Sets `scene_assets.rosaPrefab` and saves both scenes.
+  - Safe to re-run. It never touches the office building, Level 2 gameplay or data files.
+- `Level2RosaStall`: with the anchor, Rosa stands on it facing its forward, the records desk is 1.7 m to her right and the sign 1.5 m to her left, and no shop is built. Without the anchor, the old plaza search and shop still apply. Rosa's model is fitted to `RosaHeight` 1.62 m (the cora FBX imports large).
+- `scene_assets.asset`: `rosaPrefab` now points at `npc_cora_static@Standing Idle.fbx`; the idle controller is unchanged.
+- Tests: Level2Regression 1,275 PASS (scene-asset check updated, 7 new checks); VerifyLevel2Assets PASS; the editor tool compiles against UnityEditor.CoreModule.
+
+Pending user steps:
+1. Close any open scene changes, then run the menu item once in Unity. Read the summary dialog.
+2. Play Level 2: the outside looks like Level 1 with no Level 1 NPCs. Rosa stands at Zorbix's spot wearing Marie's former model, with her desk and sign beside her, and the side quest works.
+3. Play Level 1: Marie wears the business-woman model, idles, talks and gives her profile as before.
+4. Commit both scenes, `scene_assets.asset` and the new tool.
+
+
+## Rosa's stall at the town's Building_4 — implemented; user Play Mode pending (2026-10-20)
+
+User feedback after running the environment tool: at Zorbix's spot the sign went into `Building_4 (1)` and Rosa faced the wrong way. The user asked to put the stall at `Env/Town/Building_4`.
+
+- `Level2RosaStall` now places the stall in this order:
+  1. the town's `Env/Town/Building_4` (`SceneStorePath`) when the scene has it;
+  2. otherwise the `RosaStallAnchor`;
+  3. otherwise the old plaza search with its own shop.
+- At the town shop:
+  - the front is its awning side, measured on the building's own axes from its colliders;
+  - the records table stands about 1.6 m out front, and Rosa stands about 1.1 m out, to the other side;
+  - the sign tries six spots and takes the first one that touches no solid collider and is at least 1.4 m from Rosa and the table.
+- Rosa now faces her records table in both layouts (`FacingTo`). She still turns to the player while talking (`RosaInteractable.FacePlayer`).
+- The town's building is only referenced, never moved or destroyed. `RosaStallAnchor` stays in the scene as the fallback.
+
+Checks: scratch build 0 errors; Level2Regression 1,279 PASS; VerifyLevel2Assets PASS. Pending Play Mode: the stall is in front of Building_4 and the sign stands free. If Building_4 has no colliders, the free-spot check cannot see it; then move the sign by nudging the building or report it. Rosa looks at the table until you talk to her.
+
+
+## Rosa's stall on Building_4's real front, by the door (2026-10-20)
+
+- Cause of the side-wall placement: Building_4's awning sits 56-73% up the building, and the front detection only probed at 55%, so it never saw it. I read the mesh (`Flat_Style_Vehicles/Art/Meshes/Buildings/4.FBX`). It is Z-up, the awning sticks out on the FBX -Y face, and on that face the window and ledge are on the left with the door on the right, as seen from the street.
+- `DetectFrontAround` now probes at 60, 66 and 72% of the height. The earlier "flip to the other side" is removed.
+- Measurements use the shop's own mesh bounds and axes, not its rotated world box.
+- Layout:
+  - Rosa stands 1.1 m out, just beside the door, facing her records table;
+  - the table is about 2 m out, in front of the window;
+  - the sign goes on the first free spot on the window side, clear of Rosa, the table and the doorway.
+- Mirrored shops (negative X scale) put the door on the other side automatically.
+
+Level2Regression 1,280 PASS. Pending Play Mode: Rosa is under the awning beside the door, and the table and sign are in front of the shop.

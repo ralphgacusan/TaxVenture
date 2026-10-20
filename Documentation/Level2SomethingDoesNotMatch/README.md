@@ -48,6 +48,11 @@ One client, one required excursion, one scored side quest, one omission, one exp
   - Annotated papers have no ×. Hold one for 2 s to stack them all, then drop the stack on the icon.
   - Gameplay signals the guide through `cue:<name>` and `flag:<name>` (observation only).
 
+- Outside environment and Rosa's look (2026-10-20, user direction):
+  - Office_Level2's outside environment (`Env`) matches Office_Level1's, without Level 1's environment NPCs. Run **TaxVenture > Level 2 > Copy Outside Environment From Level 1** in Unity.
+  - Rosa stands where Zorbix stands in Level 1 (`Environment/Outside/Plaza/RosaStallAnchor`), with her records desk and sign beside her and no shop building.
+  - Rosa and Marie swapped 3D models: Rosa now wears `npc_cora_static`, and Level 1's Marie wears `SM_Chr_Business_Female_03`. This supersedes the model choice above. Positions, scripts, dialogue and data are unchanged.
+
 ## Completion definition
 
 Level 2 is fully wired and internally verified through the same presentation quality as current Level 1, including guidance, rewards, feedback, retry, saving, finale and level-select integration. Internal verification and user visual verification are separate statuses. No ticket may claim Unity appearance, timing, navigation or device performance was tested without the user's result.
