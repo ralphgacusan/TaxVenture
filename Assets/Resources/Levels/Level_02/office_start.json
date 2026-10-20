@@ -6,9 +6,12 @@
     "disableComponents: component class names switched off in this scene before they start (e.g. the old Level 1 popup tutorial).",
     "Fields starting with '_' are notes and are ignored by the game."
   ],
-  "spawn": "Environment/OfficeBuilding/Rooms/Reception/Doors",
+  "_spawn": "The street entrance door leaf (Doors also holds an inner door pair, so its centre is mid-room). blend 0.16 = about 1 m inside the entrance, facing the receptionist (user direction 2026-10-20). fallbackSpawn/fallbackBlend are used if spawn is missing.",
+  "spawn": "Environment/OfficeBuilding/Rooms/Reception/Doors/Office_Entrance_Door_2",
   "face": "Environment/OfficeBuilding/Rooms/Reception/Receptionist",
-  "blend": 0.45,
+  "blend": 0.16,
+  "fallbackSpawn": "Environment/OfficeBuilding/Rooms/Reception/Doors",
+  "fallbackBlend": 0.12,
   "hide": [
     "Environment/Outside/Plaza/NPCS",
     "Environment/Outside/Plaza/CorkboardSideQuestRoot",

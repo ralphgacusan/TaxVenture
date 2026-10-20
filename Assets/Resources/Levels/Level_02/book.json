@@ -1,7 +1,7 @@
 {
   "_readme": [
     "Level 2 Tax Code Book leaves (LevelBookLeaves). They appear after the shared book's three sections in Office_Level2 only; Level 1's book is unchanged. In Level 2 the book first opens on the first leaf below.",
-    "Sections 4-6 are reference pages for Mark the Money! and the office review: each term is printed like the shared pages' values (readOnly: true, so it cannot be picked up) with its explanation underneath. Sections 7-8 hold the selectable finding reasons and conclusions.",
+    "Sections 4-6 and 9 are reference pages for Mark the Money!, the Reviewed Schedule and the final stamp: each term is printed like the shared pages' values (readOnly: true, so it cannot be picked up) with its explanation underneath. Sections 7-8 hold the selectable finding reasons and conclusions. Headings name the place they help (blue TYPE cards, orange TREATMENT cards, Reviewed Schedule) so Arthur can send the player to a page by name.",
     "A leaf whose body has one paragraph (blank-line separated) per value prints each paragraph under its value; keep those counts equal.",
     "Leaves explain concepts. Never put a client's amounts, a finding, the summary answer or the stamp to choose here.",
     "Simplified classroom rules, not legal advice. The loan-principal rule is an EDUCATIONAL DRAFT: no confirmed Philippine primary-source passage yet (see Documentation/Level2SomethingDoesNotMatch/CONTENT.md).",
@@ -9,52 +9,187 @@
   ],
   "sections": [
     {
-      "heading": "Section 4 – Income Types",
-      "body": "Pay from an employer for work done as an employee.\n\nPayment for your own trade or for a job done for a customer.\n\nPayment for letting someone use your property.\n\nEarnings from money or investments, such as bank interest. Check its own rule first.\n\nMoney that must be paid back. Borrowing is not earning.",
+      "heading": "Section 4 – Income Types (Blue Cards)",
+      "body": "Pay from an employer for work done as an employee. Look for a payslip and an employer.\n\nPayment from customers for your own trade, or for a separate job you did for one. Ask: who paid, and for what work?\n\nPayment for letting someone else use your property, such as a room or a machine.\n\nEarnings from money or investments, such as bank interest. Check its own rule first.\n\nMoney that must be paid back. A loan release is borrowing, not earning.",
       "clickableValues": [
-        { "displayText": "Compensation Income", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
-        { "displayText": "Business / Service Income", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
-        { "displayText": "Rental Income", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
-        { "displayText": "Passive Income (Interest)", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
-        { "displayText": "Borrowed Funds", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true }
+        {
+          "displayText": "Compensation Income",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        },
+        {
+          "displayText": "Business / Service Income",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        },
+        {
+          "displayText": "Rental Income",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        },
+        {
+          "displayText": "Passive Income (Interest)",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        },
+        {
+          "displayText": "Borrowed Funds",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        }
       ]
     },
     {
-      "heading": "Section 5 – Income Treatment",
-      "body": "Earned income, listed with the other income of the same period.\n\nIncome that follows its own rule instead of the regular schedule.\n\nOnly for items a law itself excludes.\n\nMoney that was never earned, such as a loan that must be repaid. An educational simplification.",
+      "heading": "Section 5 – Income Treatment (Orange Cards)",
+      "body": "Earned income, listed with the other income of the same month. Most work and rent goes here.\n\nIncome that follows its own rule instead of the regular schedule.\n\nOnly for items a law itself excludes. Never a guess.\n\nMoney that was never earned, such as a loan that must be repaid. It stays off the schedule. An educational simplification.",
       "clickableValues": [
-        { "displayText": "Regular Income Schedule", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
-        { "displayText": "Separate Rule", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
-        { "displayText": "Statutory Exclusion", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
-        { "displayText": "Not Income", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true }
+        {
+          "displayText": "Regular Income Schedule",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        },
+        {
+          "displayText": "Separate Rule",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        },
+        {
+          "displayText": "Statutory Exclusion",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        },
+        {
+          "displayText": "Not Income",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        }
       ]
     },
     {
-      "heading": "Section 6 – Checking a Summary",
-      "body": "Match each line the summary lists with the record behind it.\n\nAn earned payment with no summary line. Add it once, in its month.\n\nMoney arriving in the bank is not proof it was earned. Read why it arrived.\n\nThe one record written for that payment. Your annotated papers already hold it.",
+      "heading": "Section 6 – Reviewed Schedule",
+      "body": "A line the prepared summary already lists. Fill it with the highlighted amount from the annotated paper for the same work.\n\nAn earned payment that no summary line includes. Give it its own line, once, in its month.\n\nMoney arriving in the bank is not proof it was earned. Read why it arrived before you count it.\n\nThe one record written for that payment: the purple RECORD tag on your annotated papers.",
       "clickableValues": [
-        { "displayText": "Listed Line", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
-        { "displayText": "Missing Entry", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
-        { "displayText": "Bank Deposit", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true },
-        { "displayText": "Evidence", "enumValue": "", "type": 1, "semanticKey": "BookTerm", "readOnly": true }
+        {
+          "displayText": "Listed Line",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        },
+        {
+          "displayText": "Missing Entry",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        },
+        {
+          "displayText": "Bank Deposit",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        },
+        {
+          "displayText": "Evidence",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        }
       ]
     },
     {
       "heading": "Section 7 – Finding Reasons",
-      "body": "A monthly sum should include every earned payment for that month, including separate jobs.\n\nA difference matters when dates and scope match.\n\nA deposit may be borrowed money, rather than pay.",
+      "body": "A note or receipt shows money earned in the month, but no summary line and no total includes it.\n\nTwo papers give different amounts for the same thing, over the same dates.\n\nMoney arrived, but it was borrowed or must be returned, so it is not pay.",
       "clickableValues": [
-        { "displayText": "Unlisted payment", "enumValue": "unaccounted-payment", "type": 2, "semanticKey": "FindingReason" },
-        { "displayText": "Different totals", "enumValue": "amounts-differ", "type": 2, "semanticKey": "FindingReason" },
-        { "displayText": "Not earnings", "enumValue": "maybe-not-income", "type": 2, "semanticKey": "FindingReason" }
+        {
+          "displayText": "Unlisted payment",
+          "enumValue": "unaccounted-payment",
+          "type": 2,
+          "semanticKey": "FindingReason"
+        },
+        {
+          "displayText": "Different totals",
+          "enumValue": "amounts-differ",
+          "type": 2,
+          "semanticKey": "FindingReason"
+        },
+        {
+          "displayText": "Not earnings",
+          "enumValue": "maybe-not-income",
+          "type": 2,
+          "semanticKey": "FindingReason"
+        }
       ]
     },
     {
       "heading": "Section 8 – Review Conclusions",
-      "body": "The record confirms an earned payment belongs in this period, so you added it.\n\nThe records explain the difference; no change is needed.\n\nThe difference still needs investigation.",
+      "body": "A record proved an earned payment was left out, and you gave it its own schedule line.\n\nThe records explain the difference: it was never earnings, or it was already counted. Nothing is added.\n\nNo record explains the difference yet. Use it only when the papers cannot settle it.",
       "clickableValues": [
-        { "displayText": "Corrected: included", "enumValue": "corrected-included", "type": 2, "semanticKey": "FindingConclusion" },
-        { "displayText": "Explained: no change", "enumValue": "explained-no-adjustment", "type": 2, "semanticKey": "FindingConclusion" },
-        { "displayText": "Still unresolved", "enumValue": "unresolved", "type": 2, "semanticKey": "FindingConclusion" }
+        {
+          "displayText": "Corrected: included",
+          "enumValue": "corrected-included",
+          "type": 2,
+          "semanticKey": "FindingConclusion"
+        },
+        {
+          "displayText": "Explained: no change",
+          "enumValue": "explained-no-adjustment",
+          "type": 2,
+          "semanticKey": "FindingConclusion"
+        },
+        {
+          "displayText": "Still unresolved",
+          "enumValue": "unresolved",
+          "type": 2,
+          "semanticKey": "FindingConclusion"
+        }
+      ]
+    },
+    {
+      "heading": "Section 9 – Final Assessment",
+      "body": "Every earned payment has a supported line, nothing borrowed is counted, and your conclusion says what you did. Stamp READY.\n\nSomething earned is still missing, unsupported or counted twice. Fix it first, or stamp NOT READY and say why.\n\nThe Auditor reads your stamp and your handwritten summary. If the folder comes back, change only what he points to.",
+      "clickableValues": [
+        {
+          "displayText": "Ready for Filing",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        },
+        {
+          "displayText": "Not Ready",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        },
+        {
+          "displayText": "Auditor Check",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        }
       ]
     }
   ]

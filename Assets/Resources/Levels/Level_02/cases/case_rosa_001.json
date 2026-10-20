@@ -415,12 +415,17 @@
     },
     {
       "speaker": "Npc",
-      "text": "Rosa's folder is in the market-client drawer. Please check the prepared summary before today's review cutoff.",
+      "text": "Someone already prepared her May income summary. The office needs it reviewed before today's review cutoff at {deadline}.",
       "portraitId": "default"
     },
     {
       "speaker": "Npc",
-      "text": "The filing cabinets are in the file storage room.",
+      "text": "After {deadline} the Auditor stops taking hand-ins until tomorrow morning, so watch the clock under your level card.",
+      "portraitId": "default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Her folder is in the market-client drawer, in the file storage room. Your minimap shows the way.",
       "portraitId": "default"
     },
     {
@@ -468,6 +473,8 @@
     "contentStatus": "educational-draft",
     "_contentStatus": "educational-draft: the loan-principal teaching rule has no confirmed Philippine primary-source passage yet (see CONTENT.md, Book additions and sources). It is NOT a legal citation.",
     "startPhase": "OfficeWelcome",
+    "_profileText": "Taxpayer Profile page (after Taxpayer Information). One sentence that lets the player work out Classification, Type and Income Source with Book Sections 1-3 without naming them: Filipino + lives here (Resident Citizen), runs her own stall with no employer (Self-Employed), paid by customers of her trade (Business Income).",
+    "profileText": "A Filipino who has always lived in town, Rosa has no boss: she runs her own laundry stall, and customers pay her to wash their clothes.",
     "_reasons": "Review principles transferred from the Tax Code Book. Stable ids travel as Enum values under FindingReason; labels are display copy.",
     "reasons": [
       {
@@ -1114,7 +1121,7 @@
         "Rosa's review can go forward."
       ],
       "justifiedHold": "You have a reason to hold this. Use the collected records to finish the unresolved item.",
-      "prematureApproval": "This isn't ready yet. Look at this before you approve it again.",
+      "prematureApproval": "This isn't ready yet. Look at this, and at Section 9 of your book, before you approve it again.",
       "falseHold": "Everything in this review is supported. Check your annotated papers before holding it again.",
       "reasonError": "Your recommendation and its reason don't match what this review shows. Check the reason you chose.",
       "unchanged": "Nothing has changed since I last looked. Change the review, stamp it again, then bring it back.",
@@ -1132,19 +1139,19 @@
         },
         {
           "root": "not-income-counted",
-          "line": "Money that must be repaid is not earnings. Check the loan agreement before counting it."
+          "line": "Money that must be repaid is not earnings. Check the loan agreement and Sections 4 and 5 of your book before counting it."
         },
         {
           "root": "double-counted",
-          "line": "One payment is counted twice."
+          "line": "One payment is counted twice. Each payment gets one line: see Section 6 in your book."
         },
         {
           "root": "f1-unsupported",
-          "line": "Your conclusion below the totals should say what you did with the missing entry."
+          "line": "Your conclusion below the totals should say what you did with the missing entry. Section 8 of your book lists the conclusions."
         },
         {
           "root": "field:",
-          "line": "One of Rosa's taxpayer facts on the first page needs another look."
+          "line": "One of Rosa's taxpayer facts on the first page needs another look. Read her Taxpayer Profile again beside Sections 1 to 3."
         }
       ]
     },
@@ -1156,7 +1163,8 @@
       ],
       "lateExp": 3,
       "lateHearts": 1,
-      "announceLine": "Today's review cutoff is {deadline}. Keep an eye on the office clock while you check Rosa's records.",
+      "_announceLine": "Left empty: the receptionist tells the cutoff ({deadline} in receptionistGreeting). Arthur says nothing about it.",
+      "announceLine": "",
       "warnLine": "Today's review cutoff is coming up: {minutes} minutes left.",
       "missedLine": "The review window closed for today. Your work is safe.",
       "nextMorningLine": "A new morning. Your work is right where you left it. Today's review cutoff is {deadline}.",

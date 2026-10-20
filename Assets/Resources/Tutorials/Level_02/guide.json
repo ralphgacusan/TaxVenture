@@ -1,9 +1,11 @@
 {
   "_readme": [
     "LEVEL 2 GUIDE: same format as Tutorials/Level_01/guide.json (see its _readme, _targets and _triggers, and Documentation/LevelGuideTutorial/README.md).",
-    "Level 2 teaches only what is new. Movement, looking, the HUD and the desk were taught in Level 1, so they are not repeated here.",
+    "Level 2 assumes Level 1's basics (moving, the HUD, filling folder fields from the book) and teaches what is new: the Taxpayer Profile, the Findings slip, the stamps, the toolkit colours, the annotated papers and the Reviewed Schedule.",
+    "No arrows inside the office (the player knows it). Only Rosa's stall, a new place, gets arrows (revealArrows is not needed: trail.waitForGuide is off).",
+    "Level 2 triggers: cue:<name> (GameplayEvents.RaiseGuideCue: FindingsPaperLifted, FindingsPaperFiled, StampsUp, TaxBookStored, AnnotatedPapersOpened, AnnotatedPapersStacked, AnnotatedPapersPutAway, ScheduleLineFilled, OfficeConclusionSet) and flag:<name> (Level2OfficeStart.Flag: inFileRoom, folderRetrieved, bookStored, initialStamped, recordsCollected, questDone, officeReview).",
+    "Arthur points to book sections by number (Sections 1-3 shared, 4-9 in Levels/Level_02/book.json); keep the numbers in step with the book.",
     "The guide only observes: it never changes the case, the review phase, rewards or documents.",
-    "Short lessons cover the first finding, the toolkit and the final assessment.",
     "Fields starting with '_' are notes and are ignored by the game."
   ],
   "enabled": true,
@@ -49,7 +51,7 @@
   },
   "trail": {
     "enabled": true,
-    "waitForGuide": true,
+    "waitForGuide": false,
     "color": "#64D7FF",
     "spacing": 1.1,
     "length": 26,
@@ -59,32 +61,12 @@
     "arriveDistance": 2.2,
     "minimapReminderSeconds": 8
   },
-  "_waypoints": "Where the arrows lead for each Level_02/objectives.json step. 'step' must match the step's trigger exactly.",
+  "_waypoints": "Arrows only lead to places new in Level 2: the file storage room (first visit, until the folder is taken), Rosa's stall and her records desk. Familiar office steps (receptionist, desk, Auditor) have no waypoint.",
   "waypoints": [
-    {
-      "step": "event:ReceptionistTalkedTo",
-      "target": "Environment/OfficeBuilding/Rooms/Reception/Receptionist",
-      "label": "Receptionist"
-    },
     {
       "step": "event:CaseFolderRetrieved",
       "target": "Environment/OfficeBuilding/Rooms/FileStorageRoom/Filing_Cabinet_1",
-      "label": "Market-client drawer"
-    },
-    {
-      "step": "state:ReviewDocumentsState",
-      "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk",
-      "label": "Your desk"
-    },
-    {
-      "step": "event:FindingRecorded",
-      "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk",
-      "label": "Your desk"
-    },
-    {
-      "step": "event:PreliminaryHoldStamped",
-      "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/Stamps",
-      "label": "Stamps"
+      "label": "File storage room"
     },
     {
       "step": "event:RosaRecordsCollected",
@@ -95,36 +77,6 @@
       "step": "event:MarketDeskOpened",
       "target": "Level2Gameplay/RosaStall/MarketRecordsDesk",
       "label": "Records desk"
-    },
-    {
-      "step": "event:AnnotationTutorialCompleted",
-      "target": "Level2Gameplay/RosaStall/MarketRecordsDesk",
-      "label": "Income toolkit"
-    },
-    {
-      "step": "event:AnnotationsChecked",
-      "target": "Level2Gameplay/RosaStall/MarketRecordsDesk",
-      "label": "Mark the Money!"
-    },
-    {
-      "step": "event:IncomeQuestCompleted",
-      "target": "Level2Gameplay/RosaStall/MarketRecordsDesk",
-      "label": "Mark the Money!"
-    },
-    {
-      "step": "event:OfficeReviewCompleted",
-      "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk",
-      "label": "Your desk"
-    },
-    {
-      "step": "event:FinalAssessmentStamped",
-      "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/Stamps",
-      "label": "Stamps"
-    },
-    {
-      "step": "state:CaseCompleteState",
-      "target": "Environment/OfficeBuilding/Rooms/AuditOffice/Auditor",
-      "label": "Auditor"
     }
   ],
   "lessons": [
@@ -137,17 +89,14 @@
           "text": ""
         },
         {
-          "mood": "wow",
-          "text": "Welcome back! Today you have one client: Aling Rosa, who runs a laundry shop at the market."
+          "text": "Welcome back! Today you have one client: Aling Rosa, who runs a laundry shop at the market.",
+          "mood": "wow"
         },
         {
           "text": "Someone already filled in her income summary. Your job is to check it, not just accept it."
         },
         {
-          "point": "waypoint",
-          "gesture": "none",
-          "revealArrows": true,
-          "text": "Start at the front desk. Follow the arrows to the receptionist and tap to talk."
+          "text": "You know the office by now. Start at the front desk: the receptionist has your assignment."
         }
       ]
     },
@@ -159,7 +108,34 @@
       "pages": [
         {
           "style": "hint",
-          "text": "Rosa's folder is in the market-client drawer. Follow the arrows to the file storage room."
+          "text": "You haven't been to the file storage room yet. Follow the glowing line on the floor.",
+          "hintSeconds": 7
+        }
+      ]
+    },
+    {
+      "id": "file-room",
+      "title": "THE FILE STORAGE ROOM",
+      "after": "to-cabinet",
+      "when": "flag:inFileRoom|near:3.5:world:Environment/OfficeBuilding/Rooms/FileStorageRoom/Filing_Cabinet_1",
+      "onlyIn": "mode:FirstPerson",
+      "delay": 0.3,
+      "pages": [
+        {
+          "text": "This is the file storage room. Every client the office helps has a folder in one of these cabinets.",
+          "mood": "wow"
+        },
+        {
+          "text": "The cabinets are sorted by client group, and each drawer has a label card. Rosa is a market vendor, so her folder sits in the MARKET CLIENTS drawer."
+        },
+        {
+          "text": "Get in the habit of reading the label before you open a drawer. Taking the wrong client's folder is a real mistake in this job."
+        },
+        {
+          "text": "Your turn: walk up to the MARKET CLIENTS drawer and tap it to take Rosa's folder.",
+          "waitFor": "event:CaseFolderRetrieved",
+          "point": "world:Level2Gameplay/CaseRetrieval/MarketClientDrawer",
+          "gesture": "tap"
         }
       ]
     },
@@ -171,51 +147,183 @@
       "pages": [
         {
           "style": "hint",
-          "text": "Got it! Rosa's folder is in your folder icon. Sit at your desk, then tap the icon to open it."
+          "text": "Got it! Rosa's folder is in your Case Folder icon. Go to your desk in the consultant office and sit down.",
+          "hintSeconds": 6
         }
       ]
     },
     {
-      "id": "first-look",
-      "title": "THE PREPARED PAGES",
-      "when": "state:ReviewDocumentsState",
+      "id": "desk-open",
+      "title": "AT YOUR DESK",
+      "when": "mode:Workstation",
+      "onlyIn": "mode:Workstation",
       "after": "to-desk",
+      "delay": 0.6,
       "pages": [
         {
-          "style": "hint",
-          "text": "Compare Rosa's May summary and Payment Note on their separate pages. Then lift the Findings paper from its page to work on it."
+          "text": "Your turn: tap your Case Folder icon. Rosa's folder lands on the desk and opens.",
+          "waitFor": "event:CaseFolderOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder",
+          "point": "hud:folder",
+          "gesture": "tap"
         }
       ]
     },
     {
-      "id": "first-finding",
-      "title": "SOMETHING DOESN'T MATCH",
-      "when": "lesson:first-look",
-      "after": "first-look",
+      "id": "profile",
+      "title": "TAXPAYER PROFILE",
+      "when": "event:CaseFolderOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder",
+      "onlyIn": "mode:Workstation",
+      "after": "desk-open",
+      "delay": 0.6,
       "pages": [
         {
-          "text": "By the way, that Tax Code Book doesn't have to stay on the desk. Slide it onto its icon and it travels with you. I have a feeling it will come in handy before this case is closed."
+          "text": "Page 1 is Taxpayer Information, just like last time: Classification, Type and Income Source are empty.",
+          "point": "field",
+          "gesture": "none"
+        },
+        {
+          "text": "There's no profile card for Rosa. Instead, turn one page: her Taxpayer Profile describes her in a single sentence."
+        },
+        {
+          "text": "Read it slowly. Is she Filipino? Where does she live? Does someone employ her, or does she run her own work? Who pays her, and for what?",
+          "mood": "confused"
+        },
+        {
+          "text": "Then match each answer to the Tax Code Book: Section 1 for Classification, Section 2 for Type, Section 3 for Income Source."
+        },
+        {
+          "text": "You did this in Level 1, so it's your turn now. Profile, book, folder!",
+          "mood": "wow"
         },
         {
           "style": "hint",
-          "waitFor": "event:FindingRecorded",
-          "text": "Some jobs are recorded separately. Keep a clue beside the entry it may affect."
+          "text": "Read the Taxpayer Profile, then fill Classification, Type and Income Source on page 1 from Sections 1 to 3.",
+          "waitFor": "case:filled"
+        }
+      ]
+    },
+    {
+      "id": "prepared-pages",
+      "title": "THE PREPARED PAGES",
+      "when": "case:filled",
+      "onlyIn": "mode:Workstation",
+      "after": "profile",
+      "delay": 0.8,
+      "pages": [
+        {
+          "text": "Nicely done. Now the real work of Level 2: checking someone else's numbers.",
+          "mood": "wow"
+        },
+        {
+          "text": "Turn to the Summary page. The Assistance Desk listed Rosa's May income there: clothes washing, washer rental, and a May total."
+        },
+        {
+          "text": "Then read the Payment Note on the next page. It mentions a job Rosa was paid for in May."
+        },
+        {
+          "text": "Here's the question: is the money from that job anywhere in the Summary? Check every line, and the total.",
+          "mood": "confused"
+        },
+        {
+          "text": "When two papers don't agree, we write it down on the Findings page. The paper taped there is your Findings slip."
+        },
+        {
+          "text": "Your turn: turn to the Findings page and tap the slip, or drag it, to lift it off the page.",
+          "waitFor": "cue:FindingsPaperLifted",
+          "point": "type:Level2FindingsSheet",
+          "gesture": "tap"
+        }
+      ]
+    },
+    {
+      "id": "findings-paper",
+      "title": "THE FINDINGS SLIP",
+      "when": "cue:FindingsPaperLifted",
+      "onlyIn": "mode:Workstation",
+      "after": "prepared-pages",
+      "delay": 0.5,
+      "pages": [
+        {
+          "text": "It's loose now. Drag it anywhere on the desk while you work: it stays where you leave it, and the folder pages still turn underneath.",
+          "mood": "wow"
+        },
+        {
+          "text": "The slip has three boxes. ENTRY TO CHECK is the Summary line that may be wrong."
+        },
+        {
+          "text": "CLUE is the line on another paper that makes you doubt it. Clues come from the Payment Note."
+        },
+        {
+          "text": "REASON says why it's a problem. Reasons are in the Tax Code Book, Section 7, Finding Reasons. Read what each one means before you choose."
+        },
+        {
+          "text": "Fill a box like a folder field: tap a line, then tap the box. Or drag the line straight in."
+        },
+        {
+          "text": "Tip: think about which Summary line should hold every May payment, and which paper shows a payment it may have missed.",
+          "mood": "confused"
+        },
+        {
+          "style": "hint",
+          "text": "Fill Entry to check, Clue and Reason. When they point at the same problem, the slip writes a note.",
+          "waitFor": "event:FindingRecorded|flag:findingRecorded"
+        }
+      ]
+    },
+    {
+      "id": "file-findings",
+      "title": "FILE IT BACK",
+      "when": "event:FindingRecorded",
+      "onlyIn": "mode:Workstation",
+      "after": "findings-paper",
+      "delay": 0.4,
+      "pages": [
+        {
+          "text": "That's a supported finding! See the handwritten note? The records raise a question we can't settle from the office.",
+          "mood": "wow"
+        },
+        {
+          "text": "Your turn: drag the Findings slip back onto the open folder. The folder turns to its page and the slip settles in.",
+          "waitFor": "cue:FindingsPaperFiled",
+          "point": "type:Level2FindingsSheet",
+          "gesture": "drag",
+          "to": "world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder"
         }
       ]
     },
     {
       "id": "initial-stamp",
       "title": "THE INITIAL REVIEW",
-      "when": "event:FindingRecorded",
-      "after": "first-finding",
+      "when": "cue:FindingsPaperFiled",
+      "onlyIn": "mode:Workstation",
+      "after": "file-findings",
+      "delay": 0.5,
       "pages": [
         {
-          "text": "An original record is still needed. Record this review on the folder."
+          "text": "One more thing before we visit Rosa. Every folder we hold gets an initial review stamp, so the office knows where it stands."
+        },
+        {
+          "text": "Do you see that stamp set on your desk? It has two stamps: READY and NOT READY.",
+          "point": "world:Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/Stamps",
+          "gesture": "none"
+        },
+        {
+          "text": "READY means every payment is supported. NOT READY means a question is still open, like the one your finding just raised.",
+          "mood": "confused"
+        },
+        {
+          "text": "Your turn: tap the stamp set. The folder turns to its front page and both stamps rise beside it.",
+          "waitFor": "cue:StampsUp|flag:stampsUp",
+          "point": "world:Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/Stamps",
+          "gesture": "tap"
+        },
+        {
+          "text": "Now drag the stamp that fits onto the front page. A see-through ghost shows exactly where the ink will land."
         },
         {
           "style": "hint",
-          "waitFor": "event:PreliminaryHoldStamped",
-          "text": "Your turn: tap the stamp set on your desk, then drag a stamp onto the front page of Rosa's folder."
+          "text": "Drag your stamp onto the folder's front page and let go over the ghost.",
+          "waitFor": "event:PreliminaryHoldStamped|flag:initialStamped"
         }
       ]
     },
@@ -224,10 +332,26 @@
       "title": "ROSA'S STALL",
       "when": "event:PreliminaryHoldStamped",
       "after": "initial-stamp",
+      "delay": 0.6,
       "pages": [
         {
-          "style": "hint",
-          "text": "Rosa's stall is near the plaza. Follow the arrows and talk to her about the records."
+          "text": "Recorded! Now we need the original receipt for that payment, and Rosa has it.",
+          "mood": "wow"
+        },
+        {
+          "text": "You'll want the Tax Code Book out there. If it's still on the desk, drag it onto the red book icon so it travels with you."
+        },
+        {
+          "text": "Tap Exit Desk to stand up when you're ready.",
+          "waitFor": "mode:FirstPerson",
+          "point": "hud:exit",
+          "gesture": "tap"
+        },
+        {
+          "text": "Rosa's stall is near the plaza. It's new to you, so follow the arrows outside and talk to her.",
+          "waitFor": "near:6:world:Level2Gameplay/RosaStall/Rosa",
+          "point": "waypoint",
+          "gesture": "none"
         }
       ]
     },
@@ -239,21 +363,58 @@
       "pages": [
         {
           "style": "hint",
-          "text": "Rosa gave you four supporting records. Sit at her records desk to begin Mark the Money!."
+          "text": "Rosa gave you four supporting records. Sit at her records desk beside the stall to begin Mark the Money!",
+          "hintSeconds": 6
+        }
+      ]
+    },
+    {
+      "id": "toolkit-colours",
+      "title": "YOUR TOOLKIT",
+      "when": "event:ToolkitDemoFinished",
+      "after": "records-desk",
+      "delay": 0.4,
+      "pages": [
+        {
+          "text": "Before you try, a quick guide to the colours in the toolkit.",
+          "box": "top"
+        },
+        {
+          "text": "The YELLOW highlighter marks the money line: the amount, and what it was paid for.",
+          "box": "top"
+        },
+        {
+          "text": "BLUE cards are TYPE: what kind of money it is. Pay from an employer, payment from customers, rent, interest, or a loan.",
+          "box": "top"
+        },
+        {
+          "text": "ORANGE cards are TREATMENT: what we do with it. The regular income schedule, a separate rule, an exclusion, or not income at all.",
+          "box": "top"
+        },
+        {
+          "text": "PURPLE tags are RECORD: the one paper that proves this payment. Clip the record written for it.",
+          "box": "top"
+        },
+        {
+          "text": "Stuck on a card? Open your Tax Code Book from its red icon. Section 4 explains every blue card, Section 5 every orange card, and Section 6 says which record counts.",
+          "mood": "wow",
+          "point": "ui:TaxCodeBookIcon",
+          "gesture": "tap",
+          "box": "top"
         }
       ]
     },
     {
       "id": "toolkit-practice",
       "title": "YOUR TURN",
-      "when": "event:ToolkitDemoFinished",
-      "after": "records-desk",
+      "when": "lesson:toolkit-colours",
+      "after": "toolkit-colours",
       "pages": [
         {
           "style": "hint",
-          "waitFor": "event:AnnotationTutorialCompleted",
-          "hintSeconds": 6,
-          "text": "Tap the yellow highlighter to lift it beside the paper. Drag it onto the salary line and sweep across. Add TYPE and TREATMENT cards, then clip the payslip."
+          "text": "Tap the yellow highlighter, drag it onto the salary line and sweep across. Add a blue TYPE card and an orange TREATMENT card, then clip the purple payslip tag.",
+          "waitFor": "event:AnnotationTutorialCompleted|flag:tutorialDone",
+          "hintSeconds": 8
         }
       ]
     },
@@ -262,12 +423,31 @@
       "title": "MARK THE MONEY!",
       "when": "event:AnnotationTutorialCompleted",
       "after": "toolkit-practice",
+      "delay": 0.6,
       "pages": [
         {
+          "text": "Practice done! Now Rosa's four real records. This part is scored: your FIRST check decides your medal.",
+          "mood": "wow",
+          "box": "top"
+        },
+        {
+          "text": "Use the tabs to switch records. On each one: highlight the money line, add one blue TYPE, one orange TREATMENT, and clip one purple RECORD.",
+          "box": "top"
+        },
+        {
+          "text": "Read every line before you choose. Who paid? For what? Does it have to be paid back? Those answers decide the colours.",
+          "mood": "confused",
+          "box": "top"
+        },
+        {
+          "text": "No rush, and the book is allowed: Section 4 for blue, Section 5 for orange, Section 6 for records. Press CHECK when all four are marked.",
+          "box": "top"
+        },
+        {
           "style": "hint",
-          "waitFor": "event:AnnotationsChecked",
-          "hintSeconds": 6,
-          "text": "Use the tabs to switch between Rosa's four records. Swipe the money line, add TYPE, TREATMENT and a record, then press CHECK. Unsure what a card means? The Tax Code Book explains every one."
+          "text": "Mark all four records, then press CHECK. Book: Section 4 blue, Section 5 orange, Section 6 records.",
+          "waitFor": "event:AnnotationsChecked|flag:firstChecked",
+          "hintSeconds": 8
         }
       ]
     },
@@ -275,26 +455,118 @@
       "id": "mark-the-money-fix",
       "title": "FIX THE RED NOTES",
       "when": "event:AnnotationsChecked",
+      "onlyIn": "flag:redNotes",
       "after": "mark-the-money",
+      "delay": 0.6,
       "pages": [
         {
+          "text": "Your medal is set by that first check, so relax: nothing from here on changes it.",
+          "box": "top"
+        },
+        {
+          "text": "Green notes are right and locked in. Red notes need another look. Tap a red note and I'll give you a hint.",
+          "box": "top"
+        },
+        {
           "style": "hint",
-          "waitFor": "event:IncomeQuestCompleted",
-          "hintSeconds": 5,
-          "text": "Green notes are locked in. Tap a red note for a hint, swap it, then CHECK again. Your badge is already decided."
+          "text": "Swap the red notes, then CHECK again until every note is green.",
+          "waitFor": "event:IncomeQuestCompleted|flag:questDone",
+          "hintSeconds": 6
+        }
+      ]
+    },
+    {
+      "id": "annotated-papers",
+      "title": "YOUR ANNOTATED PAPERS",
+      "when": "event:IncomeQuestCompleted",
+      "after": "mark-the-money",
+      "delay": 0.8,
+      "onlyIn": "not:card:any",
+      "pages": [
+        {
+          "text": "Look at that: your four annotated papers went into the new icon on the right.",
+          "mood": "wow",
+          "point": "ui:AnnotatedPapersIcon",
+          "gesture": "none"
+        },
+        {
+          "text": "Each one keeps the money line you highlighted and the cards you placed. Back at the office, they ARE your evidence."
+        },
+        {
+          "text": "Your turn: tap the icon to spread them out.",
+          "waitFor": "cue:AnnotatedPapersOpened",
+          "point": "ui:AnnotatedPapersIcon",
+          "gesture": "tap"
+        },
+        {
+          "text": "To put them away, press and hold any paper for two seconds. Keep your finger still until they stack up under it.",
+          "waitFor": "cue:AnnotatedPapersStacked",
+          "point": "type:AnnotationPaperCollectionFace",
+          "gesture": "hold"
+        },
+        {
+          "text": "Now drag the stack onto the icon and let go. Let go anywhere else and they just spread out again.",
+          "waitFor": "cue:AnnotatedPapersPutAway",
+          "point": "ui:AnnotatedPapersIcon",
+          "gesture": "none"
+        },
+        {
+          "text": "Perfect. Now take what you learned back to the office. Rosa's folder has new pages waiting at your desk.",
+          "mood": "wow"
+        },
+        {
+          "style": "hint",
+          "text": "Head back to your desk in the consultant office and sit down.",
+          "waitFor": "near:3:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk"
         }
       ]
     },
     {
       "id": "office-review",
-      "title": "BACK AT THE OFFICE",
-      "when": "event:IncomeQuestCompleted",
-      "after": "mark-the-money-fix",
+      "title": "THE REVIEWED SCHEDULE",
+      "when": "near:3:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk",
+      "onlyIn": "mode:Workstation",
+      "after": "annotated-papers",
+      "delay": 0.6,
       "pages": [
         {
+          "text": "Welcome back. Now we fix Rosa's numbers properly."
+        },
+        {
+          "text": "Your turn: open Rosa's folder. Tap its icon, or drag it toward you if it is on the desk.",
+          "waitFor": "event:CaseFolderOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder",
+          "point": "hud:folder",
+          "gesture": "tap"
+        },
+        {
+          "text": "After Findings there's a new page: the Reviewed Schedule. It's Rosa's corrected May income, written by you."
+        },
+        {
+          "text": "It has two Summary lines, one Missing entry, the totals, and a Conclusion box below them."
+        },
+        {
+          "text": "Every amount comes from your annotated papers, never from the old Summary. Checking it is the whole point!"
+        },
+        {
+          "text": "Two rules: each earned payment goes in once, and money that must be paid back stays out. Section 6 of your book explains both.",
+          "mood": "confused"
+        },
+        {
+          "text": "Your turn: tap an empty line. Your annotated papers spread out. Tap a highlighted amount, then tap the line. Dragging works too.",
+          "waitFor": "cue:ScheduleLineFilled"
+        },
+        {
+          "text": "That's one line! Fill the others the same way. Which paper is the job the Summary forgot? That one is your Missing entry.",
+          "mood": "wow"
+        },
+        {
+          "text": "Last, the Conclusion box. It says what you did about your finding. Take it from Section 8, Review Conclusions."
+        },
+        {
           "style": "hint",
-          "waitFor": "event:OfficeReviewCompleted",
-          "text": "Back at your desk, open Rosa's folder to the Reviewed Schedule. Tap an empty line to bring out your annotated papers, tap a highlighted amount, then tap the line. Finish with a conclusion below the totals."
+          "text": "Fill the two Summary lines, the Missing entry and the Conclusion. Stuck? Sections 6 and 8 of your book.",
+          "waitFor": "event:OfficeReviewCompleted|flag:officeDone",
+          "hintSeconds": 8
         }
       ]
     },
@@ -302,12 +574,31 @@
       "id": "final-assessment",
       "title": "YOUR RECOMMENDATION",
       "when": "event:OfficeReviewCompleted",
+      "onlyIn": "mode:Workstation",
       "after": "office-review",
+      "delay": 0.6,
       "pages": [
         {
+          "text": "Your schedule is complete. Turn to the last page, Final Assessment: your work is summed up there in handwriting.",
+          "mood": "wow"
+        },
+        {
+          "text": "Read it like the Auditor will. Is every earned payment there, once? Is the loan kept out? Does the conclusion say what you did?",
+          "mood": "confused"
+        },
+        {
+          "text": "Section 9 of your book explains READY and NOT READY. Be honest: the Auditor checks it."
+        },
+        {
+          "text": "Same stamps as before. Your turn: tap the stamp set.",
+          "waitFor": "cue:StampsUp|flag:stampsUp",
+          "point": "world:Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/Stamps",
+          "gesture": "tap"
+        },
+        {
           "style": "hint",
-          "waitFor": "event:FinalAssessmentStamped",
-          "text": "Read your handwritten summary on Final Assessment. Decide whether the packet is ready, then use a desk stamp on that page."
+          "text": "Drag your stamp onto the Final Assessment page.",
+          "waitFor": "event:FinalAssessmentStamped|flag:finalStamped"
         }
       ]
     },
@@ -316,10 +607,16 @@
       "title": "THE AUDITOR",
       "when": "event:FinalAssessmentStamped",
       "after": "final-assessment",
+      "delay": 0.6,
       "pages": [
         {
+          "text": "Stamped! Put the folder in its icon, then take it to the Auditor's office. You know the way.",
+          "mood": "wow"
+        },
+        {
           "style": "hint",
-          "text": "Hand Rosa's folder to the Auditor. If he returns it, change what he points to, stamp again, then bring it back."
+          "text": "Hand Rosa's folder to the Auditor. If he returns it, fix only what he points to, stamp again and bring it back.",
+          "hintSeconds": 7
         }
       ]
     },
@@ -330,8 +627,11 @@
       "after": "to-auditor",
       "pages": [
         {
-          "style": "hint",
-          "text": "Your work is still here. Fix what the Auditor pointed to, read the updated summary, stamp again, then return the folder."
+          "text": "He sent it back, and that's okay: your work is all still in the folder.",
+          "mood": "sad"
+        },
+        {
+          "text": "Read his note again. It names the page and the book section to check. Fix only that, read the new summary on Final Assessment, stamp again, then bring it back."
         }
       ]
     }

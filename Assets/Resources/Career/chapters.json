@@ -39,6 +39,12 @@
       "chapterId": "Level_01",
       "title": "Know Your Taxpayer",
       "description": "Sort the taxpayer profiles on the office corkboard. Part of Chapter 1."
+    },
+    {
+      "number": 2,
+      "chapterId": "Level_02",
+      "title": "Mark the Money!",
+      "description": "Mark Aling Rosa's four records with the income toolkit at her market stall. Part of Chapter 2."
     }
   ]
 }
