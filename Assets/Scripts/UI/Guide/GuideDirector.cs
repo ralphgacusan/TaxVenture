@@ -16,7 +16,7 @@ using UnityEngine.InputSystem;
 ///
 /// DOES NOT change gameplay state, rewards, objectives or the FSM.
 /// </summary>
-public sealed class GuideDirector : MonoBehaviour
+public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceiver
 {
     private const float PollInterval = 0.2f;
 
@@ -33,6 +33,51 @@ public sealed class GuideDirector : MonoBehaviour
     private readonly Dictionary<string, Sprite> portraits = new Dictionary<string, Sprite>();
     private readonly Dictionary<GuideLesson, List<GuideTriggers.Trigger>> whenCache = new Dictionary<GuideLesson, List<GuideTriggers.Trigger>>();
     private readonly Dictionary<GuideLesson, float> pendingSince = new Dictionary<GuideLesson, float>();
+
+    // Unity does not serialize dictionaries or HashSets during a script reload.
+    // Keep the observed events, completed lessons and current page baseline so
+    // recompiling after Notes cannot strand the remaining lesson prerequisites.
+    [Serializable]
+    private struct EventCount
+    {
+        public string key;
+        public int count;
+    }
+    [SerializeField] private List<EventCount> savedCounts = new List<EventCount>();
+    [SerializeField] private List<EventCount> savedPageCounts;
+    [SerializeField] private List<string> savedFinished = new List<string>();
+
+    public void OnBeforeSerialize()
+    {
+        savedCounts = CaptureCounts(counts);
+        savedPageCounts = pageCounts == null ? null : CaptureCounts(pageCounts);
+        savedFinished = new List<string>(finished);
+    }
+
+    public void OnAfterDeserialize()
+    {
+        counts.Clear();
+        RestoreCounts(savedCounts, counts);
+        finished.Clear();
+        if (savedFinished != null)
+            foreach (string id in savedFinished) finished.Add(id);
+        pageCounts = savedPageCounts == null ? null : new Dictionary<string, int>();
+        if (pageCounts != null) RestoreCounts(savedPageCounts, pageCounts);
+    }
+
+    private static List<EventCount> CaptureCounts(Dictionary<string, int> source)
+    {
+        var saved = new List<EventCount>();
+        foreach (var pair in source) saved.Add(new EventCount { key = pair.Key, count = pair.Value });
+        return saved;
+    }
+
+    private static void RestoreCounts(List<EventCount> saved, Dictionary<string, int> destination)
+    {
+        if (saved == null) return;
+        foreach (EventCount item in saved)
+            if (!string.IsNullOrEmpty(item.key)) destination[item.key] = item.count;
+    }
 
     // Current lesson/page.
     private GuideLesson lesson;
@@ -121,6 +166,20 @@ public sealed class GuideDirector : MonoBehaviour
 
     private void OnEnable()
     {
+        if (view != null)
+        {
+            targets = new GuideTargets(gameObject.scene);
+            view.Tapped -= Tap;
+            view.Tapped += Tap;
+            view.SkipRequested -= SkipAll;
+            view.SkipRequested += SkipAll;
+            // Trigger is a parsed, non-serialized struct. Rebuild it without
+            // resetting page timing or the event baseline.
+            if (page != null)
+                pageWait = page.WaitsForTap && !page.IsHint ? null : GuideTriggers.ParseAll(
+                    page.IsHint && string.IsNullOrWhiteSpace(page.waitFor) ? "seconds:5" : page.waitFor);
+            if (IsBlocking && !suspended) HoldControls();
+        }
         GuideVoice.Handler = Say;
         TownEvents.OnProfileCollected += HandleProfileCollected;
         TownEvents.OnAllProfilesCollected += HandleAllProfiles;
@@ -152,6 +211,11 @@ public sealed class GuideDirector : MonoBehaviour
 
     private void OnDisable()
     {
+        if (view != null)
+        {
+            view.Tapped -= Tap;
+            view.SkipRequested -= SkipAll;
+        }
         if (GuideVoice.Handler == (System.Func<string, string, float, bool>)Say) GuideVoice.Handler = null;
         HudRewardScreen.HoldAutoContinue = false;
         TownEvents.OnProfileCollected -= HandleProfileCollected;
@@ -849,10 +913,15 @@ public sealed class GuideDirector : MonoBehaviour
         if (page == null || suspended || welcomeCard != null) return;
         if (view.IsTyping)
         {
+            AudioManager.Instance?.QueueInteractionSFX("continue");
             view.CompleteTyping();
             return;
         }
-        if (page.WaitsForTap && !page.IsHint && advanceAt < 0f) NextPage();
+        if (page.WaitsForTap && !page.IsHint && advanceAt < 0f)
+        {
+            AudioManager.Instance?.QueueInteractionSFX("continue");
+            NextPage();
+        }
     }
 
     private void EndLesson()

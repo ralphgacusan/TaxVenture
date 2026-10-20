@@ -247,6 +247,7 @@ public sealed class TrainingBinder3D : MonoBehaviour
     /// <summary>Leans the camera to the desk and raises the binder. False when the menu is busy.</summary>
     public bool Open(bool immediate = false)
     {
+        if (!MenuEntry.HasCareerAccess) return false;
         if (phase != Phase.Closed) return true;
         if (cameraManager != null && (cameraManager.IsTransitioning || cameraManager.IsLevelSelectorVisible)) return false;
         if (settingsBoard != null && settingsBoard.IsOpen) return false;
@@ -278,8 +279,8 @@ public sealed class TrainingBinder3D : MonoBehaviour
         {
             raiseTime = 0f;
             SetPhase(Phase.Leaning);
-            if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
         }
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_ui_panel_open_01", 0.7f);
         SyncOverlayCamera();
         ApplyBinderPose();
         return true;
@@ -289,7 +290,7 @@ public sealed class TrainingBinder3D : MonoBehaviour
     public void Close()
     {
         if (phase != Phase.Open && phase != Phase.Leaning) return;
-        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_ui_back_01", 0.65f);
         SetPhase(Phase.Lowering);
     }
 
@@ -807,7 +808,7 @@ public sealed class TrainingBinder3D : MonoBehaviour
             if (id == currentTab || flipTime >= 0f) return;
             pendingTab = id;
             flipTime = 0f;
-            if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_page_turn_01", 0.55f);
             return;
         }
         currentTab = id;
@@ -899,10 +900,11 @@ public sealed class TrainingBinder3D : MonoBehaviour
         TrainingDrill drill = TrainingDrill.Load(card.View.Def.drill);
         if (drill == null)
         {
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_ui_unavailable_01", 0.65f);
             card.Celebrate(false, 0f);   // a hop: nothing to start (missing drill file, see the Console)
             return;
         }
-        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_ui_panel_close_01", 0.7f);
         afterLeave = () => TrainingSession.Begin(card.View.Def, drill, mastery);
         SetPhase(Phase.Leaving);
     }

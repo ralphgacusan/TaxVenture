@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-// Intro cutscene regression: Career Chapter 1 START routes to Cutscene1.0,
+// Intro cutscene regression: Career Chapter 1 START routes to Cutscene2.0,
 // the scene is in the build exactly once, the old intro stays on disk, and
 // Resources/Cutscenes/cutscene01_subtitles.json parses with the expected lines.
 
@@ -19,7 +19,7 @@ void Check(bool ok, string message)
 
 string root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
 string Read(params string[] parts) => File.ReadAllText(Path.Combine(new[] { root }.Concat(parts).ToArray()));
-const string Scene = "Cutscene1.0";
+const string Scene = "Cutscene2.0";
 
 // ---------- routing ----------
 using (JsonDocument doc = JsonDocument.Parse(Read("Assets", "Resources", "Career", "chapters.json")))
@@ -33,7 +33,7 @@ Check(Regex.IsMatch(service, "id = \"Level_01\"[^}]*scene = \"" + Regex.Escape(S
 Check(!service.Contains("Level1_Character_Intro_Cutscene"), "CareerProgressService no longer routes to the old intro");
 Check(Read("Assets", "Scripts", "UI", "ProgressUI.cs").Contains("levelOneCutscene = \"" + Scene + "\""), "ProgressUI default routes to " + Scene);
 foreach (string menu in new[] { "3D Menu.unity", "Progress.unity" })
-    Check(!Read("Assets", "Scenes", menu).Contains("levelOneCutscene: Level1_Character_Intro_Cutscene"), menu + ": ProgressUI does not route to the old intro");
+    Check(Read("Assets", "Scenes", menu).Contains("levelOneCutscene: " + Scene), menu + ": serialized ProgressUI routes to the current intro");
 
 // ---------- build settings ----------
 string build = Read("ProjectSettings", "EditorBuildSettings.asset");
@@ -87,5 +87,40 @@ var few = JsonSerializer.Deserialize<CutsceneSubtitleTrack>(Read("Assets", "Reso
 Check(!few.ApplyClipTimes(starts.Take(10).ToList(), ends.Take(10).ToList()) && few.lines[1].estimate && Math.Abs(few.lines[1].start - track.lines[1].start) < 1e-4,
     "too few clips keeps the JSON times");
 
+// ---------- first story entry and replay eligibility (production save data) ----------
+var fresh = new PlayerProgressData();
+fresh.Normalize();
+Check(!fresh.HasFinishedFirstLevel && !fresh.HasSeenLevelOneIntro, "fresh/reset career starts directly in the intro without Skip");
+fresh.RecordTutorialSeen("Level_01/move");
+fresh.RecordTrainingRun("move", false, 30f);
+Check(!fresh.HasFinishedFirstLevel && !fresh.HasSeenLevelOneIntro, "training and tutorial history do not unlock career entry or intro Skip");
+fresh.levelOneIntroSeen = true;
+Check(fresh.HasSeenLevelOneIntro && !fresh.HasFinishedFirstLevel, "watched intro enables Skip on another attempt while Play still starts Level 1 directly");
+var saved = JsonSerializer.Deserialize<PlayerProgressData>(JsonSerializer.Serialize(fresh, options), options);
+Check(saved.HasSeenLevelOneIntro && !saved.HasFinishedFirstLevel, "intro viewing persists across save/load independently of completion");
+fresh.RecordLevelResult("Level_01", 0, 0, 150, 12, false, null);
+Check(fresh.HasFinishedFirstLevel && !fresh.IsLevelPassed("Level_01"), "finishing at any score reveals the career board without falsely passing Level 1");
+var previousCareer = new PlayerProgressData();
+previousCareer.RecordLevelCompletion("Level_01");
+Check(!previousCareer.levelOneIntroSeen && previousCareer.HasSeenLevelOneIntro, "existing completed careers can skip without the new viewing flag");
+var oldCareer = new PlayerProgressData { saveVersion = 0, levelsCompleted = 1 };
+oldCareer.Normalize();
+Check(oldCareer.HasFinishedFirstLevel && oldCareer.HasSeenLevelOneIntro, "legacy migrated completions keep normal Play routing and Skip");
+var reset = new PlayerProgressData();
+Check(!reset.HasFinishedFirstLevel && !reset.HasSeenLevelOneIntro, "Reset Progress restores the first-story flow and mandatory first viewing");
+string menuEntry = Read("Assets", "Scripts", "UI", "MenuEntry.cs");
+string mainMenuSource = Read("Assets", "Scripts", "MainMenu.cs");
+string menuUi = Read("Assets", "Scripts", "UI", "MainMenuUI.cs");
+Check(mainMenuSource.Contains("MenuEntry.Play(cameraManager)") && menuUi.Contains("MenuEntry.Play(FindAnyObjectByType<ToggleCamera>())"), "touch and UI Play share the first-story routing policy");
+Check(menuEntry.Contains("if (!progress.HasFinishedFirstLevel)") && menuEntry.Contains("SceneFade.FadeOutThenLoad(Cutscene01Runtime.SceneName)") && menuEntry.Contains("cameraManager.SwitchToLevelSelector()"), "first-story Play bypasses the board, subsequent Play opens it");
+Check(runtime.Contains("canSkip = track.showSkip && progress != null && progress.HasSeenLevelOneIntro") && runtime.Contains("if (canSkip) BuildSkipButton()") && runtime.Contains("if (canSkip) Finish()"), "first viewing hides Skip and rejects direct Skip calls; replay respects showSkip config");
+Check(runtime.IndexOf("canSkip =", StringComparison.Ordinal) < runtime.IndexOf("BuildUi();", StringComparison.Ordinal) && runtime.IndexOf("MarkLevelOneIntroSeen()", StringComparison.Ordinal) > runtime.IndexOf("private void Finish()", StringComparison.Ordinal), "Skip policy is captured before UI builds and watching is recorded only on ending");
+string resultUi = Read("Assets", "Scripts", "UI", "LevelCompleteUI.cs");
+Check(resultUi.Contains("MenuEntry.OpenLevelSelect = true") && resultUi.Contains("SceneFade.FadeOutThenLoad(MenuEntry.MenuSceneName, fadeInDestination: true)"), "first completion reveals progress directly with a destination fade in");
+string fade = Read("Assets", "Scripts", "UI", "HUD", "SceneFade.cs");
+Check(fade.Contains("EnsureForScene(SceneManager.GetActiveScene(), force: true)") && fade.Contains("instance.black.alpha = 0f"), "initial Play creates an outgoing fade on the menu instead of cutting to the intro");
+
+Check(runtime.Contains("track.lines.Clear();") && !runtime.Contains("UpdateSubtitle(usingTimelineClock"),
+    "Cutscene 2.0 does not display legacy overlay subtitles");
 Console.WriteLine($"{checks - failures}/{checks} checks passed");
 return failures == 0 ? 0 : 1;

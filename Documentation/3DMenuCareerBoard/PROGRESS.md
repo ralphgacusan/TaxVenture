@@ -63,3 +63,11 @@ Verification: scratch compile 0 errors / 29 warnings; editor script 0 errors; Ca
 - The boards now take their mesh from the scene's own plain level board (`Corkboard Levels`, SM_Prop_CorkBoard_03 — only its renderer, not the old notes), then fall back to `corkboardPrefab`. This fixes stray baked-in papers even when the open scene still points at CorkBoard_01 (an unreloaded scene).
 - Both boards moved down 25 px; every card, paper, badge space and the badge title moved up 10 px.
 - CareerBoardRegression 69/69 (new: cards inside the CAREER board, plain mesh used first). Scratch compile 0 errors. Play Mode: NOT RUN (user).
+
+## 2026-10-20: earned-only side-quest papers
+
+User feedback: a fresh/reset career showed two named badge papers despite 0/5 badges. CareerBoardPresenter.ApplyBadges now reveals a paper/medal only when its catalog badge has Tier > 0. Known tier-zero quests use the same question-mark placeholder as future quests, so all five slots start unknown. Badge progression, rewards, saves, earned-paper interactions and upgrade celebrations are unchanged.
+
+Internal verification: scratch build 0 errors / 29 baseline warnings; CareerBoardRegression 72/72 (including fresh zero-tier, earned count and presenter visibility checks); SettingsRegression 123/123; Level2Regression 1,280 PASS. User Play Mode/visual checks pending: fresh/reset career has five questions, earning a badge reveals only its own paper, existing medals still open their chapter.
+
+The same session adjusts settings action-button layout and reuses SceneFade for leave/replay fade-out and destination fade-in; handoff: Documentation/SettingsActions/README.md.

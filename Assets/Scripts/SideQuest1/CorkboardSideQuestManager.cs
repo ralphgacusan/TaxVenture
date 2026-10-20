@@ -340,6 +340,8 @@ public class CorkboardSideQuestManager : MonoBehaviour
         placementAttempts++;
         bool firstAttempt = slot.PlacementAttempts == 0;
         bool correct = slot.TryPlaceCard(card);
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayEffect(correct ? "sfx_classification_correct_01" : "sfx_classification_incorrect_01");
         if (!correct) wrongPlacements++;
 
         // No brute force: every second miss in a row locks the card briefly.

@@ -131,3 +131,9 @@ Modified:
 - **Training drills.** The environment update renamed Level 1's outdoor groups (`Env/Vegetation`, `Rocks`, `Props`, `Buildings` became `Env/Town`, `Nature`, `SeaProps`, `Coastal Town Improvements`). The `case_desk`, `case_values` and `case_handin` drill hide lists now use the new names. TrainingRegression is back to 513/513.
 
 Checks: scratch build 0 errors; GuideRegression 733 PASS; Level2Regression 1,267 PASS; Controls, Progression, Dialogue, Settings, CareerBoard and Training PASS; VerifyGuideTargets 0 missing. Pending user Play Mode: walk into the office in Level 1 to hear the welcome; the minimap shows rooms, not a ceiling, in Level 1 and Level 2; the Training Hub desk drills load without the outdoor scenery.
+
+## Audio continuity (2026-10-20)
+
+- Arthur's coach lines and hints now start voice only for changed popup text, stop when hidden or typing finishes, and yield to active NPC conversations. Hints also play the hint-received cue.
+- DialogueUI selects the female voice set for female speakers and stops voice on player lines, line reveal, finish, or disable.
+- AudioRegression: 195 checks passed. Play Mode/device checks remain user-owned; scratch build is pending the root integration pass.

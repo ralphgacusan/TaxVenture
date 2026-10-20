@@ -76,7 +76,14 @@ public class WorkstationInteractor : MonoBehaviour
         {
             Ray ray = Camera.main.ScreenPointToRay(position);
             if (Physics.Raycast(ray, out RaycastHit hit, interactRange, interactableLayer))
-                hit.collider.GetComponentInParent<IInteractable>()?.OnInteract();
+            {
+                IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
+                if (interactable != null)
+                {
+                    AudioManager.Instance?.PlayInteractionSFX(interactable as Component);
+                    interactable.OnInteract();
+                }
+            }
         }
     }
 

@@ -220,8 +220,6 @@ public class DialogueUI : MonoBehaviour
                 ? DialoguePortraitDatabase.Instance.GetPortrait(line.PortraitId) : null;
             portraitImage.sprite = portrait != null ? portrait : defaultPortraitPlaceholder;
         }
-        if (line.Speaker != DialogueSpeaker.Player && AudioManager.Instance != null)
-            AudioManager.Instance.PlayNPCDialogueSFX();
 
         BeginReveal();
 
@@ -283,7 +281,11 @@ public class DialogueUI : MonoBehaviour
     private void HandleGesture()
     {
         if (!session.IsActive) return;
-        switch (gate.Evaluate(Time.frameCount, Time.unscaledTime, reveal.IsTyping))
+        DialogueGesture gesture = gate.Evaluate(Time.frameCount, Time.unscaledTime, reveal.IsTyping);
+        if (gesture == DialogueGesture.RevealLine || gesture == DialogueGesture.Advance)
+            AudioManager.Instance?.QueueInteractionSFX("continue");
+
+        switch (gesture)
         {
             case DialogueGesture.RevealLine:
                 reveal.RevealAll();

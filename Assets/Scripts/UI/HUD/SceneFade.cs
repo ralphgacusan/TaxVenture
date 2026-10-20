@@ -8,7 +8,7 @@ using UnityEngine.UI;
 /// Scene transitions for Office_Level1 (and level scenes that opt into "fade",
 /// see OfficeLevelProfile): the level fades in from black when
 /// it starts, and FadeOutThenLoad fades it to black before leaving (Level
-/// Complete's Continue). The next scene is not touched.
+/// Complete's Continue). Settings exits also request a fade-in at the destination.
 /// </summary>
 public sealed class SceneFade : MonoBehaviour
 {
@@ -16,8 +16,18 @@ public sealed class SceneFade : MonoBehaviour
     private const float FadeOutSeconds = 0.6f;
 
     private static SceneFade instance;
+    private static bool fadeInNextScene;
     private CanvasGroup black;
     private bool leaving;
+
+    public static bool BlocksInput => instance != null && instance.black != null && instance.black.blocksRaycasts;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetSession()
+    {
+        instance = null;
+        fadeInNextScene = false;
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void InitializeForLoadedScenes()
@@ -28,11 +38,16 @@ public sealed class SceneFade : MonoBehaviour
             EnsureForScene(SceneManager.GetSceneAt(i));
     }
 
-    private static void HandleSceneLoaded(Scene scene, LoadSceneMode mode) => EnsureForScene(scene);
-
-    private static void EnsureForScene(Scene scene)
+    private static void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (!scene.IsValid() || !scene.isLoaded || !OfficeLevelProfile.Allows(scene, OfficeFeature.Fade)) return;
+        bool requested = mode == LoadSceneMode.Single && fadeInNextScene;
+        if (mode == LoadSceneMode.Single) fadeInNextScene = false;
+        EnsureForScene(scene, requested);
+    }
+
+    private static void EnsureForScene(Scene scene, bool force = false)
+    {
+        if (!scene.IsValid() || !scene.isLoaded || (!force && !OfficeLevelProfile.Allows(scene, OfficeFeature.Fade))) return;
         foreach (GameObject root in scene.GetRootGameObjects())
             if (root.GetComponentInChildren<SceneFade>(true) != null) return;
         var host = new GameObject("Scene Fade", typeof(RectTransform));
@@ -41,14 +56,21 @@ public sealed class SceneFade : MonoBehaviour
     }
 
     /// <summary>Fades the current scene to black, then loads the scene (once).</summary>
-    public static void FadeOutThenLoad(string sceneName)
+    public static void FadeOutThenLoad(string sceneName, bool fadeInDestination = false)
     {
+        if (instance != null && instance.leaving) return;
+        fadeInNextScene = fadeInDestination;
         if (instance == null)
         {
-            SceneManager.LoadScene(sceneName);
-            return;
+            // The first Play starts on the menu, which normally has no fade component.
+            EnsureForScene(SceneManager.GetActiveScene(), force: true);
+            if (instance == null)
+            {
+                SceneManager.LoadScene(sceneName);
+                return;
+            }
+            instance.black.alpha = 0f;
         }
-        if (instance.leaving) return;
         instance.leaving = true;
         instance.StopAllCoroutines();
         instance.StartCoroutine(instance.FadeAndLoad(sceneName));

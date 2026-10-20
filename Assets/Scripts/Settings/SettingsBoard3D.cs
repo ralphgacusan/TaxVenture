@@ -41,7 +41,7 @@ public sealed class SettingsBoard3D : MonoBehaviour
     /// <summary>Unnamed layer for the board (Doc3DLayer uses 31).</summary>
     private const int BoardLayer = 30;
 
-    private static readonly Vector2 BoardSize = new Vector2(820f, 600f);
+    private static readonly Vector2 BoardSize = new Vector2(820f, 780f);
     private static readonly Vector2 RowSize = new Vector2(720f, 130f);
     private static readonly Vector2 SwitchSize = new Vector2(170f, 76f);
     private static readonly Color BoardNavy = new Color32(24, 34, 50, 255);
@@ -71,6 +71,21 @@ public sealed class SettingsBoard3D : MonoBehaviour
     private TextMeshPro musicState;
     private TextMeshPro sfxState;
     private CareerBoardButton backButton;
+    private enum SettingsAction { None, Quit, Reset, Replay, Menu }
+    private SettingsAction pendingAction;
+    private Transform confirmation;
+    private TextMeshPro confirmationTitle;
+    private TextMeshPro confirmationMessage;
+    private TextMeshPro pauseStatus;
+    private CareerBoardButton confirmButton;
+    private CareerBoardButton cancelButton;
+    private readonly List<CareerBoardButton> actionButtons = new List<CareerBoardButton>();
+    private CareerBoardButton primaryActionButton;
+    private CareerBoardButton exitActionButton;
+    private bool TutorialSettings => inGame && TrainingSession.IsPracticing;
+    private string ReplayLabel => TutorialSettings ? "REPLAY TUTORIAL" : "REPLAY LEVEL";
+    private float confirmationElapsed;
+    private bool actionBusy;
     private Camera overlayCamera;
     private Camera stackedOn;
     private Image dim;
@@ -147,9 +162,21 @@ public sealed class SettingsBoard3D : MonoBehaviour
             dim.color = new Color(0.02f, 0.03f, 0.05f, Mathf.MoveTowards(dim.color.a, leaving ? 0f : backdropDim, dt * 1.2f));
 
         bool ready = !leaving && elapsed > DropDuration * 0.8f;
-        if (musicToggle != null) musicToggle.Interactable = ready;
-        if (sfxToggle != null) sfxToggle.Interactable = ready;
-        if (backButton != null) backButton.Interactable = ready;
+        bool modal = confirmation != null && confirmation.gameObject.activeSelf;
+        if (modal)
+        {
+            confirmationElapsed += dt;
+            confirmation.localScale = Vector3.one * HudTheme.EaseOutBack(Mathf.Clamp01(confirmationElapsed / 0.22f));
+        }
+        bool optionsReady = ready && !modal && !actionBusy;
+        foreach (CareerBoardButton button in actionButtons) button.Interactable = optionsReady;
+        if (confirmButton != null) confirmButton.Interactable = ready && modal && !actionBusy && confirmationElapsed > 0.22f;
+        if (cancelButton != null) cancelButton.Interactable = ready && modal && !actionBusy;
+        if (pauseStatus != null) pauseStatus.text = InGameSettings.Active != null && InGameSettings.Active.IsPaused
+            ? (TutorialSettings ? "II  TUTORIAL PAUSED" : "II  LEVEL PAUSED") : "SETTINGS";
+        if (musicToggle != null) musicToggle.Interactable = optionsReady;
+        if (sfxToggle != null) sfxToggle.Interactable = optionsReady;
+        if (backButton != null) backButton.Interactable = optionsReady;
         if (ready)
         {
             HandlePointer();
@@ -171,11 +198,13 @@ public sealed class SettingsBoard3D : MonoBehaviour
         if (cameraManager != null && (cameraManager.IsTransitioning || cameraManager.IsLevelSelectorVisible)) return false;
         if (viewCamera == null || !viewCamera.isActiveAndEnabled) return false;
 
+        CancelConfirmation();
         open = true;
         leaving = false;
         leaveElapsed = -1f;
         dropStarted = true;
         elapsed = 0f;
+        RefreshActions();
         HideMenuButtons();
         RefreshFromAudio(animate: false);
         lastAspect = -1f;
@@ -225,6 +254,7 @@ public sealed class SettingsBoard3D : MonoBehaviour
         foreach (KeyValuePair<GameObject, bool> entry in hidden)
         {
             if (entry.Key == null || !entry.Value) continue;
+            if (!MenuEntry.HasCareerAccess && (entry.Key.name == "tutorial_button" || entry.Key.name == "sidequest_button")) continue;
             StartPop(entry.Key, showing: true, delay: order++ * PopStagger);
         }
         hidden.Clear();
@@ -346,21 +376,152 @@ public sealed class SettingsBoard3D : MonoBehaviour
 
         BuildPlate(new Vector3(0f, h * 0.5f, -22f), 340f);
 
-        TextMeshPro section = CareerBoardKit.Text(board, "Section", "AUDIO", 17f, new Vector3(-w * 0.5f + 40f + 100f, 222f, -19f),
+        TextMeshPro section = CareerBoardKit.Text(board, "Section", "AUDIO", 17f, new Vector3(-w * 0.5f + 40f + 100f, 300f, -19f),
             200f, 24f, HudTheme.BrassSoft, TextAlignmentOptions.MidlineLeft);
         section.characterSpacing = 6f;
 
-        musicToggle = BuildRow("Music", "MUSIC", "Background music", 120f, HudTheme.Exp, MusicIcon, out musicState);
-        sfxToggle = BuildRow("SFX", "SOUND FX", "Taps, paper and rewards", -40f, HudTheme.Active, SpeakerIcon, out sfxState);
+        musicToggle = BuildRow("Music", "MUSIC", "Background music", 200f, HudTheme.Exp, MusicIcon, out musicState);
+        sfxToggle = BuildRow("SFX", "SOUND FX", "Taps, paper and rewards", 40f, HudTheme.Active, SpeakerIcon, out sfxState);
         musicToggle.Changed += (_, on) => OnMusicChanged(on);
         sfxToggle.Changed += (_, on) => OnSfxChanged(on);
 
-        CareerBoardKit.Text(board, "Footnote", "Changes are saved automatically", 15f, new Vector3(0f, -138f, -19f), 600f, 22f,
+        CareerBoardKit.Text(board, "Footnote", "Changes are saved automatically", 15f, new Vector3(0f, -58f, -19f), 600f, 22f,
             HudTheme.TextMuted, TextAlignmentOptions.Center, FontStyles.Normal);
-        backButton = CareerBoardButton.Create(board, "Back Button", "<  BACK", new Vector3(0f, -214f, -26f),
-            new Vector2(240f, 72f), HudTheme.Brass, new Color32(40, 30, 14, 255), 26f);
+        backButton = CareerBoardButton.Create(board, "Back Button", inGame ? "RESUME" : "<  BACK", new Vector3(0f, -296f, -26f),
+            new Vector2(320f, 80f), HudTheme.Brass, new Color32(40, 30, 14, 255), 26f);
         backButton.Tapped += _ => GoBack();
+        BuildActions();
         CareerBoardKit.SetLayerRecursively(root, BoardLayer);
+    }
+
+    private void BuildActions()
+    {
+        if (inGame)
+            pauseStatus = CareerBoardKit.Text(board, "Pause Status", "II  LEVEL PAUSED", 19f,
+                new Vector3(0f, 343f, -23f), 600f, 28f, Mint);
+        CareerBoardKit.Box(board, "Actions Divider", new Vector3(0f, -100f, -20f),
+            new Vector3(680f, 2f, 1f), HudTheme.BrassSoft, materials);
+        primaryActionButton = AddAction(inGame ? ReplayLabel : "RESET PROGRESS", -184f, inGame ? SettingsAction.Replay : SettingsAction.Reset);
+        exitActionButton = AddAction(inGame ? "BACK TO MENU" : "QUIT GAME", 184f, inGame ? SettingsAction.Menu : SettingsAction.Quit);
+
+        confirmation = CareerBoardKit.Node("Confirmation", board, new Vector3(0f, 0f, -100f));
+        CareerBoardKit.Box(confirmation, "Rim", Vector3.zero, new Vector3(738f, 448f, 14f), HudTheme.Brass, materials);
+        CareerBoardKit.Box(confirmation, "Face", new Vector3(0f, 0f, -9f), new Vector3(720f, 430f, 12f), BoardNavy, materials);
+        confirmationTitle = CareerBoardKit.Text(confirmation, "Title", "", 30f, new Vector3(0f, 140f, -18f), 650f, 60f, HudTheme.BrassSoft);
+        confirmationMessage = CareerBoardKit.Text(confirmation, "Message", "", 23f, new Vector3(0f, 20f, -18f), 640f, 160f, HudTheme.TextPrimary);
+        cancelButton = CareerBoardButton.Create(confirmation, "Cancel", "CANCEL", new Vector3(-170f, -142f, -24f),
+            new Vector2(290f, 78f), HudTheme.Brass, BoardNavy, 23f);
+        confirmButton = CareerBoardButton.Create(confirmation, "Confirm", "CONFIRM", new Vector3(170f, -142f, -24f),
+            new Vector2(290f, 78f), new Color32(188, 77, 66, 255), HudTheme.TextPrimary, 23f);
+        cancelButton.Tapped += _ => CancelConfirmation();
+        confirmButton.Tapped += _ => ConfirmAction();
+        confirmation.gameObject.SetActive(false);
+        RefreshActions();
+    }
+
+    private void RefreshActions()
+    {
+        bool showPrimary = inGame || MenuEntry.HasCareerAccess;
+        primaryActionButton.gameObject.SetActive(showPrimary);
+        exitActionButton.transform.localPosition = new Vector3(showPrimary ? 184f : 0f, -178f, -26f);
+        if (inGame)
+        {
+            primaryActionButton.SetLabel(ReplayLabel);
+            backButton.SetLabel(TutorialSettings ? "RESUME TUTORIAL" : "RESUME");
+        }
+    }
+
+    private CareerBoardButton AddAction(string label, float x, SettingsAction action)
+    {
+        Color face = action == SettingsAction.Quit || action == SettingsAction.Reset
+            ? new Color32(148, 88, 80, 255) : new Color32(68, 94, 122, 255);
+        CareerBoardButton button = CareerBoardButton.Create(board, label, label, new Vector3(x, -178f, -26f),
+            new Vector2(340f, 88f), face, HudTheme.TextPrimary, 23f);
+        actionButtons.Add(button);
+        button.Tapped += _ => RequestAction(action);
+        return button;
+    }
+
+    private void RequestAction(SettingsAction action)
+    {
+        if (actionBusy || leaving || pendingAction != SettingsAction.None) return;
+        if (action == SettingsAction.Reset && !MenuEntry.HasCareerAccess) return;
+        pendingAction = action;
+        confirmationTitle.text = action == SettingsAction.Reset ? "RESET ALL PROGRESS?" :
+            action == SettingsAction.Replay ? (TutorialSettings ? "REPLAY TUTORIAL?" : "REPLAY LEVEL?")
+            : action == SettingsAction.Menu ? (TutorialSettings ? "LEAVE TUTORIAL?" : "BACK TO MENU?") : "QUIT GAME?";
+        confirmationMessage.text = action == SettingsAction.Reset
+            ? "Erase your career, rewards, checkpoints and tutorial progress? This cannot be undone. Audio settings are kept."
+            : action == SettingsAction.Replay ? (TutorialSettings
+                ? "Start this tutorial again? Your current practice attempt will be lost. Career progress is kept."
+                : "Start this level again? Your current attempt will be lost. Earned career rewards are kept.")
+            : action == SettingsAction.Menu ? (TrainingSession.IsPracticing ? "Leave this practice run and return to the menu?"
+                : gameObject.scene.name == "Office_Level2" ? (Level2Checkpointer.IsDirectEditorAttempt
+                    ? "Leave this test attempt? The saved career checkpoint will be kept."
+                    : "Leave this level? Your review will be saved so you can resume from the career board.")
+                : "Leave this level? Your current attempt will be lost. Earned career rewards are kept.")
+            : "Are you sure you want to close TaxVenture?";
+        confirmButton.SetLabel(action == SettingsAction.Reset ? "RESET" : action == SettingsAction.Replay ? "REPLAY" :
+            action == SettingsAction.Menu ? (TutorialSettings ? "LEAVE TUTORIAL" : "LEAVE LEVEL") : "QUIT");
+        ClearPointer();
+        confirmationElapsed = 0f;
+        confirmation.localScale = Vector3.one * 0.85f;
+        confirmation.gameObject.SetActive(true);
+        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+    }
+
+    private void CancelConfirmation()
+    {
+        if (actionBusy) return;
+        ClearPointer();
+        pendingAction = SettingsAction.None;
+        if (confirmation != null) confirmation.gameObject.SetActive(false);
+    }
+
+    private void ConfirmAction()
+    {
+        if (actionBusy || pendingAction == SettingsAction.None) return;
+        actionBusy = true;
+        ClearPointer();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        bool success = true;
+        try
+        {
+            switch (pendingAction)
+            {
+                case SettingsAction.Reset:
+                    success = PlayerProgressManager.Instance != null && PlayerProgressManager.Instance.ResetProgress();
+                    break;
+                case SettingsAction.Replay:
+                    success = InGameSettings.Active != null && InGameSettings.Active.LeaveLevel(true);
+                    break;
+                case SettingsAction.Menu:
+                    success = InGameSettings.Active != null && InGameSettings.Active.LeaveLevel(false);
+                    break;
+                case SettingsAction.Quit:
+                    PlayerPrefs.Save();
+#if UNITY_EDITOR
+                    UnityEditor.EditorApplication.isPlaying = false;
+#else
+                    Application.Quit();
+#endif
+                    break;
+            }
+        }
+        catch (System.Exception error)
+        {
+            Debug.LogException(error);
+            success = false;
+        }
+        // The fade owns the screen until scene teardown; keep settings paused and locked.
+        if (success && (pendingAction == SettingsAction.Replay || pendingAction == SettingsAction.Menu)) return;
+        actionBusy = false;
+        if (success) { CancelConfirmation(); GoBack(); }
+        else
+        {
+            confirmationTitle.text = "COULD NOT COMPLETE";
+            confirmationMessage.text = "Your action could not be completed. Please try again, or tap Cancel to return to settings.";
+        }
     }
 
     private void BuildPlate(Vector3 center, float width)
@@ -506,6 +667,8 @@ public sealed class SettingsBoard3D : MonoBehaviour
 
     private void GoBack()
     {
+        if (actionBusy) return;
+        if (confirmation != null && confirmation.gameObject.activeSelf) { CancelConfirmation(); return; }
         if (leaving) return;
         leaving = true;
         leaveElapsed = 0f;
@@ -562,7 +725,7 @@ public sealed class SettingsBoard3D : MonoBehaviour
         if (Mathf.Abs(aspect - lastAspect) < 0.001f) return;
         lastAspect = aspect;
         float visibleHeight = 2f * Distance * Mathf.Tan(viewCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
-        boardScale = Mathf.Min(visibleHeight / 860f, visibleHeight * aspect / 1000f);
+        boardScale = Mathf.Min(visibleHeight / 1000f, visibleHeight * aspect / 1000f);
         root.localScale = Vector3.one * boardScale;
     }
 
@@ -674,10 +837,13 @@ public sealed class SettingsBoard3D : MonoBehaviour
 
     private CareerBoardTarget RaycastTarget(Vector2 screen)
     {
+        Physics.SyncTransforms(); // Settings animate on unscaled time, including while physics is paused.
         Ray ray = viewCamera.ScreenPointToRay(screen);
         // Only the board layer: office furniture may stand between the camera and the board in world space.
         if (!Physics.Raycast(ray, out RaycastHit hit, Distance * 3f, 1 << BoardLayer, QueryTriggerInteraction.Collide)) return null;
         CareerBoardTarget target = hit.collider.GetComponentInParent<CareerBoardTarget>();
+        if (confirmation != null && confirmation.gameObject.activeSelf &&
+            (target == null || !target.transform.IsChildOf(confirmation))) return null;
         return target != null && target.transform.IsChildOf(root) ? target : null;
     }
 

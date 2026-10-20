@@ -299,7 +299,7 @@ Implemented — internally verified; user Play Mode pending.
 
 - **Mark the Money! desk.** Exit Desk is hidden and inert while the practice or the challenge is under way (`WorkstationUI.ExitBlocked`, set by IncomeToolkit). It returns once the quest is done. At the records desk, Arthur's hint bubble sits at the bottom centre (`GuideCoachView.HintAtBottom`). The clipboard paper and its tabs move 0.04 m, and the highlighter 0.06 m, toward the top of the view so the bubble never covers them. Both hooks are released when the toolkit is disabled; Level 1 never sets them.
 - **Tax Code Book colour.** The grey cover parts (side and spine) get the cover red once at start-up through per-slot property blocks (`TaxCodeBook3DDrag.ApplyRedCover`); white pages and coloured parts are untouched. The hold tint no longer changes colour, so touching or dragging the book never flickers grey to red.
-- **Case Folder back onto the desk.** When the folder was stored back into its icon after its first placement, tapping the icon or dropping it on the office desk while seated there puts it back on the desk, as in Level 1. Only the first placement records the review step. Elsewhere the icon keeps its floating view.
+- **Case Folder icon (2026-10-21 user correction).** Reuse Level 1's shared animated view for tap-to-show/hide, drag out and drag back onto the icon. Initial opening still requires the office desk and records first placement once. Viewing retains stored ownership (badge 1); it does not unstore/reopen the physical desk folder. An empty icon cannot accept taps or drags.
 - **Audit Summary.** After the Auditor's lines, Level 2 shows Office Level 1's Audit Summary card (`AuditSummaryPopupUI.ShowScreen` through `AuditorInteractable.ShowLevelSummary`). On approval it shows APPROVED with the May and year totals, returned reviews and review-cutoff timing, and continues by itself; the case reward and level completion follow when it closes. A hold or a returned review shows the same card with what to fix ("Review the case"), then returns the folder.
 
 
@@ -322,3 +322,19 @@ Implemented — internally verified; user Play Mode pending.
 
 - Seated at the office desk, the carried Tax Code Book can return to its desk stack. Drag it out of its icon and drop it on the desk (within 18% of the screen height of its spot, or anywhere on the desk surface), or release the floating book there. It settles closed in its original spot (`TaxCodeBook3DDrag.UnparkClosedBook`) and the icon empties (`taxBookStored` false). It can be stored again by dragging it onto the icon.
 - The Audit Summary (and a returned folder) now waits until the Auditor's dialogue session has ended and every dialogue box has left the screen (up to 3 s, plus 0.25 s), so it never shows while his last line is still on screen.
+
+### T02 regression repair — 2026-10-21
+
+The Case Folder icon accepts input only with a positive stored-folder count. Opening a physical desk folder does not unlock an empty icon. A checkpoint restoring the physical desk folder keeps its empty icon locked until storage, without replaying a progression event. A hidden folder initializes at its authored rest pose before any HUD icon-scale entrance; desk opening restores that rotation/scale after completing prior motion. Hiding the model or transferring drag ownership cancels old drag targets. This retains the existing desk/HUD animation and placement flow and fixes the reported empty-icon and miniature-drag regressions.
+
+### Paper/card audio mapping — 2026-10-21
+
+Document icon feedback uses varied paper/folder/page recordings, while shared value transfers use exact card pickup 02 and placement 01 recordings. Side Quest 2 card landing uses place 01; highlighting/pen swiping uses return 02, bounded by stroke progress rather than per-frame ticks. Music is reduced and the two ambience beds use gain-adjusted playback copies so their quiet original recordings are audible without changing originals. No gameplay/progression rule changes. Implementation and test sequence: AUDIO_TUNING.md.
+
+### Secure folder withdrawal — 2026-10-21 user correction
+
+Dragging out from the HUD withdraws the stored count: badge 0 is hidden and the icon rejects another tap or drag until the same folder returns. The view keeps reserved ownership of the real model, without the desk-reset path. Its animated return restores one count only at completion. Moving an open click-preview by its cover also withdraws it. Ordinary click show/hide remains available before physical withdrawal. This supersedes earlier statements that drag viewing retains badge 1. Initial desk placement observes the successful opening independently of the now-zero count.
+
+### Shared folder viewer ownership — 2026-10-21
+
+The 3D HUD folder renders its world paper through ShowFor3DView, with no flat FloatingWindow animation. The printed page faces the camera and fits the view; the real model alone performs entrance/return animation. An owned hold freezes walking while a filtered temporary physics raycaster admits only the folder's cover. Hide/swipe routes to the 3D return; disable, paper deactivation and focus loss clean up the hold, handlers and withdrawal. Normal desk paper also releases its owned hold when stored/disabled. Rejected HUD drops never fall through into the legacy flat viewer. This supersedes the earlier desk-chair framing policy for the floating folder; physical desk animations remain unchanged.

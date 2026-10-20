@@ -357,6 +357,7 @@ public class NotesPanelUI : MonoBehaviour
 
     public void Show()
     {
+        bool wasOpen = IsOpen;
         Debug.Log(
             $"[NotesPanelUI] {name}: SHOW"
         );
@@ -430,6 +431,9 @@ public class NotesPanelUI : MonoBehaviour
             panelRoot.SetActive(true);
         }
 
+        if (!wasOpen && AudioManager.Instance != null)
+            AudioManager.Instance.PlayDocumentSFX();
+
 
         // -----------------------------------------------------
         // Without the paper view (other scenes), Notes is only a
@@ -456,6 +460,7 @@ public class NotesPanelUI : MonoBehaviour
 
     public void Hide()
     {
+        bool wasOpen = IsOpen;
         Debug.Log(
             $"[NotesPanelUI] {name}: HIDE"
         );
@@ -487,6 +492,8 @@ public class NotesPanelUI : MonoBehaviour
         // -----------------------------------------------------
 
         ReleaseViewerLock();
+        if (wasOpen && AudioManager.Instance != null)
+            AudioManager.Instance.PlayDocumentSFX(true);
     }
 
 

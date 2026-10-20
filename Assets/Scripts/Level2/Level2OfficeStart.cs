@@ -103,6 +103,7 @@ public sealed class Level2OfficeStart : MonoBehaviour
         AppliedSetupVersion = SetupVersion;
         FolderToHUDIcon.ResetStoredFolderCount();
         config = LoadConfig();
+        BalanceLighting();
         HideUnusedParts();
         DisableUnusedComponents();
         EnsurePart<Level2CaseRetrieval>(Level2CaseRetrieval.ChildName);
@@ -118,6 +119,26 @@ public sealed class Level2OfficeStart : MonoBehaviour
         EnsurePart<Level2AnnotatedPapers>(Level2AnnotatedPapers.ChildName);
         EnsurePart<Level2TaxCodeBookIcon>(Level2TaxCodeBookIcon.ChildName);
         Debug.Log($"[Level2] Office start v{SetupVersion}: switched off {HiddenCount} Level 1 object(s) and {DisabledCount} component(s).");
+    }
+
+    /// <summary>Keep one daylight key and a gentle office fill; both previously lit the whole scene at full strength.</summary>
+    private void BalanceLighting()
+    {
+        Transform sun = PlayerPlacement.Find(gameObject.scene, "Env/Directional Light");
+        Light daylight = sun != null ? sun.GetComponent<Light>() : null;
+        if (daylight != null)
+        {
+            daylight.intensity = 0.95f;
+            daylight.color = new Color(1f, 0.97f, 0.92f);
+            daylight.shadowStrength = 0.7f;
+        }
+        Transform inside = PlayerPlacement.Find(gameObject.scene, "Environment/OfficeBuilding/Inside/Directional Light (2)");
+        Light fill = inside != null ? inside.GetComponent<Light>() : null;
+        if (fill != null)
+        {
+            fill.intensity = 0.28f;
+            fill.color = new Color(0.92f, 0.95f, 1f);
+        }
     }
 
     private void OnEnable()

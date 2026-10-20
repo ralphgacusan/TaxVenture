@@ -130,7 +130,7 @@ public sealed class MarketClientDrawer : MonoBehaviour, IInteractable
         if (highlight != null) highlight.Unhighlight();
 
         // Unlatch: a tiny push in, then the drawer rolls out past its stop and settles.
-        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_drawer_open_01");
         Vector3 pushed = sliderClosed - Vector3.forward * 0.008f;
         yield return Move(slider, sliderClosed, pushed, UnlatchSeconds, Ease.Smooth);
         Vector3 open = sliderClosed + Vector3.forward * SlideDistance;
@@ -214,7 +214,7 @@ public sealed class MarketClientDrawer : MonoBehaviour, IInteractable
         yield return new WaitForSeconds(delay);
         yield return Move(slider, open, sliderClosed, CloseSeconds, Ease.In);
         // A small bump as it hits the stop.
-        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_drawer_close_01");
         yield return Move(slider, sliderClosed, sliderClosed + Vector3.forward * 0.01f, 0.06f, Ease.Smooth);
         yield return Move(slider, sliderClosed + Vector3.forward * 0.01f, sliderClosed, 0.08f, Ease.Smooth);
         shut = true;

@@ -62,12 +62,6 @@ public class CaseFolderInteractable :
             "Case Folder opened."
         );
 
-        // Play Paper 2 SFX every time the 3D Case Folder is interacted with.
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayPaperSFX();
-        }
-
         GameplayEvents.RaiseCaseFolderOpened();
 
         if (caseFolderUI == null)

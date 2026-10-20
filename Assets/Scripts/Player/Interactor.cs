@@ -140,6 +140,7 @@ public class Interactor : MonoBehaviour
         if (MobileInputGuard.BlocksWorldInput()) return;
         if (TryGetInteractInput())
         {
+            AudioManager.Instance?.PlayInteractionSFX(currentFocus as Component);
             currentFocus.OnInteract();
         }
     }

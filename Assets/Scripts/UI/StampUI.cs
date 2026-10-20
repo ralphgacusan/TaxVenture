@@ -97,7 +97,7 @@ public class StampUI : MonoBehaviour
 
         if (AudioManager.Instance != null)
         {
-            AudioManager.Instance.PlaySelectSFX();
+            AudioManager.Instance.PlayEffect("sfx_stamp_press_01");
         }
 
 

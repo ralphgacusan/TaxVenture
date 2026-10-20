@@ -76,6 +76,7 @@ public class FolderToHUDIcon :
 
     private bool pointerIsDown;
     private bool folderStored;
+    private bool outForView;
 
     private static int storedFolderCount = 0;
 
@@ -136,10 +137,8 @@ public class FolderToHUDIcon :
         PointerEventData eventData
     )
     {
-        if (folderStored)
-        {
-            return;
-        }
+        // The floating view owns cover drags and its animated return.
+        if (folderStored || GetComponent<FloatingFolderGrab>() != null) return;
 
         pointerIsDown = true;
 
@@ -154,7 +153,7 @@ public class FolderToHUDIcon :
     )
     {
         if (!pointerIsDown ||
-            folderStored)
+            folderStored || GetComponent<FloatingFolderGrab>() != null)
         {
             return;
         }
@@ -287,9 +286,30 @@ public class FolderToHUDIcon :
 
     public bool IsFolderStored()
     {
-        return folderStored;
+        return folderStored && !outForView;
     }
 
+
+    /// <summary>Withdraws the badge for an animated view without resetting the real model.</summary>
+    public bool TryTakeOutForView()
+    {
+        if (!folderStored || outForView || storedFolderCount <= 0) return false;
+        outForView = true;
+        storedFolderCount--;
+        UpdateFolderCountText();
+        GameplayEvents.RaiseCaseFolderReturned();
+        return true;
+    }
+
+    /// <summary>Called once the view has finished returning to its icon.</summary>
+    public void ReturnFromView()
+    {
+        if (!folderStored || !outForView) return;
+        outForView = false;
+        storedFolderCount++;
+        UpdateFolderCountText();
+        GameplayEvents.RaiseCaseFolderStored();
+    }
 
     public static int GetStoredFolderCount()
     {
@@ -344,7 +364,8 @@ public class FolderToHUDIcon :
 
         folderStored = false;
 
-        storedFolderCount = Mathf.Max(0, storedFolderCount - 1);
+        if (!outForView) storedFolderCount = Mathf.Max(0, storedFolderCount - 1);
+        outForView = false;
         UpdateFolderCountText();
         GameplayEvents.RaiseCaseFolderReturned();
 

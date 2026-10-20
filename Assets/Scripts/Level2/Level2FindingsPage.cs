@@ -210,10 +210,7 @@ public sealed class Level2FindingsPage : MonoBehaviour
             CaseReviewState review = Level2OfficeStart.Review;
             if (review == null) return;
             string key = part == ReviewFindingState.Reason ? ReasonIdFor(v) : v.SemanticKey;
-            if (review.SetFindingPart(findingId, part, documentId, key, shownLabel))
-            {
-                if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
-            }
+            review.SetFindingPart(findingId, part, documentId, key, shownLabel);
             pendingRefresh = page;
         };
     }

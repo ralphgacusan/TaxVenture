@@ -32,3 +32,6 @@
 | K28 | The `Progress` scene is no longer used; Level Complete returns to **3D Menu** on the level select. `ProgressUI`'s own "back to main menu" still loads `3D Menu` (its title view), which is correct. `MainMenuUI.OnStartGamePressed` (old 2D menu) still names `Progress`, but it is not in the 3D Menu scene. | None in the current flow. | Remove `MainMenuUI` / the Progress scene when you clean up. |
 | K29 | ~~A clean audit skips the Audit Summary popup.~~ Revision 4: it shows as an APPROVED card that continues by itself after 3.5 s (tap to skip). | — | Change `AutoContinueSeconds` in `AuditSummaryPopupUI` to adjust. |
 | K30 | The document restyle changes the shared `PaperInkStyle` / `PrintedPaperStyle`, so it also applies wherever those are used (e.g. Office_Level2 documents). | Consistent look everywhere. | Nothing, unless another scene should keep the old look. |
+
+
+Shared folder follow-up (2026-10-21): edge-on HUD framing, competing flat/3D animation, unreachable cover during player hold and missing disable-time hold cleanup have source fixes. A world-paper endpoint, page-facing fit and filtered temporary raycaster now own the shared Level 1/2 presentation. Native Unity input/rendering/restore checks remain user-owned; restart Play after import and follow the Level 2 pack's latest PROGRESS checklist.

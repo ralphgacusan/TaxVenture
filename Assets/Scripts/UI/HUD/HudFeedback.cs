@@ -186,6 +186,7 @@ public sealed class HudFeedback : MonoBehaviour
 
     private void HandleBlocked(string message)
     {
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_ui_unavailable_01", 0.65f);
         toasts.Show(HudToastKind.Locked, "Locked", message, "locked");
     }
 
@@ -205,6 +206,8 @@ public sealed class HudFeedback : MonoBehaviour
                 int hearts = Mathf.Clamp(r.Hearts, 0, MaxHearts);
                 int stars = r.Exp > 0 ? Mathf.Clamp(Mathf.CeilToInt(r.Exp / 12f), 3, MaxStars) : 0;
                 bool single = r.Source == ScoreSource.Conversation;
+                if ((stars > 0 || hearts > 0) && AudioManager.Instance != null)
+                    AudioManager.Instance.PlayEffect("sfx_reward_points_01", 0.65f);
                 fx.Burst(HudTheme.Star, HudTheme.Exp, stars, from + new Vector2(-40f, 0f), progression.ExpBar, 34f);
                 fx.Burst(HudTheme.Heart, HudTheme.Reputation, hearts, from + new Vector2(single ? 0f : 40f, 0f),
                     progression.ReputationBar, single ? 44f : 38f);
@@ -212,7 +215,11 @@ public sealed class HudFeedback : MonoBehaviour
             pendingRewards.Clear();
 
             RectTransform medal = progression.TakeNewBadge();
-            if (medal != null) fx.PulseAfter(medal, 0.9f);
+            if (medal != null)
+            {
+                if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_reward_badge_01", 0.7f);
+                fx.PulseAfter(medal, 0.9f);
+            }
         }
 
         if (pendingProfilePulses > 0)

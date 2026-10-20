@@ -323,6 +323,7 @@ public sealed class Level2StampDrag : MonoBehaviour
 
     public void ReturnToStand(float seconds)
     {
+        if (lifted && AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_stamp_return_01");
         CancelPulse();
         SetHovered(false);
         ReleaseLayer();
@@ -370,7 +371,7 @@ public sealed class Level2StampDrag : MonoBehaviour
         pressTilt = Random.Range(-7f, 7f);
         pickupTime = Time.unscaledTime;
         currentScale = transform.localScale.x;
-        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_stamp_pickup_01");
         SetHovered(true);
         return true;
     }
@@ -635,8 +636,7 @@ public sealed class Level2StampDrag : MonoBehaviour
         // 3. Impact. The decision is wrapped so the stamp always finishes its motion.
         if (AudioManager.Instance != null)
         {
-            AudioManager.Instance.PlayPaper2SFX();
-            AudioManager.Instance.PlayMouseClickSelectSFX();
+            AudioManager.Instance.PlayEffect("sfx_stamp_press_01");
         }
         RectTransform paper = owner.Folder != null ? owner.Folder.PaperRect : null;
         if (paper != null)

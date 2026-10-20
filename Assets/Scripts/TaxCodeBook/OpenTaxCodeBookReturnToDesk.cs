@@ -175,7 +175,7 @@ public class OpenTaxCodeBookReturnToDesk :
         // Play paper sound when the open book closes.
         if (AudioManager.Instance != null)
         {
-            AudioManager.Instance.PlayPaperSFX();
+            AudioManager.Instance.PlayEffect("sfx_book_close_01");
         }
 
         if (deskAnimator != null)

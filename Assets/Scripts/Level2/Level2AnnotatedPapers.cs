@@ -211,6 +211,7 @@ public sealed class Level2AnnotatedPapers : MonoBehaviour
         Button button = icon.GetComponent<Button>();
         if (button == null) button = icon.gameObject.AddComponent<Button>();
         button.targetGraphic = image;
+        OfficeHudRuntime.StyleIconButton(button);
         button.onClick.RemoveListener(ToggleViewer);
         button.onClick.AddListener(ToggleViewer);
 
@@ -399,7 +400,7 @@ public sealed class Level2AnnotatedPapers : MonoBehaviour
         }
         if (!IsCollecting) ShowAnnotationsForReview();
         if (!IsCollecting) GameplayEvents.RaiseGuideCue("AnnotatedPapersOpened");
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX();
     }
 
     /// <summary>During the office review the highlighted amounts are what the player needs: show them at once.</summary>
@@ -561,7 +562,7 @@ public sealed class Level2AnnotatedPapers : MonoBehaviour
             if (i != holdPaper && papers[i] != null && papers[i].IsOpen()) papers[i].BringToFront();
         papers[holdPaper].BringToFront();
         if (icon != null) iconRestScale = icon.localScale;
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX();
         ShowHoldRing(finger, 1f, false);
         SetHoldLabel(finger, "Drop on the icon to put them away");
         GameplayEvents.RaiseGuideCue("AnnotatedPapersStacked");
@@ -607,7 +608,7 @@ public sealed class Level2AnnotatedPapers : MonoBehaviour
         var from = new List<Vector2>();
         for (int i = 0; i < papers.Count; i++)
             from.Add(papers[i] != null ? papers[i].WindowRect.anchoredPosition : Vector2.zero);
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX();
         const float seconds = 0.42f;
         for (float elapsed = 0f; elapsed < seconds + 0.12f; elapsed += Time.unscaledDeltaTime)
         {

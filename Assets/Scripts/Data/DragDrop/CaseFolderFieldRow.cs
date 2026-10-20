@@ -380,6 +380,8 @@ public class CaseFolderFieldRow :
     public void OnPointerClick(
         PointerEventData eventData)
     {
+        AudioManager.Instance?.QueueInteractionSFX("paper_place");
+
         if (ValueTransferManager.Instance == null)
         {
             Debug.LogError(
@@ -429,6 +431,7 @@ public class CaseFolderFieldRow :
                     $"Incoming Type={selectedValue.Type} | " +
                     $"Incoming Key={selectedValue.SemanticKey}"
                 );
+                AudioManager.Instance?.PlayEffect("sfx_ui_unavailable_01", 0.5f);
 
                 // Show RED feedback.
                 EnsureTypeFeedback();

@@ -1053,7 +1053,7 @@ public sealed class IncomeToolkit : MonoBehaviour
         Deselect();
         selected = card;
         card.selected = true;
-        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayExactEffect("sfx_card_pickup_02", 0.6f);
         Vector3 lifted = transform.TransformPoint(card.homePosition + Vector3.up * CardLift);
         Fly(card, lifted, transform.rotation * card.homeRotation * Quaternion.Euler(-10f, 0f, 0f), 1.08f, 0.12f, 0f, 0f);
     }
@@ -1083,7 +1083,7 @@ public sealed class IncomeToolkit : MonoBehaviour
         if (card.motion != null) StopCoroutine(card.motion);
         card.motion = null;
         card.hit.enabled = false;
-        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayExactEffect("sfx_card_pickup_02", 0.6f);
     }
 
     private void FollowPointer(Camera view, Vector2 screen)
@@ -1161,7 +1161,7 @@ public sealed class IncomeToolkit : MonoBehaviour
         if (markerMotion != null) StopCoroutine(markerMotion);
         markerMotion = null;
         markerHit.enabled = false;
-        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayExactEffect("sfx_card_pickup_02", 0.5f);
     }
 
     private bool TryPaperPoint(Camera view, Vector2 screen, out Vector3 world)
@@ -1194,8 +1194,9 @@ public sealed class IncomeToolkit : MonoBehaviour
         paper.SetNib(onLine && sweep.Locked ? sweep.LineId : null, x);
         if (sweep.Coverage - lastTickCoverage > 0.12f)
         {
+            bool firstSwipe = lastTickCoverage <= 0f;
             lastTickCoverage = sweep.Coverage;
-            if (AudioManager.Instance != null) AudioManager.Instance.PlayKeyboardSFX();
+            if (firstSwipe && AudioManager.Instance != null) AudioManager.Instance.PlayExactEffect("sfx_card_return_02", 0.5f);
         }
 
         // The pen follows the finger: nib on the paper, leaning back.
@@ -1332,7 +1333,7 @@ public sealed class IncomeToolkit : MonoBehaviour
             fx.Sparkle(end, transform.up, AnnotationPaper.InkYellow, 16);
             fx.Sparkle(start, transform.up, AnnotationPaper.InkYellow, 8);
         }
-        if (sound && AudioManager.Instance != null) AudioManager.Instance.PlayMouseClickSelectSFX();
+        if (sound && AudioManager.Instance != null) AudioManager.Instance.PlayExactEffect("sfx_card_return_02", 0.55f);
         for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 0.28f)
         {
             paper.SetSourceTag(lineId, EaseOutBack(t));
@@ -2164,7 +2165,7 @@ public sealed class IncomeToolkit : MonoBehaviour
         card.root.SetPositionAndRotation(position, rotation);
         if (celebrate)
         {
-            if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayExactEffect("sfx_card_place_01", 0.65f);
             fx.Sparkle(position + transform.up * 0.005f, transform.up, AnnotationPaper.KindColor(card.kind), 14);
             paper.ShowPlaced(slot);
             placedUntil = Time.unscaledTime + 0.9f;

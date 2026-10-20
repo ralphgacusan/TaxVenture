@@ -197,14 +197,15 @@ Check(JsonSerializer.Deserialize<CaseReviewState>(JsonSerializer.Serialize(hando
 string handoffSrc = Src("Scripts/Level2/Level2FolderHandoff.cs");
 Check(handoffSrc.Contains("icon.ClickOverride = HandleClick") && handoffSrc.Contains("icon.DropOpenOverride = HandleDrop"),
     "the HUD folder icon's tap and drop are wrapped");
-Check(Regex.IsMatch(handoffSrc, @"CameraMode\.Workstation[\s\S]*SitAtDeskMessage[\s\S]*IsOnDesk\(screenPosition\)[\s\S]*DropOnDeskMessage[\s\S]*PlaceOnDesk\(screenPosition\)"),
-    "the folder can only be put down while sitting at the desk and dropped on it");
-Check(handoffSrc.Contains("PlaceOnDesk(controller.MainCamera.pixelRect.center, true)"),
-    "tapping the icon at the desk places the initial folder centred on screen");
-Check(handoffSrc.Contains("store.ResetToUnstored()") && handoffSrc.Contains("deskFolder.RestoreAndEnableFolder()"),
-    "placing uses the existing unstore + desk restore (count 1 -> 0, no second folder)");
-Check(Regex.IsMatch(handoffSrc, @"BeginExternalDrag\(screenPosition\);\s*deskFolder\.EndExternalDrag\(screenPosition\);\s*deskFolder\.OpenDraggedFolder\(centrePaper\);"),
-    "dropping on the desk opens the folder right there");
+Check(handoffSrc.Contains("if (Awaiting && !AtOfficeDesk())") &&
+      handoffSrc.Contains("if (!AtOfficeDesk())") && handoffSrc.Contains("if (!IsOnDesk(screenPosition))"),
+    "the first folder opening requires the office desk, with a desk-surface gate for drops");
+Check(handoffSrc.Contains("bool handled = previousClick != null && previousClick();"),
+    "tapping uses the same centred toggle as Level 1");
+Check(!handoffSrc.Contains("private void PlaceOnDesk(") && handoffSrc.Contains("if (view != null && view.IsOpen) Level2OfficeStart.Review.TryPlaceFolderOnDesk();"),
+    "only a successful shared view opening records first placement, retaining stored ownership");
+Check(handoffSrc.Contains("bool handled = previousDrop != null && previousDrop(screenPosition);"),
+    "dropping uses Level 1's animated view at the drop position");
 Check(handoffSrc.Contains("AuditorSubmissionTray.SubmissionBlocked = BlockHandIn") && handoffSrc.Contains("AuditorSubmissionTray.SubmissionBlocked = null"),
     "no Auditor hand-in before the folder has been on the desk; the rule is removed with the level");
 Check(Regex.IsMatch(Src("Scripts/Data/AuditorSubmissionTray.cs"), @"if \(SubmissionBlocked != null && SubmissionBlocked\(\)\)"),
@@ -1532,7 +1533,7 @@ Check(managerSrc.Contains("public bool SaveCheckpoint(LevelCheckpoint checkpoint
       managerSrc.Contains("SaveFileStore.Sign(payload)"), "checkpoints use the existing signed save owner (no second file), never practice runs");
 string cpSrc = Src("Scripts/Level2/Level2Checkpointer.cs");
 Check(managerSrc.Contains("!Level2Checkpointer.IsDirectEditorAttempt"), "completing a direct Editor attempt preserves the career-board checkpoint");
-Check(cpSrc.Contains("if (review.audit != null && review.audit.approved) return;") && cpSrc.Contains("OnApplicationPause") &&
+Check(cpSrc.Contains("if (review.audit != null && review.audit.approved) return true;") && cpSrc.Contains("OnApplicationPause") &&
       cpSrc.Contains("GameplayEvents.OnReviewDayRolled += SaveNow") && cpSrc.Contains("GameplayEvents.OnAuditReturned += SaveNow"),
     "milestones, pause/quit and periodic changes save; nothing after approval");
 Check(cpSrc.Contains("manager.Score.AddSideQuest(IncomeChallenge.FirstWrongCount(review.challenge), null, tier)") &&
@@ -2044,8 +2045,8 @@ Check(stampDragSrc.Contains("owner.AcquireToolLayer()") && deskStampsSrc.Contain
     "both stamps share one capture camera and layer, with no Ready/Not Ready capture split");
 Check(stampDragSrc.Contains("highlight.RefreshTargets(); highlight.SetAffordance(true)"),
     "both models refresh the existing highlight after entering their shared layer");
-Check(Src("Scripts/UI/HUD/CaseFolder3DView.cs").Contains("else if (!screenPosition.HasValue)") &&
-      Src("Scripts/UI/HUD/CaseFolder3DView.cs").Contains("DeskMotion.CentrePaper(main, toPosition, paperCentre)"),
+Check(Src("Scripts/UI/HUD/CaseFolder3DView.cs").Contains("Vector2 screen = screenPosition ?? main.pixelRect.center;") &&
+      Src("Scripts/UI/HUD/CaseFolder3DView.cs").Contains("FitReadingPose(main, screenPosition);"),
     "folder taps centre the paper endpoint without replacing icon entrance animation or drag-drop positioning");
 
 // ================= Source wiring =================
@@ -2119,11 +2120,11 @@ Check(bookIconSrc.Contains("CloseFloating();") && bookIconSrc.Contains("OpenFloa
     "a stored book toggles open in the centre and back into the icon, restoring its desk handlers afterwards");
 // The floating book's pose comes from its page (upright, facing the camera, fitted to the view), not from the desk.
 string folderViewSrc = Src("Scripts/UI/HUD/CaseFolder3DView.cs");
-Check(folderViewSrc.Contains("relRotation = inv * savedRotation;") && bookIconSrc.Contains("relRotation = inv * savedRotation;") &&
+Check(folderViewSrc.Contains("toRotation = main.transform.rotation * Quaternion.Inverse(paperInFolder);") && bookIconSrc.Contains("relRotation = inv * savedRotation;") &&
       bookIconSrc.Contains("relPosition = inv * (savedPosition - viewpoint.position);") &&
       bookIconSrc.Contains("ApplyLocal(main, pinPosition, pinRotation, pinScale);") && bookIconSrc.Contains("[DefaultExecutionOrder(450)]") &&
       bookIconSrc.Contains("private void LateUpdate() => UpdateFloating();"),
-    "the floating book uses the Case Folder's desk-chair framing, held relative to the camera every frame (never left tilted by a camera settle)");
+    "folder uses readable page-facing framing while the book retains its camera-relative desk framing");
 Check(bookIconSrc.Contains("TaxCodeBookFloatingModel3D.TryStoreAt = StoreOpenFromDesk") && bookIconSrc.Contains("desk.ParkOpenBook()") &&
       Src("Scripts/TaxCodeBook/TaxCodeBookFloatingModel3D.cs").Contains("if (TryStoreAt != null && TryStoreAt(this, eventData.position))") &&
       Src("Scripts/TaxCodeBook/TaxCodeBookFloatingModel3D.cs").Contains("SetHeld(isDragging && hasDragTarget);") &&
@@ -2216,9 +2217,8 @@ Check(bookDragSrcR.Contains("ApplyRedCover(closedTaxCodeBook);") && bookDragSrcR
       bookDragSrcR.Contains("public static void SetHeldTint(GameObject model, bool held) => ApplyRedCover(model);") && !bookDragSrcR.Contains("OldHeldTint"),
     "the Tax Code Book is red all over and no longer changes colour when touched or held");
 string handoffSrcR = Src("Scripts/Level2/Level2FolderHandoff.cs");
-Check(handoffSrcR.Contains("if (!Awaiting && StoredAfterPlacement && IsOnDesk(screenPosition))") &&
-      handoffSrcR.Contains("if (!review.folderPlacedOnDesk && !review.TryPlaceFolderOnDesk()) return;"),
-    "a folder stored back in its icon can be dropped onto the office desk again (only the first placement records the review step)");
+Check(!handoffSrcR.Contains("StoredAfterPlacement") && handoffSrcR.Contains("RecordDeskPlacement();"),
+    "later openings reuse the shared toggle without a Level 2 reopen override");
 
 Check(toolkitSrcR.Contains("private const float BoxScale = 0.02f;") && !toolkitSrcR.Contains("transform.rotation, 0.45f,") &&
       toolkitSrcR.Contains("card.body.gameObject.SetActive(!stowed)"),
@@ -2394,6 +2394,20 @@ string[] lessonFlow = { "welcome", "to-cabinet", "file-room", "to-desk", "desk-o
 Check(lessonFlow.All(id => orderIds.Contains(id)) && lessonFlow.Select(id => orderIds.IndexOf(id)).SequenceEqual(lessonFlow.Select(id => orderIds.IndexOf(id)).OrderBy(i => i)),
     "Arthur's lessons follow the case: file room, profile, findings, stamp, toolkit colours, papers, schedule, final stamp");
 string Lesson(string id) => string.Join("\n", lessonList.Single(l => Str(l, "id") == id).GetProperty("pages").EnumerateArray().Select(p => Str(p, "text")));
+// The HUD view temporarily reparents OpenCaseFolder out of the desk hierarchy.
+// That path cannot be the only state fallback after tapping the folder icon.
+var deskOpenLesson = lessonList.Single(l => Str(l, "id") == "desk-open");
+var profileLesson = lessonList.Single(l => Str(l, "id") == "profile");
+Check(GuideTriggers.ParseAll(Str(deskOpenLesson.GetProperty("pages")[0], "waitFor"))
+          .Any(t => t.Key == GuideTriggers.OpenPrefix && t.Arg == "folder") &&
+      GuideTriggers.ParseAll(Str(profileLesson, "when"))
+          .Any(t => t.Key == GuideTriggers.OpenPrefix && t.Arg == "folder"),
+    "tap Case Folder completes and the Taxpayer Profile lesson starts while the real folder is reparented");
+string folderOpenFlow = Src("Scripts/UI/HUD/CaseFolder3DView.cs");
+int openSignal = folderOpenFlow.IndexOf("GameplayEvents.RaiseCaseFolderOpened();");
+Check(openSignal > folderOpenFlow.IndexOf("if (!pages.ShowFor3DView(Close))") &&
+      openSignal > folderOpenFlow.IndexOf("grab.Owner = this;"),
+    "a successful HUD folder open reports the same gameplay event as opening the desk folder");
 Check(Lesson("file-room").Contains("file storage room") && Str(lessonList.Single(l => Str(l, "id") == "file-room"), "when").Contains("flag:inFileRoom"),
     "Arthur introduces the file storage room when the player walks in");
 Check(Lesson("profile").Contains("Taxpayer Profile") && Lesson("profile").Contains("Section 1") && Lesson("profile").Contains("Section 3"),
@@ -2476,5 +2490,174 @@ Check(stallSrcB.Contains("Vector3 front = DetectFrontAround(store, b);") && stal
       stallSrcB.Contains("Vector3 doorSide = store.lossyScale.x < 0f ? side : -side;") && stallSrcB.Contains("Vector3 rosa = Ground(door + front * 1.1f - doorSide * 1.1f, groundY);"),
     "the stall is on Building_4's real front (awning side, measured at awning height), with Rosa beside the door");
 
+// Level 2 lighting: scoped key/fill balance and matte learning materials.
+string lightingStart = Src("Scripts/Level2/Level2OfficeStart.cs");
+string toolkitMaterials = Src("Scripts/Level2/AnnotationPaper.cs");
+double LightSetting(string name) => double.Parse(Regex.Match(lightingStart, name + @"\.intensity = ([\d.]+)f;").Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+double keyIntensity = LightSetting("daylight"), fillIntensity = LightSetting("fill");
+Check(lightingStart.Contains("BalanceLighting();") && keyIntensity >= 0.6 && keyIntensity <= 1.2 && fillIntensity >= 0.15 && fillIntensity < keyIntensity * 0.4 && keyIntensity + fillIntensity <= 1.35, "Level 2 keeps a readable daylight key and a gentle fill within a bounded combined intensity");
+Check(lightingStart.Contains("PlayerPlacement.Find(gameObject.scene, \"Env/Directional Light\")") && lightingStart.Contains("Environment/OfficeBuilding/Inside/Directional Light (2)") && !lightingStart.Contains("RenderSettings."), "lighting edits stay on Level 2 scene objects and do not change global lighting or Level 1");
+Check(toolkitMaterials.Contains("material.SetFloat(\"_Smoothness\", 0f)") && toolkitMaterials.Contains("material.SetFloat(\"_SpecularHighlights\", 0f)") && toolkitMaterials.Contains("material.EnableKeyword(\"_SPECULARHIGHLIGHTS_OFF\")"), "toolkit paper/plastic is matte so direct light does not wash out the printed surfaces");
+
+// Folder regression: no phantom startup access or icon-sized drag rest pose.
+int folderCheckStart = checks, folderFailStart = fails;
+string folderIconControl = Src("Scripts/UI/HUD/HudIconButton.cs");
+string iconAwakeBody = folderIconControl.Split("private void Awake()")[1].Split("private void OnEnable()")[0];
+Check(iconAwakeBody.Contains("UnlockTrigger.CaseFolderOpened") && iconAwakeBody.Contains("SetLocked();"),
+    "case-folder icon starts locked instead of exposing an empty folder on a new run");
+Check(folderIconControl.Contains("GameplayEvents.OnCaseFolderStored += RefreshFolderAvailability;") &&
+      folderIconControl.Contains("GameplayEvents.OnCaseFolderStored -= RefreshFolderAvailability;"),
+    "drawer retrieval unlocks the folder icon only when the real folder reaches storage");
+string folderHudOpen = Src("Scripts/UI/HUD/CaseFolder3DView.cs").Split("public bool Open(Vector2? screenPosition)")[1].Split("public void Close()")[0];
+Check(folderHudOpen.IndexOf("folder.gameObject.SetActive(true);") < folderHudOpen.IndexOf("ApplyPose(fromPosition, fromRotation, fromScale);") &&
+      folderHudOpen.IndexOf("folder.gameObject.SetActive(true);") < folderHudOpen.IndexOf("folder.SetParent(null, true);"),
+    "first HUD activation initializes the model at full size before the temporary icon-scale entrance");
+string deskFolderOpen = Src("Scripts/CaseFolder/CaseFolder3DDrag.cs").Split("private void ShowOpenFolder(")[1].Split("public void ResetFolder()")[0];
+Check(deskFolderOpen.Contains("openFolder.transform.rotation = originalOpenRotation;") &&
+      deskFolderOpen.Contains("openFolder.transform.localScale = originalOpenScale;") &&
+      deskFolderOpen.IndexOf("openFolder.transform.localScale = originalOpenScale;") < deskFolderOpen.IndexOf("deskAnimator.PlayOpen("),
+    "desk opening restores the authored folder pose before starting its animation");
+string floatingFolderSource = Src("Scripts/CaseFolder/FloatingModel3D.cs");
+string floatingDisable = floatingFolderSource.Split("private void OnDisable()")[1].Split("private void Update()")[0];
+string floatingDragDisable = floatingFolderSource.Split("public void SetDraggingEnabled(")[1].Split("public bool IsDraggingEnabled")[0];
+Check(floatingDisable.Contains("isDragging = false;") && floatingDisable.Contains("hasDragTarget = false;") &&
+      floatingDragDisable.Contains("isDragging = false;") && floatingDragDisable.Contains("hasDragTarget = false;"),
+    "hidden or externally animated folders cancel the old drag writer instead of fighting the next opening");
+
+string folderResumeBody = Src("Scripts/Level2/Level2FolderHandoff.cs").Split("public static void RestorePlacedFolder(")[1].Split("public static FolderToHUDIcon FindStore(")[0];
+Check(folderResumeBody.Contains("SetAvailable(FolderToHUDIcon.GetStoredFolderCount() > 0)") &&
+      !folderResumeBody.Contains("RaiseCaseFolderOpened"),
+    "resuming a desk folder keeps the empty icon locked without replaying first-open events");
+
+// These two cancellation paths only touch managed flags when no outline is
+// attached. Bypass the native MonoBehaviour constructor; do not call Awake,
+// transform, rendering, input, or any other Unity-native API in this runner.
+var folderDragState = (FloatingModel3D)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(FloatingModel3D));
+var privateInstance = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+var draggingField = typeof(FloatingModel3D).GetField("isDragging", privateInstance);
+var targetField = typeof(FloatingModel3D).GetField("hasDragTarget", privateInstance);
+draggingField.SetValue(folderDragState, true);
+targetField.SetValue(folderDragState, true);
+folderDragState.SetDraggingEnabled(false);
+Check(!folderDragState.IsDragging() && !(bool)targetField.GetValue(folderDragState),
+    "disabling folder dragging cancels both active drag and pending target in production code");
+draggingField.SetValue(folderDragState, true);
+targetField.SetValue(folderDragState, true);
+typeof(FloatingModel3D).GetMethod("OnDisable", privateInstance).Invoke(folderDragState, null);
+Check(!folderDragState.IsDragging() && !(bool)targetField.GetValue(folderDragState),
+    "hiding the actual folder cancels its stale drag state in production code");
+
+// Level 2 must delegate presentation to Level 1, retaining the stored count.
+Check(!handoffSrc.Contains("private void PlaceOnDesk(") &&
+      handoffSrc.Contains("bool handled = previousClick != null && previousClick();") &&
+      handoffSrc.Contains("bool handled = previousDrop != null && previousDrop(screenPosition);"),
+    "Level 2 reuses the Level 1 toggle/drop presentation instead of unstoring and reopening the desk folder");
+string folderPointerSource = Src("Scripts/UI/HUD/HudSubmittableIcon.cs");
+Check(folderPointerSource.Contains("private bool CanUseIcon() => isAvailable && CanDragOut();") &&
+      folderPointerSource.Split("private void ToggleFloatingWindow()")[1].Contains("if (!CanUseIcon()) return;"),
+    "empty folder icons reject click dispatch as well as drag-out");
+Check(folderIconControl.Contains("GameplayEvents.OnCaseFolderReturned += RefreshFolderAvailability;") &&
+      folderIconControl.Contains("GameplayEvents.OnCaseFolderReturned -= RefreshFolderAvailability;"),
+    "returning the folder to the desk relocks its empty icon");
+Check(folderHudOpen.Contains("if (FolderToHUDIcon.GetStoredFolderCount() <= 0) return false;"),
+    "direct shared view opening also rejects an empty icon");
+
+// Drive production input dispatch with only managed fields and delegates.
+var folderPointer = (HudSubmittableIcon)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(HudSubmittableIcon));
+var countField = typeof(FolderToHUDIcon).GetField("storedFolderCount", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+int savedFolderCount = (int)countField.GetValue(null);
+var availabilityField = typeof(HudSubmittableIcon).GetField("isAvailable", privateInstance);
+var canUseIcon = typeof(HudSubmittableIcon).GetMethod("CanUseIcon", privateInstance);
+int folderClickCalls = 0;
+folderPointer.ClickOverride = () => { folderClickCalls++; return true; };
+try
+{
+    availabilityField.SetValue(folderPointer, true);
+    countField.SetValue(null, 0);
+    folderPointer.OnPointerDown(null); // must reject before dereferencing event data
+    typeof(HudSubmittableIcon).GetMethod("ToggleFloatingWindow", privateInstance).Invoke(folderPointer, null);
+    Check(!(bool)canUseIcon.Invoke(folderPointer, null) && folderClickCalls == 0 &&
+          !(bool)typeof(HudSubmittableIcon).GetField("pointerIsDown", privateInstance).GetValue(folderPointer),
+        "count zero rejects production pointer-down and click callback even when serialized availability is true");
+    countField.SetValue(null, 1);
+    typeof(HudSubmittableIcon).GetMethod("ToggleFloatingWindow", privateInstance).Invoke(folderPointer, null);
+    typeof(HudSubmittableIcon).GetMethod("ToggleFloatingWindow", privateInstance).Invoke(folderPointer, null);
+    Check((bool)canUseIcon.Invoke(folderPointer, null) && folderClickCalls == 2 && FolderToHUDIcon.GetStoredFolderCount() == 1,
+        "stored folder permits repeated toggle dispatch without consuming its badge count");
+    availabilityField.SetValue(folderPointer, false);
+    Check(!(bool)canUseIcon.Invoke(folderPointer, null), "availability still blocks a stored folder during a level lock");
+    availabilityField.SetValue(folderPointer, true);
+    countField.SetValue(null, 0);
+    typeof(HudSubmittableIcon).GetField("kind", privateInstance).SetValue(folderPointer, HudSubmittableIcon.SubmittableKind.TaxReturn);
+    Check((bool)canUseIcon.Invoke(folderPointer, null), "the folder-count guard does not block the Tax Return icon");
+}
+finally { countField.SetValue(null, savedFolderCount); }
+
+Check(Src("Scripts/CaseFolder/FolderToHUDIcon.cs").Contains("public bool TryTakeOutForView()") &&
+      Src("Scripts/UI/HUD/CaseFolder3DView.cs").Contains("if (screenPosition.HasValue) TakeOutOfIcon();"),
+    "dragging out withdraws stored ownership until the animated folder returns");
+// Withdrawal uses the existing store, and repeated input cannot mint a folder.
+var withdrawnStore = (FolderToHUDIcon)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(FolderToHUDIcon));
+var storedField = typeof(FolderToHUDIcon).GetField("folderStored", privateInstance);
+try
+{
+    storedField.SetValue(withdrawnStore, true);
+    countField.SetValue(null, 1);
+    Check(withdrawnStore.TryTakeOutForView() && FolderToHUDIcon.GetStoredFolderCount() == 0 && !withdrawnStore.IsFolderStored(),
+        "drag-out removes the badge and stored status in production storage code");
+    Check(!withdrawnStore.TryTakeOutForView() && FolderToHUDIcon.GetStoredFolderCount() == 0,
+        "a withdrawn folder cannot be withdrawn a second time");
+    withdrawnStore.ReturnFromView();
+    withdrawnStore.ReturnFromView();
+    Check(withdrawnStore.IsFolderStored() && FolderToHUDIcon.GetStoredFolderCount() == 1,
+        "returning restores exactly one folder even after duplicate return callbacks");
+    storedField.SetValue(withdrawnStore, false);
+    Check(!withdrawnStore.TryTakeOutForView(), "an unstored physical folder cannot supply a HUD withdrawal");
+}
+finally { countField.SetValue(null, savedFolderCount); }
+string folderViewSource = Src("Scripts/UI/HUD/CaseFolder3DView.cs");
+Check(folderViewSource.Contains("store?.ReturnFromView();") &&
+      folderViewSource.Contains("if (t >= 1f) Restore();") &&
+      folderPointerSource.Contains("if (!CanUseIcon()) return;"),
+    "animated return restores the badge while empty-icon dispatch stays guarded");
+Check(Src("Scripts/UI/CaseFolderUI.cs").Contains("public bool ShowFor3DView(System.Action close)") &&
+      Src("Scripts/UI/HUD/CaseFolder3DView.cs").Contains("pages.ShowFor3DView(Close)"),
+    "the 3D folder uses a world-paper endpoint instead of competing flat-window animation");
+Check(Src("Scripts/UI/HUD/CaseFolder3DView.cs").Contains("private void OnDisable()") &&
+      Src("Scripts/UI/CaseFolderUI.cs").Contains("public void HideFor3DView()"),
+    "disabling the 3D folder owner releases its paper hold and restores its folder");
+Check(Src("Scripts/UI/HUD/CaseFolder3DView.cs").Contains("DocumentPhysicsRaycaster") &&
+      Src("Scripts/UI/HUD/CaseFolder3DView.cs").Contains("FitReadingPose("),
+    "held 3D folder stays reachable and fits a readable camera-facing paper pose");
+foreach (float aspect in new[] { 16f / 9f, 4f / 3f, 9f / 16f })
+foreach (float fov in new[] { 40f, 60f, 85f })
+{
+    float fit = CaseFolder3DView.FitReadingScale(0.4f, 0.3f, 0.75f, fov, aspect);
+    double visibleHeight = 2d * 0.75d * Math.Tan(fov * Math.PI / 360d);
+    Check(fit > 0 && 0.4f * fit <= visibleHeight * aspect * 0.681 && 0.3f * fit <= visibleHeight * 0.681,
+        "production reading fit keeps the full paper within 68 percent of both viewport axes");
+}
+Check(CaseFolder3DView.FitReadingScale(0, 0.3f, 0.75f, 60f, 1.7f) == 1f,
+    "invalid paper dimensions do not generate a broken animation scale");
+string worldPaperSource = Src("Scripts/UI/CaseFolderUI.cs");
+string showWorldBody = worldPaperSource.Split("public bool ShowFor3DView(System.Action close)")[1].Split("public void HideFor3DView()")[0];
+Check(!showWorldBody.Contains("window.OpenWindow") && showWorldBody.Contains("window.enabled = false;") &&
+      showWorldBody.Contains("HudWindowLock.Acquire(this)"),
+    "world-paper rendering pauses the flat controller and acquires one owned player hold");
+string worldPaperDisable = worldPaperSource.Split("private void OnDisable()")[1].Split("public void Show()")[0];
+Check(worldPaperDisable.Contains("ReleaseWindowHold();") && worldPaperDisable.Contains("close?.Invoke();"),
+    "external paper deactivation releases the hold and asks its owner to restore");
+Check(Src("Scripts/UI/HUD/DocumentPhysicsRaycaster.cs").Contains("IsChildOf(Document)") &&
+      folderViewSrc.Contains("documentRaycaster.enabled = HudWindowLock.IsHeld;") &&
+      folderViewSrc.Contains("documentRaycaster.enabled = false;"),
+    "the temporary physics raycaster filters unrelated world targets and is disabled before restoration");
+Check(!Src("Scripts/UI/HUD/OfficeHudRuntime.cs").Contains("folderIcon.DropOpenOverride = screen => view.Open(screen);") &&
+      Src("Scripts/UI/HUD/OfficeHudRuntime.cs").Contains("A rejected 3D open must not start the legacy flat window"),
+    "rejected 3D drop opening is consumed instead of falling through into a second legacy viewer");
+Check(worldPaperSource.Contains("ReleaseDeskHold();") && !worldPaperSource.Contains("CameraController.Instance?.LockPlayerControls();"),
+    "physical desk-paper storage releases an owned hold rather than orphaning a global control lock");
+Check(folderViewSrc.Split("internal Vector3 GrabOffset(PointerEventData data)")[1].Contains("ApplyPose(toPosition, toRotation, toScale);"),
+    "grabbing during entrance settles the full-size model before calculating the drag offset");
+Console.WriteLine($"Folder regression: {checks - folderCheckStart} checks, {fails - folderFailStart} failures (source contracts and managed drag-state paths; Unity visual checks not run).");
 Console.WriteLine(fails == 0 ? $"Level2Regression: {checks} checks PASS" : $"Level2Regression: {fails} of {checks} checks FAILED");
 return fails == 0 ? 0 : 1;

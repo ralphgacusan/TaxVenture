@@ -36,6 +36,8 @@ public sealed class GuideRuntime : MonoBehaviour
     private GameObject canvasObject;
     private GameObject objectiveCanvasObject;
 
+    private void OnEnable() => Instance = this;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void InitializeForLoadedScenes()
     {

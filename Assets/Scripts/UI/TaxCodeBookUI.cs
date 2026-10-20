@@ -150,6 +150,7 @@ public class TaxCodeBookUI : MonoBehaviour
             return;
         }
 
+        if (!IsShowing && AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_book_open_01");
         CameraController.Instance?.LockPlayerControls();
 
         StopPageTurn();
@@ -174,6 +175,7 @@ public class TaxCodeBookUI : MonoBehaviour
     }
     public void Hide()
     {
+        if (IsShowing && AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_book_close_01");
         StopPageTurn();
 
         if (bookPanelRoot != null)
@@ -207,7 +209,7 @@ public class TaxCodeBookUI : MonoBehaviour
 
             if (AudioManager.Instance != null)
             {
-                AudioManager.Instance.PlayPaperSFX();
+                AudioManager.Instance.PlayPaper2SFX();
             }
 
             TurnToCurrentPage(1);
@@ -229,7 +231,7 @@ public class TaxCodeBookUI : MonoBehaviour
 
             if (AudioManager.Instance != null)
             {
-                AudioManager.Instance.PlayPaperSFX();
+                AudioManager.Instance.PlayPaper2SFX();
             }
 
             TurnToCurrentPage(-1);

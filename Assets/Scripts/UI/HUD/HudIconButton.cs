@@ -8,9 +8,9 @@ using UnityEngine.UI;
 ///
 /// Case Folder:
 /// - Starts locked
-/// - Unlocks when the current Case Folder is opened
+/// - Unlocks only while a Case Folder is stored in the icon
 /// - Locks again when the current case is completed
-/// - Unlocks again when the next Case Folder is opened
+/// - Locks when the folder is returned to the desk
 ///
 /// Other icons:
 /// - Unlock once through their corresponding GameplayEvents signal
@@ -65,7 +65,10 @@ public class HudIconButton : MonoBehaviour
 
     private void Awake()
     {
-        Unlock();
+        if (unlockTrigger == UnlockTrigger.CaseFolderOpened)
+            SetLocked();
+        else
+            Unlock();
     }
 
 
@@ -75,8 +78,11 @@ public class HudIconButton : MonoBehaviour
         {
             case UnlockTrigger.CaseFolderOpened:
 
-                GameplayEvents.OnCaseFolderOpened += Unlock;
+                GameplayEvents.OnCaseFolderOpened += RefreshFolderAvailability;
+                GameplayEvents.OnCaseFolderStored += RefreshFolderAvailability;
+                GameplayEvents.OnCaseFolderReturned += RefreshFolderAvailability;
                 GameplayEvents.OnCaseCompleted += RelockCaseFolder;
+                RefreshFolderAvailability();
 
                 break;
 
@@ -110,7 +116,9 @@ public class HudIconButton : MonoBehaviour
         {
             case UnlockTrigger.CaseFolderOpened:
 
-                GameplayEvents.OnCaseFolderOpened -= Unlock;
+                GameplayEvents.OnCaseFolderOpened -= RefreshFolderAvailability;
+                GameplayEvents.OnCaseFolderStored -= RefreshFolderAvailability;
+                GameplayEvents.OnCaseFolderReturned -= RefreshFolderAvailability;
                 GameplayEvents.OnCaseCompleted -= RelockCaseFolder;
 
                 break;
@@ -138,6 +146,18 @@ public class HudIconButton : MonoBehaviour
         }
     }
 
+
+    /// <summary>Restores UI availability on resume without replaying gameplay events.</summary>
+    public void SetAvailable(bool available)
+    {
+        if (available && (unlockTrigger != UnlockTrigger.CaseFolderOpened || FolderToHUDIcon.GetStoredFolderCount() > 0)) Unlock();
+        else SetLocked();
+    }
+
+    private void RefreshFolderAvailability()
+    {
+        SetAvailable(FolderToHUDIcon.GetStoredFolderCount() > 0);
+    }
 
     private void SetLocked()
     {

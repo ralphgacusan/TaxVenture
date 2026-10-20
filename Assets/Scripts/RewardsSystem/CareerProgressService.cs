@@ -127,7 +127,7 @@ public static class CareerProgressService
         {
             id = "Level_01", number = 1, noteTitle = "Tutorial", title = "Tutorial Level",
             description = "Learn your way around the office, meet your first taxpayer and close your first case.",
-            scene = "Cutscene1.0", cases = 1
+            scene = "Cutscene2.0", cases = 1
         });
         built.chapters.Add(new CareerChapterDef
         {

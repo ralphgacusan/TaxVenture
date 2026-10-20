@@ -246,6 +246,6 @@ public class LevelCompleteUI : MonoBehaviour
         // The main menu and the progress / level select are one scene now
         // ("3D Menu"); open it directly on the level select.
         MenuEntry.OpenLevelSelect = true;
-        SceneFade.FadeOutThenLoad(MenuEntry.MenuSceneName);
+        SceneFade.FadeOutThenLoad(MenuEntry.MenuSceneName, fadeInDestination: true);
     }
 }

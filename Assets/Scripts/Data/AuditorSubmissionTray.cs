@@ -241,7 +241,7 @@ public class AuditorSubmissionTray :
         // Play paper sound when the case folder is successfully submitted.
         if (AudioManager.Instance != null)
         {
-            AudioManager.Instance.PlayPaperSFX();
+            AudioManager.Instance.PlayEffect("sfx_folder_submit_01");
         }
 
         // Once: a second call made Level 2's Auditor repeat his lines.

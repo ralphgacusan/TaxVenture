@@ -4,15 +4,10 @@ using UnityEngine;
 /// PURPOSE:
 /// Level 2 rule for the retrieved folder (ticket T02), under
 /// Level2Gameplay/FolderHandoff. After the market-client drawer, Rosa's
-/// folder is in the HUD Case Folder icon (count 1). From there it cannot be
-/// opened or read anywhere: the player sits at the desk and taps the icon or drags it
-/// onto the desk. That puts the real desk folder back (count 0) and
-/// opens it right there; from then on the folder works exactly as in Level 1.
-///
-/// HOW: wraps the HUD folder icon's tap / drop actions (set by
-/// OfficeHudRuntime) while review.AwaitingDeskPlacement, and refuses an
-/// Auditor hand-in until the folder has been on the desk. Uses the existing
-/// FolderToHUDIcon.ResetToUnstored + CaseFolder3DDrag.RestoreAndEnableFolder.
+/// folder is in the HUD Case Folder icon (count 1). Its first opening must
+/// happen at the office desk. Presentation then uses the same toggle, drag,
+/// and animated return as Level 1; previewing does not consume stored ownership.
+/// Auditor submission remains gated by the review state.
 /// </summary>
 public sealed class Level2FolderHandoff : MonoBehaviour
 {
@@ -116,18 +111,6 @@ public sealed class Level2FolderHandoff : MonoBehaviour
         return false;
     }
 
-    /// <summary>The folder went back into its icon after it was first placed (Level 1's store): seated at the desk it returns to the desk.</summary>
-    private static bool StoredAfterPlacement
-    {
-        get
-        {
-            CaseReviewState review = Level2OfficeStart.Review;
-            CameraController controller = CameraController.Instance;
-            return review != null && review.folderPlacedOnDesk && FolderToHUDIcon.GetStoredFolderCount() > 0 &&
-                   controller != null && controller.CurrentMode == CameraController.CameraMode.Workstation && IsOfficeDeskView();
-        }
-    }
-
     /// <summary>Seated at the office desk (not Rosa's records desk).</summary>
     private static bool IsOfficeDeskView()
     {
@@ -138,54 +121,52 @@ public sealed class Level2FolderHandoff : MonoBehaviour
         return (view.transform.position - officeDesk.position).sqrMagnitude < 9f;
     }
 
-    // Tap at the desk places/opens centrally; reading elsewhere remains gated.
+    // Only the first opening has a Level 2 desk gate. All presentation is shared.
     private bool HandleClick()
     {
-        if (StoredAfterPlacement)
+        if (FolderToHUDIcon.GetStoredFolderCount() <= 0) return true;
+        if (Awaiting && !AtOfficeDesk())
         {
-            CameraController controller = CameraController.Instance;
-            PlaceOnDesk(controller.MainCamera.pixelRect.center, true);
-            return true;
-        }
-        if (Awaiting)
-        {
-            CameraController controller = CameraController.Instance;
-            if (controller != null && controller.CurrentMode == CameraController.CameraMode.Workstation && controller.MainCamera != null)
-            {
-                PlaceOnDesk(controller.MainCamera.pixelRect.center, true);
-                return true;
-            }
             Level2Say.Line(SitAtDeskMessage);
             return true;
         }
-        return previousClick != null && previousClick();
+        bool handled = previousClick != null && previousClick();
+        RecordDeskPlacement();
+        return handled;
     }
 
-    // Drag out of the icon and release: only onto the desk, while sitting at it.
     private bool HandleDrop(Vector2 screenPosition)
     {
-        // Seated at the desk, a stored folder dropped on the desk goes onto it (as in Level 1).
-        if (!Awaiting && StoredAfterPlacement && IsOnDesk(screenPosition))
+        if (FolderToHUDIcon.GetStoredFolderCount() <= 0) return true;
+        if (Awaiting)
         {
-            PlaceOnDesk(screenPosition);
-            return true;
+            if (!AtOfficeDesk())
+            {
+                Level2Say.Line(SitAtDeskMessage);
+                return true;
+            }
+            if (!IsOnDesk(screenPosition))
+            {
+                Level2Say.Line(DropOnDeskMessage);
+                return true;
+            }
         }
-        if (!Awaiting) return previousDrop != null && previousDrop(screenPosition);
+        bool handled = previousDrop != null && previousDrop(screenPosition);
+        RecordDeskPlacement();
+        return handled;
+    }
 
-        CameraController camera = CameraController.Instance;
-        if (camera == null || camera.CurrentMode != CameraController.CameraMode.Workstation)
-        {
-            Level2Say.Line(SitAtDeskMessage);
-            return true;
-        }
-        if (!IsOnDesk(screenPosition))
-        {
-            Level2Say.Line(DropOnDeskMessage);
-            return true;
-        }
+    private static bool AtOfficeDesk()
+    {
+        CameraController controller = CameraController.Instance;
+        return controller != null && controller.CurrentMode == CameraController.CameraMode.Workstation && IsOfficeDeskView();
+    }
 
-        PlaceOnDesk(screenPosition);
-        return true;
+    private static void RecordDeskPlacement()
+    {
+        if (Level2OfficeStart.Review == null || !Level2OfficeStart.Review.AwaitingDeskPlacement || OfficeHudRuntime.Instance == null) return;
+        CaseFolder3DView view = OfficeHudRuntime.Instance.GetComponent<CaseFolder3DView>();
+        if (view != null && view.IsOpen) Level2OfficeStart.Review.TryPlaceFolderOnDesk();
     }
 
     private bool IsOnDesk(Vector2 screenPosition)
@@ -199,33 +180,6 @@ public sealed class Level2FolderHandoff : MonoBehaviour
         return false;
     }
 
-    private void PlaceOnDesk(Vector2 screenPosition, bool centrePaper = false)
-    {
-        CaseReviewState review = Level2OfficeStart.Review;
-        if (review == null) return;
-        // The first placement records the review step; later ones only put the folder back.
-        if (!review.folderPlacedOnDesk && !review.TryPlaceFolderOnDesk()) return;
-
-        FolderToHUDIcon store = FindStore(gameObject.scene);
-        if (store != null) store.ResetToUnstored();
-
-        // ResetToUnstored shows the closed folder; this also turns its drag/open back on.
-        CaseFolder3DDrag deskFolder = null;
-        foreach (GameObject root in gameObject.scene.GetRootGameObjects())
-            if ((deskFolder = root.GetComponentInChildren<CaseFolder3DDrag>(true)) != null) break;
-        if (deskFolder != null)
-        {
-            deskFolder.RestoreAndEnableFolder();
-            // Open it where it was dropped, as a drag-open on the desk does
-            // (paper sound, case pages shown, first-open state change).
-            deskFolder.BeginExternalDrag(screenPosition);
-            deskFolder.EndExternalDrag(screenPosition);
-            deskFolder.OpenDraggedFolder(centrePaper);
-        }
-
-        Debug.Log("[Level2] Rosa's folder dropped on the desk from the HUD folder icon and opened.");
-    }
-
     /// <summary>Resume (T11): the folder is back on the desk, closed and usable, without replaying the first open.</summary>
     public static void RestorePlacedFolder(UnityEngine.SceneManagement.Scene scene)
     {
@@ -235,6 +189,8 @@ public sealed class Level2FolderHandoff : MonoBehaviour
         foreach (GameObject root in scene.GetRootGameObjects())
             if ((deskFolder = root.GetComponentInChildren<CaseFolder3DDrag>(true)) != null) break;
         if (deskFolder != null) deskFolder.RestoreAndEnableFolder();
+        Transform folderIcon = PlayerPlacement.Find(scene, FolderIconPath);
+        if (folderIcon != null) folderIcon.GetComponent<HudIconButton>()?.SetAvailable(FolderToHUDIcon.GetStoredFolderCount() > 0);
     }
 
     /// <summary>The live folder store (the enabled FolderToHUDIcon the Auditor tray also uses).</summary>

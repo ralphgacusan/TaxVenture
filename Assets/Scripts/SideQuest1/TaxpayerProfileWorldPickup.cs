@@ -264,7 +264,7 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
 
         if (AudioManager.Instance != null)
         {
-            AudioManager.Instance.PlayPaperSFX();
+            AudioManager.Instance.PlayEffect("sfx_profile_collected_01");
         }
 
         hud.CollectProfile(profileData);
@@ -341,6 +341,7 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
             return;
         }
 
+        AudioManager.Instance?.QueueInteractionSFX("paper");
         Camera inputCamera = eventData != null ? eventData.pressEventCamera : null;
         collectionCamera = inputCamera != null ? inputCamera : Camera.main;
         if (collectionCamera == null || !hud.TryGetCollectionScreenPoint(out _))

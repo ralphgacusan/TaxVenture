@@ -1064,3 +1064,83 @@ Checks: scratch build 0 errors; Level2Regression 1,279 PASS; VerifyLevel2Assets 
 - Mirrored shops (negative X scale) put the door on the other side automatically.
 
 Level2Regression 1,280 PASS. Pending Play Mode: Rosa is under the awning beside the door, and the table and sign are in front of the shop.
+
+## 2026-10-20: balanced scene lighting and matte toolkit surfaces
+
+Owner/session: Codex settings/fresh-menu follow-up. Status: implemented, internally checked; user visual/Play Mode acceptance pending. Touched Level2OfficeStart.cs, AnnotationPaper.cs and Tests/Level2Regression/Program.cs.
+
+Found two active directionals illuminating every layer (outdoor key 1.15 and office fill 1). Level2OfficeStart now sets the scene-owned key to 0.95 with softer shadows and the fill to 0.28, retaining ambient/sky fill. Toolkit paper/plastic materials are matte, with specular highlights disabled where supported. No scene YAML, global RenderSettings, shared assets or Level 1 lighting was changed.
+
+Scratch compile: 0 errors / 29 baseline warnings; Level2Regression 1,283 PASS (including bounded combined light intensity, scene-local scope and matte materials). Next step: user checks the office, outdoor market toolkit and collected-paper reading views for balanced brightness. Exact values and handoff: Documentation/SettingsActions/FreshMenuAndLighting.md.
+
+## 2026-10-21: T02 folder icon and drag regression repair
+
+Owner/session: Codex folder repair. Status: implemented — internally verified; user Play Mode/feel acceptance pending.
+
+The shared folder icon unconditionally unlocked in Awake, so the empty Level 2 icon could activate the hidden desk model before drawer retrieval. The HUD entrance also activated that model after setting its miniature icon pose, allowing FloatingModel3D.Awake to cache the miniature scale as its drag rest size. Disabled/stored models retained drag targets, leaving a second transform writer alive during subsequent presentation.
+
+Repair:
+- HudIconButton starts the Case Folder locked, preserves other icons' existing startup behavior, and unlocks on actual folder opening or completed storage. Drawer retrieval already raises the storage event when the folder reaches the icon.
+- CaseFolder3DView initializes the hidden model at its authored pose and parent before detaching it and applying the temporary entrance pose.
+- CaseFolder3DDrag completes existing desk motion and restores the authored open rotation/scale before opening again. Existing easing, durations and pointer-follow logic are retained.
+- FloatingModel3D clears drag/target flags on disable and when dragging is handed to another owner.
+- Level2FolderHandoff restores the icon's UI availability for a resumed folder already placed on the desk, without replaying first-open gameplay events.
+
+Files: Assets/Scripts/UI/HUD/HudIconButton.cs, Assets/Scripts/UI/HUD/CaseFolder3DView.cs, Assets/Scripts/CaseFolder/CaseFolder3DDrag.cs, Assets/Scripts/CaseFolder/FloatingModel3D.cs, Assets/Scripts/Level2/Level2FolderHandoff.cs, Tests/Level2Regression/Program.cs; this pack's T02/SPEC/KNOWN_ISSUES notes. No scene/prefab YAML or assets were changed.
+
+Verification: five targeted source contracts failed before the repair; those now pass, along with a resume contract and two managed production drag-cancellation checks (8 folder checks total). Scratch build: 0 errors / 29 baseline warnings. Level2Regression: 1,291 PASS. AudioRegression: 205 PASS; GuideRegression: 733 PASS; TrainingRegression: 514 PASS. VerifyLevel2Assets: PASS (11,788 unique meta GUIDs; 42 Level 2 scripts and 7 content files). Managed cancellation checks bypass the MonoBehaviour constructor and touch no native Unity objects; source-order checks do not establish visual smoothness. A temporary text-encoding issue in the test update was corrected; the full Level 2 suite passes.
+
+Next: user starts a fresh Office_Level2 run, confirms the empty icon is locked, retrieves Rosa's folder, taps and drags it onto the desk, grabs/releases/reopens it at normal size, stores it and opens it again, and checks an already-placed checkpoint. Also check a normal Level 1 folder open/store/reopen. Unity Play Mode, device rendering and touch feel were not run by Codex.
+
+## 2026-10-21: paper icon/card-transfer mix follow-up
+
+Owner/session: Codex audio mapping follow-up. Status: implemented — internally verified; user Unity listening/feel acceptance pending. User requested paper icon variation, exact card pickup/place/return recordings for value transfers and Side Quest 2, quieter BGM and audible ambience. See AUDIO_TUNING.md for the step-by-step mapping and Unity checks.
+
+Changed AudioManager (document pools, exact-recording API, music 3.5%/ambience 45%), AudioEnvironment (Env ground ancestry), NotesPanelUI, HudProfileCards, CaseFolderUI, Level2TaxCodeBookIcon, Level2AnnotatedPapers, ValueTransferManager, ValueDragSource, IncomeToolkit; Resources/TaxVentureAudioLibrary.asset now assigns two louder ambience playback copies under Assets/AudioManager/MixedAmbience, preserving source WAVs. Tests/AudioRegression has named-variant, icon-variation and action-hook checks. Asset metadata uses new unique GUIDs; scenes and prefabs were not edited.
+
+Scratch build: 0 errors / 29 baseline warnings. AudioRegression: 221 PASS. Level2Regression: 1,291 PASS including all eight folder checks; GuideRegression: 733 PASS. TrainingRegression: 514 PASS; VerifyLevel2Assets: PASS (11,793 unique .meta GUIDs). Source audio measurements verified the originals are quiet and playback-copy peak headroom is safe; no Unity playback/device test was performed. Next: follow AUDIO_TUNING.md in Unity, checking SFX and Music independently and both office/outdoor beds.
+
+## 2026-10-21: T02 reuse Level 1 folder presentation
+
+Owner/session: Codex folder reuse follow-up. Status: implemented — internally verified; user Play Mode pending.
+
+Removed Level2FolderHandoff's custom unstore/desk-reopen path. The first opening still requires the office desk (and a desk-surface drop for dragging), then forwards to the exact OfficeHudRuntime callbacks used in Level 1. Only a successful shared opening records first placement. Stored ownership/count stays 1 while the view is borrowed, so another tap closes it and dragging the open folder onto the icon animates its return. Shared entrance/return durations, easing, model and grab logic are retained.
+
+HudIconButton now synchronizes folder availability on opened/stored/returned events using the real stored count; resume no longer unlocks an empty icon. HudSubmittableIcon gates pointer input and tap/drop dispatch by count as well as availability. CaseFolder3DView also rejects a direct open with count zero. Other document kinds retain their existing availability rules.
+
+Files: Assets/Scripts/Level2/Level2FolderHandoff.cs; Assets/Scripts/UI/HUD/HudIconButton.cs, HudSubmittableIcon.cs, CaseFolder3DView.cs; Tests/Level2Regression/Program.cs and Level2Regression.csproj (InputLegacyModule reference for managed pointer-dispatch checks); this pack's PROGRESS, SPEC, KNOWN_ISSUES and T02. No scene/prefab edits.
+
+Verification: two new source contracts failed before the fix. Scratch compile: 0 errors / 29 baseline warnings. Level2Regression: 1,299 PASS, including 16 folder checks and production managed pointer-down/toggle dispatch for empty/stored/locked icons and unaffected Tax Return availability. GuideRegression: 733 PASS; AudioRegression: 221 PASS; TrainingRegression: 514 PASS. VerifyLevel2Assets: PASS (11,793 unique metadata GUIDs, 42 scripts, 7 content files). An initial managed-pointer test run needed UnityEngine.InputLegacyModule referenced in the runner; after adding that existing Unity assembly the complete suite passes.
+
+Next: user starts Office_Level2 fresh and confirms no badge means taps/drags do nothing; retrieves the folder (badge 1), sits at the office desk, taps open/closed repeatedly, drags out to different desk spots, then drags the open cover back onto the icon. Check full size and smooth animations, initial access blocked at Rosa's desk, checkpoint folder on the real desk with empty icon blocked until stored, and the same store/toggle/drag loop in Level 1. No Unity Play Mode or visual/feel verification was performed.
+
+## 2026-10-21: secure folder withdrawal (user correction)
+
+Owner/session: Codex folder withdrawal and intro routing. Status: implemented — internally verified; user Play Mode pending. Supersedes the previous requirement that dragging a view out retain badge 1.
+
+A successful icon drag-out withdraws the count through FolderToHUDIcon.TryTakeOutForView, without resetting the animated model. Count 0 hides the existing badge and disables pointer/drag dispatch. The existing store reserves the same folder so duplicate withdrawal cannot mint another one; IsFolderStored is false during withdrawal. Dragging an already-previewed cover also withdraws it. Dropping the cover onto the icon runs the existing closing animation, then Restore returns exactly one count through ReturnFromView. A mode-change restore also returns that same folder. An untouched click preview retains the previous tap-to-show/hide behavior. FloatingFolderGrab owns the return, preventing FolderToHUDIcon's ordinary cover handler from prematurely hiding the animated model. Initial Level 2 desk placement is recorded after a successful shared opening even though its drag has now removed the badge.
+
+Changed: Assets/Scripts/CaseFolder/FolderToHUDIcon.cs, Assets/Scripts/UI/HUD/CaseFolder3DView.cs, Assets/Scripts/Level2/Level2FolderHandoff.cs, Tests/Level2Regression/Program.cs and this pack's notes. Cutscene changes are separately recorded in Documentation/IntroCutscene01/PROGRESS.md.
+
+Checks: the new withdrawal contract failed before implementation. Scratch build 0 errors / 29 baseline warnings; Level2Regression 1,305 PASS (22 folder checks including production managed withdrawal/duplicate/return checks), IntroCutscene 44, CareerBoard 72, Audio 222, Guide 733, Settings 133, Controls 5,734, Dialogue 799, Training 514, Progression PASS. VerifyLevel2Assets PASS; VerifyLevel2Scene PASS (two existing warnings); VerifyGuideTargets 17 paths, zero missing.
+
+Next: user retrieves badge 1, drags the folder out, confirms the badge disappears and the icon cannot supply another folder, then returns the open cover to the icon and confirms the animation finishes before badge 1 and interaction return. Repeat and check ordinary click preview, initial desk progression, mode changes and Level 1. Unity visual/feel acceptance remains pending.
+
+## 2026-10-21: shared folder stuck/edge-on viewer repair
+
+Owner/session: Codex complete folder viewer follow-up. Status: implemented — internally verified; user Unity Play Mode pending. User's new screenshot is Office_Level1; this repair applies to the shared viewer used in both office levels.
+
+Root causes: CaseFolder3DView moved the real model while CaseFolderUI.ShowAsWindow also started a flat FloatingWindow animation; camera framing reused a desk-relative pose rather than fitting the printed page. The HUD player hold disables the main physics raycaster, leaving a withdrawn 3D cover unreachable for return. Paper/owner deactivation did not reliably release its hold. Physical desk opening also used a global LockPlayerControls call without an owned disable-time release. A rejected 3D drop-open could fall back to the old flat viewer.
+
+Repair:
+- CaseFolderUI.ShowFor3DView/HideFor3DView render the real paper, pause its flat controller, route existing Hide/swipe closure to the 3D owner and release the hold on cleanup. The 3D model remains the single entrance/return animation owner.
+- The page faces the camera and fits within 68 percent of both viewport axes, with drop endpoints clamped inside the view. Original parent/local scale/rest pose are restored; animation uses the cached world scale while detached. Mid-entrance grabs settle before computing their drag offset.
+- DocumentPhysicsRaycaster temporarily admits only hits under the held folder, keeping cover drags usable while the ordinary world raycaster remains disabled. It is disabled/removed before releasing the hold. Desk-only return handlers are paused during HUD viewing.
+- Physical desk Show uses an owned HudWindowLock hold, released on Hide/disable/storage, rather than leaving a global lock behind. Ordinary workstation mode remains managed by CameraController. The disabled flat controller no longer reports itself as an open window to layering.
+- View disable, focus loss, paper deactivation and close restore the folder and its withdrawn count. Drop-open rejection is consumed by OfficeHudRuntime, so it cannot launch a second viewer. Existing badge/withdrawal/no-duplicate behavior is retained.
+
+Changed: Assets/Scripts/UI/HUD/CaseFolder3DView.cs, OfficeHudRuntime.cs, FloatingWindow.cs; new DocumentPhysicsRaycaster.cs and unique metadata; Assets/Scripts/UI/CaseFolderUI.cs; Tests/Level2Regression/Program.cs; this pack's PROGRESS/SPEC/KNOWN_ISSUES/T02 and the HUD pack's PROGRESS/KNOWN_ISSUES. No scene/prefab YAML, camera controller, save or case-content changes.
+
+Verification: three new viewer contracts and a rejected-drop fallback check failed before their fixes. Scratch compile: 0 errors / 29 baseline warnings. GuideRegression 733, AudioRegression 222, TrainingRegression 514 and SettingsRegression 133 PASS. VerifyLevel2Assets PASS (11,794 unique metadata GUIDs, 42 Level 2 scripts, 7 content files). Final Level2Regression: 1,324 PASS, including 41 folder checks. Page-fit checks execute production math across landscape/portrait aspect ratios and several fields of view; storage checks execute production managed ownership methods. Pointer filtering/lifecycle checks inspect source contracts, and do not establish native Unity rendering, drag reachability or control restoration.
+
+Next: user stops the existing Play session and allows Unity to import/compile the new raycaster, then starts a fresh Level 1 run. Store the real folder; tap open and close repeatedly; confirm the full page faces the camera. Drag it out, confirm badge 0 and no duplicate withdrawal, return by its cover, and confirm badge 1 only after the return animation. Test existing swipe close, a mid-entrance grab, storing the desk-open folder, switching desk view and focus loss, and a Notes window open at the same time. Confirm movement returns only after the last paper closes. Repeat initial placement and the same loop in Level 2. User performs Play Mode/device checks; none was run by Codex.

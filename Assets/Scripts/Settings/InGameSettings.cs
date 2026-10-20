@@ -209,6 +209,27 @@ public sealed class InGameSettings : MonoBehaviour
 
     public bool Open() => board != null && board.Open();
 
+    /// <summary>Confirmed scene exit. Keep time frozen until the old scene is destroyed.</summary>
+    public bool LeaveLevel(bool replay)
+    {
+        bool replayFirstStory = replay && !TrainingSession.IsPracticing && gameObject.scene.name == "Office_Level1";
+        string destination = replayFirstStory ? Cutscene01Runtime.SceneName : replay ? gameObject.scene.name : MenuEntry.MenuSceneName;
+        if (!Application.CanStreamedLevelBeLoaded(destination)) return false;
+        if (!TrainingSession.IsPracticing)
+        {
+            Level2Checkpointer checkpoint = FindAnyObjectByType<Level2Checkpointer>();
+            if (checkpoint != null && !checkpoint.PrepareSettingsExit(replay)) return false;
+        }
+        if (!replay)
+        {
+            MenuEntry.OpenLevelSelect = false;
+            MenuEntry.OpenSettings = false;
+        }
+        // The intro owns its own fade-in; other destinations use the shared curtain.
+        SceneFade.FadeOutThenLoad(destination, fadeInDestination: destination != Cutscene01Runtime.SceneName);
+        return true;
+    }
+
     private void HandleOpened()
     {
         Pause();
@@ -286,6 +307,7 @@ public sealed class InGameSettings : MonoBehaviour
             foreach (Canvas canvas in root.GetComponentsInChildren<Canvas>(false))
             {
                 if (!canvas.isRootCanvas || canvas.renderMode == RenderMode.WorldSpace) continue;
+                if (canvas.GetComponent<SceneFade>() != null) continue;
                 if (canvas.transform.IsChildOf(transform)) continue;
                 CanvasGroup group = canvas.GetComponent<CanvasGroup>();
                 var entry = new HiddenCanvas { Group = group, Added = group == null };

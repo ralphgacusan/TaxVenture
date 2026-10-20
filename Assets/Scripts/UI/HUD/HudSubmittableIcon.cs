@@ -167,8 +167,14 @@ public class HudSubmittableIcon :
     }
 
 
+    private void OnEnable()
+    {
+        UpdateRaycastState();
+    }
+
     private void OnDisable()
     {
+        UpdateRaycastState();
         DestroyGhost();
 
         if (dragVisualActive)
@@ -247,7 +253,7 @@ public class HudSubmittableIcon :
         if (iconImage != null)
         {
             iconImage.raycastTarget =
-                isAvailable;
+                !enabled || CanUseIcon();
         }
     }
 
@@ -260,7 +266,7 @@ public class HudSubmittableIcon :
         PointerEventData eventData
     )
     {
-        if (!isAvailable)
+        if (!CanUseIcon())
             return;
 
 
@@ -292,7 +298,7 @@ public class HudSubmittableIcon :
         PointerEventData eventData
     )
     {
-        if (!isAvailable ||
+        if (!CanUseIcon() ||
             !pointerIsDown)
         {
             return;
@@ -362,6 +368,8 @@ public class HudSubmittableIcon :
     /// the desk folder has been stored in this icon (count 1). Other kinds
     /// are unchanged.
     /// </summary>
+    private bool CanUseIcon() => isAvailable && CanDragOut();
+
     private bool CanDragOut()
     {
         return kind != SubmittableKind.CaseFolder ||
@@ -447,7 +455,7 @@ public class HudSubmittableIcon :
         PointerEventData eventData
     )
     {
-        if (!isAvailable ||
+        if (!CanUseIcon() ||
             !pointerIsDown)
         {
             return;
@@ -594,6 +602,8 @@ public class HudSubmittableIcon :
         Vector2 screenPosition
     )
     {
+        if (!CanUseIcon()) return;
+
         if (DropOpenOverride != null &&
             DropOpenOverride(screenPosition))
         {
@@ -630,6 +640,8 @@ public class HudSubmittableIcon :
 
     private void ToggleFloatingWindow()
     {
+        if (!CanUseIcon()) return;
+
         if (ClickOverride != null &&
             ClickOverride())
         {

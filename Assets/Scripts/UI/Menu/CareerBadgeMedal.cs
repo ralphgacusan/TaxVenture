@@ -97,7 +97,7 @@ public sealed class CareerBadgeMedal : MonoBehaviour
             {
                 scale = HudTheme.EaseOutBack(Mathf.Clamp01(t * 1.6f));
                 spin = 360f * HudTheme.EaseOutCubic(t);
-                if (!popSounded && AudioManager.Instance != null) AudioManager.Instance.PlayAchievementSFX();
+                if (!popSounded && AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_reward_badge_01", 0.7f);
                 popSounded = true;
             }
         }

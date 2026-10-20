@@ -23,5 +23,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Cutscene1.0.unity
     guid: 811be01558705b644a273b4054817722
+  - enabled: 1
+    path: Assets/Scenes/Cutscene2.0.unity
+    guid: d2a88c100240fe545ba95b655d7a48f0
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

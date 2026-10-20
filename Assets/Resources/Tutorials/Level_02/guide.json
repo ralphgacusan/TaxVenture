@@ -162,7 +162,7 @@
       "pages": [
         {
           "text": "Your turn: tap your Case Folder icon. Rosa's folder lands on the desk and opens.",
-          "waitFor": "event:CaseFolderOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder",
+          "waitFor": "event:CaseFolderOpened|open:folder|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder",
           "point": "hud:folder",
           "gesture": "tap"
         }
@@ -171,7 +171,7 @@
     {
       "id": "profile",
       "title": "TAXPAYER PROFILE",
-      "when": "event:CaseFolderOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder",
+      "when": "event:CaseFolderOpened|open:folder|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder",
       "onlyIn": "mode:Workstation",
       "after": "desk-open",
       "delay": 0.6,

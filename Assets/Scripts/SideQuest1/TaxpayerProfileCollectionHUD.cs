@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 /// <summary>
 /// PURPOSE:
@@ -28,6 +29,8 @@ public class TaxpayerProfileCollectionHUD : MonoBehaviour
     [SerializeField] private int totalProfilesRequired = 4;
 
     private readonly List<TaxpayerProfile> collectedProfiles = new List<TaxpayerProfile>();
+    private CanvasGroup iconGroup;
+    private Button iconButton;
 
     private void Awake()
     {
@@ -40,6 +43,15 @@ public class TaxpayerProfileCollectionHUD : MonoBehaviour
 
         Instance = this;
 
+        iconButton = GetComponent<Button>();
+        iconGroup = GetComponent<CanvasGroup>();
+        if (iconGroup == null) iconGroup = gameObject.AddComponent<CanvasGroup>();
+
+        UpdateCountText();
+    }
+
+    private void Start()
+    {
         UpdateCountText();
     }
 
@@ -152,15 +164,18 @@ public class TaxpayerProfileCollectionHUD : MonoBehaviour
 
     private void UpdateCountText()
     {
+        int shownCount = CollectedProfilesWorldPanel.Instance != null
+            ? CollectedProfilesWorldPanel.Instance.CollectedCount
+            : collectedProfiles.Count;
+        bool available = shownCount > 0;
+        if (iconGroup != null) iconGroup.alpha = available ? 1f : 0.4f;
+        if (iconButton != null) iconButton.interactable = available;
+
         if (countText != null)
         {
             int shownTotal = CollectedProfilesWorldPanel.Instance != null && CollectedProfilesWorldPanel.Instance.IsLockedToSingleProfile
                 ? 1
                 : totalProfilesRequired;
-
-            int shownCount = CollectedProfilesWorldPanel.Instance != null
-                ? CollectedProfilesWorldPanel.Instance.CollectedCount
-                : collectedProfiles.Count;
 
             countText.text = $"{shownCount}/{shownTotal}";
         }

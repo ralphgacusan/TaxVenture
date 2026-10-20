@@ -5,16 +5,15 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// PURPOSE:
 /// Opening the Case Folder from its HUD icon (tap, or drag out and drop)
-/// shows the REAL open folder from the desk — the 3D model with its pages —
+/// shows the REAL open folder from the desk â€” the 3D model with its pages â€”
 /// instead of the old flat HUD panel. It flies out of the icon and settles in
-/// front of the camera exactly as it looks from the desk chair (same lean),
+/// front of the camera, facing it and fitted to a readable paper size,
 /// at the drop point when it was dragged out. Pages render and turn as on
 /// the desk. Grab it by its cover to move it; drop it on the folder icon (or
 /// tap the icon) and it flies back in.
 ///
 /// The folder is put back exactly as it was afterwards (parent, pose, scale,
-/// visibility, drag setting), so the desk flow never notices. If the folder
-/// is already open on the desk, it is not moved: it just comes to the front.
+/// visibility, drag setting). The world paper never starts a flat-window animation.
 /// Sitting down at the desk closes the floating view first.
 /// It joins the shared front-to-back order through its Doc3DLayer.
 /// </summary>
@@ -39,6 +38,10 @@ public sealed class CaseFolder3DView : MonoBehaviour
     private Vector3 savedPosition;
     private Quaternion savedRotation;
     private Vector3 savedScale;
+    private Vector3 viewScale;
+    private OpenFolderReturnToDesk deskReturn;
+    private bool savedDeskReturnEnabled;
+    private DocumentPhysicsRaycaster documentRaycaster;
     private bool savedActive;
     private bool savedDragging;
     private CameraController.CameraMode openedInMode;
@@ -49,6 +52,7 @@ public sealed class CaseFolder3DView : MonoBehaviour
     private Quaternion fromRotation, toRotation;
     private float fromScale, toScale;
     private FloatingFolderGrab grab;
+    private FolderToHUDIcon store;
 
     public bool IsOpen => phase == Phase.Opening || phase == Phase.Open;
     public Doc3DLayer Layer => layer;
@@ -85,75 +89,60 @@ public sealed class CaseFolder3DView : MonoBehaviour
     /// <summary>Shows the real folder (at screenPosition when dropped there).</summary>
     public bool Open(Vector2? screenPosition)
     {
+        if (FolderToHUDIcon.GetStoredFolderCount() <= 0) return false;
+
         // Level order: the case starts only after the side quest (rewards.json).
         if (phase == Phase.Closed && !LevelGate.TryCase()) return false;
 
         if (phase != Phase.Closed)
         {
-            layer?.BringToFront();
-            return true;
-        }
-
-        // Already open on the desk: do not move it, just bring it forward.
-        if (folder.gameObject.activeInHierarchy)
-        {
-            if (!screenPosition.HasValue && pages != null && pages.PaperRect != null)
-                folder.position = DeskMotion.CentrePaper(MainCamera(), folder.position,
-                    pages.PaperRect.TransformPoint(pages.PaperRect.rect.center));
+            if (IsOpen && screenPosition.HasValue) TakeOutOfIcon();
             layer?.BringToFront();
             return true;
         }
 
         Camera main = MainCamera();
-        if (main == null) return false;
+        if (main == null || pages == null || pages.PaperRect == null) return false;
+        store = null;
+        foreach (GameObject root in gameObject.scene.GetRootGameObjects())
+            foreach (FolderToHUDIcon candidate in root.GetComponentsInChildren<FolderToHUDIcon>(true))
+                if (candidate.IsFolderStored()) { store = candidate; break; }
+        if (store == null) return false;
 
         savedParent = folder.parent;
         savedPosition = folder.position;
         savedRotation = folder.rotation;
         savedScale = folder.localScale;
+        viewScale = folder.lossyScale;
+        deskReturn = folder.GetComponent<OpenFolderReturnToDesk>();
+        savedDeskReturnEnabled = deskReturn != null && deskReturn.enabled;
+        if (deskReturn != null) deskReturn.enabled = false;
         savedActive = folder.gameObject.activeSelf;
         savedDragging = model != null && model.IsDraggingEnabled;
         if (model != null) model.SetDraggingEnabled(false);
         openedInMode = CameraController.Instance != null ? CameraController.Instance.CurrentMode : CameraController.CameraMode.FirstPerson;
 
-        // Same framing as from the desk chair.
-        Vector3 relPosition = savedPosition;
-        Quaternion relRotation = savedRotation;
-        if (viewpoint != null)
-        {
-            Quaternion inv = Quaternion.Inverse(viewpoint.rotation);
-            relPosition = inv * (savedPosition - viewpoint.position);
-            relRotation = inv * savedRotation;
-        }
-        else
-        {
-            relPosition = new Vector3(0f, -0.15f, 0.55f);
-            relRotation = Quaternion.Euler(-55f, 0f, 0f);
-        }
-
-        toRotation = main.transform.rotation * relRotation;
-        toPosition = main.transform.position + main.transform.rotation * relPosition;
-        float depth = Vector3.Dot(toPosition - main.transform.position, main.transform.forward);
-        if (screenPosition.HasValue && depth > main.nearClipPlane)
-            toPosition = main.ScreenToWorldPoint(new Vector3(screenPosition.Value.x, screenPosition.Value.y, depth));
-        else if (!screenPosition.HasValue)
-        {
-            Vector3 localCentre = pages != null && pages.PaperRect != null
-                ? folder.InverseTransformPoint(pages.PaperRect.TransformPoint(pages.PaperRect.rect.center)) : Vector3.zero;
-            Vector3 paperCentre = toPosition + toRotation * (localCentre * savedScale.x);
-            toPosition = DeskMotion.CentrePaper(main, toPosition, paperCentre);
-        }
-
-        toScale = savedScale.x;
-        fromScale = savedScale.x * IconScale;
-        fromRotation = toRotation * Quaternion.Euler(0f, 0f, 25f);
-        fromPosition = screenPosition.HasValue ? toPosition : IconWorldPoint(main, depth, toPosition);
-        if (screenPosition.HasValue) fromScale = savedScale.x * 0.4f;
-
-        folder.SetParent(null, true);
-        ApplyPose(fromPosition, fromRotation, fromScale);
+        // Initialize the real model at rest before any temporary entrance scale.
         folder.gameObject.SetActive(true);
-        if (pages != null) pages.ShowAsWindow(null);
+        folder.SetParent(null, true);
+        phase = Phase.Opening;
+        if (!pages.ShowFor3DView(Close))
+        {
+            Restore();
+            return false;
+        }
+        FitReadingPose(main, screenPosition);
+        fromScale = viewScale.x * (screenPosition.HasValue ? 0.4f : IconScale);
+        fromRotation = toRotation * Quaternion.Euler(0f, 0f, 25f);
+        float depth = Vector3.Dot(toPosition - main.transform.position, main.transform.forward);
+        fromPosition = screenPosition.HasValue ? toPosition : IconWorldPoint(main, depth, toPosition);
+        ApplyPose(fromPosition, fromRotation, fromScale);
+
+        // The profile-viewer hold disables the world raycaster. This replacement
+        // accepts this folder only, so its cover can still be returned safely.
+        documentRaycaster = main.gameObject.AddComponent<DocumentPhysicsRaycaster>();
+        documentRaycaster.Document = folder;
+        documentRaycaster.enabled = HudWindowLock.IsHeld;
 
         grab = folder.gameObject.AddComponent<FloatingFolderGrab>();
         grab.Owner = this;
@@ -161,7 +150,10 @@ public sealed class CaseFolder3DView : MonoBehaviour
         phase = Phase.Opening;
         elapsed = 0f;
         layer?.BringToFront();
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        if (screenPosition.HasValue) TakeOutOfIcon();
+        // HUD opens bypass CaseFolderInteractable. Notify the guide and other
+        // observers only after the real folder has successfully opened.
+        GameplayEvents.RaiseCaseFolderOpened();
         return true;
     }
 
@@ -176,16 +168,23 @@ public sealed class CaseFolder3DView : MonoBehaviour
         float depth = main != null ? Vector3.Dot(fromPosition - main.transform.position, main.transform.forward) : 0.5f;
         toPosition = main != null ? IconWorldPoint(main, depth, fromPosition) : fromPosition;
         toRotation = fromRotation * Quaternion.Euler(0f, 0f, -20f);
-        toScale = savedScale.x * IconScale;
+        toScale = viewScale.x * IconScale;
         phase = Phase.Closing;
         elapsed = 0f;
     }
 
     private void Restore()
     {
+        phase = Phase.Closed;
+        if (documentRaycaster != null)
+        {
+            documentRaycaster.enabled = false;
+            Destroy(documentRaycaster);
+            documentRaycaster = null;
+        }
         if (grab != null) Destroy(grab);
         grab = null;
-        if (pages != null) pages.HideAsWindow();
+        if (pages != null) pages.HideFor3DView();
 
         folder.SetParent(savedParent, true);
         folder.position = savedPosition;
@@ -193,7 +192,10 @@ public sealed class CaseFolder3DView : MonoBehaviour
         folder.localScale = savedScale;
         folder.gameObject.SetActive(savedActive);
         if (model != null) model.SetDraggingEnabled(savedDragging);
+        if (deskReturn != null) deskReturn.enabled = savedDeskReturnEnabled;
         phase = Phase.Closed;
+        store?.ReturnFromView();
+        store = null;
     }
 
     // =========================================================
@@ -247,12 +249,19 @@ public sealed class CaseFolder3DView : MonoBehaviour
         if (phase != Phase.Open) return;
         Camera main = MainCamera();
         if (main == null) return;
+        TakeOutOfIcon();
         float depth = Vector3.Dot(folder.position - main.transform.position, main.transform.forward);
         folder.position = main.ScreenToWorldPoint(new Vector3(data.position.x, data.position.y, depth)) + grabOffset;
     }
 
     internal Vector3 GrabOffset(PointerEventData data)
     {
+        // Grabbing mid-entrance lands the model before calculating the offset.
+        if (phase == Phase.Opening)
+        {
+            ApplyPose(toPosition, toRotation, toScale);
+            phase = Phase.Open;
+        }
         Camera main = MainCamera();
         if (main == null) return Vector3.zero;
         float depth = Vector3.Dot(folder.position - main.transform.position, main.transform.forward);
@@ -268,10 +277,44 @@ public sealed class CaseFolder3DView : MonoBehaviour
     // HELPERS
     // =========================================================
 
+    private void TakeOutOfIcon()
+    {
+        if (store != null) store.TryTakeOutForView();
+    }
+
+    // Fit the printed page itself, rather than the stale desk pose of its cover.
+    private void FitReadingPose(Camera main, Vector2? screenPosition)
+    {
+        RectTransform paper = pages.PaperRect;
+        Vector3 centre = folder.InverseTransformPoint(paper.TransformPoint(paper.rect.center));
+        Quaternion paperInFolder = Quaternion.Inverse(folder.rotation) * paper.rotation;
+        toRotation = main.transform.rotation * Quaternion.Inverse(paperInFolder);
+        float width = paper.rect.width * Mathf.Abs(paper.lossyScale.x);
+        float height = paper.rect.height * Mathf.Abs(paper.lossyScale.y);
+        float depth = Mathf.Max(main.nearClipPlane + 0.3f, 0.75f);
+        float multiplier = FitReadingScale(width, height, depth, main.fieldOfView, main.aspect);
+        toScale = viewScale.x * multiplier;
+        Vector2 screen = screenPosition ?? main.pixelRect.center;
+        float halfWidth = width * multiplier / (2f * depth * Mathf.Tan(main.fieldOfView * Mathf.Deg2Rad * 0.5f) * main.aspect) * main.pixelRect.width * 0.5f;
+        float halfHeight = height * multiplier / (2f * depth * Mathf.Tan(main.fieldOfView * Mathf.Deg2Rad * 0.5f)) * main.pixelRect.height * 0.5f;
+        screen.x = Mathf.Clamp(screen.x, main.pixelRect.xMin + halfWidth + 12f, main.pixelRect.xMax - halfWidth - 12f);
+        screen.y = Mathf.Clamp(screen.y, main.pixelRect.yMin + halfHeight + 12f, main.pixelRect.yMax - halfHeight - 12f);
+        Vector3 paperCentre = main.ScreenToWorldPoint(new Vector3(screen.x, screen.y, depth));
+        toPosition = paperCentre - toRotation * Vector3.Scale(centre, viewScale) * multiplier;
+    }
+
+    /// <summary>Pure page-fit calculation, also used by the internal regression runner.</summary>
+    public static float FitReadingScale(float width, float height, float depth, float fieldOfView, float aspect)
+    {
+        if (width <= 0f || height <= 0f || depth <= 0f || aspect <= 0f || fieldOfView <= 0f || fieldOfView >= 179f) return 1f;
+        double visibleHeight = 2d * depth * System.Math.Tan(fieldOfView * System.Math.PI / 360d);
+        return (float)System.Math.Min(visibleHeight * aspect * 0.68d / width, visibleHeight * 0.68d / height);
+    }
+
     private void ApplyPose(Vector3 position, Quaternion rotation, float scale)
     {
         folder.SetPositionAndRotation(position, rotation);
-        folder.localScale = savedScale * (scale / Mathf.Max(1e-5f, savedScale.x));
+        folder.localScale = viewScale * (scale / Mathf.Max(1e-5f, viewScale.x));
     }
 
     private Vector3 IconWorldPoint(Camera main, float depth, Vector3 fallback)
@@ -296,6 +339,16 @@ public sealed class CaseFolder3DView : MonoBehaviour
             if (t != null) return t;
         }
         return null;
+    }
+
+    private void OnDisable()
+    {
+        if (phase != Phase.Closed && folder != null) Restore();
+    }
+
+    private void OnApplicationFocus(bool focused)
+    {
+        if (!focused && phase != Phase.Closed && folder != null) Restore();
     }
 
     private void OnDestroy()

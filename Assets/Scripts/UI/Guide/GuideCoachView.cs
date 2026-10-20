@@ -46,7 +46,7 @@ public sealed class GuideCoachView : MonoBehaviour
 
     // Spotlight.
     private RectTransform dimLayer;
-    private readonly Image[] dims = new Image[4];
+    [SerializeField] private Image[] dims = new Image[4];
     private RectTransform frame;
     private Image frameImage;
     private RectTransform frameGlow;
@@ -92,7 +92,22 @@ public sealed class GuideCoachView : MonoBehaviour
     private int totalChars;
     private float lettersPerSecond = 55f;
 
-    public GuideHand Hand { get; private set; }
+    [field: SerializeField] public GuideHand Hand { get; private set; }
+
+    private void OnEnable()
+    {
+        // Runtime delegates are cleared by a Unity script reload.
+        if (catcher != null)
+            catcher.GetComponent<GuideTapCatcher>().Tapped = () => Tapped?.Invoke();
+        if (box != null)
+            box.GetComponent<GuideTapCatcher>().Tapped = () => Tapped?.Invoke();
+        if (skipLabel != null)
+        {
+            Button skip = skipLabel.GetComponentInParent<Button>();
+            skip.onClick.RemoveListener(OnSkipClicked);
+            skip.onClick.AddListener(OnSkipClicked);
+        }
+    }
 
     public bool IsTyping => typing != null && revealed < totalChars;
 
@@ -398,6 +413,8 @@ public sealed class GuideCoachView : MonoBehaviour
         hintVisible = true;
         StartTyping(hintText, text);
         if (instant) CompleteTyping();
+        if (!string.IsNullOrWhiteSpace(text) && AudioManager.Instance != null)
+            AudioManager.Instance.PlayEffect("sfx_hint_received_01");
     }
 
     public void HideHint()
@@ -515,7 +532,10 @@ public sealed class GuideCoachView : MonoBehaviour
         {
             revealed = Mathf.Min(totalChars, revealed + lettersPerSecond * dt);
             typing.maxVisibleCharacters = Mathf.FloorToInt(revealed);
-            if (revealed >= totalChars) typing.maxVisibleCharacters = 99999;
+            if (revealed >= totalChars)
+            {
+                typing.maxVisibleCharacters = 99999;
+            }
         }
         if (skipArmedUntil > 0f && now > skipArmedUntil) ResetSkip();
 

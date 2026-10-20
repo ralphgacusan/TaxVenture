@@ -212,6 +212,11 @@ public class CaseFolderUI : MonoBehaviour
     {
         NotifyClosing();
         StopPageTurn();
+        ReleaseWindowHold();
+        ReleaseDeskHold();
+        System.Action close = close3DView;
+        close3DView = null;
+        close?.Invoke();
     }
 
     // ============================================================
@@ -224,6 +229,7 @@ public class CaseFolderUI : MonoBehaviour
     /// </summary>
     public void Show()
     {
+        bool wasShowing = IsShowing;
         DebugTrace.Log("[CaseFolderUI] Show() was called");
         DebugTrace.Log("========== CASE FOLDER SHOW ==========");
 
@@ -261,8 +267,22 @@ public class CaseFolderUI : MonoBehaviour
             $"activeInHierarchy={folderPanelRoot.activeInHierarchy}"
         );
 
-        // Lock player controls.
-        CameraController.Instance?.LockPlayerControls();
+        // A scoped hold also releases when storage disables this world paper.
+        // Do not leave a legacy LockPlayerControls call orphaned after storage.
+        if (!deskHold)
+        {
+            deskHold = true;
+            HudWindowLock.Acquire(this);
+            if (IsWorldPaper && HudWindowLock.IsHeld && CameraController.Instance != null)
+            {
+                FloatingModel3D cover = GetComponentInParent<FloatingModel3D>();
+                if (cover != null)
+                {
+                    deskRaycaster = CameraController.Instance.MainCamera.gameObject.AddComponent<DocumentPhysicsRaycaster>();
+                    deskRaycaster.Document = cover.transform;
+                }
+            }
+        }
 
         // Build case pages.
         pages = BuildPages(
@@ -280,6 +300,8 @@ public class CaseFolderUI : MonoBehaviour
         folderPanelRoot.SetActive(true);
         PrintedPaperStyle.Apply(GetPageTurnRoot(), headingText, bodyText, pageIndicatorText);
         CentreContentColumn();
+        if (!wasShowing && AudioManager.Instance != null)
+            AudioManager.Instance.PlayDocumentSFX();
 
         DebugTrace.Log(
             $"[CaseFolderUI] After Open -> " +
@@ -314,6 +336,8 @@ public class CaseFolderUI : MonoBehaviour
     /// </summary>
     public void Hide()
     {
+        if (close3DView != null) { close3DView(); return; }
+        bool wasShowing = IsShowing;
         NotifyClosing();
         // Opened from the HUD icon as a window: close it the window way, so
         // the shared HUD hold is released instead of UnlockPlayerControls.
@@ -330,7 +354,9 @@ public class CaseFolderUI : MonoBehaviour
             folderPanelRoot.SetActive(false);
         }
 
-        CameraController.Instance?.UnlockPlayerControls();
+        ReleaseDeskHold();
+        if (wasShowing && AudioManager.Instance != null)
+            AudioManager.Instance.PlayDocumentSFX(true);
 
         DebugTrace.Log("[CaseFolderUI] Case Folder hidden.");
     }
@@ -339,17 +365,70 @@ public class CaseFolderUI : MonoBehaviour
     // HUD WINDOW (Office HUD: opened from the Case Folder icon)
     // ============================================================
 
+    private bool deskHold;
+    private DocumentPhysicsRaycaster deskRaycaster;
     private bool openedAsWindow;
+    private System.Action close3DView;
+    private bool savedWindowEnabled;
+    private bool openedAs3DView;
     private FloatingWindow hudWindow;
 
     /// <summary>True while the folder panel is open (from the icon or the desk).</summary>
     public bool IsPanelOpen =>
         folderPanelRoot != null && folderPanelRoot.activeSelf &&
-        (FolderWindow == null || FolderWindow.IsOpen());
+        (close3DView != null || FolderWindow == null || FolderWindow.IsOpen());
 
     private FloatingWindow FolderWindow =>
         hudWindow != null ? hudWindow :
         (hudWindow = folderPanelRoot != null ? folderPanelRoot.GetComponent<FloatingWindow>() : null);
+
+    /// <summary>Renders the desk paper; the 3D view alone owns its position and animation.</summary>
+    public bool ShowFor3DView(System.Action close)
+    {
+        if (close == null || CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null || folderPanelRoot == null)
+            return false;
+        FloatingWindow window = FolderWindow;
+        savedWindowEnabled = window != null && window.enabled;
+        if (window != null)
+        {
+            window.StopAllCoroutines();
+            window.enabled = false;
+        }
+        close3DView = close;
+        openedAs3DView = true;
+        pages = BuildPages(CaseManager.Instance.CurrentCase);
+        StopPageTurn();
+        currentPageIndex = Page1Index;
+        RenderPage(currentPageIndex);
+        folderPanelRoot.SetActive(true);
+        PrintedPaperStyle.Apply(GetPageTurnRoot(), headingText, bodyText, pageIndicatorText);
+        CentreContentColumn();
+        Canvas.ForceUpdateCanvases();
+        openedAsWindow = true;
+        HudWindowLock.Acquire(this);
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX();
+        if (!hasOpenedBefore)
+        {
+            hasOpenedBefore = true;
+            if (GameStateMachine.Instance != null && GameStateMachine.Instance.CurrentState is ReceiveCaseState)
+                GameStateMachine.Instance.ChangeState(new ReviewDocumentsState());
+        }
+        return true;
+    }
+
+    public void HideFor3DView()
+    {
+        if (!openedAs3DView) return;
+        openedAs3DView = false;
+        close3DView = null;
+        NotifyClosing();
+        StopPageTurn();
+        ReleaseWindowHold();
+        if (folderPanelRoot != null) folderPanelRoot.SetActive(false);
+        FloatingWindow window = FolderWindow;
+        if (window != null) window.enabled = savedWindowEnabled;
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX(true);
+    }
 
     /// <summary>
     /// Opens the same Case Folder pages as a HUD paper window: anywhere (not
@@ -360,6 +439,7 @@ public class CaseFolderUI : MonoBehaviour
     /// </summary>
     public bool ShowAsWindow(Vector2? dropScreenPosition)
     {
+        bool wasOpen = IsPanelOpen;
         if (CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null || folderPanelRoot == null)
         {
             return false;
@@ -394,10 +474,8 @@ public class CaseFolderUI : MonoBehaviour
         openedAsWindow = true;
         HudWindowLock.Acquire(this);
 
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayPaperSFX();
-        }
+        if (!wasOpen && AudioManager.Instance != null)
+            AudioManager.Instance.PlayDocumentSFX();
 
         if (!hasOpenedBefore)
         {
@@ -418,6 +496,8 @@ public class CaseFolderUI : MonoBehaviour
     /// <summary>Closes the HUD window (flies back into the icon).</summary>
     public void HideAsWindow()
     {
+        if (close3DView != null) { close3DView(); return; }
+        bool wasShowing = IsShowing;
         NotifyClosing();
         StopPageTurn();
 
@@ -432,6 +512,8 @@ public class CaseFolderUI : MonoBehaviour
         }
 
         ReleaseWindowHold();
+        if (wasShowing && AudioManager.Instance != null)
+            AudioManager.Instance.PlayDocumentSFX(true);
     }
 
     /// <summary>Case Folder icon tap: open as a window, or close whatever is open.</summary>
@@ -451,6 +533,19 @@ public class CaseFolderUI : MonoBehaviour
     {
         // Also covers closing by dragging the window onto the icon.
         ReleaseWindowHold();
+    }
+
+    private void ReleaseDeskHold()
+    {
+        if (!deskHold) return;
+        deskHold = false;
+        if (deskRaycaster != null)
+        {
+            deskRaycaster.enabled = false;
+            Destroy(deskRaycaster);
+            deskRaycaster = null;
+        }
+        HudWindowLock.Release(this);
     }
 
     private void ReleaseWindowHold()
@@ -485,7 +580,7 @@ public class CaseFolderUI : MonoBehaviour
             // Play paper/page-turn SFX.
             if (AudioManager.Instance != null)
             {
-                AudioManager.Instance.PlayPaperSFX();
+                AudioManager.Instance.PlayPaper2SFX();
             }
 
             TurnToCurrentPage(1);
@@ -509,7 +604,7 @@ public class CaseFolderUI : MonoBehaviour
             // Play paper/page-turn SFX.
             if (AudioManager.Instance != null)
             {
-                AudioManager.Instance.PlayPaperSFX();
+                AudioManager.Instance.PlayPaper2SFX();
             }
 
             TurnToCurrentPage(-1);

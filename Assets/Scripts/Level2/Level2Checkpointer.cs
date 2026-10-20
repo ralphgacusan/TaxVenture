@@ -49,6 +49,7 @@ public sealed class Level2Checkpointer : MonoBehaviour
     private bool UsesCheckpoint => Level2Checkpoint.ShouldUseCheckpoint(Application.isEditor,
         directEditorScene.IsValid() && gameObject.scene == directEditorScene);
 
+    private bool settingsExit;
     private bool restoredOrFresh;
     private float nextSave;
     private int lastRevision = -1;
@@ -134,15 +135,33 @@ public sealed class Level2Checkpointer : MonoBehaviour
     // SAVE
     // =========================================================
 
-    private void SaveNow()
+    public bool PrepareSettingsExit(bool replay)
     {
-        if (!restoredOrFresh || !UsesCheckpoint) return;
+        if (replay)
+        {
+            if (PlayerProgressManager.Instance == null ||
+                !PlayerProgressManager.Instance.ClearCheckpoint(LevelId)) return false;
+        }
+        else
+        {
+            if (!SaveCurrentCheckpoint()) return false;
+        }
+        settingsExit = true;
+        return true;
+    }
+
+    private void SaveNow() => SaveCurrentCheckpoint();
+
+    private bool SaveCurrentCheckpoint()
+    {
+        if (settingsExit || !UsesCheckpoint) return true;
+        if (!restoredOrFresh) return false;
         CaseData data = CaseManager.Instance != null ? CaseManager.Instance.CurrentCase : null;
         CaseReviewState review = data?.review;
-        if (review == null || review.phase < ReviewPhase.RetrieveFolder || review.phase >= ReviewPhase.Completed) return;
-        if (review.audit != null && review.audit.approved) return;
+        if (review == null || review.phase < ReviewPhase.RetrieveFolder || review.phase >= ReviewPhase.Completed) return true;
+        if (review.audit != null && review.audit.approved) return true;
         PlayerProgressManager progress = PlayerProgressManager.Instance;
-        if (progress == null) return;
+        if (progress == null) return false;
         var checkpoint = new LevelCheckpoint
         {
             levelId = LevelId,
@@ -153,12 +172,14 @@ public sealed class Level2Checkpointer : MonoBehaviour
             incomeSource = Level2Checkpoint.EnumName(data.incomeSource),
             transferredFields = data.folderTransferredFields != null ? new List<string>(data.folderTransferredFields) : new List<string>()
         };
-        if (progress.SaveCheckpoint(checkpoint))
+        bool saved = progress.SaveCheckpoint(checkpoint);
+        if (saved)
         {
             lastRevision = review.packetRevision;
             lastPhase = review.phase;
             lastDay = review.clock != null ? review.clock.day : 1;
         }
+        return saved;
     }
 
     // =========================================================

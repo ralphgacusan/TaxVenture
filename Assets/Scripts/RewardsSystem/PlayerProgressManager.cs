@@ -229,6 +229,45 @@ public class PlayerProgressManager : MonoBehaviour
     // =========================================================
 
     /// <summary>Saves the resumable state of an unfinished level run (signed, atomic, same save file).</summary>
+    /// <summary>Clear only the unfinished attempt; retain earned career results.</summary>
+    public bool ClearCheckpoint(string levelId)
+    {
+        LevelCheckpoint previous = progress.CheckpointFor(levelId);
+        progress.ClearCheckpoint(levelId);
+        if (Save()) return true;
+        if (previous != null) progress.SetCheckpoint(previous);
+        return false;
+    }
+
+    /// <summary>Confirmed fresh start. Replace both save generations so recovery cannot resurrect old progress.</summary>
+    public bool ResetProgress()
+    {
+        var fresh = new PlayerProgressData();
+        fresh.Normalize();
+        try
+        {
+            string encoded = Encode(fresh);
+            store.Reset(encoded);
+        }
+        catch (Exception error)
+        {
+            Debug.LogError("[PlayerProgressManager] Reset failed: " + error.Message);
+            return false;
+        }
+        progress = fresh;
+        pendingResult = null;
+        lastAppliedRunId = null;
+        PlayerPrefs.DeleteKey("TaxVenture.Career.Seen.v1");
+        PlayerPrefs.DeleteKey("TaxVenture.Guide.Level_01.finished");
+        PlayerPrefs.DeleteKey("TaxVenture.Guide.Level_02.finished");
+        PlayerPrefs.Save();
+        TrainingSession.End();
+        CareerProgressService.ClearCache();
+        try { ProgressChanged?.Invoke(progress); }
+        catch (Exception error) { Debug.LogException(error); }
+        return true;
+    }
+
     public bool SaveCheckpoint(LevelCheckpoint checkpoint)
     {
         if (progress == null || checkpoint == null || !checkpoint.IsSet || TrainingSession.IsPracticing) return false;
@@ -238,6 +277,16 @@ public class PlayerProgressManager : MonoBehaviour
 
     /// <summary>The resumable run of this level, or null.</summary>
     public LevelCheckpoint GetCheckpoint(string levelId) => progress != null ? progress.CheckpointFor(levelId) : null;
+
+    /// <summary>Remember a fully viewed first intro in the existing signed save.</summary>
+    public bool MarkLevelOneIntroSeen()
+    {
+        if (progress.levelOneIntroSeen) return true;
+        progress.levelOneIntroSeen = true;
+        if (Save()) return true;
+        progress.levelOneIntroSeen = false;
+        return false;
+    }
 
     /// <summary>Records a neutral story fact once and saves.</summary>
     public bool RecordStoryFact(string id)

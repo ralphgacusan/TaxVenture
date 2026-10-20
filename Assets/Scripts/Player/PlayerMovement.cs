@@ -28,6 +28,9 @@ public class PlayerMovement : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        // This stays enabled when a lesson or workstation holds movement.
+        if (GetComponent<AudioEnvironment>() == null)
+            gameObject.AddComponent<AudioEnvironment>();
 
         rb.constraints =
             RigidbodyConstraints.FreezeRotationX |

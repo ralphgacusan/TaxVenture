@@ -6,12 +6,11 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.Playables;
 using UnityEngine.SceneManagement;
-using UnityEngine.Timeline;
 using UnityEngine.UI;
 
 /// <summary>
 /// PURPOSE:
-/// Runs the Level 1 intro cutscene scene "Cutscene1.0" (Career Chapter 1
+/// Runs the Level 1 intro cutscene scene "Cutscene2.0" (Career Chapter 1
 /// START loads it). Same self-bootstrapping pattern as SceneFade /
 /// OfficeHudRuntime: no scene edits and no serialized references; the scene's
 /// PlayableDirectors, animation and audio are left exactly as authored.
@@ -21,40 +20,29 @@ using UnityEngine.UI;
 ///   flow: 0.25 s fades, then SceneManager.LoadScene).
 /// - The cutscene ends when the longest PlayableDirector stops. Without a
 ///   playable Timeline it ends after fallbackDurationSeconds.
-/// - Shows subtitles from Resources/Cutscenes/cutscene01_subtitles.json at the
-///   bottom of the safe area, timed to the Timeline clips when they can be
-///   read, otherwise to the JSON times.
-///
-/// DOES NOT: play, pause or rebind any director, touch audio, or save progress.
+/// - Keeps authored scene text; creates no subtitle or title overlay.
+/// - Remembers a completed viewing; first viewing cannot be skipped.
+/// DOES NOT: play, pause or rebind any director, or touch authored audio.
 /// </summary>
 public sealed class Cutscene01Runtime : MonoBehaviour
 {
-    public const string SceneName = "Cutscene1.0";
+    public const string SceneName = "Cutscene2.0";
     public const string SubtitlePath = "Cutscenes/cutscene01_subtitles";
 
-    private const float SubtitleFadeSeconds = 0.2f;
     private const float StartGraceSeconds = 2f;
 
     private CutsceneSubtitleTrack track;
     private PlayableDirector master;
     private bool masterPlayed;
-    private bool usingTimelineClock;
     private float elapsed;
     private bool leaving;
+    private bool canSkip;
 
     private CanvasGroup black;
     private RectTransform safeRoot;
     private Rect appliedSafeArea;
     private Vector2Int appliedScreen;
-    private CanvasGroup subtitleGroup;
-    private TextMeshProUGUI subtitleLabel;
-    private CanvasGroup titleGroup;
-    private TextMeshProUGUI titleHeading;
-    private TextMeshProUGUI titleCaption;
     private GameObject skipButton;
-    private CutsceneSubtitleLine shownLine;
-    private CutsceneSubtitleLine pendingLine;
-    private bool hasPending;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void InitializeForLoadedScenes()
@@ -102,12 +90,14 @@ public sealed class Cutscene01Runtime : MonoBehaviour
         track = LoadTrack();
         if (track == null) track = new CutsceneSubtitleTrack();
         if (track.lines == null) track.lines = new List<CutsceneSubtitleLine>();
+        track.lines.Clear(); // Cutscene 2.0 uses its authored visuals, with no added subtitles.
         if (string.IsNullOrWhiteSpace(track.nextScene)) track.nextScene = "Office_Level1";
 
+        PlayerProgressData progress = PlayerProgressManager.Instance != null ? PlayerProgressManager.Instance.CurrentProgress : null;
+        canSkip = track.showSkip && progress != null && progress.HasSeenLevelOneIntro;
         BuildUi();
         EnsureEventSystem();
         FindMasterDirector();
-        ResolveClipTimes();
         StartCoroutine(Fade(1f, 0f, track.fadeInSeconds));
     }
 
@@ -141,50 +131,6 @@ public sealed class Cutscene01Runtime : MonoBehaviour
         Debug.Log($"[Cutscene01] Following director '{master.name}' ({master.duration:0.00} s).");
     }
 
-    private void ResolveClipTimes()
-    {
-        if (!track.useTimelineClipTimes || master == null) return;
-        var timeline = master.playableAsset as TimelineAsset;
-        if (timeline == null) return;
-
-        TrackAsset numbered = null;
-        int mostClips = -1;
-        foreach (TrackAsset candidate in timeline.GetOutputTracks())
-        {
-            if (candidate == null) continue;
-            int count = 0;
-            foreach (TimelineClip _ in candidate.GetClips()) count++;
-            bool named = !string.IsNullOrWhiteSpace(track.timelineTrack) && candidate.name == track.timelineTrack;
-            if (named) { numbered = candidate; break; }
-            if (string.IsNullOrWhiteSpace(track.timelineTrack) && count > mostClips)
-            {
-                mostClips = count;
-                numbered = candidate;
-            }
-        }
-        if (numbered == null)
-        {
-            Debug.LogWarning($"[Cutscene01] Timeline track '{track.timelineTrack}' not found. Using the JSON subtitle times.");
-            return;
-        }
-
-        var clips = new List<TimelineClip>(numbered.GetClips());
-        clips.Sort((a, b) => a.start.CompareTo(b.start));
-        var starts = new List<double>(clips.Count);
-        var ends = new List<double>(clips.Count);
-        var report = new System.Text.StringBuilder();
-        for (int i = 0; i < clips.Count; i++)
-        {
-            starts.Add(clips[i].start);
-            ends.Add(clips[i].end);
-            report.Append($"\n  clip {i + 1}: {clips[i].start:0.00} - {clips[i].end:0.00}  ({clips[i].displayName})");
-        }
-        if (track.ApplyClipTimes(starts, ends))
-            Debug.Log($"[Cutscene01] Subtitles timed to track '{numbered.name}':{report}");
-        else
-            Debug.LogWarning($"[Cutscene01] Track '{numbered.name}' has {clips.Count} clips but the subtitles name clip {track.HighestClip}. Using the JSON subtitle times.{report}");
-    }
-
     private void HandleMasterStopped(PlayableDirector director)
     {
         if (masterPlayed) Finish();
@@ -199,14 +145,11 @@ public sealed class Cutscene01Runtime : MonoBehaviour
         elapsed += Time.deltaTime;
         if (leaving) return;
 
-        double time = elapsed;
         if (master != null)
         {
             if (master.state == PlayState.Playing) masterPlayed = true;
-            usingTimelineClock = masterPlayed;
             if (masterPlayed)
             {
-                time = master.time;
                 bool atEnd = master.duration > 0d && master.time >= master.duration - 0.001d;
                 if (master.state != PlayState.Playing || atEnd)
                 {
@@ -227,80 +170,25 @@ public sealed class Cutscene01Runtime : MonoBehaviour
             return;
         }
 
-        UpdateSubtitle(usingTimelineClock || master == null ? track.LineAt(time) : null);
     }
 
     private void LateUpdate() => ApplySafeArea();
-
-    // =========================================================
-    // SUBTITLES
-    // =========================================================
-
-    private void UpdateSubtitle(CutsceneSubtitleLine wanted)
-    {
-        float step = Time.unscaledDeltaTime / SubtitleFadeSeconds;
-        if (wanted != shownLine && !hasPending)
-        {
-            pendingLine = wanted;
-            hasPending = true;
-        }
-        else if (hasPending && wanted != pendingLine)
-        {
-            pendingLine = wanted;
-        }
-
-        CanvasGroup current = shownLine != null && shownLine.title ? titleGroup : subtitleGroup;
-        if (hasPending)
-        {
-            if (shownLine != null && current.alpha > 0f)
-            {
-                current.alpha = Mathf.MoveTowards(current.alpha, 0f, step);
-                return;
-            }
-            Show(pendingLine);
-            hasPending = false;
-        }
-
-        if (shownLine != null)
-        {
-            CanvasGroup group = shownLine.title ? titleGroup : subtitleGroup;
-            group.alpha = Mathf.MoveTowards(group.alpha, 1f, step);
-        }
-    }
-
-    private void Show(CutsceneSubtitleLine line)
-    {
-        shownLine = line;
-        subtitleGroup.alpha = 0f;
-        titleGroup.alpha = 0f;
-        subtitleGroup.gameObject.SetActive(line != null && !line.title);
-        titleGroup.gameObject.SetActive(line != null && line.title);
-        if (line == null) return;
-
-        if (line.title)
-        {
-            string text = line.text ?? "";
-            int split = text.IndexOf('\n');
-            titleHeading.text = split < 0 ? text : text.Substring(0, split).Trim();
-            titleCaption.text = split < 0 ? "" : text.Substring(split + 1).Trim();
-        }
-        else
-        {
-            subtitleLabel.text = line.text;
-        }
-    }
 
     // =========================================================
     // ENDING
     // =========================================================
 
     /// <summary>Skip button: same exit as the cutscene ending.</summary>
-    public void Skip() => Finish();
+    public void Skip()
+    {
+        if (canSkip) Finish();
+    }
 
     private void Finish()
     {
         if (leaving) return;
         leaving = true;
+        if (PlayerProgressManager.Instance != null) PlayerProgressManager.Instance.MarkLevelOneIntroSeen();
         if (skipButton != null) skipButton.SetActive(false);
         StopAllCoroutines();
         StartCoroutine(FadeAndLoad());
@@ -347,45 +235,7 @@ public sealed class Cutscene01Runtime : MonoBehaviour
         safeRoot = HudTheme.CreateRect("Safe Area", transform);
         HudTheme.Stretch(safeRoot);
 
-        // Subtitle: brass-edged navy panel, bottom centre of the safe area.
-        RectTransform subtitleFrame = HudTheme.CreateRect("Subtitle", safeRoot);
-        subtitleFrame.anchorMin = new Vector2(0.5f, 0f);
-        subtitleFrame.anchorMax = new Vector2(0.5f, 0f);
-        subtitleFrame.pivot = new Vector2(0.5f, 0f);
-        subtitleFrame.anchoredPosition = new Vector2(0f, 48f);
-        subtitleFrame.sizeDelta = new Vector2(1360f, 150f);
-        subtitleGroup = subtitleFrame.gameObject.AddComponent<CanvasGroup>();
-        subtitleGroup.blocksRaycasts = false;
-        subtitleGroup.interactable = false;
-        RectTransform body = HudTheme.CreatePanel("Panel", subtitleFrame, 14f);
-        HudTheme.Stretch((RectTransform)body.parent);
-        subtitleLabel = HudTheme.CreateLabel("Text", body, "", 44f, HudTheme.TextPrimary, TextAlignmentOptions.Center);
-        HudTheme.Stretch((RectTransform)subtitleLabel.transform, 18f);
-        subtitleLabel.textWrappingMode = TextWrappingModes.Normal;
-        subtitleLabel.fontSizeMin = 30f;
-        subtitleFrame.gameObject.SetActive(false);
-
-        // Title card: large centred heading with a caption, no panel.
-        RectTransform titleRect = HudTheme.CreateRect("Title Card", safeRoot);
-        titleRect.anchorMin = new Vector2(0.5f, 0.5f);
-        titleRect.anchorMax = new Vector2(0.5f, 0.5f);
-        titleRect.sizeDelta = new Vector2(1500f, 300f);
-        titleGroup = titleRect.gameObject.AddComponent<CanvasGroup>();
-        titleGroup.blocksRaycasts = false;
-        titleGroup.interactable = false;
-        titleHeading = HudTheme.CreateLabel("Heading", titleRect, "", 120f, HudTheme.BrassSoft, TextAlignmentOptions.Center, FontStyles.Bold);
-        PlaceBand((RectTransform)titleHeading.transform, 0.42f, 1f);
-        titleCaption = HudTheme.CreateLabel("Caption", titleRect, "", 52f, HudTheme.TextPrimary, TextAlignmentOptions.Center);
-        PlaceBand((RectTransform)titleCaption.transform, 0f, 0.4f);
-        foreach (TextMeshProUGUI label in new[] { titleHeading, titleCaption })
-        {
-            Shadow shadow = label.gameObject.AddComponent<Shadow>();
-            shadow.effectColor = HudTheme.ShadowColor;
-            shadow.effectDistance = new Vector2(3f, -4f);
-        }
-        titleRect.gameObject.SetActive(false);
-
-        if (track.showSkip) BuildSkipButton();
+        if (canSkip) BuildSkipButton();
 
         // Black overlay over everything, full screen (not inset).
         RectTransform fill = HudTheme.CreateRect("Black", transform);
@@ -418,14 +268,6 @@ public sealed class Cutscene01Runtime : MonoBehaviour
         button.targetGraphic = hit;
         button.onClick.AddListener(Skip);
         skipButton = frame.gameObject;
-    }
-
-    private static void PlaceBand(RectTransform rect, float bottom, float top)
-    {
-        rect.anchorMin = new Vector2(0f, bottom);
-        rect.anchorMax = new Vector2(1f, top);
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
     }
 
     private void ApplySafeArea()

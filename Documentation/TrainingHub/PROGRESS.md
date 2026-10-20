@@ -43,3 +43,15 @@ Nothing below has been seen running. Suggested pass:
 7. Side Quest 1 drill, both runs (the Side Quest Complete card under the result card does not move on).
 8. Case drills: the player stands in the reception (not inside a wall or on a desk), the door is open, the tracker says "Talk to the receptionist", Marco's case and profile appear, `case:correct` finishes the Moving Values mastery, the Hand It In run ends on approval with nothing saved to the career (career board unchanged).
 9. The hidden scene parts: nothing broken (minimap, NPCs, desk) and the run feels lighter.
+
+## 2026-10-20: first-finish access and tutorial settings wording
+
+User-requested fresh menu now exposes only Play and Settings until Level 1's first saved finish. The tutorial menu object is hidden in that state, and TrainingBinder3D.Open also rejects a stale/direct request. After completion, the normal binder/catalog rules resume. Training practice settings use Replay Tutorial, Resume Tutorial, Tutorial Paused and matching confirmation copy; the same drill/mode is retained on replay.
+
+Scratch compile: 0 errors / 29 baseline warnings. SettingsRegression 133/133; TrainingRegression includes the new binder entry check. Visual/Play Mode acceptance is the user's. Handoff/checklist: Documentation/SettingsActions/FreshMenuAndLighting.md.
+
+## Audio continuity (2026-10-20)
+
+- Training Binder opens with the panel cue, turns modules with a page turn, uses the back cue on close, and closes with the panel cue when starting a drill. Missing drills give unavailable feedback.
+- Practice result cards request completion music while shown and clear the request when the level closes. Practice still awards no career rewards.
+- AudioRegression: 195 checks passed. Scratch build is pending the root integration pass; Play Mode/device checks remain user-owned.

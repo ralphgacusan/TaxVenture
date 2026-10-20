@@ -121,6 +121,7 @@ public sealed class HudProfileCards : MonoBehaviour
 
     private void OpenCards(List<TaxpayerProfile> profiles, Vector2? origin)
     {
+        bool wasOpen = holding;
         for (int i = 0; i < cards.Count; i++)
             if (cards[i] != null) Destroy(cards[i].gameObject);
         cards.Clear();
@@ -149,7 +150,8 @@ public sealed class HudProfileCards : MonoBehaviour
             card.OpenWindowWithOffset(offset);
         }
 
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        if (!wasOpen && AudioManager.Instance != null)
+            AudioManager.Instance.PlayDocumentSFX();
         HudWindowLock.Acquire(this);
         holding = true;
     }
@@ -159,10 +161,13 @@ public sealed class HudProfileCards : MonoBehaviour
 
     private void CloseAll()
     {
+        bool wasOpen = holding;
         mode = Mode.Idle;
         for (int i = 0; i < cards.Count; i++)
             if (cards[i] != null && cards[i].IsOpen()) cards[i].CloseWindow();
         ReleaseHold();
+        if (wasOpen && AudioManager.Instance != null)
+            AudioManager.Instance.PlayDocumentSFX(true);
     }
 
     private bool AnyCardOpen()

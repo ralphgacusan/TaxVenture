@@ -192,3 +192,13 @@ See `phases/PHASE-02-OBJECTIVE-TRACKER.md` for the file list and behaviour. The 
 ## Next step
 
 User: run the open Unity checks (Phase 5 first: `phases/PHASE-05-REWARD-SCREENS.md`). Agent: fix any reported defects. Once everything is confirmed, the initiative is complete.
+
+## Audio feedback integration (2026-10-20)
+
+- Objective-new/completed sounds now follow the tracker animation, with the delayed model-side completion sound removed. Reward animations play points and badge cues; blocked actions play unavailable feedback.
+- Notes, Profiles and paper drag interactions use panel and paper pickup/place cues. Level Complete requests completion music while revealed and clears it when dismissed.
+- AudioRegression: 195 checks passed. Scratch build is pending the root integration pass; Play Mode/device checks remain user-owned.
+
+## Shared Case Folder stuck viewer follow-up — 2026-10-21
+
+User reported an edge-on distant folder and held controls in Level 1. The shared CaseFolder3DView now fits the printed page facing the camera, uses CaseFolderUI's dedicated 3D rendering endpoint and keeps one animation owner. A new DocumentPhysicsRaycaster filters pointer hits to the held folder so it can return while the ordinary world raycaster is disabled. Close/swipe, disable, focus loss and paper deactivation release the owned hold; desk storage also releases its owned paper hold. Disabled FloatingWindows no longer participate as open windows, and rejected 3D drop opening cannot fall back to a legacy flat viewer. No authored scene changes. Full files, verification limits and manual checklist: Documentation/Level2SomethingDoesNotMatch/PROGRESS.md, latest shared viewer repair entry. User Play Mode remains pending.

@@ -90,7 +90,7 @@ public sealed class HudDragItem : MonoBehaviour, IHudDragVisual
         Apply(position, 0.25f, tilt, 1f);
         enabled = true;
 
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_paper_pickup_01", 0.55f);
     }
 
     public void Move(Vector2 screenPosition)
@@ -163,6 +163,8 @@ public sealed class HudDragItem : MonoBehaviour, IHudDragVisual
 
     private void Finish()
     {
+        if (outcome == HudDragOutcome.Returned && AudioManager.Instance != null)
+            AudioManager.Instance.PlayEffect("sfx_paper_place_01", 0.55f);
         state = State.Idle;
         item.gameObject.SetActive(false);
         enabled = false;

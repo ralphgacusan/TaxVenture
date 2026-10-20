@@ -110,6 +110,15 @@ public class PlayerProgressData
     /// <summary>Neutral story facts learned in completed levels (e.g. "rosa-desk-provenance").</summary>
     public List<string> storyFacts = new List<string>();
 
+    /// <summary>Set after the Level 1 intro finishes; default false for fresh/older saves.</summary>
+    public bool levelOneIntroSeen;
+
+    /// <summary>The first career-board visit follows a finished Level 1, at any score.</summary>
+    public bool HasFinishedFirstLevel => completedLevelIds != null && completedLevelIds.Contains("Level_01");
+
+    /// <summary>Existing completed careers already know the intro, even without the new field.</summary>
+    public bool HasSeenLevelOneIntro => levelOneIntroSeen || HasFinishedFirstLevel;
+
     /// <summary>The resumable run of this level, or null.</summary>
     public LevelCheckpoint CheckpointFor(string levelId) =>
         activeCheckpoint != null && activeCheckpoint.IsSet && activeCheckpoint.levelId == levelId ? activeCheckpoint : null;

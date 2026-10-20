@@ -59,6 +59,7 @@ public class ValueTransferManager : MonoBehaviour
         if (SelectedSourceComponent == sourceComponent)
         {
             ClearSelection();
+            AudioManager.Instance?.PlayExactEffect("sfx_card_return_02", 0.55f);
             return;
         }
 
@@ -76,10 +77,7 @@ public class ValueTransferManager : MonoBehaviour
         // Play selection SFX.
         // -----------------------------------------------------
 
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayMouseClickSelectSFX();
-        }
+        AudioManager.Instance?.PlayExactEffect("sfx_card_pickup_02", 0.6f);
 
 
         OnSelectionChanged?.Invoke(
@@ -165,6 +163,8 @@ public class ValueTransferManager : MonoBehaviour
                 )
             );
 
+            AudioManager.Instance?.PlayEffect("sfx_ui_unavailable_01", 0.5f);
+
             return;
         }
 
@@ -198,10 +198,7 @@ public class ValueTransferManager : MonoBehaviour
             // Play successful placement SFX.
             // -------------------------------------------------
 
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlaySelectSFX();
-            }
+            AudioManager.Instance?.PlayExactEffect("sfx_card_place_01", 0.65f);
 
 
             OnTransferSucceeded?.Invoke(
@@ -226,6 +223,8 @@ public class ValueTransferManager : MonoBehaviour
             SelectedValue,
             "This value could not be placed here."
         );
+
+        AudioManager.Instance?.PlayEffect("sfx_ui_unavailable_01", 0.5f);
     }
 
 

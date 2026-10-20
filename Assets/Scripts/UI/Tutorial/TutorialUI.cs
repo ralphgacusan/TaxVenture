@@ -55,6 +55,7 @@ public class TutorialUI : MonoBehaviour
     private System.Action onContinuePressed;
     private Transform arrowTarget;
     private bool arrowActive;
+    private bool continueInProgress;
 
     private void Awake()
     {
@@ -81,6 +82,7 @@ public class TutorialUI : MonoBehaviour
     /// </summary>
     public void Show(string speakerName, string text, System.Action onContinue, Transform target, string portraitId = "")
     {
+        bool opening = !panelRoot.activeSelf;
         speakerNameText.text = speakerName;
         tutorialText.text = text;
 
@@ -96,6 +98,8 @@ public class TutorialUI : MonoBehaviour
         CameraController.Instance.LockPlayerControls();
 
         panelRoot.SetActive(true);
+        if (opening && AudioManager.Instance != null)
+            AudioManager.Instance.PlayEffect("sfx_ui_panel_open_01", 0.6f);
 
         if (target != null)
             ShowArrow(target);
@@ -107,6 +111,11 @@ public class TutorialUI : MonoBehaviour
 
     public void HidePanel()
     {
+        if (panelRoot.activeSelf && AudioManager.Instance != null)
+        {
+            if (continueInProgress) AudioManager.Instance.QueueInteractionSFX("continue");
+            else AudioManager.Instance.PlayEffect("sfx_ui_panel_close_01", 0.6f);
+        }
         panelRoot.SetActive(false);
         HideArrow();
     }
@@ -114,8 +123,9 @@ public class TutorialUI : MonoBehaviour
     private void OnContinueClicked()
     {
         Debug.Log("[TutorialUI] Continue pressed.");
-
-        HidePanel();
+        continueInProgress = true;
+        try { HidePanel(); }
+        finally { continueInProgress = false; }
         CameraController.Instance.UnlockPlayerControls();
 
         onContinuePressed?.Invoke();

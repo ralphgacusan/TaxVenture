@@ -67,7 +67,11 @@ public sealed class FindingSlot : MonoBehaviour, IDataValueDestination, IPointer
         return true;
     }
 
-    public void OnPointerClick(PointerEventData eventData) => Place();
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        AudioManager.Instance?.QueueInteractionSFX("paper_place");
+        Place();
+    }
 
     // Keep the click on the field instead of a draggable paper/window ancestor.
     public void OnPointerDown(PointerEventData eventData) { }
@@ -91,6 +95,7 @@ public sealed class FindingSlot : MonoBehaviour, IDataValueDestination, IPointer
             feedback?.ShowFeedback(false);
             if (Rejected != null) Rejected();
             else Level2Say.Line("That line doesn't go in this box. Try a line from another page.");
+            AudioManager.Instance?.PlayEffect("sfx_ui_unavailable_01", 0.5f);
             return;
         }
         manager.TryPlaceOnDestination(this);

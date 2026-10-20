@@ -133,6 +133,8 @@ public class ValueClickDestination :
     public void OnPointerClick(
         PointerEventData eventData)
     {
+        AudioManager.Instance?.QueueInteractionSFX("paper_place");
+
         DebugTrace.Log(
             $"[ValueClickDestination] Clicked: " +
             $"{gameObject.name}"

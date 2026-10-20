@@ -238,6 +238,24 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         image.type = UnityEngine.UI.Image.Type.Simple;
         image.preserveAspect = true;
         image.color = Color.white;
+
+        StyleIconButton(target.GetComponent<UnityEngine.UI.Button>());
+    }
+
+    /// <summary>Shared feedback for scene icons and Level 2's runtime-created icons.</summary>
+    public static void StyleIconButton(UnityEngine.UI.Button button)
+    {
+        if (button == null) return;
+        // Keep the availability fade on the icon's CanvasGroup; avoid
+        // multiplying it by Unity's default half-opacity disabled tint.
+        var colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1f, 0.94f, 0.8f, 1f);
+        colors.pressedColor = new Color(0.72f, 0.78f, 0.88f, 1f);
+        colors.selectedColor = Color.white;
+        colors.disabledColor = Color.white;
+        colors.fadeDuration = 0.1f;
+        button.colors = colors;
     }
 
     private void AttachBadge(Transform canvasRoot, string iconPath, string counterName)
@@ -350,7 +368,11 @@ public sealed class OfficeHudRuntime : MonoBehaviour
                 view.Toggle();
                 return true;
             };
-            folderIcon.DropOpenOverride = screen => view.Open(screen);
+            folderIcon.DropOpenOverride = screen =>
+            {
+                view.Open(screen);
+                return true; // A rejected 3D open must not start the legacy flat window.
+            };
             folderIcon.DragVisual = HudDragItem.Create(canvasRoot, "Case Folder", caseFolderIcon,
                 new Vector2(300f, 220f), -6f, HudDragItem.BuildClosedFolder);
             patchedFolderIcon = folderIcon;

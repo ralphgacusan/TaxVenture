@@ -94,6 +94,14 @@ public sealed class SaveFileStore
         File.Move(TempPath, FilePath);
     }
 
+    /// <summary>Replace all recoverable generations for a confirmed fresh start.</summary>
+    public void Reset(string text)
+    {
+        Write(text);
+        Write(text);
+        if (File.Exists(RejectedPath)) File.Delete(RejectedPath);
+    }
+
     /// <summary>
     /// Reads the first candidate (main file, then backup) that the validator
     /// accepts. Returns null when none is usable. fromBackup tells which one

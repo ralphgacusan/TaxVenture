@@ -164,6 +164,7 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
 
         Button button = icon.GetComponent<Button>();
         button.targetGraphic = image;
+        OfficeHudRuntime.StyleIconButton(button);
         button.onClick.RemoveListener(Toggle);
         button.onClick.AddListener(Toggle);
 
@@ -290,7 +291,7 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         Quaternion fromRotation = closed.rotation;
         Vector3 restScale = closed.localScale;
         float depth = main != null ? Vector3.Dot(from - main.transform.position, main.transform.forward) : 0.6f;
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX();
         for (float elapsed = 0f; elapsed < StoreDuration; elapsed += Time.unscaledDeltaTime)
         {
             float t = Mathf.Clamp01(elapsed / StoreDuration);
@@ -309,7 +310,7 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         GameplayEvents.RaiseGuideCue("TaxBookStored");
         storing = false;
         punchStarted = Time.unscaledTime;
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX();
         Level2Say.Line("Your Tax Code Book is in its icon now. Tap it to read anywhere; tap again to put it away.", null, 5f);
     }
 
@@ -333,7 +334,7 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         Quaternion fromRot = open.rotation;
         Vector3 restScale = open.localScale;
         float depth = main != null ? Vector3.Dot(from - main.transform.position, main.transform.forward) : 0.6f;
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX();
         for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / CloseDuration)
         {
             float ease = t * t;
@@ -349,7 +350,7 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         GameplayEvents.RaiseGuideCue("TaxBookStored");
         storing = false;
         punchStarted = Time.unscaledTime;
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX();
         Level2Say.Line("Your Tax Code Book is in its icon now. Tap it to read anywhere; tap again to put it away.", null, 5f);
     }
 
@@ -383,7 +384,7 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         review.taxBookStored = false;
         desk.UnparkClosedBook();
         punchStarted = Time.unscaledTime;
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX();
     }
 
     /// <summary>A carried book never reappears on the desk (desk resets and resumes included).</summary>
@@ -485,7 +486,7 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
             RestoreFloating(true);
             ReturnToDesk();
         }
-        else if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        else if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX();
     }
 
     internal Transform BookTransform => book;
@@ -582,7 +583,7 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         phase = Phase.Opening;
         elapsed = 0f;
         BringBookToFront(book);
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_book_open_01");
         return true;
     }
 
@@ -601,7 +602,7 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         toScale = savedScale.x * IconScale;
         phase = Phase.Closing;
         elapsed = 0f;
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        // TaxCodeBookUI.Hide plays the close cue when the pages are put away.
     }
 
     private void UpdateFloating()

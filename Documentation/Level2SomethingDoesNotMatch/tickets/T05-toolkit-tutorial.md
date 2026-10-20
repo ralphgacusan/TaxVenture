@@ -36,3 +36,7 @@ Compile; test annotation data/actions and tutorial transition; controls/dialogue
 ## Feel and visual pass (2026-10-19, with T06)
 
 User feedback: highlighting didn't feel like highlighting (a yellow band showed before inking), cards looked off, few animations. Rebuilt: swipe a line (or pick up the highlighter) and the ink appears only where the nib passes, as uneven hand-drawn segments with a wet-ink dot; a forgiving sweep finishes with a sparkle burst and a SOURCE flag; a tap still draws it for you. Cards have a coloured border and header band with their word, a soft shadow that grows as they lift, a glow when picked up, a deal-out flip from the case, squash-and-spring landing with sparkles and a "Placed!" pop, a shake-back on a wrong-kind place, idle breathing and an idle nudge toward the next step. Note places have neutral dashed outlines that march and light up only while a fitting card is held. Fixed: the lid used to rotate down into the case; it now opens up and back with its scoreboard facing the seat.
+
+### Paper/card sound follow-up — 2026-10-21
+
+Implemented — internally verified; user listening test pending. Cards use exact card_place_01 at landing and the physical highlight swipe/trace flourish uses exact card_return_02. Selection/lifting uses card_pickup_02. Stroke progress is bounded so the swipe cue does not stack every frame. Shared document icons/value-transfer mapping and ambience calibration are documented in ../AUDIO_TUNING.md. Scratch build 0 errors / 29 warnings; AudioRegression 221 PASS; Level2Regression 1,291 PASS.

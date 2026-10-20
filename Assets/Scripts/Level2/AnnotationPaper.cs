@@ -31,6 +31,14 @@ public sealed class ToolkitBuilder
     {
         Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
         var material = new Material(shader) { name = "Level2 Toolkit " + name, color = color };
+        // Matte paper/plastic keeps white surfaces from reflecting the sun as glare.
+        if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", 0f);
+        if (material.HasProperty("_Glossiness")) material.SetFloat("_Glossiness", 0f);
+        if (material.HasProperty("_SpecularHighlights"))
+        {
+            material.SetFloat("_SpecularHighlights", 0f);
+            material.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
+        }
         if (SelfLight > 0f)
         {
             material.EnableKeyword("_EMISSION");

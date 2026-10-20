@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 /// Controls the Main Menu buttons.
 ///
 /// CONNECTS WITH:
-/// - Progress scene: loaded when Start Game is pressed
+/// - Play starts Level 1 directly until its first finish, then opens the career board
 /// - SettingsBoard3D: Settings opens the 3D settings board in the 3D Menu.
 ///   From any other scene it loads the 3D Menu with the board open
 ///   (MenuEntry.OpenSettings); there is no separate Settings scene.
@@ -15,20 +15,12 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class MainMenuUI : MonoBehaviour
 {
-    [SerializeField] private string progressSceneName = "Progress";
-
     /// <summary>
     /// Wired to the Start Game button.
     /// </summary>
     public void OnStartGamePressed()
     {
-        // Play button click sound before changing scenes.
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlaySelectSFX();
-        }
-
-        SceneManager.LoadScene(progressSceneName);
+        MenuEntry.Play(FindAnyObjectByType<ToggleCamera>());
     }
 
     /// <summary>

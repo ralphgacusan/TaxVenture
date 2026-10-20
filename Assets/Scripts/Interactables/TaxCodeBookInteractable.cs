@@ -30,10 +30,10 @@ public class TaxCodeBookInteractable : MonoBehaviour, IInteractable
     }
     public void OnInteract()
     {
-        // Play Paper 2 SFX every time the 3D Tax Code Book is interacted with.
+        // Same opening cue for the legacy interactable and drag-open paths.
         if (AudioManager.Instance != null)
         {
-            AudioManager.Instance.PlayPaperSFX();
+            AudioManager.Instance.PlayEffect("sfx_book_open_01");
         }
 
         if (!hasBeenOpenedOnce)

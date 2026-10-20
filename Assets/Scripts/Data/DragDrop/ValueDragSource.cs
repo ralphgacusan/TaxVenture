@@ -145,6 +145,7 @@ public class ValueDragSource : MonoBehaviour,
                 "Source is already selected. " +
                 "Keeping existing selection for drag."
             );
+            AudioManager.Instance?.PlayExactEffect("sfx_card_pickup_02", 0.6f);
         }
 
         // -----------------------------------------------------

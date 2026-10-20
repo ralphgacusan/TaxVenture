@@ -176,6 +176,8 @@ public class FloatingModel3D :
 
     private void OnDisable()
     {
+        isDragging = false;
+        hasDragTarget = false;
         isPointerOver = false;
         SetOutlineFocused(false);
     }
@@ -494,6 +496,8 @@ public class FloatingModel3D :
 
         if (!enabled)
         {
+            isDragging = false;
+            hasDragTarget = false;
             isPointerOver = false;
             SetOutlineFocused(false);
         }

@@ -53,3 +53,24 @@ Implemented — internally verified; user Play Mode pending. At the desk, the fo
 ### Consistency follow-up (2026-10-19)
 
 Implemented — internally verified; user Play Mode pending. See SPEC and PROGRESS, “Level 1 consistency follow-up”, for the current six-page folder, shared clock/splash, receipt papers, annotated HUD collection and direct-Editor checkpoint policy. Earlier implementation descriptions above remain historical.
+
+### Folder icon / drag regression repair — 2026-10-21
+
+Implemented — internally verified; user Play Mode pending. Fresh empty icons start locked and drawer-to-icon storage unlocks them; resumed placed folders restore UI access. HUD animation initializes the model at full size before scaling, desk opening restores the rest pose, and hidden/disabled drags cancel their pending targets. Eight folder regression checks pass; Level2Regression 1,291 PASS and scratch build 0 errors / 29 warnings. See PROGRESS for changed files and the fresh/retrieved/store/reopen/checkpoint/Level 1 visual test sequence.
+
+### Reuse Level 1 folder controls — 2026-10-21
+
+Implemented — internally verified; user Play Mode pending. Supersedes the earlier count-0 resume unlocking and custom desk-reopen implementation. Level 2 delegates taps/drops to Level 1's shared animated view, preserving badge 1 while shown and returning to the icon on another tap or cover drag. Initial desk placement alone records the review step. Empty icons are guarded at availability, pointer dispatch and view opening.
+
+- [x] Internal build (0 errors / 29 baseline warnings), Level2Regression 1,299 PASS, guide 733/audio 221/training 514 PASS, asset validator PASS.
+- [ ] User tests fresh empty icon, badge-1 repeated taps, drag out/back, normal size/smooth animation, restored desk folder storage, and Level 1 controls.
+
+### Secure withdrawal correction — 2026-10-21
+
+Implemented — internally verified; user Play Mode pending. Drag-out and cover movement withdraw the badge until animated return; the empty icon rejects further withdrawals. Click-only preview still toggles. The same store reserves ownership and restores exactly one count. First-placement progression no longer relies on the post-opening count. Level2Regression 1,305 PASS; scratch build 0 errors / 29 baseline warnings. Manual sequence is in PROGRESS.
+
+### Shared stuck viewer repair — 2026-10-21
+
+The new Level 1 screenshot exposed shared viewer defects. The 3D folder now uses a dedicated world-paper endpoint, readable page-facing fit, a folder-only raycaster while held, disable/focus restoration and owned desk-paper hold cleanup. Legacy fallback opening is blocked. Withdrawal/return counts and existing animation durations are preserved. See the latest PROGRESS entry for exact changed files and internal results.
+
+- [ ] User checks fresh Level 1 and Level 2 open/close, drag out/back, swipe, mid-entrance grab, desk storage, Notes layering, control restoration and focus-loss cleanup.

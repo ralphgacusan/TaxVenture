@@ -243,3 +243,23 @@ Older notes about Prepared Packet tabs, D1–D6 handover, F1/F2 office pages and
 - The environment copy is a snapshot. If the teammate changes Level 1's outside again, re-run **Copy Outside Environment From Level 1**. Any hand edits made to Level 2's `Env` in between are replaced.
 - Unity's paste drops references from the copied `Env` to objects that live only in Level 1 (cross-scene). The tool's dialog does not list them; check the Console after running it.
 - Rosa's desk and sign are placed by offsets from the anchor. If a new town prop stands in that spot, nudge `RosaStallAnchor` in the scene; no code change is needed.
+
+## 2026-10-21 folder startup / miniature drag follow-up
+
+Implemented — internally verified; user Play Mode pending. Empty-folder access is locked at startup; full-size initialization and stale-drag cancellation prevent icon animation scale from becoming the desk drag size. Resumed placed folders retain icon access without new gameplay events. See PROGRESS for the eight regression checks and precise manual sequence. Appearance and smoothness remain for the user to verify in the current editor session.
+
+## 2026-10-21 paper/card audio follow-up
+
+Implemented — internally verified; user listening test pending. Document icons now vary paper recordings and values/SQ2 use the requested exact card recordings. The low source-level ambience is addressed with louder constant-gain playback copies (originals retained), plus quieter BGM. Unity must import the new playback WAVs and metadata before listening; SFX must be enabled for ambience. See AUDIO_TUNING.md for the manual sequence.
+
+## 2026-10-21 shared folder toggle follow-up
+
+Implemented — internally verified; user Play Mode pending. Supersedes the earlier resume-icon-access note: a physical desk folder with count 0 must leave the icon locked. Level 2 now reuses Level 1's shared view instead of unstoring and force-opening the desk model. First opening retains the office-desk gate; later taps toggle and drags use the shared animation. Build and 1,299 Level 2 checks pass. Check fresh/count-0, badge-1 repeated toggle, drag out/back, checkpoint storage and Level 1 in Unity; internal checks cannot establish smoothness.
+
+## 2026-10-21 withdrawal correction
+
+Implemented and internally verified; Unity test pending. Drag-out now withdraws the count (unlike the earlier shared-view follow-up), locks the empty icon and returns exactly one count after the existing return animation. No new scene setup is required. Verify cover-to-icon return, repeated attempts, first desk progression and Level 1 controls manually.
+
+## Shared folder viewer stuck/edge-on follow-up — 2026-10-21
+
+Implementation complete; Unity visual/input acceptance pending. The shared Level 1/2 viewer now has one animation owner, page-facing framing, folder-only pointer input during its control hold and disable/focus cleanup. Existing swipe and cover-return paths close the same 3D view. Stop/restart Play after Unity imports the new DocumentPhysicsRaycaster script. Internal contracts/math/build are not a native drag or camera-restoration test; run the PROGRESS manual sequence in both levels.

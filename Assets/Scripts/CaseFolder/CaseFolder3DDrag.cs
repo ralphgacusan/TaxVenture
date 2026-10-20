@@ -756,6 +756,9 @@ public class CaseFolder3DDrag :
         /*
          * Hide the closed folder and show the open folder.
          */
+        CompleteDeskMotion();
+        openFolder.transform.rotation = originalOpenRotation;
+        openFolder.transform.localScale = originalOpenScale;
         closedFolder.SetActive(false);
 
         if (positionOpenFolderAtDropPoint)
@@ -777,12 +780,6 @@ public class CaseFolder3DDrag :
 
         if (deskAnimator != null)
             deskAnimator.PlayOpen(openFolder.transform, closedFolder.transform.position);
-
-        // Play paper SFX when the folder opens.
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayPaperSFX();
-        }
 
         DebugLog(
             "Open folder shown."

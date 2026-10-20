@@ -285,5 +285,7 @@ foreach (string file in newFiles.Concat(Directory.GetFiles(PathOf("Assets/Resour
     }
 }
 
+Check(Read("Assets/Scripts/Training/TrainingBinder3D.cs").Contains("if (!MenuEntry.HasCareerAccess) return false;"), "fresh careers cannot open the tutorial binder through a stale event");
+
 Console.WriteLine($"{checks - failures}/{checks} checks passed.");
 return failures == 0 ? 0 : 1;

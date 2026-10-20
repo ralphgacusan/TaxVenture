@@ -591,10 +591,10 @@ public class TaxCodeBook3DDrag :
         if (deskAnimator != null)
             deskAnimator.PlayOpen(openTaxCodeBook.transform, closedTaxCodeBook.transform.position);
 
-        // Play paper sound when the tax code book opens.
+        // Match the same opening cue used by the floating book in both levels.
         if (AudioManager.Instance != null)
         {
-            AudioManager.Instance.PlayPaperSFX();
+            AudioManager.Instance.PlayEffect("sfx_book_open_01");
         }
 
         DebugLog(

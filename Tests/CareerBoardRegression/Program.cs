@@ -28,7 +28,7 @@ CareerCatalog Catalog()
 {
     var catalog = new CareerCatalog();
     catalog.chapters.Add(new CareerChapterDef { id = "Level_01", number = 1, noteTitle = "Tutorial", title = "Tutorial Level",
-        scene = "Cutscene1.0", cases = 1 });
+        scene = "Cutscene2.0", cases = 1 });
     catalog.chapters.Add(new CareerChapterDef { id = "Level_02", number = 2, noteTitle = "Three cases", scene = "Office_Level2", cases = 3 });
     for (int n = 3; n <= 5; n++) catalog.chapters.Add(new CareerChapterDef { id = $"Level_{n:00}", number = n, comingSoon = true });
     catalog.sideQuests.Add(new CareerSideQuestDef { chapterId = "Level_01", title = "Know Your Taxpayer" });
@@ -41,7 +41,7 @@ CareerSnapshot Build(PlayerProgressData data) => CareerProgress.Build(data, Cata
 var fresh = Build(new PlayerProgressData());
 Check(fresh.Available && fresh.ChapterCount == 5, "fresh save: five chapters, progress available");
 Check(fresh.Chapters[0].Status == CareerChapterStatus.Available && fresh.Chapters[0].Launchable, "fresh: Chapter 1 playable");
-Check(fresh.Chapters[0].Def.scene == "Cutscene1.0", "Chapter 1 routes to the intro cutscene");
+Check(fresh.Chapters[0].Def.scene == "Cutscene2.0", "Chapter 1 routes to the intro cutscene");
 Check(fresh.Chapters[1].Status == CareerChapterStatus.Locked && !fresh.Chapters[1].Launchable, "fresh: Chapter 2 locked");
 Check(fresh.Chapters.Skip(2).All(c => c.Status == CareerChapterStatus.ComingSoon && !c.Launchable), "Chapters 3-5 coming soon, never launch");
 Check(fresh.Completed == 0 && fresh.Passed == 0 && fresh.TotalExp == 0, "fresh: zero totals");
@@ -160,7 +160,7 @@ using (JsonDocument doc = JsonDocument.Parse(File.ReadAllText(jsonPath)))
     var chapters = doc.RootElement.GetProperty("chapters").EnumerateArray().ToList();
     Check(chapters.Count == 5, "chapters.json lists five chapters");
     Check(chapters[0].GetProperty("id").GetString() == "Level_01" &&
-          chapters[0].GetProperty("scene").GetString() == "Cutscene1.0", "chapters.json: Chapter 1 scene");
+          chapters[0].GetProperty("scene").GetString() == "Cutscene2.0", "chapters.json: Chapter 1 scene");
     Check(chapters[1].GetProperty("scene").GetString() == "Office_Level2", "chapters.json: Chapter 2 scene");
     Check(chapters.Skip(2).All(c => c.GetProperty("comingSoon").GetBoolean()), "chapters.json: 3-5 coming soon");
     Check(doc.RootElement.GetProperty("sideQuests")[0].GetProperty("chapterId").GetString() == "Level_01",
@@ -176,7 +176,7 @@ using (JsonDocument doc = JsonDocument.Parse(File.ReadAllText(jsonPath)))
 
 // The Unity fallback catalog mirrors the JSON.
 string service = File.ReadAllText(Path.Combine(root, "Assets", "Scripts", "RewardsSystem", "CareerProgressService.cs"));
-Check(service.Contains("\"Cutscene1.0\"") && service.Contains("\"Office_Level2\""), "built-in catalog routes the same scenes");
+Check(service.Contains("\"Cutscene2.0\"") && service.Contains("\"Office_Level2\""), "built-in catalog routes the same scenes");
 
 // The scene board points at the Office Level 1 corkboard prop.
 string sceneText = File.ReadAllText(Path.Combine(root, "Assets", "Scenes", "3D Menu.unity"));
@@ -248,6 +248,10 @@ Check(backBottom > progressRect[3] + 27, "BACK sits above the CAREER plate, not 
 // Every paper flies out the same way: a negative tilt must not read as ~356 degrees (that spun Chapters 1, 3 and 5).
 Check(presenter.Contains("Mathf.DeltaAngle(0f, sourcePaper.transform.localEulerAngles.z)"), "sheet fly-out uses the paper tilt in -180..180");
 Check(Pins("ChapterPins")[0][1] > Pins("ChapterPins")[2][1], "Chapter 1 hangs a little higher than the others");
+
+Check(presenter.Contains("bool earned = badge != null && badge.Tier > 0;") && presenter.Contains("view.Paper.gameObject.SetActive(earned);") && presenter.Contains("view.Vacant.gameObject.SetActive(inUse && !earned);"), "unearned side quests show question slots; only earned badges reveal papers");
+Check(fresh.EarnedBadges == 0 && fresh.Badges.All(b => b.Tier == 0), "fresh career reveals no earned side-quest papers");
+Check(passed.Badges.Count(b => b.Tier > 0) == passed.EarnedBadges, "revealed papers match the earned badge count");
 
 Console.WriteLine($"\n{checks - failures}/{checks} checks passed");
 return failures == 0 ? 0 : 1;

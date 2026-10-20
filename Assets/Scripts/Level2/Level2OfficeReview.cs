@@ -438,7 +438,6 @@ public sealed class Level2OfficeReview : MonoBehaviour
 
     private static void Changed(CaseFolderUI.PageBuilder page)
     {
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
         // A box's value arrives inside the transfer; redraw on the next frame.
         if (instance != null) instance.pendingRefresh = page;
         else page.Refresh();

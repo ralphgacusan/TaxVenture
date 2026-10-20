@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="../../Assets/Scripts/Save/SaveFileStore.cs" Link="SaveFileStore.cs" />
   </ItemGroup>
 </Project>

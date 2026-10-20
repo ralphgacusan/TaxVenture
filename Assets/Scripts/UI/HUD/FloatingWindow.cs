@@ -714,6 +714,7 @@ public class FloatingWindow :
             );
 
 
+            AudioManager.Instance?.QueueInteractionSFX("paper_place");
             StartCoroutine(
                 CloseToIcon()
             );
@@ -886,6 +887,8 @@ public class FloatingWindow :
         }
 
 
+        bool wasOpen = IsOpen();
+
         StopAllCoroutines();
 
 
@@ -920,6 +923,7 @@ public class FloatingWindow :
         BringWindowToFront();
 
         StartPaperOpen();
+        if (!wasOpen) AudioManager.Instance?.QueueInteractionSFX("paper");
 
 
         DebugTrace.Log(
@@ -945,6 +949,7 @@ public class FloatingWindow :
             return;
         }
 
+        bool wasOpen = IsOpen();
 
         StopAllCoroutines();
 
@@ -1020,6 +1025,7 @@ public class FloatingWindow :
         BringWindowToFront();
 
         StartPaperOpen();
+        if (!wasOpen) AudioManager.Instance?.QueueInteractionSFX("paper");
 
 
         DebugTrace.Log(
@@ -1143,6 +1149,7 @@ public class FloatingWindow :
             return;
         }
 
+        if (IsOpen()) AudioManager.Instance?.QueueInteractionSFX("paper_place");
 
         // Paper windows tip away and fade before hiding.
         if (paperMotion &&
@@ -1238,7 +1245,7 @@ public class FloatingWindow :
     public bool IsOpen()
     {
         // A paper window that is animating closed already counts as closed.
-        return gameObject.activeSelf &&
+        return isActiveAndEnabled &&
                !(paperMotion && isClosing && paperShown);
     }
 

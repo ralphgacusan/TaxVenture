@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement;
 /// and a NEXT GOAL card (the chapter to play next against its pass line). The
 /// right one holds a pinned paper per chapter, red strings linking every
 /// unlocked chapter to the one before it, and the side-quest badge area: a
-/// fixed number of badge spaces, each earned or available badge pinned on a
+/// fixed number of badge spaces, each earned badge pinned on a
 /// small paper, the rest waiting empty. Everything is 3D geometry and world
 /// lettering; only the progress bars use tiny world-space canvases.
 ///
@@ -659,9 +659,10 @@ public sealed class CareerBoardPresenter : MonoBehaviour
             BadgeSlotView view = badgeSlots[i];
             bool inUse = i < slots;
             CareerBadgeView badge = inUse && i < snapshot.Badges.Count ? snapshot.Badges[i] : null;
-            view.Paper.gameObject.SetActive(badge != null);
-            view.Vacant.gameObject.SetActive(inUse && badge == null);
-            if (badge == null)
+            bool earned = badge != null && badge.Tier > 0;
+            view.Paper.gameObject.SetActive(earned);
+            view.Vacant.gameObject.SetActive(inUse && !earned);
+            if (!earned)
             {
                 view.VacantNumber.text = $"SIDE QUEST {i + 1}\nNot yet found";
                 continue;
@@ -895,7 +896,7 @@ public sealed class CareerBoardPresenter : MonoBehaviour
 
     private static void PlaySelectSound()
     {
-        if (Application.isPlaying && AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        if (Application.isPlaying && AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_ui_back_01", 0.65f);
     }
 
     // =========================================================

@@ -147,6 +147,7 @@ public class Stamp3DDrag : MonoBehaviour,
 
     private void BeginDrag(Vector2 screenPosition)
     {
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_stamp_pickup_01");
         isDragging = true;
         isSnappingBack = false;
 
@@ -437,6 +438,7 @@ public class Stamp3DDrag : MonoBehaviour,
                 originalRotation;
 
             isSnappingBack = false;
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_stamp_return_01");
         }
     }
 

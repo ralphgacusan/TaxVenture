@@ -24,9 +24,9 @@ public sealed class GuideHand : MonoBehaviour
     private Image shadowImage;
     private RectTransform carryRect;
     private Image carryImage;
-    private readonly RectTransform[] ripples = new RectTransform[3];
-    private readonly Image[] rippleImages = new Image[3];
-    private readonly float[] rippleAge = { 9f, 9f, 9f };
+    [SerializeField] private RectTransform[] ripples = new RectTransform[3];
+    [SerializeField] private Image[] rippleImages = new Image[3];
+    [SerializeField] private float[] rippleAge = { 9f, 9f, 9f };
     private int nextRipple;
     private Color accent = new Color32(100, 215, 255, 255);
 

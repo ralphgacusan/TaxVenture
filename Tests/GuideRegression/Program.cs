@@ -18,6 +18,42 @@ void Check(bool ok, string what)
 string root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
 string Res(string rel) => Path.Combine(root, "Assets", "Resources", rel);
 
+// Generated tutorial visuals and lesson history must survive script reloads.
+foreach (var entry in new[] {
+    (typeof(GuideCoachView), "dims"), (typeof(GuideHand), "ripples"),
+    (typeof(GuideHand), "rippleImages"), (typeof(GuideHand), "rippleAge") })
+{
+    var field = entry.Item1.GetField(entry.Item2, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+    Check(field != null && !field.IsInitOnly && Attribute.IsDefined(field, typeof(UnityEngine.SerializeField)),
+        entry.Item1.Name + "." + entry.Item2 + " retains its visual references after recompiling");
+}
+Check(typeof(UnityEngine.ISerializationCallbackReceiver).IsAssignableFrom(typeof(GuideDirector)),
+    "tutorial progress survives recompiling scripts during play");
+if (typeof(UnityEngine.ISerializationCallbackReceiver).IsAssignableFrom(typeof(GuideDirector)))
+{
+    // Pure managed path: simulate Unity serializing and reconstructing a director.
+    var director = (GuideDirector)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(GuideDirector));
+    var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+    var observed = new Dictionary<string, int> { ["lesson:notes"] = 1, ["event:ReceptionistTalkedTo"] = 1 };
+    var completed = new HashSet<string> { "welcome", "hud-tour", "notes" };
+    typeof(GuideDirector).GetField("counts", flags).SetValue(director, observed);
+    typeof(GuideDirector).GetField("finished", flags).SetValue(director, completed);
+    typeof(GuideDirector).GetField("pageCounts", flags).SetValue(director,
+        new Dictionary<string, int> { ["lesson:notes"] = 1 });
+    var callbacks = (UnityEngine.ISerializationCallbackReceiver)(object)director;
+    callbacks.OnBeforeSerialize();
+    observed.Clear();
+    completed.Clear();
+    typeof(GuideDirector).GetField("pageCounts", flags).SetValue(director, null);
+    callbacks.OnAfterDeserialize();
+    Check(director.HasFinished("notes") && director.HasFinished("welcome") &&
+        observed.GetValueOrDefault("lesson:notes") == 1 && observed.GetValueOrDefault("event:ReceptionistTalkedTo") == 1,
+        "Notes completion and receptionist events remain available to the following tutorials after reload");
+    var baseline = (Dictionary<string, int>)typeof(GuideDirector).GetField("pageCounts", flags).GetValue(director);
+    Check(baseline.GetValueOrDefault("lesson:notes") == 1,
+        "a reloaded action page keeps its event baseline rather than counting an old action again");
+}
+
 // ================= Trigger parser =================
 Check(GuideTriggers.SplitAlternatives("value:placed|value:rejected").Count == 2, "split two events");
 Check(GuideTriggers.SplitAlternatives("step:area:A/B|C/D").Count == 1, "area paths stay together");

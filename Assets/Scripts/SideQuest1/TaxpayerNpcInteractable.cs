@@ -190,6 +190,7 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
             return;
         }
 
+        AudioManager.Instance?.QueueInteractionSFX("npc");
         dialogueSessionActive = true;
         stateMachine.ChangeState(new NpcInteractState());
         stateMachine.ChangeState(new NpcDialogueState());

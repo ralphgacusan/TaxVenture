@@ -98,7 +98,11 @@ public sealed class OfficeDoorGate : MonoBehaviour
 
         DoorPhase wanted = LevelGate.CaseAllowed ? DoorPhase.Open : DoorPhase.Closed;
         if (!phase.Is(wanted) && phase.TryChange(wanted))
+        {
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayEffect(wanted == DoorPhase.Open ? "sfx_door_open_01" : "sfx_door_close_01");
             swing = 1f - swing;   // reverse smoothly from wherever it is
+        }
 
         if (swing < 1f)
         {
@@ -226,6 +230,7 @@ public sealed class OfficeDoorGate : MonoBehaviour
         Vector3 closest = barrier.ClosestPoint(player.position);
         if (Flat(closest - player.position).magnitude > WarnDistance) return;
         nextWarn = Time.unscaledTime + WarnInterval;
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_door_locked_01");
         LevelGate.NotifyBlocked(LockedMessage);
     }
 

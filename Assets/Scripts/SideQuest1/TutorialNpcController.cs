@@ -233,6 +233,7 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
             return;
         }
 
+        AudioManager.Instance?.QueueInteractionSFX("npc");
         dialogueSessionActive = true;
         ClearPointerFocus();
     }

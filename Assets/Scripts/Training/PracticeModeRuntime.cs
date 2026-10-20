@@ -53,6 +53,7 @@ public sealed class PracticeModeRuntime : MonoBehaviour
     private CanvasGroup resultGroup;
     private RectTransform stamp;
     private float resultShownAt;
+    private bool requestedCompletionMusic;
 
     // =========================================================
     // BOOTSTRAP
@@ -122,6 +123,8 @@ public sealed class PracticeModeRuntime : MonoBehaviour
     {
         if (Instance == this) Instance = null;
         PlayerControlHold.Release(this);
+        if (requestedCompletionMusic && AudioManager.Instance != null)
+            AudioManager.Instance.SetCompletionMusic(false);
         if (canvasObject != null) Destroy(canvasObject);
     }
 
@@ -223,6 +226,11 @@ public sealed class PracticeModeRuntime : MonoBehaviour
             record = progress.CurrentProgress != null ? progress.CurrentProgress.GetTrainingRecord(card.id) : null;
         }
         if (AudioManager.Instance != null) AudioManager.Instance.PlayAchievementSFX();
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.SetCompletionMusic(true);
+            requestedCompletionMusic = true;
+        }
         ShowResult(seconds, record, newlyMastered);
     }
 

@@ -51,7 +51,10 @@ public sealed class OfficeObjectives : MonoBehaviour
 
     private void Awake() => Instance = this;
 
-    private void Start() => SeedFromGameState();
+    private void Start()
+    {
+        SeedFromGameState();
+    }
 
     /// <summary>
     /// One-time catch-up from public game state, so a milestone that happened

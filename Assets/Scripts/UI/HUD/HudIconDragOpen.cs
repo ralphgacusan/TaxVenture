@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 /// <summary>
 /// PURPOSE:
@@ -31,7 +32,13 @@ public sealed class HudIconDragOpen : MonoBehaviour,
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        dragging = Visual != null && OpenAt != null && (CanDrag == null || CanDrag());
+        // Unity can still send a click after a drag when both handlers live
+        // on the same object. A drag must never toggle the paper a second time.
+        eventData.eligibleForClick = false;
+        Button button = GetComponent<Button>();
+        dragging = eventData.button == PointerEventData.InputButton.Left &&
+                   (button == null || (button.IsActive() && button.IsInteractable())) &&
+                   Visual != null && OpenAt != null && (CanDrag == null || CanDrag());
         if (dragging) Visual.Begin(eventData.position);
     }
 

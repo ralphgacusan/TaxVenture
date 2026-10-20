@@ -186,7 +186,7 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
         VacateCurrentSlot();
         HidePinMarker();
 
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_card_pickup_01");
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -230,6 +230,7 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     public void ReturnToOrigin()
     {
+        bool shouldPlayReturn = state != MotionState.Returning && state != MotionState.Idle;
         if (state == MotionState.Arriving)
         {
             RestoreArrivalColliders();
@@ -241,6 +242,8 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
         IsCorrectlyPlaced = false;
         SetColor(neutralColor);
         BeginTransition(MotionState.Returning, originalPosition, originalRotation, ReturnDuration);
+        if (shouldPlayReturn && AudioManager.Instance != null)
+            AudioManager.Instance.PlayEffect("sfx_card_return_01", 0.65f);
     }
 
     public void AnimateFromHud(Vector2 screenPoint, float delay)
@@ -408,7 +411,7 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
         }
 
         bool correct = manager.HandleCardDropped(this, pendingSlot);
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_card_place_01");
         currentSlot = pendingSlot;
         pendingSlot = null;
         IsCorrectlyPlaced = correct;

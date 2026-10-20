@@ -235,5 +235,76 @@ foreach (string file in new[] { "InGameSettings.cs", "SettingsBoard3D.cs" })
 }
 Check(!Regex.IsMatch(inGame, "\"[^\"\\r\\n]*\\b([Cc]lick|[Mm]ouse|WASD)\\b[^\"\\r\\n]*\""), "in-game settings text has no click / mouse wording");
 
+// ---------- confirmed settings actions ----------
+string progressManager = Read("Assets", "Scripts", "RewardsSystem", "PlayerProgressManager.cs");
+string checkpointer = Read("Assets", "Scripts", "Level2", "Level2Checkpointer.cs");
+Check(board.Contains("inGame ? ReplayLabel : \"RESET PROGRESS\"") && board.Contains("inGame ? \"BACK TO MENU\" : \"QUIT GAME\""), "menu and gameplay expose the requested actions");
+Check(board.Contains("cancelButton.Tapped += _ => CancelConfirmation()") && board.Contains("confirmButton.Tapped += _ => ConfirmAction()"), "confirmation has separate cancel and confirm actions");
+Check(Body(board, "private void GoBack()").Contains("CancelConfirmation(); return;"), "Android back cancels a confirmation before resuming gameplay");
+Check(Body(board, "private CareerBoardTarget RaycastTarget").Contains("!target.transform.IsChildOf(confirmation)"), "confirmation blocks touches to settings behind it");
+Check(board.Contains("Physics.SyncTransforms()"), "animated touch targets stay aligned while physics is paused");
+Check(board.Contains("optionsReady = ready && !modal && !actionBusy"), "audio and navigation are disabled behind confirmation");
+Check(board.Contains("confirmationElapsed > 0.22f") && board.Contains("if (actionBusy || pendingAction == SettingsAction.None) return;"), "opening tap and repeated confirmation cannot run actions twice");
+Check(board.Contains("InGameSettings.Active.IsPaused") && board.Contains("TutorialSettings ? \"II  TUTORIAL PAUSED\" : \"II  LEVEL PAUSED\""), "pause indicator reflects the actual pause state");
+Check(board.Contains("inGame ? \"RESUME\" : \"<  BACK\""), "gameplay clearly labels the resume button");
+Check(board.Contains("Application.Quit()") && board.Contains("UnityEditor.EditorApplication.isPlaying = false"), "quit closes a build or stops editor play mode");
+Check(Body(inGame, "public bool LeaveLevel").Contains("Application.CanStreamedLevelBeLoaded(destination)"), "scene exits validate the destination before discarding an attempt");
+Check(Body(inGame, "public bool LeaveLevel").Contains("!TrainingSession.IsPracticing"), "practice replay leaves the career checkpoint alone");
+Check(checkpointer.Contains("!PlayerProgressManager.Instance.ClearCheckpoint(LevelId)"), "replay clears the resumable attempt before reloading");
+Check(checkpointer.Contains("if (settingsExit || !UsesCheckpoint) return true;"), "outgoing level cannot autosave its discarded attempt");
+Check(progressManager.Contains("store.Reset(encoded)") && progressManager.Contains("pendingResult = null;") && progressManager.Contains("lastAppliedRunId = null;"), "fresh start replaces stored and pending progress");
+Check(progressManager.Contains("PlayerPrefs.DeleteKey(\"TaxVenture.Guide.Level_01.finished\")") && progressManager.Contains("PlayerPrefs.DeleteKey(\"TaxVenture.Guide.Level_02.finished\")") && !progressManager.Contains("PlayerPrefs.DeleteAll"), "fresh start resets tutorials while keeping audio preferences");
+
+Check(checkpointer.Contains("if (!SaveCurrentCheckpoint()) return false;"), "back to menu stays paused in settings if checkpoint saving fails");
+
+// Presentation and scene transitions (engine rendering remains a manual check).
+string sceneFade = Read("Assets", "Scripts", "UI", "HUD", "SceneFade.cs");
+Check(Body(inGame, "public bool LeaveLevel").Contains("SceneFade.FadeOutThenLoad(destination, fadeInDestination: destination != Cutscene01Runtime.SceneName)"), "replay and leave use fade out plus destination fade in");
+Check(Body(inGame, "private void HideHud()").Contains("canvas.GetComponent<SceneFade>() != null"), "hiding settings HUD never hides or restores the transition curtain");
+Check(Body(sceneFade, "private IEnumerator FadeAndLoad").IndexOf("yield return Fade(", StringComparison.Ordinal) < Body(sceneFade, "private IEnumerator FadeAndLoad").IndexOf("SceneManager.LoadScene", StringComparison.Ordinal), "scene loading waits until fade to black finishes");
+Check(Body(sceneFade, "private IEnumerator Fade(").Contains("Time.unscaledDeltaTime"), "fades progress while settings hold timeScale at zero");
+Check(Body(sceneFade, "private static void HandleSceneLoaded").Contains("EnsureForScene(scene, requested)") && sceneFade.Contains("(!force && !OfficeLevelProfile.Allows"), "requested fade in also covers the menu destination");
+Check(board.Contains("if (success && (pendingAction == SettingsAction.Replay || pendingAction == SettingsAction.Menu)) return;"), "successful level exits keep settings locked and paused until scene teardown");
+Check(mainMenu.Contains("if (SceneFade.BlocksInput) return;"), "black curtain also blocks the menu's direct touch raycasts");
+Check(board.Contains("new Vector3(x, -178f, -26f)") && board.Contains("new Vector2(340f, 88f)") && !board.Contains("new Vector2(600f, 76f)"), "secondary settings actions use compact side-by-side buttons");
+
+Check(inGame.Contains("replay && !TrainingSession.IsPracticing && gameObject.scene.name == \"Office_Level1\"") && inGame.Contains("replayFirstStory ? Cutscene01Runtime.SceneName"), "Level 1 replay includes its skippable intro; practice drills still reload directly");
+
+// Fresh-menu visibility and tutorial wording follow the same first-completion gate.
+Check(board.Contains("bool showPrimary = inGame || MenuEntry.HasCareerAccess;") && board.Contains("primaryActionButton.gameObject.SetActive(showPrimary);"), "fresh menu hides Reset Progress while keeping replay available in gameplay");
+Check(board.Contains("new Vector3(showPrimary ? 184f : 0f, -178f, -26f)"), "Quit is centred when fresh-menu Reset is hidden");
+Check(board.Contains("action == SettingsAction.Reset && !MenuEntry.HasCareerAccess"), "hidden Reset cannot be requested on a fresh career");
+Check(board.Contains("TutorialSettings ? \"REPLAY TUTORIAL\" : \"REPLAY LEVEL\"") && board.Contains("TutorialSettings ? \"RESUME TUTORIAL\" : \"RESUME\""), "practice settings label replay and resume as tutorial actions");
+Check(board.Contains("REPLAY TUTORIAL?") && board.Contains("LEAVE TUTORIAL?") && board.Contains("Start this tutorial again?"), "tutorial confirmation copy matches the actual practice session");
+Check(mainMenu.Contains("ProgressChanged += RefreshMenu") && mainMenu.Contains("entry.Key.SetActive(MenuEntry.HasCareerAccess && entry.Value)"), "fresh menu gates tutorial/side-quest objects and refreshes after resetting progress");
+Check(Body(board, "private void RestoreMenuButtons()").Contains("!MenuEntry.HasCareerAccess"), "closing settings after reset cannot bring hidden fresh-menu buttons back");
+Check(Body(inGame, "public bool LeaveLevel").Contains("MenuEntry.OpenLevelSelect = false;") && Body(inGame, "public bool LeaveLevel").Contains("MenuEntry.OpenSettings = false;"), "leaving an unfinished level explicitly requests the main menu");
+Check(Body(menuEntry, "public static bool ConsumeOpenLevelSelect()").Contains("return open && HasCareerAccess;"), "stale progress-view requests are rejected until Level 1 is finished");
+
+// Real file-store reset: corrupting or removing the primary must never revive the old career.
+string resetDirectory = PathOf("Temp", "SettingsResetRegression", Guid.NewGuid().ToString("N"));
+Directory.CreateDirectory(resetDirectory);
+try
+{
+    var store = new SaveFileStore(Path.Combine(resetDirectory, "progress.json"));
+    store.Write("old career");
+    store.Write("newer old career");
+    File.WriteAllText(store.RejectedPath, "rejected old career");
+    File.WriteAllText(store.TempPath, "interrupted old career");
+    store.Reset("fresh career");
+    Check(File.ReadAllText(store.FilePath) == "fresh career" && File.ReadAllText(store.BackupPath) == "fresh career", "reset replaces both main save and recovery backup");
+    Check(!File.Exists(store.RejectedPath) && !File.Exists(store.TempPath), "reset removes rejected and interrupted old data");
+    File.WriteAllText(store.FilePath, "damaged");
+    string recovered = store.Read(t => t == "fresh career", out bool backup, out _);
+    Check(backup && recovered == "fresh career", "damaged primary recovers fresh progress after reset");
+    File.Delete(store.FilePath);
+    recovered = store.Read(t => t == "fresh career", out backup, out _);
+    Check(backup && recovered == "fresh career", "missing primary recovers fresh progress after reset");
+    var empty = new SaveFileStore(Path.Combine(resetDirectory, "first-run.json"));
+    empty.Reset("fresh first run");
+    Check(File.ReadAllText(empty.BackupPath) == "fresh first run", "reset also succeeds without an existing save");
+}
+finally { Directory.Delete(resetDirectory, true); }
+
 Console.WriteLine($"\n{checks - failures}/{checks} checks passed");
 return failures == 0 ? 0 : 1;

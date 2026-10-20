@@ -150,8 +150,17 @@ public sealed class Level2ReviewClock : MonoBehaviour
         if (!show || rolling) return;
 
         ReviewClock.Tick tick = ReviewClock.Advance(review.clock, clock, Time.unscaledDeltaTime, ClockPaused, out float mark);
-        if (tick == ReviewClock.Tick.Warning) Level2Say.Line(Fill(clock.warnLine, review.clock, clock, mark), null, 4f);
-        else if (tick == ReviewClock.Tick.Cutoff) Level2Say.Line(Fill(clock.missedLine, review.clock, clock, 0f), null, 5f);
+        if (tick == ReviewClock.Tick.Warning)
+        {
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayEffect(mark <= 30f ? "sfx_deadline_urgent_01" : "sfx_deadline_warning_01");
+            Level2Say.Line(Fill(clock.warnLine, review.clock, clock, mark), null, 4f);
+        }
+        else if (tick == ReviewClock.Tick.Cutoff)
+        {
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_review_cutoff_01");
+            Level2Say.Line(Fill(clock.missedLine, review.clock, clock, 0f), null, 5f);
+        }
 
         if (review.clock.cutoffPending && !ActionInFlight) rollover = StartCoroutine(Rollover(review, clock));
     }

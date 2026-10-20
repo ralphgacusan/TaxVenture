@@ -184,6 +184,7 @@ public sealed class HudRewardScreen : MonoBehaviour
     private Image glow;
     private readonly List<RectTransform> sparkles = new List<RectTransform>();
     private bool lockedPlayer;
+    private bool requestedCompletionMusic;
 
     // Everything else on screen is hidden while a card is open.
     private struct HiddenUi
@@ -283,6 +284,11 @@ public sealed class HudRewardScreen : MonoBehaviour
         Open.Remove(this);
         RestoreOtherUi();
         ReleasePlayer();
+        if (requestedCompletionMusic && AudioManager.Instance != null)
+        {
+            AudioManager.Instance.SetCompletionMusic(false);
+            requestedCompletionMusic = false;
+        }
     }
 
     private void OnDestroy()
@@ -587,6 +593,7 @@ public sealed class HudRewardScreen : MonoBehaviour
         revealHeld = HoldReveal || (IsLevelCompleteCard && (CaseFinale.WillStage || CaseFinale.HoldsCards));
         heldSince = Time.unscaledTime;
         ShowPanel(!revealHeld);
+        if (!revealHeld) StartCompletionMusic();
         enabled = true;
         group.alpha = 0f;
         laidOutFor = Vector2.zero;
@@ -1064,6 +1071,7 @@ public sealed class HudRewardScreen : MonoBehaviour
             }
             revealHeld = false;
             ShowPanel(true);   // the backdrop and frame appear with the card's own pop-in
+            StartCompletionMusic();
         }
 
         if (!animating)
@@ -1134,5 +1142,12 @@ public sealed class HudRewardScreen : MonoBehaviour
                 expValue.SetText("{0} / {1}", expTarget, expMax);
             }
         }
+    }
+
+    private void StartCompletionMusic()
+    {
+        if (!IsLevelCompleteCard || requestedCompletionMusic || AudioManager.Instance == null) return;
+        AudioManager.Instance.SetCompletionMusic(true);
+        requestedCompletionMusic = true;
     }
 }

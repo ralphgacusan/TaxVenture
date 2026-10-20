@@ -234,6 +234,7 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     /// <summary>Gives the folder back for more work (the review itself is kept by the level).</summary>
     public void ReturnFolderForReview()
     {
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_audit_returned_01");
         if (submissionTray != null) submissionTray.ResetForRetryWithoutNewCase();
         if (GameStateMachine.Instance != null) GameStateMachine.Instance.UnlockProgression();
     }
@@ -241,6 +242,7 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     /// <summary>An accepted review: the Auditor is done and the case completes through the existing states.</summary>
     public void CompleteLevelReview()
     {
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_audit_approved_01");
         npcState.ChangeState(new NpcCompletedState());
         GameStateMachine machine = GameStateMachine.Instance;
         if (machine == null) return;
@@ -318,6 +320,8 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
 
     private void OnDialogueConcluded(SubmissionResult result)
     {
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayEffect(result.MissedIssues.Count == 0 ? "sfx_audit_approved_01" : "sfx_audit_returned_01");
         dialogueSessionActive = false;
         auditPending = false;
         pendingAuditCase = null;

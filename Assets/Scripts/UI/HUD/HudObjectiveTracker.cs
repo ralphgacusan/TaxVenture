@@ -343,7 +343,10 @@ public sealed class HudObjectiveTracker : MonoBehaviour
             objectiveText.fontStyle = FontStyles.Strikethrough;
             objectiveText.color = HudTheme.TextMuted;
             SetIcon(true, 0f);
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_objective_complete_01", 0.55f);
         }
+        else if (next == Phase.SlideIn && shown != null && !shown.AllDone && AudioManager.Instance != null)
+            AudioManager.Instance.PlayEffect("sfx_objective_new_01", 0.55f);
     }
 
     // =========================================================

@@ -305,6 +305,7 @@ public class CameraController : MonoBehaviour
         // ---------------------------------------------------------
 
         CurrentMode = CameraMode.Workstation;
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_chair_sit_01");
 
         // ---------------------------------------------------------
         // STOP FIRST-PERSON CAMERA
@@ -675,6 +676,8 @@ public class CameraController : MonoBehaviour
     {
         if (CurrentMode != CameraMode.Workstation)
             return;
+
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_chair_stand_01");
 
         DebugTrace.Log(
             "[CameraController] Exiting desk view."
