@@ -228,15 +228,6 @@ public class AuditorSubmissionTray :
             return;
 
 
-        Debug.Log(
-            "[AuditorSubmissionTray] " +
-            "Submission complete!"
-        );
-
-
-        if (!folderSubmitted)
-            return;
-
         Debug.Log("[AuditorSubmissionTray] Submission complete!");
 
         // Folder has left the player's hand — icon count should read 0.
@@ -253,8 +244,7 @@ public class AuditorSubmissionTray :
             AudioManager.Instance.PlayPaperSFX();
         }
 
-        auditor.BeginFinalAudit();
-
+        // Once: a second call made Level 2's Auditor repeat his lines.
         auditor.BeginFinalAudit();
     }
 

@@ -127,6 +127,12 @@ public static class CareerProgress
             if (chapter.Status != CareerChapterStatus.Passed) return chapter;
             lastPlayable = chapter;
         }
+        // Every open chapter is passed: the goal moves on to the next chapter (coming soon), not back to a passed one.
+        if (lastPlayable != null)
+        {
+            CareerChapterView next = snapshot.ChapterAfter(lastPlayable);
+            if (next != null) return next;
+        }
         return lastPlayable ?? (snapshot.Chapters.Count > 0 ? snapshot.Chapters[0] : null);
     }
 
@@ -142,6 +148,8 @@ public static class CareerProgress
         if (goal == null) return "";
         if (goal.Status == CareerChapterStatus.Passed)
             return "Every open chapter is passed. New chapters are coming soon.";
+        if (goal.Status == CareerChapterStatus.ComingSoon)
+            return $"Chapter {goal.Def.number} is coming soon. Until then, replay a chapter to beat your best or earn a gold badge.";
         CareerChapterView next = snapshot.ChapterAfter(goal);
         string unlocks = next != null && next.Status != CareerChapterStatus.ComingSoon
             ? $" to unlock Chapter {next.Def.number}." : ".";

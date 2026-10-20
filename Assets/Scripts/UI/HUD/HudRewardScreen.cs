@@ -157,6 +157,8 @@ public sealed class HudRewardScreen : MonoBehaviour
     private CanvasGroup group;
     private RectTransform continueButton;
     private Button sceneButton;
+    private int lastButtonClickFrame = -1;
+    private bool pressStartedOnButton;
     private string shownTitle;
     private bool sideLayout;
     private Image backdropImage;
@@ -231,6 +233,30 @@ public sealed class HudRewardScreen : MonoBehaviour
         autoSeconds = 0f;
         if (autoStrip != null) autoStrip.gameObject.SetActive(false);
         if (sceneButton.isActiveAndEnabled && sceneButton.interactable) sceneButton.onClick.Invoke();
+    }
+
+    /// <summary>
+    /// Never stuck behind a card: a tap that starts and ends on Continue
+    /// presses it even if another overlay swallowed the UI click. Runs after
+    /// the EventSystem, so a normal click is never pressed twice.
+    /// </summary>
+    private void LateUpdate()
+    {
+        if (sceneButton == null || continueButton == null || card == null || animating || !card.gameObject.activeInHierarchy ||
+            !sceneButton.isActiveAndEnabled || !sceneButton.interactable)
+        {
+            pressStartedOnButton = false;
+            return;
+        }
+        Canvas canvas = continueButton.GetComponentInParent<Canvas>();
+        Camera eventCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+        Vector2 pointer = Input.mousePosition;
+        bool over = RectTransformUtility.RectangleContainsScreenPoint(continueButton, pointer, eventCamera);
+        if (Input.GetMouseButtonDown(0)) pressStartedOnButton = over;
+        if (!Input.GetMouseButtonUp(0)) return;
+        bool press = pressStartedOnButton && over;
+        pressStartedOnButton = false;
+        if (press && lastButtonClickFrame != Time.frameCount) sceneButton.onClick.Invoke();
     }
 
     /// <summary>Hides or shows the whole panel (backdrop, frame, content and button) at once.</summary>
@@ -430,6 +456,7 @@ public sealed class HudRewardScreen : MonoBehaviour
             continueButton.SetAsLastSibling();
             SkinButton(button);
             sceneButton = button;
+            button.onClick.AddListener(() => lastButtonClickFrame = Time.frameCount);
             buttonLabel = button.GetComponentInChildren<TextMeshProUGUI>(true);
 
             // Auto-continue progress: a thin strip along the bottom of the button.

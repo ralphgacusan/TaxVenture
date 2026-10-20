@@ -149,16 +149,21 @@ public class CaseProgressionManager : MonoBehaviour
     {
         TownEvents.OnSideQuestCompleted += LevelGate.MarkSideQuestDone;
         TownEvents.OnProfileCollected += HandleProfileCollected;
+        GameplayEvents.OnMarketDeskOpened += HandleMarketDeskOpened;
     }
 
     private void OnDisable()
     {
         TownEvents.OnSideQuestCompleted -= LevelGate.MarkSideQuestDone;
         TownEvents.OnProfileCollected -= HandleProfileCollected;
+        GameplayEvents.OnMarketDeskOpened -= HandleMarketDeskOpened;
     }
 
     // The side quest clock starts with the first collected taxpayer profile.
     private void HandleProfileCollected(string profileId) => Score.MarkSideQuestStarted();
+
+    // Level 2: the Mark the Money! clock starts at Rosa's records desk.
+    private void HandleMarketDeskOpened() => Score.MarkSideQuestStarted();
 
     private void Start()
     {

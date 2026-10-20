@@ -149,6 +149,17 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
             return;
         }
 
+        // Review cases: she tells today's cutoff time ({deadline}).
+        ReviewClockDefinition clock = def.review != null ? def.review.clock : null;
+        if (clock != null && clock.IsSet)
+        {
+            ReviewClockState state = CaseManager.Instance.CurrentCase != null && CaseManager.Instance.CurrentCase.review != null
+                ? CaseManager.Instance.CurrentCase.review.clock : null;
+            string deadline = ReviewClock.FormatTimeOfDay(ReviewClock.DeadlineSeconds(state, clock));
+            foreach (DialogueLine line in lines)
+                if (line != null && line.Text != null) line.Text = line.Text.Replace("{deadline}", deadline);
+        }
+
         // Office Hours: she adds that the Auditor leaves early today.
         if (OfficeHours.Instance != null)
             lines.AddRange(OfficeHours.Instance.AnnouncementLines("Receptionist"));

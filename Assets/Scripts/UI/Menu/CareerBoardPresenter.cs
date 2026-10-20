@@ -559,7 +559,13 @@ public sealed class CareerBoardPresenter : MonoBehaviour
     private void ApplyGoalCard()
     {
         CareerChapterView goal = snapshot.Goal;
-        if (goal != null && snapshot.Available)
+        if (goal != null && snapshot.Available && goal.Status == CareerChapterStatus.ComingSoon)
+        {
+            goalTitle.text = $"Chapter {goal.Def.number}  ·  Coming soon";
+            goalExpValue.text = $"{snapshot.TotalExp:N0} <size=15><color=#262932>EXP SO FAR</color></size>";
+            goalHeartsValue.text = $"{snapshot.TotalHearts:N0} <size=15><color=#262932>HEARTS SO FAR</color></size>";
+        }
+        else if (goal != null && snapshot.Available)
         {
             goalTitle.text = $"Chapter {goal.Def.number}  ·  {goal.NoteTitle}";
             goalExpValue.text = $"{goal.BestExp:N0} / {goal.TargetExp:N0} <size=15><color=#262932>EXP</color></size>";
