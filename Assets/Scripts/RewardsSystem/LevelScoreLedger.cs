@@ -247,12 +247,20 @@ public sealed class LevelScoreLedger
         });
     }
 
+    /// <summary>
+    /// True while a checkpoint puts back what the run already earned (T04):
+    /// entries still count, but EntryAdded is not raised, so no toast or float
+    /// presents them a second time. Callers refresh the HUD afterwards.
+    /// </summary>
+    public bool Restoring { get; set; }
+
     private ScoreEntry Add(ScoreEntry entry)
     {
         entries.Add(entry);
         // Totals never leave 0..max, whatever order rewards arrive in.
         TotalExp = Math.Max(0, Math.Min(MaxExp, TotalExp + entry.Exp));
         TotalHearts = Math.Max(0, Math.Min(MaxHearts, TotalHearts + entry.Hearts));
+        if (Restoring) return entry;
         try
         {
             EntryAdded?.Invoke(entry);

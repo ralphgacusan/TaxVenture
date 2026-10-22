@@ -190,6 +190,8 @@ public sealed class TrainingBinder3D : MonoBehaviour
     {
         Instance = this;
         TrainingSession.End();   // never practising while the menu is open
+        // The runtime NEW GAME / CONTINUE notes hide with the modelled ones (T03).
+        hideWhileOpen = MenuEntry.WithStoryButtons(hideWhileOpen);
     }
 
     private IEnumerator Start()

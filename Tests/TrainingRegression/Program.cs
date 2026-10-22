@@ -26,7 +26,7 @@ T Load<T>(string rel) => JsonSerializer.Deserialize<T>(Read(rel), json);
 // =========================================================
 // SAVE (version 4)
 // =========================================================
-Check(PlayerProgressData.CurrentSaveVersion == 4 && PlayerProgressData.SignedSinceVersion == 3, "save version 4, signed since 3");
+Check(PlayerProgressData.CurrentSaveVersion == 5 && PlayerProgressData.LegacySaveVersion == 4 && PlayerProgressData.SignedSinceVersion == 3, "save version 5 (campaign; version 4 without one), signed since 3");
 
 foreach (int version in new[] { 1, 2, 3 })
 {
@@ -224,7 +224,7 @@ Check(TouchOnly(Read("Assets/Resources/Tutorials/Training/training.json")), "tra
 // WIRING
 // =========================================================
 string mainMenu = Read("Assets/Scripts/MainMenu.cs");
-Check(mainMenu.Contains("case \"tutorial_button\":") && mainMenu.Contains("OpenTraining();") &&
+Check(mainMenu.Contains("case \"tutorial_button\":") && mainMenu.Contains("Press(note, OpenTraining)") &&
       mainMenu.Contains("TrainingBinder3D.Instance.Open()") && !mainMenu.Contains("\"TutorialPage\""),
       "the tutorial button opens the training binder in the 3D Menu");
 Check(mainMenu.Contains("if (TrainingBinder3D.Instance != null && TrainingBinder3D.Instance.IsOpen) return;"),

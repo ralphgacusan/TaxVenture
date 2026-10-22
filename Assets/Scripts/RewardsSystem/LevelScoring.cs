@@ -122,9 +122,9 @@ public static class LevelScoring
         rules.conversation.hearts * rules.conversation.count + rules.sideQuest.hearts +
         Math.Max(0, cases) * rules.caseFile.hearts;
 
-    public static int Percent(int earned, int max) =>
-        max <= 0 ? 100 : (int)Math.Floor(100.0 * Math.Max(0, earned) / max);
+    // Compatibility entry points: the pass line lives in MasteryBoundary.
+    public static int Percent(int earned, int max) => MasteryBoundary.Percent(earned, max);
 
     public static bool Passed(LevelRewardRules rules, int exp, int hearts, int maxExp, int maxHearts) =>
-        Percent(exp, maxExp) >= rules.passingPercent && Percent(hearts, maxHearts) >= rules.passingPercent;
+        MasteryBoundary.MeetsPassLine(rules.passingPercent, exp, hearts, maxExp, maxHearts);
 }

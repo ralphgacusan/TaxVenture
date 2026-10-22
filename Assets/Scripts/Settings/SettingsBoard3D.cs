@@ -71,7 +71,7 @@ public sealed class SettingsBoard3D : MonoBehaviour
     private TextMeshPro musicState;
     private TextMeshPro sfxState;
     private CareerBoardButton backButton;
-    private enum SettingsAction { None, Quit, Reset, Replay, Menu }
+    private enum SettingsAction { None, Quit, Replay, Menu, NewGame }
     private SettingsAction pendingAction;
     private Transform confirmation;
     private TextMeshPro confirmationTitle;
@@ -98,6 +98,12 @@ public sealed class SettingsBoard3D : MonoBehaviour
     private bool dropStarted;
     private bool open;
     private bool pendingOpen;
+    private bool standaloneConfirmation;
+    private bool transitionMenuHidden;
+    private System.Action menuHiddenAction;
+
+    public bool MenuButtonsHidden => hidden.Count > 0;
+    public bool MenuButtonsAnimating => pops.Count > 0 || menuHiddenAction != null;
 
     private CareerBoardTarget hoverTarget;
     private CareerBoardTarget pressTarget;
@@ -134,6 +140,8 @@ public sealed class SettingsBoard3D : MonoBehaviour
     private void Start()
     {
         if (viewCamera == null) viewCamera = Camera.main;
+        // The runtime NEW GAME / CONTINUE notes hide with the modelled ones (gameplay scenes hide nothing).
+        if (!inGame) hideWhileOpen = MenuEntry.WithStoryButtons(hideWhileOpen);
         Build();
         UseOverlayCamera();
         BuildDim();
@@ -150,6 +158,21 @@ public sealed class SettingsBoard3D : MonoBehaviour
     private void Update()
     {
         TickButtonPops(Time.unscaledDeltaTime);
+        if (menuHiddenAction != null && pops.Count == 0)
+        {
+            System.Action action = menuHiddenAction;
+            menuHiddenAction = null;
+            action();
+        }
+        // Continue keeps the notes hidden while the progress camera owns the
+        // scene. Back (or a failed Play save) restores them with the same pop-in.
+        if (transitionMenuHidden && menuHiddenAction == null && !MenuEntry.IsStoryLaunching &&
+            (cameraManager == null || (!cameraManager.IsTransitioning && !cameraManager.IsLevelSelectorVisible)))
+        {
+            transitionMenuHidden = false;
+            RestoreMenuButtons();
+            Closed?.Invoke();
+        }
         if (pendingOpen && !open && Open()) pendingOpen = false;
         if (!open || root == null) return;
         float dt = Time.unscaledDeltaTime;
@@ -161,7 +184,7 @@ public sealed class SettingsBoard3D : MonoBehaviour
         if (dim != null)
             dim.color = new Color(0.02f, 0.03f, 0.05f, Mathf.MoveTowards(dim.color.a, leaving ? 0f : backdropDim, dt * 1.2f));
 
-        bool ready = !leaving && elapsed > DropDuration * 0.8f;
+        bool ready = !leaving && (standaloneConfirmation || elapsed > DropDuration * 0.8f);
         bool modal = confirmation != null && confirmation.gameObject.activeSelf;
         if (modal)
         {
@@ -217,6 +240,42 @@ public sealed class SettingsBoard3D : MonoBehaviour
         return true;
     }
 
+    /// <summary>The existing animated confirmation card, without the settings board behind it.</summary>
+    public bool OpenNewGameConfirmation()
+    {
+        if (inGame || open || actionBusy || leaving || !MenuEntry.HasCareerAccess) return false;
+        if (cameraManager != null && (cameraManager.IsTransitioning || cameraManager.IsLevelSelectorVisible)) return false;
+        if (viewCamera == null || !viewCamera.isActiveAndEnabled) return false;
+        if (root == null) Build();
+        standaloneConfirmation = true;
+        open = true;
+        leaving = false;
+        leaveElapsed = -1f;
+        elapsed = 0f;
+        root.gameObject.SetActive(true);
+        confirmation.SetParent(root, false);
+        confirmation.localPosition = new Vector3(0f, 0f, -100f);
+        board.gameObject.SetActive(false);
+        HideMenuButtons();
+        lastAspect = -1f;
+        FitToCamera();
+        if (dim != null) dim.color = new Color(0.02f, 0.03f, 0.05f, 0f);
+        RequestAction(SettingsAction.NewGame);
+        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        Opened?.Invoke();
+        return pendingAction == SettingsAction.NewGame;
+    }
+
+    /// <summary>Use the settings/tutorial note disappearance before leaving the menu.</summary>
+    public bool HideMenuForTransition(System.Action completed)
+    {
+        if (inGame || open || transitionMenuHidden || completed == null) return false;
+        transitionMenuHidden = true;
+        menuHiddenAction = completed;
+        HideMenuButtons();
+        return true;
+    }
+
     /// <summary>Called when the lift-away animation ends.</summary>
     private void FinishClose()
     {
@@ -225,6 +284,13 @@ public sealed class SettingsBoard3D : MonoBehaviour
         open = false;
         ClearPointer();
         root.gameObject.SetActive(false);
+        if (standaloneConfirmation)
+        {
+            confirmation.SetParent(board, false);
+            confirmation.localPosition = new Vector3(0f, 0f, -100f);
+            board.gameObject.SetActive(true);
+            standaloneConfirmation = false;
+        }
         RestoreMenuButtons();
         Closed?.Invoke();
     }
@@ -401,7 +467,7 @@ public sealed class SettingsBoard3D : MonoBehaviour
                 new Vector3(0f, 343f, -23f), 600f, 28f, Mint);
         CareerBoardKit.Box(board, "Actions Divider", new Vector3(0f, -100f, -20f),
             new Vector3(680f, 2f, 1f), HudTheme.BrassSoft, materials);
-        primaryActionButton = AddAction(inGame ? ReplayLabel : "RESET PROGRESS", -184f, inGame ? SettingsAction.Replay : SettingsAction.Reset);
+        if (inGame) primaryActionButton = AddAction(ReplayLabel, -184f, SettingsAction.Replay);
         exitActionButton = AddAction(inGame ? "BACK TO MENU" : "QUIT GAME", 184f, inGame ? SettingsAction.Menu : SettingsAction.Quit);
 
         confirmation = CareerBoardKit.Node("Confirmation", board, new Vector3(0f, 0f, -100f));
@@ -421,8 +487,8 @@ public sealed class SettingsBoard3D : MonoBehaviour
 
     private void RefreshActions()
     {
-        bool showPrimary = inGame || MenuEntry.HasCareerAccess;
-        primaryActionButton.gameObject.SetActive(showPrimary);
+        bool showPrimary = inGame;
+        if (primaryActionButton != null) primaryActionButton.gameObject.SetActive(showPrimary);
         exitActionButton.transform.localPosition = new Vector3(showPrimary ? 184f : 0f, -178f, -26f);
         if (inGame)
         {
@@ -433,7 +499,7 @@ public sealed class SettingsBoard3D : MonoBehaviour
 
     private CareerBoardButton AddAction(string label, float x, SettingsAction action)
     {
-        Color face = action == SettingsAction.Quit || action == SettingsAction.Reset
+        Color face = action == SettingsAction.Quit
             ? new Color32(148, 88, 80, 255) : new Color32(68, 94, 122, 255);
         CareerBoardButton button = CareerBoardButton.Create(board, label, label, new Vector3(x, -178f, -26f),
             new Vector2(340f, 88f), face, HudTheme.TextPrimary, 23f);
@@ -445,13 +511,14 @@ public sealed class SettingsBoard3D : MonoBehaviour
     private void RequestAction(SettingsAction action)
     {
         if (actionBusy || leaving || pendingAction != SettingsAction.None) return;
-        if (action == SettingsAction.Reset && !MenuEntry.HasCareerAccess) return;
+        bool newGame = action == SettingsAction.NewGame;
+        if (newGame && !MenuEntry.HasCareerAccess) return;
         pendingAction = action;
-        confirmationTitle.text = action == SettingsAction.Reset ? "RESET ALL PROGRESS?" :
+        confirmationTitle.text = newGame ? CampaignMenu.ConfirmTitle.ToUpperInvariant() :
             action == SettingsAction.Replay ? (TutorialSettings ? "REPLAY TUTORIAL?" : "REPLAY LEVEL?")
             : action == SettingsAction.Menu ? (TutorialSettings ? "LEAVE TUTORIAL?" : "BACK TO MENU?") : "QUIT GAME?";
-        confirmationMessage.text = action == SettingsAction.Reset
-            ? "Erase your career, rewards, checkpoints and tutorial progress? This cannot be undone. Audio settings are kept."
+        confirmationMessage.text = newGame
+            ? CampaignMenu.ConfirmBody
             : action == SettingsAction.Replay ? (TutorialSettings
                 ? "Start this tutorial again? Your current practice attempt will be lost. Career progress is kept."
                 : "Start this level again? Your current attempt will be lost. Earned career rewards are kept.")
@@ -461,21 +528,26 @@ public sealed class SettingsBoard3D : MonoBehaviour
                     : "Leave this level? Your review will be saved so you can resume from the career board.")
                 : "Leave this level? Your current attempt will be lost. Earned career rewards are kept.")
             : "Are you sure you want to close TaxVenture?";
-        confirmButton.SetLabel(action == SettingsAction.Reset ? "RESET" : action == SettingsAction.Replay ? "REPLAY" :
+        cancelButton.SetLabel(CampaignMenu.CancelButton.ToUpperInvariant());
+        confirmButton.SetLabel(newGame ? CampaignMenu.ConfirmButton.ToUpperInvariant() : action == SettingsAction.Replay ? "REPLAY" :
             action == SettingsAction.Menu ? (TutorialSettings ? "LEAVE TUTORIAL" : "LEAVE LEVEL") : "QUIT");
         ClearPointer();
         confirmationElapsed = 0f;
         confirmation.localScale = Vector3.one * 0.85f;
         confirmation.gameObject.SetActive(true);
-        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        // The standalone New Game opener owns its select sound.
+        if (action != SettingsAction.NewGame && AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
     }
 
     private void CancelConfirmation()
     {
         if (actionBusy) return;
+        // Cancelling the menu's NEW GAME card returns to the menu, not to the settings rows.
+        bool closeBoard = pendingAction == SettingsAction.NewGame;
         ClearPointer();
         pendingAction = SettingsAction.None;
         if (confirmation != null) confirmation.gameObject.SetActive(false);
+        if (closeBoard) GoBack();
     }
 
     private void ConfirmAction()
@@ -485,12 +557,14 @@ public sealed class SettingsBoard3D : MonoBehaviour
         ClearPointer();
         if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
         bool success = true;
+        string newGameError = null;
         try
         {
             switch (pendingAction)
             {
-                case SettingsAction.Reset:
-                    success = PlayerProgressManager.Instance != null && PlayerProgressManager.Instance.ResetProgress();
+                case SettingsAction.NewGame:
+                    // Commit a fresh campaign, then the unskippable opening.
+                    success = MenuEntry.StartNewGame(cameraManager, out newGameError);
                     break;
                 case SettingsAction.Replay:
                     success = InGameSettings.Active != null && InGameSettings.Active.LeaveLevel(true);
@@ -514,13 +588,16 @@ public sealed class SettingsBoard3D : MonoBehaviour
             success = false;
         }
         // The fade owns the screen until scene teardown; keep settings paused and locked.
-        if (success && (pendingAction == SettingsAction.Replay || pendingAction == SettingsAction.Menu)) return;
+        if (success && (pendingAction == SettingsAction.Replay || pendingAction == SettingsAction.Menu ||
+                        pendingAction == SettingsAction.NewGame)) return;
         actionBusy = false;
         if (success) { CancelConfirmation(); GoBack(); }
         else
         {
-            confirmationTitle.text = "COULD NOT COMPLETE";
-            confirmationMessage.text = "Your action could not be completed. Please try again, or tap Cancel to return to settings.";
+            bool newGame = pendingAction == SettingsAction.NewGame;
+            confirmationTitle.text = newGame ? "NEW GAME NOT SAVED" : "COULD NOT COMPLETE";
+            confirmationMessage.text = newGame ? newGameError ?? CampaignMenu.NewGameFailed
+                : "Your action could not be completed. Please try again, or tap Cancel to return to settings.";
         }
     }
 

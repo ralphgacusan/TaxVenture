@@ -88,6 +88,11 @@ public sealed class CareerBoardPresenter : MonoBehaviour
     private Material yarnMaterial;
     private TextMeshPro badgeAreaTitle;
     private CareerBoardButton backButton;
+    // Shop entry (T03, moved here from the main menu): top edge beside BACK, above the CAREER board.
+    private CareerBoardButton shopButton;
+    private Transform shopLock;
+    private TextMeshPro shopNotice;
+    private float shopNoticeTime;
     private CareerChapterSheet sheet;
     private CareerPinnedPaper liftedPaper;
 
@@ -192,6 +197,63 @@ public sealed class CareerBoardPresenter : MonoBehaviour
             if (BackPressed()) GoBack();
         }
         TickCounters(Time.unscaledDeltaTime);
+        TickShopNotice(Time.unscaledDeltaTime);
+    }
+
+    // =========================================================
+    // SHOP ENTRY
+    // =========================================================
+
+    private const float ShopNoticeSeconds = 3f;
+
+    /// <summary>SHOP beside BACK (same size and brass), with a padlock while the shop is not yet introduced.</summary>
+    private void BuildShopEntry()
+    {
+        shopButton = CareerBoardButton.Create(boardRoot, "Shop Button", "SHOP", new Vector3(-525f, 420f, -10f),
+            new Vector2(150f, 56f), HudTheme.Brass, new Color32(40, 30, 14, 255), 22f);
+        shopLock = CareerBoardKit.Padlock(shopButton.transform, new Vector3(-50f, 0f, -16f), 20f, materials);
+        shopButton.Tapped += _ => OpenShop();
+        shopNotice = CareerBoardKit.Text(boardRoot, "Shop Notice", "", 15f, new Vector3(-560f, 376f, -6f), 420f, 22f,
+            CareerBoardKit.Cream, TextAlignmentOptions.Center, FontStyles.Bold, null, embossed);
+        RefreshShopEntry();
+    }
+
+    private void RefreshShopEntry()
+    {
+        if (shopLock == null) return;
+        PlayerProgressManager manager = PlayerProgressManager.Instance;
+        shopLock.gameObject.SetActive(!CampaignMenu.ShopUnlocked(manager != null ? manager.CurrentProgress : null));
+    }
+
+    /// <summary>
+    /// Locked (not yet introduced in the story): says when it opens. The shop
+    /// itself (catalogue, prices, ownership) arrives with T12/T13; opening the
+    /// entry never unlocks or changes anything.
+    /// </summary>
+    private void OpenShop()
+    {
+        if (!Application.isPlaying || launchStarted || !CanInteractNow()) return;
+        RefreshShopEntry();
+        PlayerProgressManager manager = PlayerProgressManager.Instance;
+        bool unlocked = CampaignMenu.ShopUnlocked(manager != null ? manager.CurrentProgress : null);
+        ShowShopNotice(unlocked ? "The shop is not ready yet." : CampaignMenu.ShopLockedMessage);
+        PlaySelectSound();
+    }
+
+    private void ShowShopNotice(string text)
+    {
+        if (shopNotice == null) return;
+        shopNotice.text = text;
+        shopNoticeTime = ShopNoticeSeconds;
+        shopNotice.alpha = 1f;
+    }
+
+    private void TickShopNotice(float dt)
+    {
+        if (shopNotice == null || shopNoticeTime <= 0f) return;
+        shopNoticeTime -= dt;
+        shopNotice.alpha = Mathf.Clamp01(shopNoticeTime / 0.4f);
+        if (shopNoticeTime <= 0f) shopNotice.text = "";
     }
 
     /// <summary>Builds the boards once (also from the component menu, for previews).</summary>
@@ -221,6 +283,7 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         backButton = CareerBoardButton.Create(boardRoot, "Back Button", "<  BACK", new Vector3(-690f, 420f, -10f),
             new Vector2(150f, 56f), HudTheme.Brass, new Color32(40, 30, 14, 255), 22f);
         backButton.Tapped += _ => GoBack();
+        BuildShopEntry();
         sheet = CareerChapterSheet.Create(boardRoot);
         sheet.StartRequested += LaunchChapter;
         sheet.Closed += HandleSheetClosed;
@@ -631,7 +694,7 @@ public sealed class CareerBoardPresenter : MonoBehaviour
             {
                 view.Paper.HideStamp();
                 view.Status.text = status == CareerChapterStatus.Available ? "TAP TO PLAY"
-                    : status == CareerChapterStatus.Locked ? "LOCKED" : "COMING SOON";
+                    : status == CareerChapterStatus.Locked ? "LOCKED" : chapter.PendingIntegration ? "PENDING UPDATE" : "COMING SOON";
                 view.Status.color = status == CareerChapterStatus.Available ? CareerChapterSheet.StampColor(status) : CareerBoardKit.InkSoft;
             }
             if (intro) view.Paper.PlayIntro(introDelay + 0.2f + i * 0.08f, sound: i % 2 == 0);
@@ -821,6 +884,7 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         foreach (CareerPinnedPaper paper in chapterPapers) paper.Interactable = boardInput;
         foreach (BadgeSlotView slot in badgeSlots) slot.Paper.Interactable = boardInput && slot.Paper.Data != null;
         if (backButton != null) backButton.Interactable = ready && !launchStarted;
+        if (shopButton != null) shopButton.Interactable = boardInput;
         if (sheet != null) sheet.SetInputEnabled(ready && !launchStarted && !sheet.IsAnimating);
     }
 
@@ -876,6 +940,8 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         if (string.IsNullOrWhiteSpace(chapter.Def.scene)) return;
         launchStarted = true;
         ApplyInputGate(false);
+        // Story for the chapter still to finish, mastery replay for a finished one (T03 run modes).
+        CampaignRun.Begin(CareerProgress.LaunchMode(chapter));
         if (AudioManager.Instance != null) AudioManager.Instance.PlayAchievementSFX();
         SceneManager.LoadScene(chapter.Def.scene);
     }

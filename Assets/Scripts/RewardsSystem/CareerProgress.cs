@@ -80,7 +80,7 @@ public static class CareerProgress
         bool completed = data != null && data.completedLevelIds != null && data.completedLevelIds.Contains(id);
         bool passed = data != null && data.IsLevelPassed(id);
         // Same rule as PlayerProgressData.IsLevelUnlocked: the previous chapter must be passed.
-        bool unlocked = previous == null || (data != null && data.IsLevelPassed(previous.id));
+        bool unlocked = MasteryBoundary.LegacyChapterUnlocked(data, previous?.id);
         bool hasScene = !string.IsNullOrWhiteSpace(def.scene);
 
         var view = new CareerChapterView
@@ -103,7 +103,9 @@ public static class CareerProgress
         view.TargetExp = Target(view.MaxExp, view.PassingPercent);
         view.TargetHearts = Target(view.MaxHearts, view.PassingPercent);
 
-        if (def.comingSoon || !hasScene && !passed && !completed)
+        // T03: a chapter not yet part of the updated story stays shut for a campaign, whatever its records say.
+        view.PendingIntegration = data != null && data.HasCampaign && def.campaignPending && !def.comingSoon;
+        if (def.comingSoon || view.PendingIntegration || !hasScene && !passed && !completed)
             view.Status = CareerChapterStatus.ComingSoon;
         else if (passed) view.Status = CareerChapterStatus.Passed;
         else if (completed) view.Status = CareerChapterStatus.Finished;
@@ -114,8 +116,16 @@ public static class CareerProgress
                         view.Status == CareerChapterStatus.Finished ||
                         view.Status == CareerChapterStatus.Passed;
         view.Launchable = data != null && hasScene && playable && unlocked;
+        // Story until the campaign has completed this chapter; afterwards a replay that can only improve mastery.
+        view.StoryLaunch = data != null && data.HasCampaign ? !data.campaign.IsChapterCompleted(id) : view.Status == CareerChapterStatus.Available;
         return view;
     }
+
+    public const string PendingIntegrationText = "This chapter joins the updated story in a later update. It cannot be started from this story yet.";
+
+    /// <summary>The run mode a launch of this chapter uses (T03).</summary>
+    public static CampaignRunMode LaunchMode(CareerChapterView chapter) =>
+        chapter != null && chapter.StoryLaunch ? CampaignRunMode.Story : CampaignRunMode.MasteryReplay;
 
     /// <summary>The chapter the player is working toward: the first playable one not yet passed.</summary>
     private static CareerChapterView FindGoal(CareerSnapshot snapshot)
@@ -278,6 +288,8 @@ public class CareerChapterDef
     /// <summary>Cases in the level (used for the maximum score when no result is saved).</summary>
     public int cases = 1;
     public bool comingSoon;
+    /// <summary>Playable on its own but not yet part of the updated story: a campaign cannot launch it (T03; Level 2 until Delivery B).</summary>
+    public bool campaignPending;
 }
 
 [Serializable]
@@ -356,6 +368,10 @@ public class CareerChapterView
     public LevelRecord Record;
     public CareerChapterStatus Status;
     public bool Launchable;
+    /// <summary>Not yet part of the updated story (shown as Coming Soon / PENDING UPDATE, never launchable).</summary>
+    public bool PendingIntegration;
+    /// <summary>Launching plays the story (true) or a mastery replay (false).</summary>
+    public bool StoryLaunch;
     public int BestExp, BestHearts, Attempts;
     public int MaxExp, MaxHearts, PassingPercent;
     public int TargetExp, TargetHearts;

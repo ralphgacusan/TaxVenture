@@ -102,6 +102,37 @@ public sealed class SaveFileStore
         if (File.Exists(RejectedPath)) File.Delete(RejectedPath);
     }
 
+    /// <summary>The main file and backup as they are now (null = missing), for Restore.</summary>
+    public sealed class Generations
+    {
+        public byte[] Main;
+        public byte[] Backup;
+    }
+
+    /// <summary>Remembers the main file and backup before a replacement that may fail part way.</summary>
+    public Generations Capture() => new Generations { Main = ReadBytes(FilePath), Backup = ReadBytes(BackupPath) };
+
+    /// <summary>Puts captured generations back exactly (a missing one is removed) and drops a leftover temp file.</summary>
+    public void Restore(Generations previous)
+    {
+        if (previous == null) return;
+        RestoreFile(FilePath, previous.Main);
+        RestoreFile(BackupPath, previous.Backup);
+        if (File.Exists(TempPath)) File.Delete(TempPath);
+    }
+
+    private static byte[] ReadBytes(string path) => File.Exists(path) ? File.ReadAllBytes(path) : null;
+
+    private static void RestoreFile(string path, byte[] bytes)
+    {
+        if (bytes == null)
+        {
+            if (File.Exists(path)) File.Delete(path);
+            return;
+        }
+        File.WriteAllBytes(path, bytes);
+    }
+
     /// <summary>
     /// Reads the first candidate (main file, then backup) that the validator
     /// accepts. Returns null when none is usable. fromBackup tells which one

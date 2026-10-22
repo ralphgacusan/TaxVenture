@@ -134,6 +134,16 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
     /// <summary>True when the lesson with this id has finished in this run.</summary>
     public bool HasFinished(string lessonId) => !string.IsNullOrEmpty(lessonId) && finished.Contains(lessonId);
 
+    /// <summary>Lessons finished in this run (saved by the Level 1 checkpoint, T04).</summary>
+    public List<string> FinishedLessons() => new List<string>(finished);
+
+    /// <summary>
+    /// Resume (T04): lessons the saved story run already finished for a level
+    /// (null = none). Read once when the guide is created, before its first
+    /// lesson, so a resumed run does not replay the welcome card or tours.
+    /// </summary>
+    public static Func<string, IEnumerable<string>> ResumedLessons;
+
     public static GuideDirector Create(GameObject host, GuideScript script, string levelId, RectTransform canvasRoot,
         GuideCoachView view)
     {
@@ -1064,6 +1074,17 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
             foreach (string id in saved.Split(','))
                 if (!string.IsNullOrEmpty(id)) finished.Add(id);
         }
+
+        // A resumed story run: its finished lessons stay finished, and the
+        // "lesson:<id>" prerequisites they satisfied count again, so the next
+        // unfinished lesson in a chain can still start (T04).
+        IEnumerable<string> resumed = ResumedLessons != null ? ResumedLessons(levelId) : null;
+        if (resumed != null)
+            foreach (string id in resumed)
+            {
+                if (string.IsNullOrEmpty(id) || !finished.Add(id)) continue;
+                Fire(GuideTriggers.LessonKey(id));
+            }
 
         // The arrows wait for the guide to introduce them; if no unfinished
         // lesson will ever do that, show them right away.

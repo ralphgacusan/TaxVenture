@@ -54,3 +54,27 @@ No serialized scenes/prefabs or shared assets were edited; no new Unity script/m
 Screenshot follow-up: hiding Tutorial left an empty row between Play and Settings. MainMenu now moves the complete Settings object (including its colliders) to Tutorial's authored row while the career is fresh. It preserves Settings' authored horizontal/depth coordinates and rotation. After Level 1 is finished, its original position is restored. Reset refreshes the compact placement, and settings pop animations only change scale, so closing/reopening settings preserves the tighter spacing. No scene/prefab changes.
 
 Verification: scratch compilation and existing SettingsRegression checks; user visual check pending. Confirm fresh Play/Settings are adjacent, closing settings retains the compact placement, and the full menu restores the original three-row layout after Level 1 completion.
+
+
+## Corrected campaign/menu gate — 2026-10-22
+
+This supersedes the campaign-creation gate introduced by the later T03 menu work. New Game, Continue, Tutorials and menu Reset require the existing story Level 1 completion marker to have been successfully saved. Campaign creation, intro entry/viewing, XP and mastery completion do not grant access. Play reuses an interrupted campaign: restart the unfinished opening unskippably, or enter unfinished Level 1 directly once the opening is complete, preserving existing restart/checkpoint rules. No progress-module detour.
+
+The launch owner now locks before the atomic New Game publication event; both menu observers keep the displayed layout stable until scene exit. Settings duplicates discard their inherited Settings callback and use the existing physics-touch press/action path. Editable labels use the existing Minnie font/material, while the paper/pin/materials/colliders come from the actual Settings object. Results remain on screen if saving fails; the menu gate uses only the last successfully saved completion snapshot.
+
+See [current menu behavior, changed files, internal evidence and pending manual checklist](../../docs/menu-integration.md). All Unity/visual/animation/audio/device checks remain pending with the user. Earlier verification counts above are historical and are not claims about this correction.
+
+
+### Settings lettering consistency — 2026-10-22
+
+Play, New Game and Continue now use matching beveled 3D Minnie glyph meshes, replacing the flat TMP path described above. The style builder reproduces all 35,412 original Settings text vertices within 0.00001 units before creating the additional words. Each duplicate keeps Settings' actual text renderer, transform, material and texture; only glyph geometry changes. Original Settings/button/font/texture assets remain unchanged. See [the current menu report](../../docs/menu-integration.md) for changed files, internal evidence and pending user visual acceptance.
+
+
+### Authored menu objects and shared press - 2026-10-22
+
+All five corkboard menu actions now use the saved scene objects, including the existing Play object. The runtime Play replacement has been removed. Each action completes the same press-and-return animation before opening its overlay/camera/scene, with a single input owner and immediate repeated-activation lock. The fresh Play/Settings layout stays stable through the press and launch. Only successful saved Level 1 story completion reveals New Game/Continue/Tutorials after results -> progress -> Back. See the [current menu report](../../docs/menu-integration.md) for files, internal results and pending user Unity acceptance.
+
+
+### Standalone confirmation and menu motion - 2026-10-22
+
+New Game now shows the existing animated confirmation alone with the settings slab hidden. Settings no longer creates Reset Progress; in-game Replay remains. Play and Continue use the settings component's existing staggered note-disappearance and start their route from its completion callback. Continue retains hidden notes until progress Back; failed starts restore them. All five notes have subtle 0.65-degree runtime sway, with authored rotations restored on disable. See [current menu evidence and pending manual checks](../../docs/menu-integration.md). This supersedes earlier references above to Reset being available after Level 1.

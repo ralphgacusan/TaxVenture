@@ -112,8 +112,10 @@ string menuEntry = Read("Assets", "Scripts", "UI", "MenuEntry.cs");
 string mainMenuSource = Read("Assets", "Scripts", "MainMenu.cs");
 string menuUi = Read("Assets", "Scripts", "UI", "MainMenuUI.cs");
 Check(mainMenuSource.Contains("MenuEntry.Play(cameraManager)") && menuUi.Contains("MenuEntry.Play(FindAnyObjectByType<ToggleCamera>())"), "touch and UI Play share the first-story routing policy");
-Check(menuEntry.Contains("if (!progress.HasFinishedFirstLevel)") && menuEntry.Contains("SceneFade.FadeOutThenLoad(Cutscene01Runtime.SceneName)") && menuEntry.Contains("cameraManager.SwitchToLevelSelector()"), "first-story Play bypasses the board, subsequent Play opens it");
-Check(runtime.Contains("canSkip = track.showSkip && progress != null && progress.HasSeenLevelOneIntro") && runtime.Contains("if (canSkip) BuildSkipButton()") && runtime.Contains("if (canSkip) Finish()"), "first viewing hides Skip and rejects direct Skip calls; replay respects showSkip config");
+Check(menuEntry.Contains("SceneFade.FadeOutThenLoad(Cutscene01Runtime.SceneName, fadeInDestination: false)") && menuEntry.Contains("cameraManager.SwitchToLevelSelector()") &&
+      menuEntry.Contains("if (HasCareerAccess)") && menuEntry.Contains("if (!CurrentModel().HasStory)"),
+    "T03 menu: Play / New Game go straight to the opening; only saved Level 1 completion permits Continue; interrupted campaigns are reused");
+Check(runtime.Contains("canSkip = !forceOpening && track.showSkip && progress != null && progress.HasSeenLevelOneIntro") && runtime.Contains("if (canSkip) BuildSkipButton()") && runtime.Contains("if (canSkip) Finish()"), "first viewing hides Skip and rejects direct Skip calls; replay respects showSkip config");
 Check(runtime.IndexOf("canSkip =", StringComparison.Ordinal) < runtime.IndexOf("BuildUi();", StringComparison.Ordinal) && runtime.IndexOf("MarkLevelOneIntroSeen()", StringComparison.Ordinal) > runtime.IndexOf("private void Finish()", StringComparison.Ordinal), "Skip policy is captured before UI builds and watching is recorded only on ending");
 string resultUi = Read("Assets", "Scripts", "UI", "LevelCompleteUI.cs");
 Check(resultUi.Contains("MenuEntry.OpenLevelSelect = true") && resultUi.Contains("SceneFade.FadeOutThenLoad(MenuEntry.MenuSceneName, fadeInDestination: true)"), "first completion reveals progress directly with a destination fade in");

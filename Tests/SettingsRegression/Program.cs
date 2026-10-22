@@ -50,9 +50,9 @@ Check(!Regex.IsMatch(scripts, "LoadScene\\(\\s*\"Settings\"") && !Regex.IsMatch(
 Check(!board.Contains("SceneManager.LoadScene"), "BACK closes the board in place (no scene load)");
 
 // ---------- opening from the main menu ----------
-Check(Regex.IsMatch(mainMenu, "case \"settings_button\":\\s*OpenSettings\\(\\);") && mainMenu.Contains("settingsBoard.Open()"),
-    "the 3D settings button opens the board");
-Check(Index(mainMenu, "settingsBoard.IsOpen) return;") > 0 && Index(mainMenu, "settingsBoard.IsOpen) return;") < Index(mainMenu, "Input.touchCount"),
+Check(mainMenu.Contains("Press(note, OpenSettings)") && mainMenu.Contains("settingsBoard.Open()"),
+    "the 3D settings button opens the board after its shared press animation");
+Check(Index(mainMenu, "settingsBoard.IsOpen || settingsBoard.MenuButtonsAnimating)) return;") > 0 && Index(mainMenu, "settingsBoard.IsOpen || settingsBoard.MenuButtonsAnimating)) return;") < Index(mainMenu, "Input.touchCount"),
     "menu taps are ignored while settings are open");
 Check(mainMenuUi.Contains("FindAnyObjectByType<SettingsBoard3D>()") && mainMenuUi.Contains("board.Open()"),
     "the UI-wired settings button (MainMenuUI) opens the same board");
@@ -238,7 +238,7 @@ Check(!Regex.IsMatch(inGame, "\"[^\"\\r\\n]*\\b([Cc]lick|[Mm]ouse|WASD)\\b[^\"\\
 // ---------- confirmed settings actions ----------
 string progressManager = Read("Assets", "Scripts", "RewardsSystem", "PlayerProgressManager.cs");
 string checkpointer = Read("Assets", "Scripts", "Level2", "Level2Checkpointer.cs");
-Check(board.Contains("inGame ? ReplayLabel : \"RESET PROGRESS\"") && board.Contains("inGame ? \"BACK TO MENU\" : \"QUIT GAME\""), "menu and gameplay expose the requested actions");
+Check(board.Contains("if (inGame) primaryActionButton = AddAction(ReplayLabel") && !board.Contains("RESET PROGRESS") && board.Contains("inGame ? \"BACK TO MENU\" : \"QUIT GAME\""), "menu and gameplay expose the requested actions");
 Check(board.Contains("cancelButton.Tapped += _ => CancelConfirmation()") && board.Contains("confirmButton.Tapped += _ => ConfirmAction()"), "confirmation has separate cancel and confirm actions");
 Check(Body(board, "private void GoBack()").Contains("CancelConfirmation(); return;"), "Android back cancels a confirmation before resuming gameplay");
 Check(Body(board, "private CareerBoardTarget RaycastTarget").Contains("!target.transform.IsChildOf(confirmation)"), "confirmation blocks touches to settings behind it");
@@ -264,16 +264,16 @@ Check(Body(inGame, "private void HideHud()").Contains("canvas.GetComponent<Scene
 Check(Body(sceneFade, "private IEnumerator FadeAndLoad").IndexOf("yield return Fade(", StringComparison.Ordinal) < Body(sceneFade, "private IEnumerator FadeAndLoad").IndexOf("SceneManager.LoadScene", StringComparison.Ordinal), "scene loading waits until fade to black finishes");
 Check(Body(sceneFade, "private IEnumerator Fade(").Contains("Time.unscaledDeltaTime"), "fades progress while settings hold timeScale at zero");
 Check(Body(sceneFade, "private static void HandleSceneLoaded").Contains("EnsureForScene(scene, requested)") && sceneFade.Contains("(!force && !OfficeLevelProfile.Allows"), "requested fade in also covers the menu destination");
-Check(board.Contains("if (success && (pendingAction == SettingsAction.Replay || pendingAction == SettingsAction.Menu)) return;"), "successful level exits keep settings locked and paused until scene teardown");
-Check(mainMenu.Contains("if (SceneFade.BlocksInput) return;"), "black curtain also blocks the menu's direct touch raycasts");
+Check(board.Contains("if (success && (pendingAction == SettingsAction.Replay || pendingAction == SettingsAction.Menu ||"), "successful level exits (and a confirmed New Game) keep settings locked and paused until scene teardown");
+Check(mainMenu.Contains("MenuEntry.IsStoryLaunching || SceneFade.BlocksInput ||"), "black curtain also blocks the menu's direct touch raycasts");
 Check(board.Contains("new Vector3(x, -178f, -26f)") && board.Contains("new Vector2(340f, 88f)") && !board.Contains("new Vector2(600f, 76f)"), "secondary settings actions use compact side-by-side buttons");
 
 Check(inGame.Contains("replay && !TrainingSession.IsPracticing && gameObject.scene.name == \"Office_Level1\"") && inGame.Contains("replayFirstStory ? Cutscene01Runtime.SceneName"), "Level 1 replay includes its skippable intro; practice drills still reload directly");
 
 // Fresh-menu visibility and tutorial wording follow the same first-completion gate.
-Check(board.Contains("bool showPrimary = inGame || MenuEntry.HasCareerAccess;") && board.Contains("primaryActionButton.gameObject.SetActive(showPrimary);"), "fresh menu hides Reset Progress while keeping replay available in gameplay");
+Check(board.Contains("bool showPrimary = inGame;") && board.Contains("primaryActionButton.gameObject.SetActive(showPrimary);"), "settings omit Reset Progress in every menu state while retaining in-game replay");
 Check(board.Contains("new Vector3(showPrimary ? 184f : 0f, -178f, -26f)"), "Quit is centred when fresh-menu Reset is hidden");
-Check(board.Contains("action == SettingsAction.Reset && !MenuEntry.HasCareerAccess"), "hidden Reset cannot be requested on a fresh career");
+Check(board.Contains("bool newGame = action == SettingsAction.NewGame;") && board.Contains("if (newGame && !MenuEntry.HasCareerAccess) return;"), "New Game remains gated by saved completion after removal of settings Reset");
 Check(board.Contains("TutorialSettings ? \"REPLAY TUTORIAL\" : \"REPLAY LEVEL\"") && board.Contains("TutorialSettings ? \"RESUME TUTORIAL\" : \"RESUME\""), "practice settings label replay and resume as tutorial actions");
 Check(board.Contains("REPLAY TUTORIAL?") && board.Contains("LEAVE TUTORIAL?") && board.Contains("Start this tutorial again?"), "tutorial confirmation copy matches the actual practice session");
 Check(mainMenu.Contains("ProgressChanged += RefreshMenu") && mainMenu.Contains("entry.Key.SetActive(MenuEntry.HasCareerAccess && entry.Value)"), "fresh menu gates tutorial/side-quest objects and refreshes after resetting progress");
@@ -281,6 +281,21 @@ Check(Body(board, "private void RestoreMenuButtons()").Contains("!MenuEntry.HasC
 Check(Body(inGame, "public bool LeaveLevel").Contains("MenuEntry.OpenLevelSelect = false;") && Body(inGame, "public bool LeaveLevel").Contains("MenuEntry.OpenSettings = false;"), "leaving an unfinished level explicitly requests the main menu");
 Check(Body(menuEntry, "public static bool ConsumeOpenLevelSelect()").Contains("return open && HasCareerAccess;"), "stale progress-view requests are rejected until Level 1 is finished");
 
+string newGameOpen = Body(board, "public bool OpenNewGameConfirmation()");
+Check(newGameOpen.Contains("confirmation.SetParent(root, false)") && newGameOpen.Contains("board.gameObject.SetActive(false)") &&
+      !newGameOpen.Contains("!Open()") && board.Contains("confirmation.localScale = Vector3.one * HudTheme.EaseOutBack"),
+    "New Game presents only the existing animated confirmation, without opening the settings slab");
+Check(!board.Contains("SettingsAction.Reset") && !board.Contains("RESET PROGRESS"),
+    "settings cannot construct or dispatch a reset action");
+Check(board.Contains("menuHiddenAction != null && pops.Count == 0") && board.Contains("menuHiddenAction = null;") &&
+      mainMenu.Contains("settingsBoard.HideMenuForTransition(() => RunAction(action))"),
+    "Play/Continue use the existing disappearance and execute once after all pops finish");
+Check(board.Contains("!cameraManager.IsTransitioning && !cameraManager.IsLevelSelectorVisible") &&
+      board.Contains("transitionMenuHidden = false;") && mainMenu.Contains("settingsBoard.Closed += OnSettingsClosed"),
+    "Back or a failed start restores notes and refreshes the authoritative menu model");
+Check(Body(mainMenu, "private void OnEnable()").Contains("settingsBoard.Closed += OnSettingsClosed") &&
+      Body(mainMenu, "private void OnDisable()").Contains("settingsBoard.Closed -= OnSettingsClosed"),
+    "Continue/Back camera disable-enable restores the note-refresh subscription without duplicate listeners");
 // Real file-store reset: corrupting or removing the primary must never revive the old career.
 string resetDirectory = PathOf("Temp", "SettingsResetRegression", Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(resetDirectory);

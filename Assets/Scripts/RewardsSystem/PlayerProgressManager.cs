@@ -24,6 +24,13 @@ using UnityEngine;
 /// - Whatever loads is passed through PlayerProgressData.Normalize(), which
 ///   repairs impossible values.
 ///
+/// CAMPAIGN (version 5, T02): at load the save is classified once
+/// (CampaignState): no save, a committed campaign, an older save that needs a
+/// New Game (nothing of it is imported), a newer game's save (left untouched
+/// and never overwritten by Save) or unreadable files. StartNewCampaign is the
+/// only way to create a campaign: it writes the full fresh record first and
+/// publishes it only after the write succeeded.
+///
 /// APPLYING A LEVEL: LevelCompleteUI registers the finished level with
 /// SetPendingResult as soon as the Level Complete card shows, and applies it
 /// on Continue. If the game is paused (sent to the background on mobile) or
@@ -52,11 +59,28 @@ public class PlayerProgressManager : MonoBehaviour
     private SaveFileStore store;
     private LevelTotalResult pendingResult;
     private string lastAppliedRunId;
+    private CampaignSaveState campaignState;
+
+    // Snapshot of the last successful write/load, never an unsaved result mutation.
+    public bool HasSavedFirstChapterCompletion { get; private set; }
+
+    private void RememberSavedCompletion() => HasSavedFirstChapterCompletion =
+        CampaignMenu.HasStory(campaignState, progress) &&
+        progress.campaign.IsChapterCompleted(CampaignRecord.FirstChapterId);
 
     private string SaveDirectory => Path.Combine(Application.persistentDataPath, "Save");
     private string SavePath => Path.Combine(SaveDirectory, "progress.json");
 
     public PlayerProgressData CurrentProgress => progress;
+
+    /// <summary>What the save means for the updated story (T02): fresh install, campaign, old save, newer save or unreadable.</summary>
+    public CampaignSaveState CampaignState => campaignState;
+
+    /// <summary>True only for a committed version-5 campaign; old saves never supply Continue.</summary>
+    public bool CanContinueCampaign => CampaignSave.CanContinue(campaignState);
+
+    /// <summary>Why Continue is unavailable, e.g. "Start the updated story" ("" when it is available).</summary>
+    public string ContinueNotice => CampaignSave.ContinueNotice(campaignState);
 
     /// <summary>True when a finished level is waiting to be saved.</summary>
     public bool HasPendingResult => pendingResult != null;
@@ -85,6 +109,7 @@ public class PlayerProgressManager : MonoBehaviour
 
         store = new SaveFileStore(SavePath);
         progress = LoadOrCreate();
+        RememberSavedCompletion();
 
         Debug.Log(
             $"[PlayerProgressManager] Ready. " +
@@ -159,50 +184,31 @@ public class PlayerProgressManager : MonoBehaviour
 
         lastAppliedRunId = levelTotal.RunId;
         if (pendingResult == levelTotal) pendingResult = null;
-        // The finished run replaces its resumable checkpoint in the same write.
-        if (levelTotal.LevelId != OfficeLevelCatalog.Level2Id || !Level2Checkpointer.IsDirectEditorAttempt)
+        CampaignRunMode mode = CurrentRunMode;
+        // The finished run replaces its resumable checkpoint in the same write (a replay never touches the story's).
+        if (mode != CampaignRunMode.MasteryReplay && (levelTotal.LevelId != OfficeLevelCatalog.Level2Id || !Level2Checkpointer.IsDirectEditorAttempt))
             progress.ClearCheckpoint(levelTotal.LevelId);
 
+        // Story runs record the campaign's first completion of the chapter (Continue then opens the career).
+        if (CampaignRun.AllowsStoryWrites(mode) && progress.HasCampaign && progress.campaign.MarkChapterCompleted(levelTotal.LevelId))
+            Debug.Log($"[PlayerProgressManager] Story chapter {levelTotal.LevelId} completed.");
+        // ...and the finished Level 1 story run drops its field checkpoint in the same write (T04).
+        if (CampaignRun.AllowsStoryWrites(mode) && progress.HasCampaign && levelTotal.LevelId == CampaignRecord.FirstChapterId)
+            progress.campaign.levelOne = new Level1FieldCheckpoint();
+
+        // Mastery records (MasteryBoundary): best result per level, badge tiers
+        // and times; only a passing run unlocks the next level, and the career
+        // totals grow only by improvements on the best. A run without a level
+        // score (no rewards.json ledger) counts as a completion whose rewards
+        // are kept as that level's best, so replaying never adds them again.
+        var gain = MasteryBoundary.ApplyRun(progress, ToMasteryRun(levelTotal));
         if (levelTotal.HasScore)
         {
-            // Best result per level; only a passing run unlocks the next level,
-            // and the career totals grow only by improvements on the best.
-            var gain = progress.RecordLevelResult(
-                levelTotal.LevelId,
-                levelTotal.TotalExp,
-                levelTotal.TotalReputation,
-                levelTotal.MaxExp,
-                levelTotal.MaxReputation,
-                levelTotal.Passed,
-                levelTotal.Badges);
-
-            // Collected badges keep their best tier (bronze / silver / gold).
-            for (int i = 0; i < levelTotal.Badges.Count && i < levelTotal.BadgeTiers.Count; i++)
-                progress.RecordBadge(levelTotal.Badges[i], (int)levelTotal.BadgeTiers[i]);
-
-            // Time spent (career board: best / last / total time, side-quest time).
-            progress.RecordLevelTime(levelTotal.LevelId, levelTotal.RunSeconds, levelTotal.SideQuestSeconds);
-
             Debug.Log(
                 $"[PlayerProgressManager] {levelTotal.LevelId}: {levelTotal.TotalExp}/{levelTotal.MaxExp} EXP, " +
                 $"{levelTotal.TotalReputation}/{levelTotal.MaxReputation} hearts, passed: {levelTotal.Passed}, " +
                 $"new best: {gain.newBest} (+{gain.expGain} EXP, +{gain.heartsGain} hearts to totals)."
             );
-        }
-        else
-        {
-            // No level score (no rewards.json ledger): counts as a completion,
-            // and its rewards are kept as that level's best like any other run,
-            // so replaying never adds them again.
-            progress.RecordLevelCompletion(levelTotal.LevelId);
-            progress.RecordLevelResult(
-                levelTotal.LevelId,
-                levelTotal.TotalExp,
-                levelTotal.TotalReputation,
-                0,
-                0,
-                true,
-                levelTotal.Badges);
         }
 
         Debug.Log(
@@ -214,6 +220,37 @@ public class PlayerProgressManager : MonoBehaviour
 
         Save();
     }
+
+    /// <summary>The run mode in force (T03): a practice drill wins; a level loaded without a menu route is a direct Editor run.</summary>
+    public static CampaignRunMode CurrentRunMode => CampaignRun.Resolve(CampaignRun.Chosen, TrainingSession.IsPracticing);
+
+    /// <summary>
+    /// Before a story run leaves its scene (menu / replay): save any waiting
+    /// result and the progress, and report whether that worked. Other run modes
+    /// have nothing of the story to save. On false the caller stays in the run.
+    /// </summary>
+    public bool SaveBeforeLeaving()
+    {
+        if (!CampaignRun.AllowsStoryWrites(CurrentRunMode)) return true;
+        if (pendingResult != null) FlushPending("leaving the level");
+        return Save();
+    }
+
+    /// <summary>The mastery boundary's plain view of a finished level (TotalReputation = accuracy score hearts).</summary>
+    private static MasteryRun ToMasteryRun(LevelTotalResult levelTotal) => new MasteryRun
+    {
+        LevelId = levelTotal.LevelId,
+        HasScore = levelTotal.HasScore,
+        Exp = levelTotal.TotalExp,
+        Hearts = levelTotal.TotalReputation,
+        MaxExp = levelTotal.MaxExp,
+        MaxHearts = levelTotal.MaxReputation,
+        Passed = levelTotal.Passed,
+        Badges = levelTotal.Badges,
+        BadgeTiers = levelTotal.BadgeTiers?.ConvertAll(tier => (int)tier),
+        RunSeconds = levelTotal.RunSeconds,
+        SideQuestSeconds = levelTotal.SideQuestSeconds
+    };
 
     /// <summary>A Training Hub practice run never reaches the career (EXP, hearts, badges, levels).</summary>
     private bool IgnoredForPractice(LevelTotalResult levelTotal)
@@ -254,7 +291,58 @@ public class PlayerProgressManager : MonoBehaviour
             Debug.LogError("[PlayerProgressManager] Reset failed: " + error.Message);
             return false;
         }
+        Publish(fresh, CampaignSave.Classify(true, fresh));
+        return true;
+    }
+
+    /// <summary>
+    /// Confirmed New Game (T02): builds the complete first campaign state, writes
+    /// it as the main save and the backup, and only then makes it the current
+    /// progress. Nothing from any earlier save is carried over; settings are not
+    /// touched. On failure the previous files are put back, the current progress
+    /// stays as it was and the error can be shown; trying again is safe.
+    /// </summary>
+    public bool StartNewCampaign(out string error)
+    {
+        error = null;
+        if (store == null)
+        {
+            error = "The save is not ready.";
+            return false;
+        }
+
+        PlayerProgressData candidate = PlayerProgressData.CreateNewCampaign(
+            Guid.NewGuid().ToString("N"), DateTime.UtcNow.ToString("o"));
+
+        SaveFileStore.Generations previous;
+        try
+        {
+            previous = store.Capture();
+        }
+        catch (Exception e)
+        {
+            error = "Could not read the current save (" + e.Message + ").";
+            Debug.LogError("[PlayerProgressManager] New Game not started: " + error);
+            return false;
+        }
+
+        if (!CampaignSave.TryCommit(candidate, Encode, store.Reset, () => store.Restore(previous), out error))
+        {
+            Debug.LogError("[PlayerProgressManager] New Game not started: " + error);
+            return false;
+        }
+
+        Publish(candidate, CampaignSaveState.Campaign);
+        Debug.Log($"[PlayerProgressManager] New campaign {candidate.campaign.campaignId} started.");
+        return true;
+    }
+
+    /// <summary>Makes a durably written replacement the current progress (reset or New Game).</summary>
+    private void Publish(PlayerProgressData fresh, CampaignSaveState state)
+    {
         progress = fresh;
+        campaignState = state;
+        RememberSavedCompletion();
         pendingResult = null;
         lastAppliedRunId = null;
         PlayerPrefs.DeleteKey("TaxVenture.Career.Seen.v1");
@@ -265,18 +353,64 @@ public class PlayerProgressManager : MonoBehaviour
         CareerProgressService.ClearCache();
         try { ProgressChanged?.Invoke(progress); }
         catch (Exception error) { Debug.LogException(error); }
-        return true;
     }
 
     public bool SaveCheckpoint(LevelCheckpoint checkpoint)
     {
-        if (progress == null || checkpoint == null || !checkpoint.IsSet || TrainingSession.IsPracticing) return false;
+        // Practice drills and mastery replays never replace the story's resumable checkpoint.
+        if (progress == null || checkpoint == null || !checkpoint.IsSet || TrainingSession.IsPracticing ||
+            CurrentRunMode == CampaignRunMode.MasteryReplay) return false;
         progress.SetCheckpoint(checkpoint);
         return Save();
     }
 
     /// <summary>The resumable run of this level, or null.</summary>
     public LevelCheckpoint GetCheckpoint(string levelId) => progress != null ? progress.CheckpointFor(levelId) : null;
+
+    // =========================================================
+    // LEVEL 1 FIELD CHECKPOINT (T04, inside the v5 campaign)
+    // =========================================================
+
+    /// <summary>Only a story run of a committed campaign keeps the Level 1 field checkpoint.</summary>
+    public bool UsesLevelOneCheckpoint =>
+        progress != null && progress.HasCampaign && CampaignSave.CanContinue(campaignState) &&
+        CampaignRun.AllowsStoryCheckpoint(CurrentRunMode);
+
+    /// <summary>
+    /// Saves the complete candidate as the campaign's Level 1 field checkpoint.
+    /// On a failed write the previous checkpoint is put back in memory (the
+    /// file still holds it), nothing is reported as saved, and the caller may retry.
+    /// </summary>
+    public bool SaveLevelOneCheckpoint(Level1FieldCheckpoint candidate)
+    {
+        if (candidate == null || !UsesLevelOneCheckpoint) return false;
+        Level1FieldCheckpoint previous = progress.campaign.levelOne;
+        candidate.version = Level1FieldCheckpoint.CurrentVersion;
+        candidate.writes = (previous != null && previous.IsSet ? previous.writes : 0) + 1;
+        progress.campaign.levelOne = candidate;
+        if (Save()) return true;
+        progress.campaign.levelOne = previous;
+        return false;
+    }
+
+    /// <summary>A copy of the saved Level 1 field checkpoint (null when there is none or this run does not use it).</summary>
+    public Level1FieldCheckpoint GetLevelOneCheckpoint()
+    {
+        if (!UsesLevelOneCheckpoint || progress.campaign.levelOne == null || !progress.campaign.levelOne.IsSet) return null;
+        return JsonUtility.FromJson<Level1FieldCheckpoint>(JsonUtility.ToJson(progress.campaign.levelOne));
+    }
+
+    /// <summary>Replay from the start: drops the Level 1 field checkpoint (restored in memory if the write fails).</summary>
+    public bool ClearLevelOneCheckpoint()
+    {
+        if (!UsesLevelOneCheckpoint) return true;
+        Level1FieldCheckpoint previous = progress.campaign.levelOne;
+        if (previous == null || !previous.IsSet) return true;
+        progress.campaign.levelOne = new Level1FieldCheckpoint();
+        if (Save()) return true;
+        progress.campaign.levelOne = previous;
+        return false;
+    }
 
     /// <summary>Remember a fully viewed first intro in the existing signed save.</summary>
     public bool MarkLevelOneIntroSeen()
@@ -326,8 +460,15 @@ public class PlayerProgressManager : MonoBehaviour
     {
         try
         {
+            // A newer game's save is never overwritten by ordinary saving (only a confirmed New Game/reset replaces it).
+            if (!CampaignSave.AllowsOrdinarySave(campaignState))
+            {
+                Debug.LogWarning("[PlayerProgressManager] Not saved: the save on this device is from a newer version of TaxVenture.");
+                return false;
+            }
             progress.Normalize();
             store.Write(Encode(progress));
+            RememberSavedCompletion();
             Debug.Log($"[PlayerProgressManager] Progress saved to {SavePath}");
         }
         catch (Exception e)
@@ -352,6 +493,7 @@ public class PlayerProgressManager : MonoBehaviour
         if (!store.Exists)
         {
             Debug.Log($"[PlayerProgressManager] No save file found at {SavePath}. Starting fresh.");
+            campaignState = CampaignSave.Classify(false, null);
             var fresh = new PlayerProgressData();
             fresh.Normalize();
             return fresh;
@@ -363,6 +505,7 @@ public class PlayerProgressManager : MonoBehaviour
             Debug.LogError(
                 $"[PlayerProgressManager] No usable save at {SavePath} ({problem ?? "unreadable"}). " +
                 "Starting fresh; the old files were kept (.bak / .rejected).");
+            campaignState = CampaignSave.Classify(true, null);
             var fresh = new PlayerProgressData();
             fresh.Normalize();
             return fresh;
@@ -370,6 +513,18 @@ public class PlayerProgressManager : MonoBehaviour
 
         if (fromBackup)
             Debug.LogWarning($"[PlayerProgressManager] The save was not usable ({problem}); loaded the backup instead.");
+
+        // Decided before Normalize: an old save stays an old save (never a campaign).
+        campaignState = CampaignSave.Classify(true, data);
+        if (campaignState == CampaignSaveState.UnsupportedFuture)
+        {
+            // Keep the newer game's file exactly as it is; this version neither reads nor rewrites it.
+            Debug.LogWarning($"[PlayerProgressManager] The save is version {data.saveVersion}, newer than this game " +
+                             $"({PlayerProgressData.CurrentSaveVersion}). It was left untouched.");
+            var fresh = new PlayerProgressData();
+            fresh.Normalize();
+            return fresh;
+        }
 
         bool repaired = data.Normalize();
         Debug.Log($"[PlayerProgressManager] Progress loaded from {(fromBackup ? store.BackupPath : SavePath)}.");

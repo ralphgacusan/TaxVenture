@@ -232,6 +232,13 @@ public class LevelCompleteUI : MonoBehaviour
         if (PlayerProgressManager.Instance != null && currentResult != null)
         {
             PlayerProgressManager.Instance.ApplyLevelResult(currentResult);
+            if (!PlayerProgressManager.Instance.SaveBeforeLeaving())
+            {
+                leaving = false;
+                Debug.LogWarning("[LevelCompleteUI] Result not saved; stay on results and allow retry.");
+                if (congratsText != null) congratsText.text = "Your result could not be saved. Please try again.";
+                return;
+            }
         }
         else
         {
@@ -240,6 +247,8 @@ public class LevelCompleteUI : MonoBehaviour
                 $"PlayerProgressManager null: {PlayerProgressManager.Instance == null}, " +
                 $"currentResult null: {currentResult == null}"
             );
+            leaving = false;
+            return;
         }
 
         Debug.Log($"[LevelCompleteUI] Returning to the level select in {MenuEntry.MenuSceneName} (was '{mainModuleSceneName}').");

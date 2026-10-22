@@ -51,6 +51,28 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
     /// <summary>True once this NPC's conversation completed and its profile dropped.</summary>
     public bool HasBeenTalkedTo => hasBeenTalkedTo;
 
+    /// <summary>Stable id (TownNpcDialogueLibrary / TaxpayerProfileDatabase).</summary>
+    public string NpcId => npcId;
+
+    /// <summary>
+    /// Resume (T04): this NPC's conversation already happened in the saved run.
+    /// Retires the NPC without the dialogue, the drop animation or the score
+    /// award; the profile paper lies beside the NPC again unless it was
+    /// already collected. Raises no events.
+    /// </summary>
+    public void RestoreHandover(bool profileCollected)
+    {
+        if (hasBeenTalkedTo) return;
+        hasBeenTalkedTo = true;
+        if (stateMachine == null) stateMachine = GetComponent<NpcStateMachine>();
+        if (stateMachine != null) stateMachine.ChangeState(new NpcCompletedState());
+        if (profileCollected || profilePickup == null) return;
+        TaxpayerProfile data = TaxpayerProfileDatabase.GetByNpcId(npcId);
+        if (data == null) return;
+        profilePickup.Initialize(data);
+        profilePickup.gameObject.SetActive(true);
+    }
+
     /// <summary>True while this NPC owns the shared conversation.</summary>
     public bool IsInConversation => dialogueSessionActive;
 

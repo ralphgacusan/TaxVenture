@@ -213,6 +213,29 @@ public sealed class OfficeObjectives : MonoBehaviour
 
     public bool IsDone(TaskDefinition task) => log.IsDone(task);
 
+    /// <summary>Every trigger reached so far, for the Level 1 checkpoint (T04).</summary>
+    public List<string> ReachedKeys() => new List<string>(log.Keys);
+
+    /// <summary>True while RestoreTriggers runs: listeners update without announcing.</summary>
+    public bool Restoring { get; private set; }
+
+    /// <summary>
+    /// Resume (T04): the saved triggers count as reached again. The tracker
+    /// updates once; listeners see Restoring and do not announce the steps.
+    /// </summary>
+    public void RestoreTriggers(IEnumerable<string> keys)
+    {
+        if (keys == null) return;
+        Restoring = true;
+        try
+        {
+            foreach (string key in keys)
+                if (!string.IsNullOrWhiteSpace(key)) log.Record(key.Trim(), tasks);
+            Reevaluate(notify: true);
+        }
+        finally { Restoring = false; }
+    }
+
     /// <summary>
     /// Marks a step's trigger as happened (Tutorial Hub practice: a drill that
     /// starts in the office marks the side quest steps done, so the tracker

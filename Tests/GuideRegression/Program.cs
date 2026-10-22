@@ -455,7 +455,8 @@ Check(repaired.levelRecords.Count == 1 && repaired.GetRecord("Level_01").bestExp
       "impossible save values are repaired (best above maximum, negative totals, duplicates)");
 Check(repaired.IsLevelPassed("Level_01") && repaired.IsLevelUnlocked(2) && repaired.GetBadgeTier("b") == 3,
       "a passed record keeps its level passed; badge tiers stay 0..3");
-Check(repaired.saveVersion == PlayerProgressData.CurrentSaveVersion, "old saves are upgraded to the current version");
+Check(repaired.saveVersion == PlayerProgressData.LegacySaveVersion && !repaired.HasCampaign,
+      "old saves are upgraded to the last pre-campaign version (never into a v5 campaign)");
 
 var fieldsJson = caseFile.GetProperty("requiredFields").EnumerateArray().ToList();
 var answerJson = caseFile.GetProperty("answerKey");

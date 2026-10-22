@@ -85,6 +85,20 @@ public class TaxpayerProfileCollectionHUD : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Resume (T04): a profile collected in the saved run is back in the
+    /// collection and the 3D profile viewer, without the pickup sound or the
+    /// collection events (nothing is awarded twice).
+    /// </summary>
+    public void RestoreCollected(TaxpayerProfile profile)
+    {
+        if (profile == null || collectedProfiles.Contains(profile)) return;
+        collectedProfiles.Add(profile);
+        if (CollectedProfilesWorldPanel.Instance != null)
+            CollectedProfilesWorldPanel.Instance.RegisterCollectedProfile(profile);
+        UpdateCountText();
+    }
+
     public bool TryGetCollectionScreenPoint(out Vector2 screenPoint)
     {
         screenPoint = default;

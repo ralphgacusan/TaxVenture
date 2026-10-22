@@ -424,6 +424,26 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
         ReleaseActiveCard();
     }
 
+    /// <summary>
+    /// Resume (T04): appears already pinned in its saved area, with the same
+    /// tint and pin a finished drop leaves, but no drop, sound or reaction.
+    /// </summary>
+    public void RestorePinned(CorkboardSlot slot, Vector3 position, Quaternion rotation)
+    {
+        if (!initialized || slot == null || profile == null) return;
+        currentSlot = slot;
+        pendingSlot = null;
+        bool correct = profile.CorrectClassification == slot.ExpectedClassification;
+        IsCorrectlyPlaced = correct;
+        transform.SetPositionAndRotation(position, rotation);
+        pinnedPosition = position;
+        pinnedRotation = rotation;
+        placedAt = Time.unscaledTime;
+        state = MotionState.Placed;
+        SetColor(Color.Lerp(neutralColor, correct ? correctColor : wrongColor, 0.12f));
+        ShowPinMarker();
+    }
+
     private void UpdateSway()
     {
         float sway = Mathf.Sin((Time.unscaledTime - placedAt) * (2f * Mathf.PI / 3.5f)) * 0.7f;

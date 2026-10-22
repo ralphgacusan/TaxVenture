@@ -219,7 +219,11 @@ public sealed class InGameSettings : MonoBehaviour
         {
             Level2Checkpointer checkpoint = FindAnyObjectByType<Level2Checkpointer>();
             if (checkpoint != null && !checkpoint.PrepareSettingsExit(replay)) return false;
+            // Level 1 story: save the town/board progress (a replay starts over and clears it) (T04).
+            if (Level1FieldCheckpointer.Active != null && !Level1FieldCheckpointer.Active.PrepareSettingsExit(replay)) return false;
         }
+        // A story run saves before it leaves; if saving fails the player stays in the run (T03).
+        if (PlayerProgressManager.Instance != null && !PlayerProgressManager.Instance.SaveBeforeLeaving()) return false;
         if (!replay)
         {
             MenuEntry.OpenLevelSelect = false;

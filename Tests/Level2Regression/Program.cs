@@ -1477,7 +1477,7 @@ var oldSave = JsonSerializer.Deserialize<PlayerProgressData>("{\"saveVersion\":4
 oldSave.activeCheckpoint = null; oldSave.storyFacts = null;
 Check(oldSave.Normalize() && oldSave.activeCheckpoint != null && oldSave.CheckpointFor("Level_02") == null && oldSave.storyFacts != null && oldSave.totalExp == 10,
     "an old save without a checkpoint defaults safely (and keeps its totals)");
-Check(PlayerProgressData.CurrentSaveVersion == 4, "the save version and signature contract are unchanged");
+Check(PlayerProgressData.CurrentSaveVersion == 5 && PlayerProgressData.LegacySaveVersion == 4 && PlayerProgressData.SignedSinceVersion == 3, "the save version (5 = campaign, 4 without) and signature contract are as expected");
 var mid = Stamped(Supported(), true, "income-supported");
 mid.challenge = new ChallengeState { firstChecked = true, firstCorrect = 14, firstTotal = 16, mastered = true, awarded = true, checks = 2 };
 mid.challenge.firstWrong.AddRange(new[] { "E2.Type", "E4.Evidence" });

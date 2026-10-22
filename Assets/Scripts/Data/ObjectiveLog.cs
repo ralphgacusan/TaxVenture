@@ -18,6 +18,9 @@ public sealed class ObjectiveLog
 
     public bool Contains(string key) => key != null && reached.Contains(key);
 
+    /// <summary>Every trigger reached so far (saved by the Level 1 checkpoint, T04).</summary>
+    public IEnumerable<string> Keys => reached;
+
     public bool IsDone(TaskDefinition task) =>
         task != null && task.TriggerKey != null && reached.Contains(task.TriggerKey);
 

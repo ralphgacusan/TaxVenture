@@ -1,0 +1,24 @@
+# Campaign foundation agent instructions
+
+This is a NEW implementation initiative, planned on 2026-10-21. No runtime implementation has started. Read README.md, SPEC.md, WORLD_AND_FEEDBACK.md, VERIFICATION.md, TICKETS.md, PROGRESS.md, KNOWN_ISSUES.md and the selected ticket before work.
+
+## Authority and scope
+
+- The user authorized this pack: shared campaign systems, main menu and Level 1 FIRST; Level 2 integration NEXT. T01-T17 are Delivery A. T18-T21 are Delivery B. Do not silently execute Delivery B or build Levels 3-5/endings during Delivery A.
+- Latest user decision: START FRESH. Do not build a legacy mastery archive, import/conversion of old progress, or special pre-update archive backups. T02 initializes the new campaign and normal durable saving. New XP, badges, Public Trust, coins, inventory and upgrades remain required. Settings survive New Game; ordinary backups protect new-campaign saves. An incompatible old save cannot supply Continue; the later confirmed New Game replaces it without importing its values. Editing this ticket pack does not authorize resetting any actual save now.
+- This approved cross-system initiative supersedes historical feature-only restrictions only where a ticket explicitly touches the shared system. It does not authorize unrelated cleanup or changes to another initiative's documentation. Read relevant old README/PROGRESS/KNOWN_ISSUES/AGENTS for implementation facts and constraints; live code wins over stale examples.
+- Preserve all pre-existing working changes. THE USER PERFORMS ALL GIT COMMANDS. Do not run even status/diff, stage, commit, branch, reset, clean, or push.
+- AI verification is INTERNAL ONLY: source/data inspection, scratch compilation, pure/integration regression tests, and static content/scene/asset validators. The user performs ALL Unity import confirmation, Play Mode, screenshots, rendered/animation checks, navigation, device, touch, audio listening, performance and feel checks. Never launch Unity or request an editor capture as an internal check. Never claim an unperformed manual check.
+- Statuses are independent: Planned -> In progress -> Implemented, internally verified; user manual pending -> User accepted. A static declaration is not evidence that an animation rendered or that a collider is reachable.
+- All implementation, source builders, reusable prefabs, bindings, colliders and deterministic placement are AI work. Manual acceptance is not manual scene assembly. If an unavailable asset blocks final appearance, complete unaffected work, name the exact blocker, and do not call placeholder art final.
+- No new packages, remote issue publication, downloaded art, cloud saves, alternate input/save/reward/dialogue frameworks, new tax rules, or mass scene regeneration. Keep the signed save owner/key/cutoff. Preserve GUIDs/serialized enum values/UnityEvents. New Assets need unique .meta GUIDs. Use project CRLF text conventions.
+- Physical collectibles, the supply counter, shelf decorations, bookmark tabs, comparison stand and Quax demonstrations need actual world objects and motions. Existing paper viewers and justified HUD overlays are reusable; a flat mock-up does not replace a physical feature.
+- Guides/HUD/career presenters remain observers. Gameplay commands own trust, inventory, coins and commits. A tutorial page advancing is never a reward, purchase or acquisition event.
+- Practice and mastery replay are isolated from story state, live wallet, live supplies and ownership. Direct Editor attempts must be explicitly isolated; do not spend a real campaign's items from a temporary run.
+- Implement one ticket at a time unless the user explicitly authorizes parallel implementation with file ownership. Delegated DOCUMENT AUTHORING or read-only review does not authorize parallel runtime edits.
+
+## Delivery discipline
+
+Every standard ticket is a playable vertical slice, not models-only or UI-only. T01 is an explicit preparatory refactor exception. Keep the build green at seams. Record actual changed paths, commands/results, source limitations, unresolved art/content issues and exact next ticket in PROGRESS.md. Never overwrite historic test counts or manufacture pass evidence. Check affected suites, then full delivery checks at T17/T21; no gameplay suites are needed merely to edit this Markdown pack.
+
+Reference patterns: ../Level2SomethingDoesNotMatch/tickets/T05-toolkit-tutorial.md (physical feel), T11-save-and-finale.md (resume/once-only state), T12-integration-handoff.md (truthful handoff); ../3DMenuCareerBoard/README.md; ../TrainingHub/README.md; ../SettingsActions/README.md. Do not blindly copy their old pass gates, models, timing assumptions or verification commands.

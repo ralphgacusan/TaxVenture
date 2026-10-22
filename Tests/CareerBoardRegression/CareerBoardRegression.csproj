@@ -8,6 +8,8 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/PlayerProgressData.cs" Link="PlayerProgressData.cs" />
+    <Compile Include="../../Assets/Scripts/RewardsSystem/MasteryBoundary.cs" Link="MasteryBoundary.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/CareerProgress.cs" Link="CareerProgress.cs" />
+    <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignRun.cs" Link="CampaignRun.cs" />
   </ItemGroup>
 </Project>

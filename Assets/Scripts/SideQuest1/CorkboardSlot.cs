@@ -98,6 +98,17 @@ public class CorkboardSlot : MonoBehaviour
         }
     }
 
+    /// <summary>Resume (T04): the saved card is pinned here again (no attempt is counted).</summary>
+    public void RestoreCard(ProfileDragCard card)
+    {
+        if (card == null || card.Profile == null) return;
+        OccupyingCard = card;
+        IsSolved = card.Profile.CorrectClassification == expectedClassification;
+    }
+
+    /// <summary>Resume (T04): how many cards this area had received.</summary>
+    public void RestoreAttempts(int attempts) => PlacementAttempts = Mathf.Max(0, attempts);
+
     public void ResetRuntimeState()
     {
         OccupyingCard = null;

@@ -48,6 +48,30 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
     /// <summary>True once the final result panel has been shown.</summary>
     public bool HasShownCompletionPanel => hasShownCompletionPanel;
 
+    /// <summary>True once the board was solved (its wrap-up may still be waiting).</summary>
+    public bool HasCompletedSideQuest => hasCompletedSideQuest;
+
+    /// <summary>
+    /// Resume (T04): puts the guide where the saved run left it, without the
+    /// appearance event, the intro conversation or the reward. A solved board
+    /// whose wrap-up never finished plays that wrap-up again (its reward was
+    /// not given yet); a rewarded one is simply done.
+    /// </summary>
+    public void RestoreProgress(bool appeared, bool introDone, bool solved, bool rewarded)
+    {
+        if (appeared && !hasAppeared)
+        {
+            hasAppeared = true;
+            if (visualRoot != null) visualRoot.SetActive(true);
+        }
+        if (!hasAppeared) return;
+        hasStartedSideQuest = introDone || solved || rewarded;
+        if (!solved && !rewarded) return;
+        hasCompletedSideQuest = true;
+        hasShownCompletionPanel = rewarded;
+        pendingCompletionDialogue = !rewarded;
+    }
+
     /// <summary>T04 marker state: intro available after all profiles; done after the result panel.</summary>
     public NpcAvailability Availability =>
         NpcAvailabilityRules.Guide(hasAppeared, hasStartedSideQuest, hasShownCompletionPanel);

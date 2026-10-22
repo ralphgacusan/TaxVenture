@@ -7,5 +7,6 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/PlayerProgressData.cs" Link="PlayerProgressData.cs" />
+    <Compile Include="../../Assets/Scripts/RewardsSystem/MasteryBoundary.cs" Link="MasteryBoundary.cs" />
   </ItemGroup>
 </Project>

@@ -87,7 +87,66 @@ public class CorkboardSideQuestManager : MonoBehaviour
         ClearRuntimeObjects();
     }
 
-    public void BeginSideQuest()
+    public void BeginSideQuest() => Open(null);
+
+    /// <summary>
+    /// Resume (T04): reopens the saved board straight away (no title card),
+    /// with the saved counters and every saved card pinned in its area again.
+    /// Correctness is recomputed from the profiles; no drop is replayed, so
+    /// no sound, reaction, score or event happens. False if it cannot open.
+    /// </summary>
+    public bool ResumeSideQuest(Level1FieldCheckpoint saved)
+    {
+        if (saved == null) return false;
+        Open(saved);
+        return CanInteract;
+    }
+
+    /// <summary>Resume (T04): the board was already solved in the saved run (counters kept for the reward).</summary>
+    public void RestoreCompleted(int attempts, int wrong)
+    {
+        if (sideQuestActive || sideQuestCompleted) return;
+        placementAttempts = Mathf.Max(0, attempts);
+        wrongPlacements = Mathf.Clamp(wrong, 0, placementAttempts);
+        sideQuestCompleted = true;
+        completionEventRaised = true;
+    }
+
+    /// <summary>The board's saveable state (T04): phase, counters, stable pins and per-area attempts.</summary>
+    public void CaptureState(Level1FieldCheckpoint into)
+    {
+        if (into == null) return;
+        into.boardPhase = sideQuestCompleted ? Level1FieldCheckpoint.PhaseSolved
+            : sideQuestActive ? Level1FieldCheckpoint.PhaseActive : Level1FieldCheckpoint.PhaseNone;
+        into.placementAttempts = placementAttempts;
+        into.wrongPlacements = wrongPlacements;
+        into.placements.Clear();
+        into.slotAttempts.Clear();
+        if (!sideQuestActive || slots == null) return;
+        if (resuming != null)
+        {
+            // Reopened but the cards are not pinned yet: the saved pins still stand.
+            foreach (Level1Placement p in resuming.placements)
+                into.placements.Add(new Level1Placement { profileId = p.profileId, slotId = p.slotId });
+            foreach (Level1SlotAttempts a in resuming.slotAttempts)
+                into.slotAttempts.Add(new Level1SlotAttempts { slotId = a.slotId, attempts = a.attempts, firstTrySolved = a.firstTrySolved });
+            return;
+        }
+        foreach (CorkboardSlot slot in slots)
+        {
+            if (slot == null) continue;
+            string id = Level1FieldCheckpointRules.SlotId(slot.ExpectedClassification);
+            if (slot.OccupyingCard != null && slot.OccupyingCard.Profile != null)
+                into.placements.Add(new Level1Placement { profileId = slot.OccupyingCard.Profile.ProfileId, slotId = id });
+            if (slot.PlacementAttempts > 0)
+                into.slotAttempts.Add(new Level1SlotAttempts { slotId = id, attempts = slot.PlacementAttempts, firstTrySolved = firstTrySolvedSlots.Contains(slot) });
+        }
+    }
+
+    /// <summary>The saved run being resumed by the current opening (null = a normal start).</summary>
+    private Level1FieldCheckpoint resuming;
+
+    private void Open(Level1FieldCheckpoint saved)
     {
         if (sideQuestActive || sideQuestCompleted)
         {
@@ -115,8 +174,9 @@ public class CorkboardSideQuestManager : MonoBehaviour
         }
 
         ClearRuntimeObjects();
-        placementAttempts = 0;
-        wrongPlacements = 0;
+        resuming = saved;
+        placementAttempts = saved != null ? Mathf.Max(0, saved.placementAttempts) : 0;
+        wrongPlacements = saved != null ? Mathf.Clamp(saved.wrongPlacements, 0, placementAttempts) : 0;
         firstTrySolvedSlots.Clear();
         sideQuestActive = true;
 
@@ -125,7 +185,7 @@ public class CorkboardSideQuestManager : MonoBehaviour
             sideQuestRoot.SetActive(true);
         }
 
-        revealHeld = SideQuestSplash.Active;
+        revealHeld = saved == null && SideQuestSplash.Active;
         revealStarted = false;
         cameraArrived = false;
         if (revealHeld)
@@ -137,7 +197,8 @@ public class CorkboardSideQuestManager : MonoBehaviour
         else
         {
             CreateDividers();
-            SetFeedback("Your files are ready. Match each profile to a corkboard area.");
+            SetFeedback(saved != null ? "Welcome back. Your files are where you pinned them."
+                : "Your files are ready. Match each profile to a corkboard area.");
         }
 
         if (CameraController.Instance != null)
@@ -436,7 +497,7 @@ public class CorkboardSideQuestManager : MonoBehaviour
         }
 
         Vector2 collectionScreenPoint = default;
-        bool animateFromHud = cachedCamera != null &&
+        bool animateFromHud = resuming == null && cachedCamera != null &&
             TaxpayerProfileCollectionHUD.Instance.TryGetCollectionScreenPoint(out collectionScreenPoint);
 
         if (!TryGetTrayView(out Plane trayPlane, out float viewHeight))
@@ -479,7 +540,43 @@ public class CorkboardSideQuestManager : MonoBehaviour
             spawnedCards.Add(card);
         }
 
+        if (resuming != null)
+        {
+            RestorePins(resuming);
+            resuming = null;
+            SetFeedback($"Welcome back. {CountSolvedSlots()}/4 areas sorted • {placementAttempts} placements. Cards can be moved again.");
+            return;
+        }
         SetFeedback("Drag a profile into its matching area. Cards can be moved again.");
+    }
+
+    /// <summary>Pins each saved card in the middle of its saved area (kept inside the area like a drop).</summary>
+    private void RestorePins(Level1FieldCheckpoint saved)
+    {
+        Transform board = BoardTransform;
+        foreach (Level1Placement placement in saved.placements)
+        {
+            ProfileDragCard card = spawnedCards.Find(c => c != null && c.Profile != null && c.Profile.ProfileId == placement.profileId);
+            CorkboardSlot slot = slots.Find(a => a != null && Level1FieldCheckpointRules.SlotId(a.ExpectedClassification) == placement.slotId);
+            if (card == null || slot == null || slot.OccupyingCard != null || !slot.TryGetBoardLocalBounds(board, out Bounds area)) continue;
+
+            GetCardHalfExtents(card.transform, board, out float halfWidth, out float halfHeight);
+            const float edgeGap = 0.015f;
+            Vector3 min = Vector3.Max(area.min, boardBounds.min) + new Vector3(halfWidth + edgeGap, halfHeight + edgeGap, 0f);
+            Vector3 max = Vector3.Min(area.max, boardBounds.max) - new Vector3(halfWidth + edgeGap, halfHeight + edgeGap, 0f);
+            float x = min.x <= max.x ? (min.x + max.x) * 0.5f : area.center.x;
+            float y = min.y <= max.y ? (min.y + max.y) * 0.5f : area.center.y;
+            Vector3 position = board.TransformPoint(new Vector3(x, y, boardPlaneZ - 0.008f));
+            card.RestorePinned(slot, position, board.rotation);
+            slot.RestoreCard(card);
+        }
+        foreach (Level1SlotAttempts record in saved.slotAttempts)
+        {
+            CorkboardSlot slot = slots.Find(a => a != null && Level1FieldCheckpointRules.SlotId(a.ExpectedClassification) == record.slotId);
+            if (slot == null) continue;
+            slot.RestoreAttempts(record.attempts);
+            if (record.firstTrySolved) firstTrySolvedSlots.Add(slot);
+        }
     }
 
     private bool TryGetTrayView(out Plane trayPlane, out float viewHeight)

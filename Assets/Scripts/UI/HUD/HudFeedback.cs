@@ -273,7 +273,8 @@ public sealed class HudFeedback : MonoBehaviour
     {
         TaskProgressSnapshot snapshot = objectives.Snapshot;
         if (snapshot == null) return;
-        if (!ready)
+        // A resumed run's steps were announced the first time (T04).
+        if (!ready || objectives.Restoring)
         {
             lastStatus = Copy(snapshot);
             return;

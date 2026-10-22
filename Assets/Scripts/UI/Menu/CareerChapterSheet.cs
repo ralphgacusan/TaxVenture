@@ -245,6 +245,9 @@ public sealed class CareerChapterSheet : MonoBehaviour
             : "Career progress could not be read. Your saved results are safe, but chapters cannot start right now.";
 
         CareerChapterStatus status = chapter.Status;
+        // A replay states what it can change (T03 run modes).
+        if (progressAvailable && chapter.Launchable && CareerProgress.LaunchMode(chapter) == CampaignRunMode.MasteryReplay)
+            descriptionLabel.text += "\n<size=72%>" + CampaignRun.WhatChanges(CampaignRunMode.MasteryReplay) + "</size>";
         stampLabel.text = status == CareerChapterStatus.Available ? "OPEN" : CareerProgress.StatusLabel(status);
         Color stampColor = StampColor(status);
         stampLabel.color = stampColor;
@@ -263,7 +266,8 @@ public sealed class CareerChapterSheet : MonoBehaviour
             PlacePassMark(expPass, chapter.PassingPercent);
             PlacePassMark(heartsPass, chapter.PassingPercent);
         }
-        emptyLabel.text = status == CareerChapterStatus.ComingSoon ? "This chapter is still being written. Check back soon!"
+        emptyLabel.text = chapter.PendingIntegration ? CareerProgress.PendingIntegrationText
+            : status == CareerChapterStatus.ComingSoon ? "This chapter is still being written. Check back soon!"
             : status == CareerChapterStatus.Locked ? "Locked. Pass the previous chapter to open it."
             : "No result yet. Finish the chapter to record your best run.";
 
@@ -301,7 +305,7 @@ public sealed class CareerChapterSheet : MonoBehaviour
                 startButton.SetColors(HudTheme.Track, HudTheme.TextPrimary);
                 break;
             default:
-                startButton.SetLabel("COMING SOON");
+                startButton.SetLabel(chapter.PendingIntegration ? "NOT YET" : "COMING SOON");
                 startButton.SetColors(HudTheme.Track, HudTheme.TextPrimary);
                 break;
         }

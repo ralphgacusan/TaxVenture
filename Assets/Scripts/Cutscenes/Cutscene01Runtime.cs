@@ -94,7 +94,8 @@ public sealed class Cutscene01Runtime : MonoBehaviour
         if (string.IsNullOrWhiteSpace(track.nextScene)) track.nextScene = "Office_Level1";
 
         PlayerProgressData progress = PlayerProgressManager.Instance != null ? PlayerProgressManager.Instance.CurrentProgress : null;
-        canSkip = track.showSkip && progress != null && progress.HasSeenLevelOneIntro;
+        bool forceOpening = MenuEntry.ConsumeUnskippableOpening();
+        canSkip = !forceOpening && track.showSkip && progress != null && progress.HasSeenLevelOneIntro;
         BuildUi();
         EnsureEventSystem();
         FindMasterDirector();

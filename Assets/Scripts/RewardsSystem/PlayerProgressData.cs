@@ -57,11 +57,212 @@ public class TrainingRecord
 /// 2 added best-result records and badges; 3 is written signed and
 /// crash-safe by PlayerProgressManager (same fields); 4 added the Training
 /// Hub lists (tutorialsSeen, trainingRecords), which never
-/// affect career totals. Normalize() upgrades
+/// affect career totals; 5 is the updated story campaign (campaign record).
+/// Normalize() upgrades
 /// any older save in place and repairs impossible values (negative totals,
 /// a best above its maximum, duplicate ids, badge tiers out of range), so
-/// whatever is on disk always loads as a consistent save.
+/// whatever is on disk always loads as a consistent save. A save without a
+/// campaign is only ever upgraded to version 4: it never becomes a v5
+/// campaign by loading; only a confirmed New Game creates one.
 /// </summary>
+/// <summary>
+/// One supply or keepsake the campaign holds: carried in the bag and stored in
+/// the office drawer (version 5).
+/// </summary>
+[Serializable]
+public class CampaignItemStack
+{
+    public string itemId;
+    public int carried;
+    public int stored;
+}
+
+/// <summary>One profile card pinned on the Level 1 corkboard: stable profile id and the area's classification name.</summary>
+[Serializable]
+public class Level1Placement
+{
+    public string profileId;
+    public string slotId;
+}
+
+/// <summary>How often one corkboard area has received a card (and whether its first card was right).</summary>
+[Serializable]
+public class Level1SlotAttempts
+{
+    public string slotId;
+    public int attempts;
+    public bool firstTrySolved;
+}
+
+/// <summary>
+/// Level 1 field progress of the unfinished story run (T04): stable ids and
+/// counters only, never scene objects, camera poses, held drags or answers.
+/// boardPhase: "" (board not opened), "active", "solved" (all four right, the
+/// guide's wrap-up and reward still to come) or "rewarded". The check* fields
+/// are reserved for T06's first complete check and stay unset until then.
+/// </summary>
+[Serializable]
+public class Level1FieldCheckpoint
+{
+    public const int CurrentVersion = 1;
+    public const string PhaseNone = "";
+    public const string PhaseActive = "active";
+    public const string PhaseSolved = "solved";
+    public const string PhaseRewarded = "rewarded";
+
+    public int version;
+    public int writes;
+    public List<string> talkedNpcIds = new List<string>();
+    public List<string> collectedProfileIds = new List<string>();
+    public bool guideIntroDone;
+    public string boardPhase = PhaseNone;
+    public int placementAttempts;
+    public int wrongPlacements;
+    public List<Level1Placement> placements = new List<Level1Placement>();
+    public List<Level1SlotAttempts> slotAttempts = new List<Level1SlotAttempts>();
+    public List<string> objectiveTriggers = new List<string>();
+    /// <summary>Guide lessons already finished in this run (welcome card, HUD tour...), so a resume does not replay them.</summary>
+    public List<string> guideLessonsDone = new List<string>();
+
+    // T06 (first complete check): reserved, unset in T04.
+    public bool checkSubmitted;
+    public int checkCorrectCount = -1;
+    public List<string> checkWrongProfileIds = new List<string>();
+
+    /// <summary>Anything to resume (a version was written by the checkpointer).</summary>
+    public bool IsSet => version > 0;
+
+    public static bool IsKnownPhase(string phase) =>
+        phase == PhaseNone || phase == PhaseActive || phase == PhaseSolved || phase == PhaseRewarded;
+
+    /// <summary>
+    /// Structural repair only (no profile knowledge; Level1FieldCheckpointRules
+    /// checks ids against the content): no null lists, trimmed unique ids,
+    /// one placement per profile and per area (first kept), one attempt row
+    /// per area, non-negative counters, wrong placements within attempts, a
+    /// known phase. A newer version is left for the restore check to reject.
+    /// </summary>
+    public bool Repair()
+    {
+        bool changed = false;
+        if (version < 0) { version = 0; changed = true; }
+        if (writes < 0) { writes = 0; changed = true; }
+        talkedNpcIds = CleanIds(talkedNpcIds, ref changed);
+        collectedProfileIds = CleanIds(collectedProfileIds, ref changed);
+        objectiveTriggers = CleanIds(objectiveTriggers, ref changed);
+        guideLessonsDone = CleanIds(guideLessonsDone, ref changed);
+        checkWrongProfileIds = CleanIds(checkWrongProfileIds, ref changed);
+        if (boardPhase == null || !IsKnownPhase(boardPhase.Trim()))
+        {
+            boardPhase = PhaseNone;
+            changed = true;
+        }
+        else if (boardPhase != boardPhase.Trim()) { boardPhase = boardPhase.Trim(); changed = true; }
+
+        if (placements == null) { placements = new List<Level1Placement>(); changed = true; }
+        var profiles = new HashSet<string>(StringComparer.Ordinal);
+        var areas = new HashSet<string>(StringComparer.Ordinal);
+        var keptPlacements = new List<Level1Placement>(placements.Count);
+        foreach (Level1Placement p in placements)
+        {
+            string profile = p?.profileId?.Trim();
+            string area = p?.slotId?.Trim();
+            if (string.IsNullOrEmpty(profile) || string.IsNullOrEmpty(area) || !profiles.Add(profile) || !areas.Add(area)) { changed = true; continue; }
+            if (p.profileId != profile || p.slotId != area) { p.profileId = profile; p.slotId = area; changed = true; }
+            keptPlacements.Add(p);
+        }
+        placements = keptPlacements;
+
+        if (slotAttempts == null) { slotAttempts = new List<Level1SlotAttempts>(); changed = true; }
+        var seenAreas = new HashSet<string>(StringComparer.Ordinal);
+        var keptAttempts = new List<Level1SlotAttempts>(slotAttempts.Count);
+        foreach (Level1SlotAttempts a in slotAttempts)
+        {
+            string area = a?.slotId?.Trim();
+            if (string.IsNullOrEmpty(area) || !seenAreas.Add(area)) { changed = true; continue; }
+            if (a.slotId != area) { a.slotId = area; changed = true; }
+            if (a.attempts < 0) { a.attempts = 0; changed = true; }
+            if (a.firstTrySolved && a.attempts == 0) { a.firstTrySolved = false; changed = true; }
+            keptAttempts.Add(a);
+        }
+        slotAttempts = keptAttempts;
+
+        if (placementAttempts < 0) { placementAttempts = 0; changed = true; }
+        if (wrongPlacements < 0) { wrongPlacements = 0; changed = true; }
+        if (wrongPlacements > placementAttempts) { wrongPlacements = placementAttempts; changed = true; }
+        if (checkCorrectCount < -1) { checkCorrectCount = -1; changed = true; }
+        return changed;
+    }
+
+    private static List<string> CleanIds(List<string> ids, ref bool changed)
+    {
+        if (ids == null) { changed = true; return new List<string>(); }
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var kept = new List<string>(ids.Count);
+        foreach (string id in ids)
+        {
+            string trimmed = id?.Trim();
+            if (string.IsNullOrEmpty(trimmed) || !seen.Add(trimmed)) { changed = true; continue; }
+            if (trimmed != id) changed = true;
+            kept.Add(trimmed);
+        }
+        return kept;
+    }
+}
+
+/// <summary>
+/// The updated story campaign (version 5). Separate from the mastery records
+/// (EXP, score hearts, badges): publicTrust is social confidence 0..100, coins
+/// are the office budget. Plain ids and quantities only. Starting values come
+/// from CreateFresh, the one factory used by every New Game.
+/// </summary>
+[Serializable]
+public class CampaignRecord
+{
+    public const int StartingTrust = 40;
+    public const int MaxTrust = 100;
+    public const string FirstChapterId = "Level_01";
+
+    public string campaignId;
+    /// <summary>When New Game committed (UTC, round-trip format). Informational.</summary>
+    public string createdUtc;
+    /// <summary>The story chapter the campaign is in (Level 1 at the start).</summary>
+    public string currentChapterId;
+    public List<string> completedChapterIds = new List<string>();
+    public int publicTrust;
+    public int coins;
+    /// <summary>Once-only reward/action claims (campaign-scoped ids).</summary>
+    public List<string> rewardClaims = new List<string>();
+    public List<CampaignItemStack> items = new List<CampaignItemStack>();
+    public List<string> ownedUpgradeIds = new List<string>();
+    /// <summary>The unfinished Level 1 story run's field progress (T04); empty when there is none.</summary>
+    public Level1FieldCheckpoint levelOne = new Level1FieldCheckpoint();
+
+    public bool IsSet => !string.IsNullOrWhiteSpace(campaignId);
+
+    public bool IsChapterCompleted(string chapterId) =>
+        !string.IsNullOrWhiteSpace(chapterId) && completedChapterIds != null && completedChapterIds.Contains(chapterId.Trim());
+
+    /// <summary>Records the story's first completion of a chapter (story runs only). True when it is new.</summary>
+    public bool MarkChapterCompleted(string chapterId)
+    {
+        if (!IsSet || string.IsNullOrWhiteSpace(chapterId) || IsChapterCompleted(chapterId)) return false;
+        if (completedChapterIds == null) completedChapterIds = new List<string>();
+        completedChapterIds.Add(chapterId.Trim());
+        return true;
+    }
+
+    /// <summary>A brand-new campaign: trust 40/100, no coins, claims, items, upgrades or completed chapters; Level 1 current.</summary>
+    public static CampaignRecord CreateFresh(string campaignId, string createdUtc) => new CampaignRecord
+    {
+        campaignId = campaignId,
+        createdUtc = createdUtc,
+        currentChapterId = FirstChapterId,
+        publicTrust = StartingTrust,
+        coins = 0
+    };
+}
+
 /// <summary>
 /// An unfinished level run that can be resumed after a relaunch (Level 2:
 /// Rosa's review). Plain data only (no scene references): the review state as
@@ -86,7 +287,9 @@ public class LevelCheckpoint
 [Serializable]
 public class PlayerProgressData
 {
-    public const int CurrentSaveVersion = 4;
+    public const int CurrentSaveVersion = 5;
+    /// <summary>Last version before the campaign; saves without a campaign stay at it.</summary>
+    public const int LegacySaveVersion = 4;
     /// <summary>First version written signed; a plain (unsigned) file claiming this or later is hand-made.</summary>
     public const int SignedSinceVersion = 3;
     /// <summary>Highest badge tier (gold).</summary>
@@ -112,6 +315,24 @@ public class PlayerProgressData
 
     /// <summary>Set after the Level 1 intro finishes; default false for fresh/older saves.</summary>
     public bool levelOneIntroSeen;
+
+    /// <summary>The updated story campaign (version 5); empty (no id) in older saves and before New Game.</summary>
+    public CampaignRecord campaign = new CampaignRecord();
+
+    /// <summary>True when this save holds a committed updated-story campaign.</summary>
+    public bool HasCampaign => campaign != null && campaign.IsSet;
+
+    /// <summary>
+    /// The complete first state of a new campaign: no EXP, score hearts, badges,
+    /// level records, checkpoint, tutorials or story facts, plus a fresh
+    /// campaign record. Nothing is copied from any earlier save.
+    /// </summary>
+    public static PlayerProgressData CreateNewCampaign(string campaignId, string createdUtc)
+    {
+        var data = new PlayerProgressData { campaign = CampaignRecord.CreateFresh(campaignId, createdUtc) };
+        data.Normalize();
+        return data;
+    }
 
     /// <summary>The first career-board visit follows a finished Level 1, at any score.</summary>
     public bool HasFinishedFirstLevel => completedLevelIds != null && completedLevelIds.Contains("Level_01");
@@ -235,16 +456,8 @@ public class PlayerProgressData
         return true;
     }
 
-    public bool IsLevelUnlocked(int levelNumber)
-    {
-        if (levelNumber == 1)
-            return true;
-
-        if (levelNumber < 1 || passedLevelIds == null)
-            return false;
-
-        return passedLevelIds.Contains($"Level_{levelNumber - 1:00}");
-    }
+    /// <summary>Legacy unlock (previous level passed); compatibility entry point for MasteryBoundary.</summary>
+    public bool IsLevelUnlocked(int levelNumber) => MasteryBoundary.LegacyLevelUnlocked(this, levelNumber);
 
     public bool IsLevelPassed(string levelId) =>
         !string.IsNullOrWhiteSpace(levelId) && passedLevelIds != null && passedLevelIds.Contains(levelId.Trim());
@@ -262,56 +475,11 @@ public class PlayerProgressData
     /// Saves a finished run: keeps the best EXP / hearts, marks the level
     /// passed (never un-passes it), adds badges, and returns how much the
     /// career totals grew (only the improvement over the previous best).
+    /// Compatibility entry point: the rule lives in MasteryBoundary.RecordResult.
     /// </summary>
     public (int expGain, int heartsGain, bool newBest) RecordLevelResult(
-        string levelId, int exp, int hearts, int maxExp, int maxHearts, bool passed, IEnumerable<string> badges)
-    {
-        if (string.IsNullOrWhiteSpace(levelId))
-            return (0, 0, false);
-
-        Normalize();
-        string id = levelId.Trim();
-
-        // A run can't score above its own maximum (bad caller or bad data).
-        maxExp = Math.Max(0, maxExp);
-        maxHearts = Math.Max(0, maxHearts);
-        exp = Math.Max(0, maxExp > 0 ? Math.Min(exp, maxExp) : exp);
-        hearts = Math.Max(0, maxHearts > 0 ? Math.Min(hearts, maxHearts) : hearts);
-
-        if (!completedLevelIds.Contains(id))
-            completedLevelIds.Add(id);
-        levelsCompleted = completedLevelIds.Count;
-        if (passed && !passedLevelIds.Contains(id))
-            passedLevelIds.Add(id);
-
-        LevelRecord record = GetRecord(id);
-        bool first = record == null;
-        if (first)
-        {
-            record = new LevelRecord { levelId = id };
-            levelRecords.Add(record);
-        }
-
-        int expGain = Math.Max(0, exp - record.bestExp);
-        int heartsGain = Math.Max(0, hearts - record.bestHearts);
-        bool newBest = first || exp > record.bestExp || hearts > record.bestHearts;
-
-        record.bestExp = Math.Max(record.bestExp, Math.Max(0, exp));
-        record.bestHearts = Math.Max(record.bestHearts, Math.Max(0, hearts));
-        record.maxExp = maxExp;
-        record.maxHearts = maxHearts;
-        record.passed = record.passed || passed;
-        record.attempts++;
-        if (record.badges == null) record.badges = new List<string>();
-        if (badges != null)
-            foreach (string badge in badges)
-                if (!string.IsNullOrWhiteSpace(badge) && !record.badges.Contains(badge))
-                    record.badges.Add(badge);
-
-        totalExp += expGain;
-        totalReputation += heartsGain;
-        return (expGain, heartsGain, newBest);
-    }
+        string levelId, int exp, int hearts, int maxExp, int maxHearts, bool passed, IEnumerable<string> badges) =>
+        MasteryBoundary.RecordResult(this, levelId, exp, hearts, maxExp, maxHearts, passed, badges);
 
     /// <summary>
     /// Adds a finished run's time to that level's record (call after RecordLevelResult):
@@ -392,6 +560,8 @@ public class PlayerProgressData
         if (activeCheckpoint == null) { activeCheckpoint = new LevelCheckpoint(); changed = true; }
         if (activeCheckpoint.transferredFields == null) { activeCheckpoint.transferredFields = new List<string>(); changed = true; }
         if (storyFacts == null) { storyFacts = new List<string>(); changed = true; }
+        if (campaign == null) { campaign = new CampaignRecord(); changed = true; }
+        changed |= RepairCampaign();
 
         if (saveVersion == 0 && levelsCompleted > 0 && completedLevelIds.Count == 0)
         {
@@ -442,12 +612,58 @@ public class PlayerProgressData
             changed = true;
         }
 
-        if (saveVersion < CurrentSaveVersion)
+        // Only a save holding a campaign is version 5; older data stays a pre-campaign save.
+        int version = HasCampaign ? CurrentSaveVersion : LegacySaveVersion;
+        if (saveVersion < version)
         {
-            saveVersion = CurrentSaveVersion;
+            saveVersion = version;
             changed = true;
         }
 
+        return changed;
+    }
+
+    /// <summary>Clean campaign lists, trust 0..MaxTrust, no negative coins or quantities, one stack per item.</summary>
+    private bool RepairCampaign()
+    {
+        bool changed = false;
+        CampaignRecord c = campaign;
+        if (c.campaignId != null && c.campaignId.Trim() != c.campaignId) { c.campaignId = c.campaignId.Trim(); changed = true; }
+        if (c.completedChapterIds == null) { c.completedChapterIds = new List<string>(); changed = true; }
+        if (c.rewardClaims == null) { c.rewardClaims = new List<string>(); changed = true; }
+        if (c.ownedUpgradeIds == null) { c.ownedUpgradeIds = new List<string>(); changed = true; }
+        if (c.items == null) { c.items = new List<CampaignItemStack>(); changed = true; }
+        if (c.levelOne == null) { c.levelOne = new Level1FieldCheckpoint(); changed = true; }
+        changed |= c.levelOne.Repair();
+        c.completedChapterIds = CleanIds(c.completedChapterIds, ref changed);
+        c.rewardClaims = CleanIds(c.rewardClaims, ref changed);
+        c.ownedUpgradeIds = CleanIds(c.ownedUpgradeIds, ref changed);
+
+        if (c.IsSet && string.IsNullOrWhiteSpace(c.currentChapterId)) { c.currentChapterId = CampaignRecord.FirstChapterId; changed = true; }
+        int trust = Math.Max(0, Math.Min(CampaignRecord.MaxTrust, c.publicTrust));
+        if (trust != c.publicTrust) { c.publicTrust = trust; changed = true; }
+        if (c.coins < 0) { c.coins = 0; changed = true; }
+
+        var stacks = new Dictionary<string, CampaignItemStack>(StringComparer.Ordinal);
+        var kept = new List<CampaignItemStack>(c.items.Count);
+        foreach (CampaignItemStack item in c.items)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(item.itemId)) { changed = true; continue; }
+            string id = item.itemId.Trim();
+            if (id != item.itemId) { item.itemId = id; changed = true; }
+            if (item.carried < 0) { item.carried = 0; changed = true; }
+            if (item.stored < 0) { item.stored = 0; changed = true; }
+            if (stacks.TryGetValue(id, out CampaignItemStack first))
+            {
+                first.carried = (int)Math.Min(int.MaxValue, (long)first.carried + item.carried);
+                first.stored = (int)Math.Min(int.MaxValue, (long)first.stored + item.stored);
+                changed = true;
+                continue;
+            }
+            stacks[id] = item;
+            kept.Add(item);
+        }
+        c.items = kept;
         return changed;
     }
 
