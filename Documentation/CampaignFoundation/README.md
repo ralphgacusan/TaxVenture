@@ -15,7 +15,7 @@ The player is Elijah, a new arrival helping Coast Tales with income-tax work. Ma
 1. [AGENTS](AGENTS.md): ownership, internal-only verification, user manual acceptance and preservation rules.
 2. [SPEC](SPEC.md): approved behavior, inspected baseline, saved-state/transaction contracts, release scope and starting fixtures.
 3. [WORLD_AND_FEEDBACK](WORLD_AND_FEEDBACK.md): physical assets, player gestures, motion, sound and presentation.
-4. [TICKETS](TICKETS.md): 21 bounded, dependency-linked slices.
+4. [TICKETS](TICKETS.md): 23 bounded, dependency-linked slices (T22-T23 are Delivery A amendments, 2026-10-24).
 5. [VERIFICATION](VERIFICATION.md): actual internal checks and separate USER manual scripts.
 6. [PROGRESS](PROGRESS.md) and [KNOWN_ISSUES](KNOWN_ISSUES.md): truth of work/evidence and blockers.
 7. Selected ticket under tickets/; inspect referenced current code before implementing.

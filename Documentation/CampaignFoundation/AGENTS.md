@@ -4,7 +4,7 @@ This is a NEW implementation initiative, planned on 2026-10-21. No runtime imple
 
 ## Authority and scope
 
-- The user authorized this pack: shared campaign systems, main menu and Level 1 FIRST; Level 2 integration NEXT. T01-T17 are Delivery A. T18-T21 are Delivery B. Do not silently execute Delivery B or build Levels 3-5/endings during Delivery A.
+- The user authorized this pack: shared campaign systems, main menu and Level 1 FIRST; Level 2 integration NEXT. T01-T17 are Delivery A, plus amendments T22-T23 (2026-10-24). T18-T21 are Delivery B. Do not silently execute Delivery B or build Levels 3-5/endings during Delivery A.
 - Latest user decision: START FRESH. Do not build a legacy mastery archive, import/conversion of old progress, or special pre-update archive backups. T02 initializes the new campaign and normal durable saving. New XP, badges, Public Trust, coins, inventory and upgrades remain required. Settings survive New Game; ordinary backups protect new-campaign saves. An incompatible old save cannot supply Continue; the later confirmed New Game replaces it without importing its values. Editing this ticket pack does not authorize resetting any actual save now.
 - This approved cross-system initiative supersedes historical feature-only restrictions only where a ticket explicitly touches the shared system. It does not authorize unrelated cleanup or changes to another initiative's documentation. Read relevant old README/PROGRESS/KNOWN_ISSUES/AGENTS for implementation facts and constraints; live code wins over stale examples.
 - Preserve all pre-existing working changes. THE USER PERFORMS ALL GIT COMMANDS. Do not run even status/diff, stage, commit, branch, reset, clean, or push.

@@ -8,13 +8,14 @@ PACK = Path(__file__).resolve().parent
 EXPECTED = {
     "T01": [], "T02": ["T01"], "T03": ["T02"], "T04": ["T03"],
     "T05": ["T04"], "T06": ["T04"], "T07": ["T05", "T06"],
-    "T08": ["T07"], "T09": ["T07"], "T10": ["T05"],
+    "T08": ["T07", "T22"], "T09": ["T07"], "T10": ["T05"],
     "T11": ["T09", "T10"], "T12": ["T09", "T10", "T11"],
     "T13": ["T11", "T12"], "T14": ["T05", "T11", "T12"],
     "T15": ["T06", "T10"],
-    "T16": ["T08", "T09", "T11", "T13", "T14", "T15"],
+    "T16": ["T08", "T09", "T11", "T13", "T14", "T15", "T23"],
     "T17": ["T16"], "T18": ["T17"], "T19": ["T18"],
     "T20": ["T18"], "T21": ["T19", "T20"],
+    "T22": [], "T23": ["T08", "T22"],
 }
 errors = []
 documents = sorted(PACK.rglob("*.md"))
@@ -119,9 +120,10 @@ def ancestors(ticket_id):
         result.update(ancestors(blocker))
     return result
 
-if ancestors("T17") != {f"T{number:02}" for number in range(1, 17)}:
+AMENDMENTS = {"T22", "T23"}  # Delivery A amendments added 2026-10-24
+if ancestors("T17") != {f"T{number:02}" for number in range(1, 17)} | AMENDMENTS:
     errors.append("Delivery A gate does not cover all earlier tickets")
-if ancestors("T21") != {f"T{number:02}" for number in range(1, 21)}:
+if ancestors("T21") != {f"T{number:02}" for number in range(1, 21)} | AMENDMENTS:
     errors.append("Delivery B gate does not cover all earlier tickets")
 
 # Approved-pack starting fixtures: these are arithmetic checks, not playtesting.

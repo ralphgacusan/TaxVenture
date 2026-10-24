@@ -1,6 +1,6 @@
 # T05 — Resume casework, review time and completion boundaries
 
-Status: Planned. Blocked by: [T04 — Level 1 field resume](T04-level1-field-resume.md).
+Status: Planned -> Implemented, internally verified; user manual pending (2026-10-23). Blocked by: [T04 — Level 1 field resume](T04-level1-field-resume.md).
 
 References: [Campaign spec](../SPEC.md), [world and feedback](../WORLD_AND_FEEDBACK.md), [verification plan](../VERIFICATION.md), [progress log](../PROGRESS.md).
 
@@ -28,12 +28,14 @@ Do not add final scoring/results, public trust, coin rewards, new timer rules, a
 
 Internal checks — implementation agent records evidence in ../PROGRESS.md:
 
-- [ ] Round-trip every Level 1 review phase, original/working revision, transfer, form, audit, day, cutoff, and extension field.
-- [ ] Restore does not duplicate case transfer, audit penalties, score events, or clock extension.
-- [ ] Clock resume preserves elapsed/remaining time and cannot move the legal cutoff.
-- [ ] Wrong-case and obsolete-revision snapshots recover safely without hiding the source document.
-- [ ] Write failure retains the previous durable checkpoint; menu exit retries or stays in the case.
-- [ ] Existing Level 2 checkpoint roundtrips remain unaffected.
+- [ ] Round-trip every Level 1 review phase, original/working revision, transfer, form, audit, day, cutoff, and extension field. Internal evidence 2026-10-23: CampaignFoundationRegression round-trips four case phases (before receptionist, case received, after transfers with folder stored, after an audit return with retry guard) plus the full clock (day 2, game/active time, both deadlines, missed day, 180 s extension) through SaveFileStore + signed envelope; CampaignFoundationRuntimeRegression round-trips real CaseData for Marie's case (fields by key, documents read, flags) including culture-independent numbers. Level 1 has read-only original documents only (no working copies); the revision is a definition fingerprint.
+- [ ] Restore does not duplicate case transfer, audit penalties, score events, or clock extension. Internal evidence: source contracts - case restore calls no TryReceiveValue, hand-in, BeginFinalAudit, RecordAuditAttempt, Raise*, PlayEffect; counters via RestoreAuditCounters and the Auditor's RestoreRetryGuard; folder via RestoreStored (no sound/event); extension seconds restored as recorded, clamped to one extension.
+- [ ] Clock resume preserves elapsed/remaining time and cannot move the legal cutoff. Internal evidence: OfficeHours.RestoreClock assigns the saved day/time/deadlines and never calls the deadline/allowance maths or replays warnings/next morning; a valid clock is unchanged by repair. The clock is the game's, not a statutory deadline.
+- [ ] Wrong-case and obsolete-revision snapshots recover safely without hiding the source document. Internal evidence: ValidateCase moves another case or a changed fingerprint to setAsideCase (kept in every later save), applies nothing, and the case starts from the receptionist with a notice; the loaded case documents are always the current authored ones. Mutation (ignoring the fingerprint) failed a check.
+- [ ] Write failure retains the previous durable checkpoint; menu exit retries or stays in the case. Internal evidence: shared T04 path (SaveLevelOneCheckpoint restores the previous record on failure; retry in 5 s; Settings exit waits for PrepareSettingsExit).
+- [ ] Existing Level 2 checkpoint roundtrips remain unaffected. Internal evidence: Level2Regression 1326 PASS; Level2Checkpointer does not use the Level 1 records (runtime suite check); case capture/restore skip definitions with a review (Level 2).
+
+Implementation record: Level1CaseField / Level1CaseRecord / Level1ClockRecord and Level1FieldCheckpoint.caseRecord, setAsideCase, clock (PlayerProgressData.cs); Assets/Scripts/Data/Level1CaseCheckpoint.cs (CaseData adapter, fingerprint); Level1FieldCheckpointRules.ValidateCase / Fingerprint; Level1FieldCheckpointer case/clock capture, milestone saves and RestoreCase; quiet hooks in OfficeHours, ReceptionistInteractable, FolderToHUDIcon, AuditorSubmissionTray, AuditorInteractable, TaxCodeBookInteractable, HudIconButton; Tests/CampaignFoundationRuntimeRegression (new). Details in ../PROGRESS.md.
 
 USER manual acceptance — only the user performs these checks:
 

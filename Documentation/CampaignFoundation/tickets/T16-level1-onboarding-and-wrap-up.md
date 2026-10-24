@@ -1,10 +1,12 @@
 # T16 — Connect the Level 1 story from first approach to wrap-up
 
-Status: Planned. Blocked by: T08, T09, T11, T13, T14, T15.
+Status: Planned. Blocked by: T08, T09, T11, T13, T14, T15, T23.
 
 ## Goal
 
 Make the entire corrected Level 1 route one resumable campaign chapter.
+
+Note (2026-10-24): Chapter 1's ending is now staged by the [T08 Client Copy handover](T08-public-trust-and-follow-through.md): the Auditor's read-only copy, the walk to Marie in the conference room and the drag onto her. T16 does not restage it. T16 still owns final chapter completion (replacing the temporary bridge in CaseResultRules.CompleteFollowThrough, KNOWN_ISSUES CF-41) and the wrap-up after the handover's finale and case-result card. [T23](T23-marie-consultation-visits.md)'s consultation visits are part of the route it composes.
 
 ## Visible accomplishment
 
