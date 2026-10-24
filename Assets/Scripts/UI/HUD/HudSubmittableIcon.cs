@@ -144,6 +144,14 @@ public class HudSubmittableIcon :
     /// <summary>Opens at the drop point instead of the FloatingWindow. Return true when handled.</summary>
     public System.Func<Vector2, bool> DropOpenOverride;
 
+    /// <summary>
+    /// Decides a drag release before the submission target (T08 Client Copy:
+    /// a drop on Marie is taken, the Auditor never receives the copy).
+    /// Return null for the normal behaviour; Consumed (taken), Returned (back
+    /// into the icon, nothing opens) or Opened (opens at the drop point).
+    /// </summary>
+    public System.Func<Vector2, HudDragOutcome?> DropResolver;
+
     /// <summary>Item shown under the finger instead of the ghost icon.</summary>
     public IHudDragVisual DragVisual;
 
@@ -518,6 +526,21 @@ public class HudSubmittableIcon :
             $"{eventData.position}"
         );
 
+
+        HudDragOutcome? resolved = DropResolver != null ? DropResolver(eventData.position) : null;
+        if (resolved.HasValue)
+        {
+            if (ValueTransferManager.Instance != null) ValueTransferManager.Instance.ClearSelection();
+            DestroyGhost();
+            if (dragVisualActive)
+            {
+                dragVisualActive = false;
+                DragVisual.Drop(eventData.position, resolved.Value);
+            }
+            if (resolved.Value == HudDragOutcome.Opened) OpenFloatingWindowAtDropPosition(eventData.position);
+            ResetInteraction();
+            return;
+        }
 
         bool submitted =
             ResolveDragDrop(

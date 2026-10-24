@@ -23,6 +23,11 @@ using UnityEngine.UI;
 /// Presentation only: its own camera (above the main one) and a visual-only
 /// copy of the plaza model (gameplay scripts and colliders stripped before
 /// they ever run). Everything is removed when the card closes.
+///
+/// T08: in a story run Marie first receives her Client Copy in person
+/// (ClientCopyHandover). The scene then waits for the handover and plays
+/// afterwards with her farewell lines instead (she said her closing lines in
+/// the conversation). Each line may carry an emote, shown on the bubble.
 /// </summary>
 public sealed class CaseFinale : MonoBehaviour
 {
@@ -34,6 +39,8 @@ public sealed class CaseFinale : MonoBehaviour
 
     private bool cardReleased = true;
     private bool finished;
+    // T08: after the handover she has already said her closing lines; she says goodbye instead.
+    private bool quietLines;
 
     /// <summary>
     /// True when the current case will end with the client scene (so the
@@ -66,6 +73,9 @@ public sealed class CaseFinale : MonoBehaviour
     private CanvasGroup bubbleGroup;
     private TextMeshProUGUI bubbleText;
     private TextMeshProUGUI bubbleName;
+    private RectTransform emoteBadge;
+    private Image emoteOutline;
+    private Image emoteFill;
     private Transform headBone;
     private Transform spineBone;
     private Quaternion facingOffset = Quaternion.identity;
@@ -121,6 +131,20 @@ public sealed class CaseFinale : MonoBehaviour
 
     private void HandleCaseCompleted()
     {
+        // T08: the Client Copy handover comes first; it plays this scene when Marie has her copy.
+        if (ClientCopyHandover.Defers) return;
+        Begin(quiet: false);
+    }
+
+    /// <summary>T08: Marie has her copy; the scene and the result card follow, with her farewell lines.</summary>
+    public void PlayAfterHandover()
+    {
+        finished = false;
+        Begin(quiet: true);
+    }
+
+    private void Begin(bool quiet)
+    {
         if (Running) return;
         CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
         settings = def != null ? def.clientFinale : null;
@@ -130,6 +154,7 @@ public sealed class CaseFinale : MonoBehaviour
         CaseProgressionManager progression = CaseProgressionManager.Instance;
         if (progression != null && progression.CurrentCaseNumber < progression.TotalCasesInLevel) return;
 
+        quietLines = quiet;
         Running = true;
         cardReleased = false;
         HudRewardScreen.PreferSideLayout = true;
@@ -164,11 +189,13 @@ public sealed class CaseFinale : MonoBehaviour
         yield return Fade(0.5f, 0f, 0.4f);
         yield return WaitReal(0.4f);
 
-        // Her reaction, one line after another.
-        List<string> lines = LinesFor(CurrentTier());
+        // Her reaction, one line after another. After the handover she said her
+        // closing lines in person, so beside the card she says goodbye instead.
+        CaseFinaleRules.Tier tier = TierNow();
+        List<DialogueLineDefinition> lines = quietLines ? FarewellLines(settings, tier) : WithTierEmote(ClosingLines(settings, tier), tier);
         for (int i = 0; i < lines.Count; i++)
         {
-            Say(i, lines[i]);
+            Say(i, lines[i].text, lines[i].emote);
             while (revealed < totalChars) yield return null;
             yield return WaitReal(2.6f);
         }
@@ -180,7 +207,8 @@ public sealed class CaseFinale : MonoBehaviour
         Cleanup();
     }
 
-    private CaseFinaleRules.Tier CurrentTier()
+    /// <summary>How the current case went (first try and on time / one slip / more), for her lines.</summary>
+    public static CaseFinaleRules.Tier TierNow()
     {
         // A review case (Level 2) knows its own returned submissions and cutoff.
         CaseReviewState review = CaseManager.Instance != null && CaseManager.Instance.CurrentCase != null
@@ -200,8 +228,10 @@ public sealed class CaseFinale : MonoBehaviour
         return CaseFinaleRules.TierFor(failed, onTime, day);
     }
 
-    private List<string> LinesFor(CaseFinaleRules.Tier tier)
+    /// <summary>Her lines for a result: the case JSON's great / good / okay, or built-in ones.</summary>
+    public static List<string> ClosingLines(ClientFinaleDefinition settings, CaseFinaleRules.Tier tier)
     {
+        if (settings == null) settings = new ClientFinaleDefinition();
         List<string> chosen = tier == CaseFinaleRules.Tier.Great ? settings.great
             : tier == CaseFinaleRules.Tier.Good ? settings.good : settings.okay;
         if (chosen != null && chosen.Count > 0) return chosen;
@@ -215,6 +245,50 @@ public sealed class CaseFinale : MonoBehaviour
                 return new List<string> { "Phew... it's finally approved.", "That was a bit of a journey, but thank you for sticking with it." };
         }
     }
+
+    /// <summary>Her goodbye beside the card after the handover: the case JSON's farewell lines for a result, or built-in ones.</summary>
+    public static List<DialogueLineDefinition> FarewellLines(ClientFinaleDefinition settings, CaseFinaleRules.Tier tier)
+    {
+        if (settings == null) settings = new ClientFinaleDefinition();
+        List<DialogueLineDefinition> chosen = tier == CaseFinaleRules.Tier.Great ? settings.farewellGreat
+            : tier == CaseFinaleRules.Tier.Good ? settings.farewellGood : settings.farewellOkay;
+        var lines = new List<DialogueLineDefinition>();
+        if (chosen != null)
+            foreach (DialogueLineDefinition line in chosen)
+                if (line != null && !string.IsNullOrWhiteSpace(line.text)) lines.Add(line);
+        if (lines.Count > 0) return lines;
+        switch (tier)
+        {
+            case CaseFinaleRules.Tier.Great:
+                lines.Add(Line("Thank you again! I'll keep this copy somewhere safe.", "heart"));
+                lines.Add(Line("I'm telling everyone at the plaza about you!", "sparkles"));
+                break;
+            case CaseFinaleRules.Tier.Good:
+                lines.Add(Line("Thank you for walking me through it.", "heart"));
+                lines.Add(Line("I feel so much lighter now. See you next filing!", "music"));
+                break;
+            default:
+                lines.Add(Line("Thank you for not giving up on my file.", "sweat"));
+                lines.Add(Line("I'll come by early next time. Promise!", "music"));
+                break;
+        }
+        return lines;
+    }
+
+    /// <summary>The in-person closing lines (no handover) with the result's emote on the first one.</summary>
+    private static List<DialogueLineDefinition> WithTierEmote(List<string> texts, CaseFinaleRules.Tier tier)
+    {
+        CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+        ClientHandoverDefinition handover = def != null && def.clientHandover != null ? def.clientHandover : new ClientHandoverDefinition();
+        string emote = tier == CaseFinaleRules.Tier.Great ? handover.greatEmote
+            : tier == CaseFinaleRules.Tier.Good ? handover.goodEmote : handover.okayEmote;
+        var lines = new List<DialogueLineDefinition>();
+        for (int i = 0; i < texts.Count; i++) lines.Add(Line(texts[i], i == 0 ? emote : null));
+        return lines;
+    }
+
+    private static DialogueLineDefinition Line(string text, string emote) =>
+        new DialogueLineDefinition { speaker = "Npc", text = text, emote = emote };
 
     // =========================================================
     // STAGING
@@ -234,6 +308,11 @@ public sealed class CaseFinale : MonoBehaviour
 
         clone = MakeVisualCopy(original.gameObject, scene);
         if (clone == null) return false;
+        // T08: after the handover the real Marie stands at this spot; she steps aside for her copy's shot.
+        foreach (Renderer r in original.GetComponentsInChildren<Renderer>())
+            if (r.enabled) { r.enabled = false; hiddenRenderers.Add(r); }
+        foreach (NpcStatusMarker m in original.GetComponentsInChildren<NpcStatusMarker>())
+            if (m.enabled) { m.enabled = false; disabledMarkers.Add(m); }
 
         // The real conference client (and its marker) steps aside for the shot.
         foreach (Renderer r in spot.GetComponentsInChildren<Renderer>())
@@ -468,8 +547,9 @@ public sealed class CaseFinale : MonoBehaviour
     // TALKING
     // =========================================================
 
-    private void Say(int index, string text)
+    private void Say(int index, string text, string emoteTag)
     {
+        ShowEmote(emoteTag);
         lineIndex = index;
         lineStart = Time.unscaledTime;
         revealAt = -1f;
@@ -524,6 +604,33 @@ public sealed class CaseFinale : MonoBehaviour
             float pop = 1f + 0.04f * Mathf.Sin(Mathf.Clamp01((now - lineStart) / 0.3f) * Mathf.PI);
             bubble.localScale = Vector3.one * pop;
         }
+
+        // Her emote on the bubble's corner: pops in with the line (0 -> 1.15 -> 1), then breathes gently.
+        if (emoteBadge != null && emoteBadge.gameObject.activeSelf)
+        {
+            float t = now - lineStart;
+            float enter = t < 0.2f ? Mathf.Lerp(0f, 1.15f, t / 0.2f) : t < 0.32f ? Mathf.Lerp(1.15f, 1f, (t - 0.2f) / 0.12f) : 1f;
+            float idle = t < 0.32f ? 0f : 0.06f * Mathf.Sin((t - 0.32f) * 4f);
+            emoteBadge.localScale = Vector3.one * (enter + idle);
+        }
+    }
+
+    /// <summary>Shows the line's emote on the bubble (finale camera: a world emote cannot sit over her, CF-48).</summary>
+    private void ShowEmote(string emoteTag)
+    {
+        if (emoteBadge == null) return;
+        if (!EmoteCatalogue.TryParseTag(emoteTag, out Emotion emotion) || emotion == Emotion.None)
+        {
+            if (!string.IsNullOrWhiteSpace(emoteTag)) Debug.LogWarning($"[CaseFinale] Unknown emote tag '{emoteTag}'.");
+            emoteBadge.gameObject.SetActive(false);
+            return;
+        }
+        EmoteStyle style = EmoteCatalogue.Get(emotion);
+        emoteOutline.sprite = EmoteSprites.Outline(style.Shape);
+        emoteFill.sprite = EmoteSprites.Fill(style.Shape);
+        emoteFill.color = new Color32(style.R, style.G, style.B, 255);
+        emoteBadge.localScale = Vector3.zero;
+        emoteBadge.gameObject.SetActive(true);
     }
 
     // =========================================================
@@ -590,6 +697,24 @@ public sealed class CaseFinale : MonoBehaviour
             new Color32(29, 32, 40, 255), TextAlignmentOptions.Center, FontStyles.Bold);
         HudTheme.Stretch(bubbleName.rectTransform, 4f);
         bubbleName.characterSpacing = 6f;
+
+        // Emote badge on the bubble's top-right corner (hidden on lines without an emote).
+        emoteBadge = HudTheme.CreateRect("Emote", bubble);
+        emoteBadge.anchorMin = emoteBadge.anchorMax = new Vector2(1f, 1f);
+        emoteBadge.pivot = new Vector2(0.5f, 0.5f);
+        emoteBadge.anchoredPosition = new Vector2(-30f, 4f);
+        emoteBadge.sizeDelta = new Vector2(84f, 84f);
+        RectTransform outline = HudTheme.CreateRect("Outline", emoteBadge);
+        HudTheme.Stretch(outline);
+        emoteOutline = HudTheme.AddImage(outline, null, new Color32(22, 34, 50, 255));
+        emoteOutline.preserveAspect = true;
+        emoteOutline.raycastTarget = false;
+        RectTransform fill = HudTheme.CreateRect("Fill", emoteBadge);
+        HudTheme.Stretch(fill);
+        emoteFill = HudTheme.AddImage(fill, null, Color.white);
+        emoteFill.preserveAspect = true;
+        emoteFill.raycastTarget = false;
+        emoteBadge.gameObject.SetActive(false);
 
         // Black layer on top for the fade.
         RectTransform blackRect = HudTheme.CreateRect("Black", root);

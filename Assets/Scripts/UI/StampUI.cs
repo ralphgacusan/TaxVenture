@@ -50,6 +50,12 @@ public class StampUI : MonoBehaviour
 
     public void ApplyStampType(StampType type)
     {
+        if (ClientCopyHandover.CaseActionsBlocked)
+        {
+            Debug.Log("[StampUI] The approved Client Copy cannot be stamped.");
+            return;
+        }
+
         // -----------------------------------------------------
         // Validate CaseManager
         // -----------------------------------------------------

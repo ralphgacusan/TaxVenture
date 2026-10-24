@@ -22,6 +22,12 @@ public class AuditorSubmissionTray :
     [SerializeField]
     private FolderToHUDIcon folderToHUDIcon;
 
+    /// <summary>The case folder this tray receives (its HUD icon state), for the Level 1 checkpoint (T05).</summary>
+    public FolderToHUDIcon Folder => folderToHUDIcon;
+
+    /// <summary>True once the case folder was handed in and is being audited.</summary>
+    public bool FolderSubmitted => submittedKeys.Contains("Submit_CaseFolder");
+
 
     private void Awake()
     {
@@ -65,10 +71,7 @@ public class AuditorSubmissionTray :
     {
         submittedKeys.Clear();
 
-        if (folderToHUDIcon != null)
-        {
-            folderToHUDIcon.ResetToUnstored();
-        }
+        ReturnStoredFolders();
 
         Debug.Log("[AuditorSubmissionTray] Submission state RESET for new case.");
     }
@@ -82,13 +85,19 @@ public class AuditorSubmissionTray :
 
     public bool CanAccept(DataValue value)
     {
-        return value != null &&
+        return !ClientCopyHandover.CaseActionsBlocked && value != null &&
                value.SemanticKey == "Submit_CaseFolder";
     }
 
 
     public bool TryReceiveValue(DataValue value)
     {
+        if (ClientCopyHandover.CaseActionsBlocked)
+        {
+            Debug.Log("[AuditorSubmissionTray] Refused: the approved Client Copy cannot be submitted.");
+            return false;
+        }
+
         if (value == null)
         {
             Debug.LogWarning(
@@ -168,14 +177,29 @@ public class AuditorSubmissionTray :
     {
         submittedKeys.Clear();
 
-        if (folderToHUDIcon != null)
-        {
-            folderToHUDIcon.ResetToUnstored();
-        }
+        ReturnStoredFolders();
 
         Debug.Log("[AuditorSubmissionTray] Submission state reset for case retry.");
     }
 
+
+    /// <summary>
+    /// Brings the case folder back to the desk from the icon. Level 1 has two
+    /// folder components (the closed desk folder and the open folder) and
+    /// either can be the one dropped into the icon; resetting only the
+    /// assigned one left a folder stored by the other stuck in the icon.
+    /// </summary>
+    private void ReturnStoredFolders()
+    {
+        bool returned = false;
+        foreach (FolderToHUDIcon folder in FindObjectsByType<FolderToHUDIcon>(FindObjectsInactive.Include))
+        {
+            if (folder == null || folder.gameObject.scene != gameObject.scene || !folder.IsStoredOrViewing) continue;
+            folder.ResetToUnstored();
+            returned = true;
+        }
+        if (!returned && folderToHUDIcon != null) folderToHUDIcon.ResetToUnstored();
+    }
 
     private void CheckIfSubmissionComplete()
     {

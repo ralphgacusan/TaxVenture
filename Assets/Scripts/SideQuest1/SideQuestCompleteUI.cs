@@ -61,8 +61,8 @@ public class SideQuestCompleteUI : MonoBehaviour
         if (scored)
         {
             text += result.WrongPlacements == 0
-                ? "\nPerfect board: no wrong placements."
-                : $"\n{result.WrongPlacements} wrong placement{(result.WrongPlacements == 1 ? "" : "s")} cost some reward.";
+                ? "\nPerfect first check: all four right."
+                : $"\n{result.WrongPlacements} profile{(result.WrongPlacements == 1 ? "" : "s")} wrong on your first check cost some reward.";
         }
         congratsText.text = text;
 
@@ -117,11 +117,14 @@ public class SideQuestCompleteUI : MonoBehaviour
         }
         if (scored)
         {
-            data.Fact("Wrong placements", result.WrongPlacements.ToString());
+            data.Fact("First check", $"{ClassificationCheck.Profiles - result.WrongPlacements}/{ClassificationCheck.Profiles}");
             data.Fact("Badge", result.BadgeTier == BadgeTier.None ? "-" : result.BadgeTier.ToString());
             if (result.BadgeTier != BadgeTier.Gold)
-                data.Footer = "Replay with no wrong placements to earn Gold.";
+                data.Footer = "Replay and get all four right on the first check to earn Gold.";
         }
+        // T08/T09: what the corrected field assignment saved (only after the write succeeded).
+        if (result.Trust.Applied) data.Fact("Public Trust", $"+{result.Trust.Amount}  ->  {result.Trust.After} / {CampaignRecord.MaxTrust}");
+        if (result.Coins.Applied) data.Fact("Coins", $"+{result.Coins.Amount}  ->  {result.Coins.After}");
         return data;
     }
 
@@ -216,6 +219,9 @@ public class SideQuestResult
     public int WrongPlacements;
     public string BadgeName;
     public BadgeTier BadgeTier;
+    // T08/T09: what the corrected field assignment saved (Amount 0 when nothing new).
+    public CampaignRewards.Change Trust;
+    public CampaignRewards.Change Coins;
 
     public SideQuestResult(int rewardExp, int rewardReputation)
     {

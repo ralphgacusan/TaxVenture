@@ -23,6 +23,16 @@ using TMPro;
 ///   cancellation callback run (DialogueTerminalHandoff). While that return
 ///   is running the conversation still counts as active, so no other
 ///   conversation can start.
+///
+/// T22: a line tagged with an emote shows it over its speaker from the moment
+/// the line starts typing until the line ends (DialogueEmotes); untagged lines
+/// show none.
+///
+/// T08: a line may AWAIT AN ACTION (DialogueLine.AwaitAction). Once it is
+/// revealed, taps, the Continue button and submit no longer advance it; the
+/// Continue button is replaced by a prompt ("Drag the client copy to
+/// Marie"). The owner completes it with CompleteAwaitedAction(id), and the
+/// conversation then moves on by itself. Ordinary lines behave as before.
 /// </summary>
 public class DialogueUI : MonoBehaviour
 {
@@ -77,10 +87,15 @@ public class DialogueUI : MonoBehaviour
     private char[] revealBuffer = new char[128];
     private RectTransform backdrop;
     private Image backdropImage;
+    private readonly Vector3[] boxCorners = new Vector3[4];
+    private RectTransform actionPrompt;
+    private TextMeshProUGUI actionPromptText;
 
     /// <summary>True from admission until controls are released after the return.</summary>
     public bool IsDialogueActive => session.IsActive || handoff.IsPending;
     public static bool IsAnyDialogueActive => activeUI != null && activeUI.IsDialogueActive;
+    /// <summary>The dialogue box running the current conversation, or null.</summary>
+    public static DialogueUI Active => activeUI;
 
     /// <summary>This dialogue box is still on screen (it can outlive the session for a moment while it closes).</summary>
     public bool IsPanelShowing => panelRoot != null && panelRoot.activeInHierarchy;
@@ -99,6 +114,13 @@ public class DialogueUI : MonoBehaviour
     /// <summary>Raised when the current line is fully visible (typed out or revealed by a tap).</summary>
     public event Action<DialogueLine> LineRevealed;
     public event Action<DialogueEndReason> DialogueEnded;
+
+    /// <summary>T08: the current line waits for an action (taps do not advance it).</summary>
+    public bool IsAwaitingAction => session.IsAwaitingAction;
+    /// <summary>T08: the action the current line waits for, or null.</summary>
+    public string AwaitingActionId => session.AwaitingActionId;
+    /// <summary>T08: the action the active conversation waits for, or null (for HUD owners).</summary>
+    public static string ActiveAwaitingAction => activeUI != null && activeUI.session.IsActive ? activeUI.session.AwaitingActionId : null;
 
     private void Awake() => Initialize();
 
@@ -211,6 +233,7 @@ public class DialogueUI : MonoBehaviour
     {
         DialogueLine line = session.CurrentLine;
         if (line == null) return;
+        ShowActionPrompt(null);
         if (speakerNameText != null)
             speakerNameText.text = line.Speaker == DialogueSpeaker.Player ? "You" : line.SpeakerName;
         dialogueText.text = line.Text;
@@ -228,6 +251,10 @@ public class DialogueUI : MonoBehaviour
             try { sessionPresentation.ShowLine(line, session.LineIndex); }
             catch (Exception exception) { Debug.LogException(exception, this); }
         }
+
+        // T22: a tagged line's emote starts with its typing and lasts for the line.
+        try { DialogueEmotes.Play(line, sessionOwner, BoxTopScreenY()); }
+        catch (Exception exception) { Debug.LogException(exception, this); }
         LineChanged?.Invoke(line);
     }
 
@@ -260,6 +287,7 @@ public class DialogueUI : MonoBehaviour
     {
         if (dialogueText != null) dialogueText.maxVisibleCharacters = AllCharactersVisible;
         DialogueLine line = session.CurrentLine;
+        if (line != null && session.IsAwaitingAction) ShowActionPrompt(line.ActionPrompt);
         if (line != null) LineRevealed?.Invoke(line);
     }
 
@@ -281,6 +309,8 @@ public class DialogueUI : MonoBehaviour
     private void HandleGesture()
     {
         if (!session.IsActive) return;
+        // T08: a revealed line that waits for an action ignores taps (only the action moves it on).
+        if (session.IsAwaitingAction && !reveal.IsTyping) return;
         DialogueGesture gesture = gate.Evaluate(Time.frameCount, Time.unscaledTime, reveal.IsTyping);
         if (gesture == DialogueGesture.RevealLine || gesture == DialogueGesture.Advance)
             AudioManager.Instance?.QueueInteractionSFX("continue");
@@ -297,6 +327,66 @@ public class DialogueUI : MonoBehaviour
                 else RenderCurrentLine();
                 break;
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Awaited actions (T08)
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// The owner reports the awaited action done: the line is complete and the
+    /// conversation moves on to the next line (or ends on the last one).
+    /// False when the current line does not wait for this action.
+    /// </summary>
+    public bool CompleteAwaitedAction(string actionId)
+    {
+        if (!session.IsActive) return false;
+        if (reveal.IsTyping)
+        {
+            reveal.RevealAll();
+            OnLineFullyRevealed();
+        }
+        if (!session.TryCompleteAction(actionId)) return false;
+        ShowActionPrompt(null);
+        if (!session.TryAdvance(out bool completed)) return false;
+        if (completed) Finish(DialogueEndReason.Completed);
+        else RenderCurrentLine();
+        return true;
+    }
+
+    /// <summary>Replaces the waiting line's prompt (e.g. a retry message after a failed save); null restores the line's own.</summary>
+    public void SetActionPrompt(string text)
+    {
+        if (!session.IsAwaitingAction || reveal.IsTyping) return;
+        ShowActionPrompt(text ?? session.CurrentLine.ActionPrompt);
+    }
+
+    /// <summary>The prompt pill above the box while a line waits; the Continue button comes back with ordinary lines.</summary>
+    private void ShowActionPrompt(string text)
+    {
+        bool show = text != null;
+        if (continueButton != null) continueButton.gameObject.SetActive(!show);
+        if (!show)
+        {
+            if (actionPrompt != null) actionPrompt.gameObject.SetActive(false);
+            return;
+        }
+        RectTransform box = dialogueText != null ? dialogueText.transform.parent as RectTransform : null;
+        if (box == null) return;
+        if (actionPrompt == null)
+        {
+            actionPrompt = HudTheme.CreatePanel("Dialogue Action Prompt", box, 22f).parent as RectTransform;
+            actionPrompt.anchorMin = actionPrompt.anchorMax = new Vector2(0.5f, 1f);
+            actionPrompt.pivot = new Vector2(0.5f, 0f);
+            actionPrompt.anchoredPosition = new Vector2(0f, 14f);
+            actionPrompt.sizeDelta = new Vector2(620f, 64f);
+            actionPromptText = HudTheme.CreateLabel("Text", actionPrompt.GetChild(0), "", 30f, HudTheme.TextPrimary,
+                TextAlignmentOptions.Center, FontStyles.Bold);
+            HudTheme.Stretch(actionPromptText.rectTransform, 10f);
+            foreach (Graphic graphic in actionPrompt.GetComponentsInChildren<Graphic>(true)) graphic.raycastTarget = false;
+        }
+        actionPromptText.text = text;
+        actionPrompt.gameObject.SetActive(true);
     }
 
     // ------------------------------------------------------------------
@@ -320,6 +410,8 @@ public class DialogueUI : MonoBehaviour
         hasSessionOwner = false;
         gate.Close();
         reveal.Clear();
+        DialogueEmotes.Clear();
+        ShowActionPrompt(null);
         Action release = releaseControls;
         releaseControls = null;
         IDialoguePresentation returning = sessionPresentation;
@@ -424,6 +516,22 @@ public class DialogueUI : MonoBehaviour
         backdrop.sizeDelta = box.sizeDelta + Vector2.one * (2f * backdropPadding);
         backdrop.anchoredPosition = box.anchoredPosition + (box.pivot * 2f - Vector2.one) * backdropPadding;
         backdropImage.color = backdropColor;
+    }
+
+    /// <summary>Screen-pixel top of the dialogue box (its backdrop when shown), so emotes stay above it; 0 if unknown.</summary>
+    private float BoxTopScreenY()
+    {
+        RectTransform box = backdrop != null && backdrop.gameObject.activeInHierarchy
+            ? backdrop : dialogueText != null ? dialogueText.transform.parent as RectTransform : null;
+        if (box == null) return 0f;
+        Canvas canvas = box.GetComponentInParent<Canvas>();
+        if (canvas == null) return 0f;
+        Camera cam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+        box.GetWorldCorners(boxCorners);
+        float top = 0f;
+        for (int i = 0; i < 4; i++)
+            top = Mathf.Max(top, RectTransformUtility.WorldToScreenPoint(cam, boxCorners[i]).y);
+        return top;
     }
 
     private void EnsureBoxTapRelay()

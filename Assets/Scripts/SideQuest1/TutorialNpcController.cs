@@ -179,13 +179,28 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
         ScoreEntry award = null;
         if (CaseProgressionManager.Instance != null && corkboardSideQuest != null)
         {
+            // T06: XP and badge from the FIRST complete check (frozen), never the corrections.
             award = CaseProgressionManager.Instance.Score.AddSideQuest(
-                corkboardSideQuest.WrongPlacements, transform.position + Vector3.up * 1.6f);
+                corkboardSideQuest.WrongPlacements, transform.position + Vector3.up * 1.6f,
+                corkboardSideQuest.CheckSubmitted ? corkboardSideQuest.FrozenTier : (BadgeTier?)null);
         }
+
+        // T08/T09: the corrected field assignment earns Public Trust +2 and 60 coins, once,
+        // saved before the card shows them (story runs only; a failed save shows neither).
+        PlayerProgressManager.StoryGrants grants = default;
+        if (PlayerProgressManager.Instance != null && corkboardSideQuest != null)
+            grants = PlayerProgressManager.Instance.CommitFieldAssignment(corkboardSideQuest.IsCompleted);
 
         if (SideQuestCompleteUI.Instance != null && corkboardSideQuest != null)
         {
-            SideQuestCompleteUI.Instance.Show(corkboardSideQuest.BuildResult(award));
+            SideQuestResult result = corkboardSideQuest.BuildResult(award);
+            if (grants.Saved && !grants.AlreadyDone)
+            {
+                result.Trust = grants.Trust;
+                result.Coins = grants.Coins;
+            }
+            SideQuestCompleteUI.Instance.Show(result);
+            if (grants.Saved && !grants.AlreadyDone) HudFeedback.AnnounceCampaign(grants.Trust, grants.Coins, transform.position + Vector3.up * 1.6f);
         }
         else
         {

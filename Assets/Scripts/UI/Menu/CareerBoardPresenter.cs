@@ -96,7 +96,7 @@ public sealed class CareerBoardPresenter : MonoBehaviour
     private CareerChapterSheet sheet;
     private CareerPinnedPaper liftedPaper;
 
-    private TextMeshPro expTotalLabel, heartsTotalLabel, expCareerValue, heartsCareerValue, chaptersLabel, badgeCountLabel;
+    private TextMeshPro expTotalLabel, heartsTotalLabel, expCareerValue, heartsCareerValue, chaptersLabel, badgeCountLabel, heartsCaption;
     private RectTransform careerExpFill, careerHeartsFill;
     private TextMeshPro goalTitle, goalExpValue, goalHeartsValue, goalFooter;
 
@@ -335,8 +335,9 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         CareerBoardKit.Sprite(a, "Hearts icon", HudTheme.Heart, new Vector3(left + 18f, -8f, z), 34f, HudTheme.Reputation, 5);
         heartsTotalLabel = InkText(a, "Hearts total", "", 40f, new Vector3(left + 46f + 130f, -8f, z), 260f, 46f, TextAlignmentOptions.MidlineLeft);
         careerHeartsFill = CareerBoardKit.Bar(a, "Career hearts bar", new Vector3(0f, -44f, -3.5f), right - left, 20f, HudTheme.Reputation, out _);
-        InkText(a, "Hearts caption", "REPUTATION HEARTS", 14f, new Vector3(left + 90f, -70f, z), 180f, 20f, TextAlignmentOptions.MidlineLeft,
-            CareerBoardKit.InkCard).characterSpacing = 2f;
+        heartsCaption = InkText(a, "Hearts caption", "REPUTATION HEARTS", 14f, new Vector3(left + 90f, -70f, z), 180f, 20f, TextAlignmentOptions.MidlineLeft,
+            CareerBoardKit.InkCard);
+        heartsCaption.characterSpacing = 2f;
         heartsCareerValue = InkText(a, "Hearts of max", "", 16f, new Vector3(right - 60f, -70f, z), 120f, 22f, TextAlignmentOptions.MidlineRight);
 
         CareerBoardKit.Box(a, "Divider", new Vector3(0f, -92f, -2.4f), new Vector3(right - left, 1.6f, 0.5f), new Color32(206, 200, 184, 255), materials);
@@ -600,16 +601,28 @@ public sealed class CareerBoardPresenter : MonoBehaviour
     private void ApplyCareerCard(CareerChanges changes, bool celebrate)
     {
         expFrom = celebrate ? changes.ExpFrom : snapshot.TotalExp;
-        heartsFrom = celebrate ? changes.HeartsFrom : snapshot.TotalHearts;
-        countElapsed = expFrom < snapshot.TotalExp || heartsFrom < snapshot.TotalHearts ? 0f : -1f;
+        // T08: in a campaign the hearts row is Public Trust (score hearts stay mastery data).
+        heartsFrom = snapshot.Campaign ? (celebrate ? changes.TrustFrom : snapshot.PublicTrust)
+            : celebrate ? changes.HeartsFrom : snapshot.TotalHearts;
+        countElapsed = expFrom < snapshot.TotalExp || heartsFrom < HeartsShown ? 0f : -1f;
         SetTotals(expFrom, heartsFrom);
 
         bool available = snapshot.Available;
         careerExpTarget = snapshot.CareerMaxExp > 0 ? Mathf.Clamp01(snapshot.TotalExp / (float)snapshot.CareerMaxExp) : 0f;
-        careerHeartsTarget = snapshot.CareerMaxHearts > 0 ? Mathf.Clamp01(snapshot.TotalHearts / (float)snapshot.CareerMaxHearts) : 0f;
+        careerHeartsTarget = snapshot.Campaign ? Mathf.Clamp01(snapshot.PublicTrust / (float)CampaignRecord.MaxTrust)
+            : snapshot.CareerMaxHearts > 0 ? Mathf.Clamp01(snapshot.TotalHearts / (float)snapshot.CareerMaxHearts) : 0f;
         expCareerValue.text = available ? $"{snapshot.TotalExp:N0} / {snapshot.CareerMaxExp:N0}" : "--";
-        heartsCareerValue.text = available ? $"{snapshot.TotalHearts:N0} / {snapshot.CareerMaxHearts:N0}" : "--";
-        chaptersLabel.text = available ? $"CHAPTERS  {snapshot.Passed} / {snapshot.ChapterCount}" : "CHAPTERS  --";
+        heartsCaption.text = snapshot.Campaign ? "PUBLIC TRUST" : "REPUTATION HEARTS";
+        heartsCareerValue.text = !available ? "--" : snapshot.Campaign
+            ? $"{snapshot.PublicTrust} / {CampaignRecord.MaxTrust}  ·  target {CampaignRewards.SupportTarget}"
+            : $"{snapshot.TotalHearts:N0} / {snapshot.CareerMaxHearts:N0}";
+        // T09: the wallet beside the chapters.
+        chaptersLabel.text = !available ? "CHAPTERS  --" : snapshot.Campaign
+            ? $"CHAPTERS  {snapshot.Passed} / {snapshot.ChapterCount}   ·   {snapshot.Coins:N0} COINS"
+            : $"CHAPTERS  {snapshot.Passed} / {snapshot.ChapterCount}";
+        chaptersLabel.enableAutoSizing = true;
+        chaptersLabel.fontSizeMin = 10f;
+        chaptersLabel.fontSizeMax = 17f;
         badgeCountLabel.text = available ? $"{snapshot.EarnedBadges}x" : "--";
         for (int i = 0; i < chapterPips.Count; i++)
         {
@@ -626,13 +639,17 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         {
             goalTitle.text = $"Chapter {goal.Def.number}  ·  Coming soon";
             goalExpValue.text = $"{snapshot.TotalExp:N0} <size=15><color=#262932>EXP SO FAR</color></size>";
-            goalHeartsValue.text = $"{snapshot.TotalHearts:N0} <size=15><color=#262932>HEARTS SO FAR</color></size>";
+            goalHeartsValue.text = snapshot.Campaign
+                ? $"{snapshot.PublicTrust} / {CampaignRecord.MaxTrust} <size=15><color=#262932>PUBLIC TRUST</color></size>"
+                : $"{snapshot.TotalHearts:N0} <size=15><color=#262932>HEARTS SO FAR</color></size>";
         }
         else if (goal != null && snapshot.Available)
         {
             goalTitle.text = $"Chapter {goal.Def.number}  ·  {goal.NoteTitle}";
             goalExpValue.text = $"{goal.BestExp:N0} / {goal.TargetExp:N0} <size=15><color=#262932>EXP</color></size>";
-            goalHeartsValue.text = $"{goal.BestHearts:N0} / {goal.TargetHearts:N0} <size=15><color=#262932>HEARTS</color></size>";
+            goalHeartsValue.text = snapshot.Campaign
+                ? $"{snapshot.PublicTrust} / {CampaignRecord.MaxTrust} <size=15><color=#262932>PUBLIC TRUST</color></size>"
+                : $"{goal.BestHearts:N0} / {goal.TargetHearts:N0} <size=15><color=#262932>HEARTS</color></size>";
         }
         else
         {
@@ -674,9 +691,11 @@ public sealed class CareerBoardPresenter : MonoBehaviour
 
             bool hasRecord = chapter.HasResult && snapshot.Available;
             view.RecordExp.text = hasRecord ? $"{chapter.BestExp:N0}" : "";
-            view.RecordHearts.text = hasRecord ? $"{chapter.BestHearts:N0}" : "";
+            // T08: a campaign shows no score hearts on chapter papers (hearts mean Public Trust).
+            bool scoreHearts = hasRecord && !snapshot.Campaign;
+            view.RecordHearts.text = scoreHearts ? $"{chapter.BestHearts:N0}" : "";
             view.StarIcon.gameObject.SetActive(hasRecord);
-            view.HeartIcon.gameObject.SetActive(hasRecord);
+            view.HeartIcon.gameObject.SetActive(scoreHearts);
             view.Time.text = hasRecord && chapter.BestSeconds > 0
                 ? $"BEST TIME  {CareerProgress.FormatTime(chapter.BestSeconds)}"
                 : hasRecord ? "TIME  --:--" : "";
@@ -687,7 +706,7 @@ public sealed class CareerBoardPresenter : MonoBehaviour
             {
                 bool slam = celebrate && (status == CareerChapterStatus.Passed ? changes.NewlyPassed.Contains(chapter.Def.id)
                     : changes.NewlyFinished.Contains(chapter.Def.id));
-                view.Paper.ShowStamp(status == CareerChapterStatus.Passed ? "PASSED" : "TRY AGAIN",
+                view.Paper.ShowStamp(CareerProgress.StatusLabel(chapter),
                     CareerChapterSheet.StampColor(status), slam && Application.isPlaying, intro ? introDelay + 1.1f : 0.3f);
             }
             else
@@ -771,11 +790,15 @@ public sealed class CareerBoardPresenter : MonoBehaviour
             if (renderer.name != "Needle" && renderer.name != "Shine") CareerBoardKit.SetColor(renderer.sharedMaterial, color);
     }
 
+    /// <summary>The hearts row's value: Public Trust for a campaign, score hearts otherwise.</summary>
+    private int HeartsShown => snapshot != null && snapshot.Campaign ? snapshot.PublicTrust : snapshot != null ? snapshot.TotalHearts : 0;
+
     private void SetTotals(int exp, int hearts)
     {
         bool available = snapshot != null && snapshot.Available;
         expTotalLabel.text = available ? $"{exp:N0} <size=18><color=#262932>EXP</color></size>" : "-- <size=18>EXP</size>";
-        heartsTotalLabel.text = available ? $"{hearts:N0} <size=18><color=#262932>HEARTS</color></size>" : "-- <size=18>HEARTS</size>";
+        string word = snapshot != null && snapshot.Campaign ? "PUBLIC TRUST" : "HEARTS";
+        heartsTotalLabel.text = available ? $"{hearts:N0} <size=18><color=#262932>{word}</color></size>" : $"-- <size=18>{word}</size>";
     }
 
     private void TickCounters(float dt)
@@ -786,7 +809,7 @@ public sealed class CareerBoardPresenter : MonoBehaviour
             float t = Mathf.Clamp01((countElapsed - 0.7f) / 1.2f);
             float eased = HudTheme.EaseOutCubic(t);
             SetTotals(Mathf.RoundToInt(Mathf.Lerp(expFrom, snapshot.TotalExp, eased)),
-                Mathf.RoundToInt(Mathf.Lerp(heartsFrom, snapshot.TotalHearts, eased)));
+                Mathf.RoundToInt(Mathf.Lerp(heartsFrom, HeartsShown, eased)));
             if (t >= 1f) countElapsed = -1f;
         }
         if (barElapsed >= 0f)

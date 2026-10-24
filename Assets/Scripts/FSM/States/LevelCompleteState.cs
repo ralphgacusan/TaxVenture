@@ -2,10 +2,25 @@ using UnityEngine;
 
 public class LevelCompleteState : IGameState
 {
+    private readonly bool restoredApprovedResult;
+
+    public LevelCompleteState() { }
+
+    /// <summary>Resume an already committed approval without replaying its card or reward presentation.</summary>
+    public LevelCompleteState(bool restoredApprovedResult)
+    {
+        this.restoredApprovedResult = restoredApprovedResult;
+    }
+
     public string StateName => "Level Complete";
 
     public void Enter()
     {
+        if (restoredApprovedResult)
+        {
+            Debug.Log("[LevelCompleteState] Restored an approved case; its saved Client Copy/end flow owns presentation.");
+            return;
+        }
         Debug.Log("[LevelCompleteState] Entered — all cases in this level are finished.");
 
         if (CaseProgressionManager.Instance == null)

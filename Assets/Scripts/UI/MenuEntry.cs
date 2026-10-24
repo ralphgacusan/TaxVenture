@@ -79,6 +79,11 @@ public static class MenuEntry
     public static void Play(ToggleCamera cameraManager)
     {
         if (Blocked(cameraManager)) return;
+        if (PlayerProgressManager.Instance != null && PlayerProgressManager.Instance.PendingLevelOneEndFlow)
+        {
+            ResumeLevelOneEndFlow();
+            return;
+        }
         if (HasCareerAccess)
         {
             Continue(cameraManager);
@@ -133,7 +138,13 @@ public static class MenuEntry
     /// <summary>CONTINUE: the saved-progress module (career board). Opening it changes nothing in the save.</summary>
     public static bool Continue(ToggleCamera cameraManager)
     {
-        if (Blocked(cameraManager) || !HasCareerAccess) return false;
+        if (Blocked(cameraManager)) return false;
+        if (PlayerProgressManager.Instance != null && PlayerProgressManager.Instance.PendingLevelOneEndFlow)
+        {
+            ResumeLevelOneEndFlow();
+            return true;
+        }
+        if (!HasCareerAccess) return false;
         if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
         if (cameraManager != null)
         {
@@ -143,6 +154,17 @@ public static class MenuEntry
         OpenLevelSelect = true;
         SceneManager.LoadScene(MenuSceneName);
         return true;
+    }
+
+    private static void ResumeLevelOneEndFlow()
+    {
+        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        storyLaunching = true;
+        CampaignRun.Begin(CampaignRunMode.Story);
+        OpenLevelSelect = false;
+        OpenSettings = false;
+        openingUnskippable = false;
+        SceneFade.FadeOutThenLoad("Office_Level1", fadeInDestination: true);
     }
 
     /// <summary>True: the next 3D Menu load opens on the level select (progress) view.</summary>

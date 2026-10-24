@@ -94,6 +94,131 @@ public class Level1SlotAttempts
     public bool firstTrySolved;
 }
 
+/// <summary>One player-entered case folder field: its stable folder key and the value as text (enum name or invariant number).</summary>
+[Serializable]
+public class Level1CaseField
+{
+    public string key;
+    public string value;
+}
+
+/// <summary>
+/// Marie's case in the unfinished Level 1 story run (T05). The case is
+/// identified by its id and a fingerprint of its authored definition, so a
+/// snapshot of another case or an older revision is never applied. Level 1's
+/// documents are read-only originals (no working copies); reviewedDocuments
+/// lists which of them were read. folder: "desk" (on the desk / in play) or
+/// "stored" (in the HUD folder icon, ready for the Auditor). A hand-in still
+/// being audited is saved as "stored": the audit only counts once its
+/// summary closes, so a resume hands the folder in again without a charge.
+/// </summary>
+[Serializable]
+public class Level1CaseRecord
+{
+    public const string FolderOnDesk = "desk";
+    public const string FolderStored = "stored";
+
+    public string caseId;
+    public string caseFingerprint;
+    public bool receptionistDone;
+    public string folder = FolderOnDesk;
+    public List<Level1CaseField> fields = new List<Level1CaseField>();
+    public List<string> reviewedDocuments = new List<string>();
+    public string caseAssessment;
+    public bool assessmentStamped;
+    public string computationStatus;
+    public bool hasPrintedReturn;
+    public bool isCarryingPrintedReturn;
+    /// <summary>What the player typed into the BIR form (JsonUtility of EncodedFormData), or empty.</summary>
+    public string encodedFormJson;
+    public bool taxCodeBookOpened;
+    public int auditAttempts;
+    public int auditMistakes;
+    public int failedAudits;
+    /// <summary>The Auditor's retry guard: the signature of the last answers that failed (never the answer key).</summary>
+    public string lastFailedAnswers;
+
+    public bool IsSet => !string.IsNullOrWhiteSpace(caseId);
+}
+
+/// <summary>
+/// Level 1's Office Hours game clock (T05): the in-game day and time, the
+/// active (playable) seconds, the Auditor's deadline (first day and current),
+/// whether it was announced, the hand-in time and day, a missed day, and the
+/// review seconds an appointment extension already added (T14 consumes the
+/// voucher; this only remembers the applied seconds). It is the game's
+/// clock, never a statutory tax deadline.
+/// </summary>
+[Serializable]
+public class Level1ClockRecord
+{
+    public const int MaxExtensionSeconds = 180;
+
+    public bool isSet;
+    public int day = 1;
+    public double gameSeconds;
+    public float activeSeconds;
+    public float sideQuestSeconds = -1f;
+    public float allowance;
+    public bool hasDeadline;
+    public bool announced;
+    public int deadlineSeconds;
+    public int deadlineFirstDay;
+    public double submittedAt = -1;
+    public int submittedDay;
+    public bool onTimeSaid;
+    public bool missedOnce;
+    public int extensionSeconds;
+}
+
+/// <summary>
+/// T23: the case client's consultation state in the Level 1 checkpoint.
+/// clientInRoom: Marie was moved to the conference room. visits: all
+/// consultation visits; ladderVisits: ladder lines since the last reset.
+/// lastLineId: the line said last (never said again next). seenFailedAudits /
+/// seenDay: the reset markers already reacted to; pendingSpecial: a special
+/// moment still to say ("failedAudit" / "laterDay"); givenClueIds: clues
+/// given since the last reset. Ids only, never answers.
+/// </summary>
+[Serializable]
+public class Level1ConsultationRecord
+{
+    public bool clientInRoom;
+    public int visits;
+    public int ladderVisits;
+    public string lastLineId = "";
+    public int seenFailedAudits;
+    public int seenDay = 1;
+    public string pendingSpecial = "";
+    public List<string> givenClueIds = new List<string>();
+
+    /// <summary>Structural repair: non-negative counters, day 1 or later, a known special, clean ids.</summary>
+    public bool Repair()
+    {
+        bool changed = false;
+        if (visits < 0) { visits = 0; changed = true; }
+        if (ladderVisits < 0) { ladderVisits = 0; changed = true; }
+        if (ladderVisits > visits) { ladderVisits = visits; changed = true; }
+        if (seenFailedAudits < 0) { seenFailedAudits = 0; changed = true; }
+        if (seenDay < 1) { seenDay = 1; changed = true; }
+        string trimmed = lastLineId == null ? "" : lastLineId.Trim();
+        if (trimmed != lastLineId) { lastLineId = trimmed; changed = true; }
+        if (pendingSpecial != "" && pendingSpecial != "failedAudit" && pendingSpecial != "laterDay") { pendingSpecial = ""; changed = true; }
+        if (givenClueIds == null) { givenClueIds = new List<string>(); changed = true; }
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var kept = new List<string>(givenClueIds.Count);
+        foreach (string id in givenClueIds)
+        {
+            string clean = id?.Trim();
+            if (string.IsNullOrEmpty(clean) || !seen.Add(clean)) { changed = true; continue; }
+            if (clean != id) changed = true;
+            kept.Add(clean);
+        }
+        givenClueIds = kept;
+        return changed;
+    }
+}
+
 /// <summary>
 /// Level 1 field progress of the unfinished story run (T04): stable ids and
 /// counters only, never scene objects, camera poses, held drags or answers.
@@ -109,6 +234,11 @@ public class Level1FieldCheckpoint
     public const string PhaseActive = "active";
     public const string PhaseSolved = "solved";
     public const string PhaseRewarded = "rewarded";
+    // T08 Client Copy handover, after the case result is recorded (ClientCopyRules).
+    public const string HandoverNone = "";
+    public const string HandoverAtAuditor = "copyAtAuditor";
+    public const string HandoverCarried = "copyCarried";
+    public const string HandoverDone = "followThroughDone";
 
     public int version;
     public int writes;
@@ -124,16 +254,42 @@ public class Level1FieldCheckpoint
     /// <summary>Guide lessons already finished in this run (welcome card, HUD tour...), so a resume does not replay them.</summary>
     public List<string> guideLessonsDone = new List<string>();
 
-    // T06 (first complete check): reserved, unset in T04.
+    /// <summary>Marie's case (T05); empty until the office part begins.</summary>
+    public Level1CaseRecord caseRecord = new Level1CaseRecord();
+    /// <summary>A case snapshot that did not match the current case (other case or revision), kept aside, never applied.</summary>
+    public Level1CaseRecord setAsideCase = new Level1CaseRecord();
+    /// <summary>The Office Hours clock (T05).</summary>
+    public Level1ClockRecord clock = new Level1ClockRecord();
+
+    // T06 (first complete check): frozen once, corrections never change it.
     public bool checkSubmitted;
+    /// <summary>Right answers on the first complete check (0-4), -1 before it.</summary>
     public int checkCorrectCount = -1;
+    /// <summary>Profiles wrong on the first complete check.</summary>
     public List<string> checkWrongProfileIds = new List<string>();
+    /// <summary>Quest XP settled from the first check, -1 before it.</summary>
+    public int checkSettledExp = -1;
+    /// <summary>Complete checks made so far (0 before the first); from 3 the board shows answers.</summary>
+    public int checkCount;
+
+    /// <summary>
+    /// T08: where Marie's approved Client Copy is after the case result:
+    /// HandoverAtAuditor (floating beside the Auditor), HandoverCarried (in
+    /// the folder icon), or HandoverDone (waiting for the end flow).
+    /// </summary>
+    public string handoverPhase = HandoverNone;
+
+    /// <summary>T23: Marie in the conference room and her consultation visits.</summary>
+    public Level1ConsultationRecord consultation = new Level1ConsultationRecord();
 
     /// <summary>Anything to resume (a version was written by the checkpointer).</summary>
     public bool IsSet => version > 0;
 
     public static bool IsKnownPhase(string phase) =>
         phase == PhaseNone || phase == PhaseActive || phase == PhaseSolved || phase == PhaseRewarded;
+
+    public static bool IsKnownHandover(string phase) =>
+        phase == HandoverNone || phase == HandoverAtAuditor || phase == HandoverCarried || phase == HandoverDone;
 
     /// <summary>
     /// Structural repair only (no profile knowledge; Level1FieldCheckpointRules
@@ -158,6 +314,12 @@ public class Level1FieldCheckpoint
             changed = true;
         }
         else if (boardPhase != boardPhase.Trim()) { boardPhase = boardPhase.Trim(); changed = true; }
+        if (handoverPhase == null || !IsKnownHandover(handoverPhase.Trim()))
+        {
+            handoverPhase = HandoverNone;
+            changed = true;
+        }
+        else if (handoverPhase != handoverPhase.Trim()) { handoverPhase = handoverPhase.Trim(); changed = true; }
 
         if (placements == null) { placements = new List<Level1Placement>(); changed = true; }
         var profiles = new HashSet<string>(StringComparer.Ordinal);
@@ -191,6 +353,76 @@ public class Level1FieldCheckpoint
         if (wrongPlacements < 0) { wrongPlacements = 0; changed = true; }
         if (wrongPlacements > placementAttempts) { wrongPlacements = placementAttempts; changed = true; }
         if (checkCorrectCount < -1) { checkCorrectCount = -1; changed = true; }
+        if (checkCorrectCount > 4) { checkCorrectCount = 4; changed = true; }
+        if (checkSubmitted && checkCorrectCount < 0) { checkSubmitted = false; changed = true; }
+        if (!checkSubmitted && (checkCorrectCount != -1 || checkWrongProfileIds.Count > 0 || checkSettledExp != -1))
+        { checkCorrectCount = -1; checkWrongProfileIds.Clear(); checkSettledExp = -1; changed = true; }
+        if (checkSettledExp < -1) { checkSettledExp = -1; changed = true; }
+        if (!checkSubmitted && checkCount != 0) { checkCount = 0; changed = true; }
+        if (checkSubmitted && checkCount < 1) { checkCount = 1; changed = true; }
+        if (caseRecord == null) { caseRecord = new Level1CaseRecord(); changed = true; }
+        if (setAsideCase == null) { setAsideCase = new Level1CaseRecord(); changed = true; }
+        if (clock == null) { clock = new Level1ClockRecord(); changed = true; }
+        changed |= RepairCase(caseRecord);
+        changed |= RepairCase(setAsideCase);
+        changed |= RepairClock(clock);
+        if (consultation == null) { consultation = new Level1ConsultationRecord(); changed = true; }
+        changed |= consultation.Repair();
+        return changed;
+    }
+
+    /// <summary>Case: clean ids, one value per field key (first kept), known folder place, sane audit counters.</summary>
+    private static bool RepairCase(Level1CaseRecord c)
+    {
+        bool changed = false;
+        if (c.caseId != null && c.caseId.Trim() != c.caseId) { c.caseId = c.caseId.Trim(); changed = true; }
+        if (c.folder != Level1CaseRecord.FolderOnDesk && c.folder != Level1CaseRecord.FolderStored) { c.folder = Level1CaseRecord.FolderOnDesk; changed = true; }
+        c.reviewedDocuments = CleanIds(c.reviewedDocuments, ref changed);
+        if (c.fields == null) { c.fields = new List<Level1CaseField>(); changed = true; }
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        var kept = new List<Level1CaseField>(c.fields.Count);
+        foreach (Level1CaseField f in c.fields)
+        {
+            string key = f?.key?.Trim();
+            if (string.IsNullOrEmpty(key) || f.value == null || !keys.Add(key)) { changed = true; continue; }
+            if (f.key != key) { f.key = key; changed = true; }
+            kept.Add(f);
+        }
+        c.fields = kept;
+        if (c.auditAttempts < 0) { c.auditAttempts = 0; changed = true; }
+        if (c.auditMistakes < 0) { c.auditMistakes = 0; changed = true; }
+        if (c.failedAudits < 0) { c.failedAudits = 0; changed = true; }
+        if (c.failedAudits > c.auditAttempts) { c.failedAudits = c.auditAttempts; changed = true; }
+        if (c.failedAudits == 0 && !string.IsNullOrEmpty(c.lastFailedAnswers)) { c.lastFailedAnswers = null; changed = true; }
+        return changed;
+    }
+
+    /// <summary>
+    /// Clock: day >= 1, finite non-negative times, an announcement needs a
+    /// deadline, a hand-in day within the days played, extension seconds within
+    /// one appointment extension. Deadlines themselves are kept exactly as saved.
+    /// </summary>
+    private static bool RepairClock(Level1ClockRecord k)
+    {
+        bool changed = false;
+        if (k.day < 1) { k.day = 1; changed = true; }
+        if (double.IsNaN(k.gameSeconds) || double.IsInfinity(k.gameSeconds) || k.gameSeconds < 0) { k.gameSeconds = 0; changed = true; }
+        if (float.IsNaN(k.activeSeconds) || float.IsInfinity(k.activeSeconds) || k.activeSeconds < 0f) { k.activeSeconds = 0f; changed = true; }
+        if (float.IsNaN(k.sideQuestSeconds) || float.IsInfinity(k.sideQuestSeconds) || k.sideQuestSeconds < -1f) { k.sideQuestSeconds = -1f; changed = true; }
+        if (float.IsNaN(k.allowance) || float.IsInfinity(k.allowance) || k.allowance < 0f) { k.allowance = 0f; changed = true; }
+        if (k.deadlineSeconds < 0) { k.deadlineSeconds = 0; changed = true; }
+        if (k.deadlineFirstDay < 0) { k.deadlineFirstDay = 0; changed = true; }
+        if (!k.hasDeadline && (k.announced || k.deadlineSeconds != 0 || k.deadlineFirstDay != 0))
+        {
+            k.announced = false;
+            k.deadlineSeconds = 0;
+            k.deadlineFirstDay = 0;
+            changed = true;
+        }
+        if (double.IsNaN(k.submittedAt) || double.IsInfinity(k.submittedAt) || k.submittedAt < -1) { k.submittedAt = -1; changed = true; }
+        if (k.submittedDay < 0 || k.submittedDay > k.day) { k.submittedDay = 0; k.submittedAt = -1; changed = true; }
+        if (k.extensionSeconds < 0) { k.extensionSeconds = 0; changed = true; }
+        if (k.extensionSeconds > Level1ClockRecord.MaxExtensionSeconds) { k.extensionSeconds = Level1ClockRecord.MaxExtensionSeconds; changed = true; }
         return changed;
     }
 
@@ -207,6 +439,79 @@ public class Level1FieldCheckpoint
             kept.Add(trimmed);
         }
         return kept;
+    }
+}
+
+/// <summary>One applied campaign grant or repair (T08/T09): what changed, by how much, and why.</summary>
+[Serializable]
+public class CampaignLedgerEntry
+{
+    public string claimId = "";
+    /// <summary>"trust", "coins" or "repair".</summary>
+    public string kind = "";
+    public int amount;
+    public int balanceAfter;
+    public string reason = "";
+}
+
+/// <summary>
+/// The first story result of Level 1's case (T07): recorded once, when the
+/// corrected classification quest and Marie's approved case are both done,
+/// in the same write as its mastery result. Replays and later runs never
+/// rewrite it. Plain values only: the frozen first-check tier (T06), the
+/// approved case's identity, and the mastery numbers of that run.
+/// </summary>
+[Serializable]
+public class Level1CaseResult
+{
+    public const string NextFollowThrough = "followThrough";
+
+    public bool recorded;
+    /// <summary>Stable scoped action id (CaseResultRules.ActionId); also kept in the campaign's rewardClaims.</summary>
+    public string actionId = "";
+    public string caseId = "";
+    public string caseFingerprint = "";
+    public bool questCorrected;
+    public bool caseApproved;
+    /// <summary>Right answers on the board's first complete check (0-4), -1 when unknown.</summary>
+    public int firstCheckCorrect = -1;
+    /// <summary>The frozen first-check tier (BadgeTier value: 0 none, 1 Bronze, 2 Silver, 3 Gold).</summary>
+    public int tier;
+    public int exp;
+    public int maxExp;
+    public int scoreHearts;
+    public int maxScoreHearts;
+    public float runSeconds;
+    /// <summary>The story's next required step after this result ("followThrough").</summary>
+    public string nextStep = "";
+
+    /// <summary>Unrecorded results are empty; a recorded one keeps sane values. True when anything changed.</summary>
+    public bool Repair()
+    {
+        bool changed = false;
+        if (actionId == null) { actionId = ""; changed = true; }
+        if (caseId == null) { caseId = ""; changed = true; }
+        if (caseFingerprint == null) { caseFingerprint = ""; changed = true; }
+        if (nextStep == null) { nextStep = ""; changed = true; }
+        if (!recorded)
+        {
+            if (actionId.Length > 0 || caseId.Length > 0 || questCorrected || caseApproved || exp != 0 || tier != 0)
+            {
+                actionId = caseId = caseFingerprint = nextStep = "";
+                questCorrected = caseApproved = false;
+                firstCheckCorrect = -1; tier = exp = maxExp = scoreHearts = maxScoreHearts = 0; runSeconds = 0f;
+                changed = true;
+            }
+            return changed;
+        }
+        if (firstCheckCorrect < -1 || firstCheckCorrect > 4) { firstCheckCorrect = Math.Max(-1, Math.Min(4, firstCheckCorrect)); changed = true; }
+        if (tier < 0 || tier > 3) { tier = Math.Max(0, Math.Min(3, tier)); changed = true; }
+        if (exp < 0) { exp = 0; changed = true; }
+        if (maxExp < 0) { maxExp = 0; changed = true; }
+        if (scoreHearts < 0) { scoreHearts = 0; changed = true; }
+        if (maxScoreHearts < 0) { maxScoreHearts = 0; changed = true; }
+        if (runSeconds < 0f || float.IsNaN(runSeconds)) { runSeconds = 0f; changed = true; }
+        return changed;
     }
 }
 
@@ -237,6 +542,14 @@ public class CampaignRecord
     public List<string> ownedUpgradeIds = new List<string>();
     /// <summary>The unfinished Level 1 story run's field progress (T04); empty when there is none.</summary>
     public Level1FieldCheckpoint levelOne = new Level1FieldCheckpoint();
+    /// <summary>Level 1's first case result (T07); recorded once, never rewritten.</summary>
+    public Level1CaseResult levelOneCaseResult = new Level1CaseResult();
+    /// <summary>The Level 1 finale/result card is still waiting to be presented after Marie receives her copy (T08).</summary>
+    public bool levelOneEndFlowPending;
+    /// <summary>Completed required story activities ("Level_01/field-assignment", "Level_01/marie-follow-through"), T08.</summary>
+    public List<string> completedActivityIds = new List<string>();
+    /// <summary>Every applied trust/coin grant and balance repair, with its reason (T08/T09).</summary>
+    public List<CampaignLedgerEntry> ledger = new List<CampaignLedgerEntry>();
 
     public bool IsSet => !string.IsNullOrWhiteSpace(campaignId);
 
@@ -635,6 +948,12 @@ public class PlayerProgressData
         if (c.items == null) { c.items = new List<CampaignItemStack>(); changed = true; }
         if (c.levelOne == null) { c.levelOne = new Level1FieldCheckpoint(); changed = true; }
         changed |= c.levelOne.Repair();
+        if (c.levelOneCaseResult == null) { c.levelOneCaseResult = new Level1CaseResult(); changed = true; }
+        changed |= c.levelOneCaseResult.Repair();
+        if (c.completedActivityIds == null) { c.completedActivityIds = new List<string>(); changed = true; }
+        c.completedActivityIds = CleanIds(c.completedActivityIds, ref changed);
+        if (c.ledger == null) { c.ledger = new List<CampaignLedgerEntry>(); changed = true; }
+        changed |= c.ledger.RemoveAll(e => e == null || string.IsNullOrWhiteSpace(e.kind)) > 0;
         c.completedChapterIds = CleanIds(c.completedChapterIds, ref changed);
         c.rewardClaims = CleanIds(c.rewardClaims, ref changed);
         c.ownedUpgradeIds = CleanIds(c.ownedUpgradeIds, ref changed);
@@ -642,7 +961,13 @@ public class PlayerProgressData
         if (c.IsSet && string.IsNullOrWhiteSpace(c.currentChapterId)) { c.currentChapterId = CampaignRecord.FirstChapterId; changed = true; }
         int trust = Math.Max(0, Math.Min(CampaignRecord.MaxTrust, c.publicTrust));
         if (trust != c.publicTrust) { c.publicTrust = trust; changed = true; }
-        if (c.coins < 0) { c.coins = 0; changed = true; }
+        if (c.coins < 0)
+        {
+            // T09: a corrupt negative balance becomes a safe zero, with an explicit repair record.
+            c.ledger.Add(new CampaignLedgerEntry { kind = "repair", amount = -c.coins, balanceAfter = 0, reason = $"Coin balance {c.coins} repaired to 0" });
+            c.coins = 0;
+            changed = true;
+        }
 
         var stacks = new Dictionary<string, CampaignItemStack>(StringComparer.Ordinal);
         var kept = new List<CampaignItemStack>(c.items.Count);

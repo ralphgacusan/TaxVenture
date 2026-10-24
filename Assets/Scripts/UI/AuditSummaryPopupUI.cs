@@ -117,7 +117,7 @@ public class AuditSummaryPopupUI : MonoBehaviour
         if (progression != null)
         {
             LevelScoring.Award cost = LevelScoring.FailedAuditCost(progression.Score.Rules, issues.Count);
-            data.Fact("Case reward", $"-{cost.Exp} EXP  -{cost.Hearts} hearts");
+            data.Fact("Case reward", TrustDisplay.Active ? $"-{cost.Exp} EXP" : $"-{cost.Exp} EXP  -{cost.Hearts} hearts");
         }
         // Why it matters: the real-world cost of the first mistake (case JSON).
         CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;

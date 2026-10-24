@@ -182,6 +182,85 @@ Check(retryCompletedCount == 1 && retryCancelledCount == 1,
     "The retry must complete through its own completion callback only.");
 
 // ---------------------------------------------------------------------
+// T08 awaited dialogue actions. These use the same pure session that backs
+// DialogueUI, so an action cannot silently become an ordinary tap-to-advance
+// line while a conversation is paused for a handover.
+// ---------------------------------------------------------------------
+var handoverBuilder = new DialogueBuilder("Marie")
+    .Npc("I have your approved return.")
+    .Npc("Please bring the client copy to me.")
+    .AwaitAction("client-copy", "Drag the client copy to Marie")
+    .Npc("Thank you for walking me through it.");
+var handoverLines = handoverBuilder.Build();
+var handover = new DialogueSession();
+int handoverCompleted = 0;
+int handoverCancelled = 0;
+Check(handoverLines.Count == 3 && handoverLines[1].AwaitAction == "client-copy" &&
+      handoverLines[1].ActionPrompt == "Drag the client copy to Marie" &&
+      handover.TryStart(handoverLines, () => handoverCompleted++, () => handoverCancelled++),
+    "the generic dialogue builder marks a line with its action id and player prompt");
+Check(handover.TryAdvance(out bool afterOpening) && !afterOpening && handover.IsAwaitingAction &&
+      handover.AwaitingActionId == "client-copy" && handover.CurrentLine.ActionPrompt == "Drag the client copy to Marie",
+    "the handover line pauses with its action and prompt exposed");
+int waitingIndex = handover.LineIndex;
+Check(!handover.TryAdvance(out bool completedByTap) && !completedByTap && handover.LineIndex == waitingIndex &&
+      handover.IsAwaitingAction && !handover.TryCompleteAction("other-action") &&
+      !handover.TryCompleteAction(null),
+    "ordinary advance gestures and missing or wrong action ids leave the dialogue paused");
+Check(handover.TryCompleteAction(" client-copy ") && !handover.IsAwaitingAction &&
+      !handover.TryCompleteAction("client-copy") && handover.TryAdvance(out bool afterHandover) && !afterHandover &&
+      handover.CurrentLine.Text == "Thank you for walking me through it.",
+    "the matching action completes once, then the conversation continues automatically");
+Action handoverCompletionValue = null;
+Check(handover.TryAdvance(out bool handoverDone) && handoverDone &&
+      handover.TryEnd(DialogueEndReason.Completed, out handoverCompletionValue) && handoverCompletionValue != null,
+    "the resumed conversation completes normally after its closing line");
+handoverCompletionValue();
+Check(handoverCompleted == 1 && handoverCancelled == 0,
+    "a completed handover conversation calls only its completion callback");
+
+var pausedForCancel = new DialogueSession();
+int pausedCompleted = 0;
+int pausedCancelled = 0;
+Action pausedCancellation = null;
+Check(pausedForCancel.TryStart(new[] { new DialogueBuilder("Marie").Npc("Bring me the copy.")
+        .AwaitAction("client-copy", "Drag the client copy to Marie").Build()[0] },
+        () => pausedCompleted++, () => pausedCancelled++) &&
+      !pausedForCancel.TryEnd(DialogueEndReason.Completed, out Action prematureAwaitedCompletion) &&
+      prematureAwaitedCompletion == null &&
+      pausedForCancel.TryEnd(DialogueEndReason.Cancelled, out pausedCancellation),
+    "an awaited final line cannot complete early, but its conversation can be cancelled");
+pausedCancellation();
+Check(pausedCancelled == 1 && pausedCompleted == 0 &&
+      pausedForCancel.TryStart(new[] { new DialogueBuilder("Marie").Npc("Let's try again.")
+          .AwaitAction("retry-copy", "Bring the copy again").Build()[0] },
+          () => pausedCompleted++, () => pausedCancelled++) &&
+      pausedForCancel.IsAwaitingAction && pausedForCancel.AwaitingActionId == "retry-copy" &&
+      !pausedForCancel.TryCompleteAction("client-copy"),
+    "cancelling and restarting clears the old awaited action and its completion state");
+Action restartedCompletion = null;
+Check(pausedForCancel.TryCompleteAction("retry-copy") &&
+      pausedForCancel.TryEnd(DialogueEndReason.Completed, out restartedCompletion),
+    "a restarted awaited conversation completes only after its own action");
+restartedCompletion();
+Check(pausedCompleted == 1 && pausedCancelled == 1,
+    "the restarted session invokes its own completion callback once");
+
+var advanceGate = new DialogueAdvanceGate();
+Check(advanceGate.Evaluate(1, 0.2f, lineIsTyping: false) == DialogueGesture.Ignored,
+    "the dialogue advance gate ignores gestures before a conversation opens");
+advanceGate.Open(10, 1f);
+Check(advanceGate.Evaluate(10, 1.2f, lineIsTyping: false) == DialogueGesture.Ignored &&
+      advanceGate.Evaluate(11, 1.1f, lineIsTyping: false) == DialogueGesture.Ignored &&
+      advanceGate.Evaluate(12, 1.16f, lineIsTyping: true) == DialogueGesture.RevealLine &&
+      advanceGate.Evaluate(13, 1.2f, lineIsTyping: false) == DialogueGesture.Ignored &&
+      advanceGate.Evaluate(14, 1.30f, lineIsTyping: false) == DialogueGesture.Advance,
+    "ordinary DialogueAdvanceGate behavior still ignores opening/duplicate taps, reveals typed lines, then advances");
+advanceGate.Close();
+Check(!advanceGate.IsOpen && advanceGate.Evaluate(15, 2f, lineIsTyping: false) == DialogueGesture.Ignored,
+    "closing the gate blocks later gestures");
+
+// ---------------------------------------------------------------------
 // T02 Phase 2 - town taxpayer and tutorial guide content contracts.
 // These exercise the production TownNpcDialogueLibrary and
 // TaxpayerProfileDatabase through the same DialogueSession the shared UI
@@ -439,7 +518,12 @@ int beforeMarkers = checks;
 NpcMarkerTests.Run(Check);
 int markerChecks = checks - beforeMarkers;
 
+// T22 NPC emotion emotes (Campaign Foundation).
+int beforeEmotes = checks;
+EmoteTests.Run(Check);
+int emoteChecks = checks - beforeEmotes;
+
 Console.WriteLine($"PASS: {checks} dialogue contract assertions ({beforePresentation} session/town/guide, " +
-    $"{presentationChecks} T03 presentation, {markerChecks} T04 markers) against production DialogueSession, DialogueLine, DialogueBuilder, " +
+    $"{presentationChecks} T03 presentation, {markerChecks} T04 markers, {emoteChecks} T22 emotes) against production DialogueSession, DialogueLine, DialogueBuilder, " +
     "TownNpcDialogueLibrary, TaxpayerProfileDatabase, DialogueTerminalHandoff, DialogueAdvanceGate, " +
-    "DialogueRevealSchedule, DialogueShotMath, DialogueCloseUpPolicy and NpcAvailabilityRules.");
+    "DialogueRevealSchedule, DialogueShotMath, DialogueCloseUpPolicy, NpcAvailabilityRules, EmoteCatalogue and EmoteShapes.");

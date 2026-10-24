@@ -23,6 +23,12 @@ public class TaxCodeBookInteractable : MonoBehaviour, IInteractable
         highlight = GetComponent<HighlightEffect>();
     }
 
+    /// <summary>True once the book was opened in this run.</summary>
+    public bool HasBeenOpenedOnce => hasBeenOpenedOnce;
+
+    /// <summary>Resume (T05): the book was opened before; the first-open event is not raised again.</summary>
+    public void RestoreOpenedOnce() => hasBeenOpenedOnce = true;
+
     public void OnFocus() => highlight.Highlight();
     public void OnUnfocus()
     {

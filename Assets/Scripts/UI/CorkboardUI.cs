@@ -121,6 +121,7 @@ public class CorkboardUI : MonoBehaviour
 
     private void SetAssessment(CaseAssessment assessment)
     {
+        if (ClientCopyHandover.CaseActionsBlocked) return;
         CaseManager.Instance.CurrentCase.caseAssessment = assessment;
         RenderCurrentAssessment();
     }

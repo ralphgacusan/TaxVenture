@@ -14,6 +14,23 @@ public sealed class DialogueSession
     public int LineIndex { get; private set; }
     public DialogueLine CurrentLine => IsActive ? lines[LineIndex] : null;
 
+    // T08: the current line's awaited action has been completed.
+    private bool actionDone;
+
+    /// <summary>True while the current line waits for its action (advancing and completing are refused).</summary>
+    public bool IsAwaitingAction => IsActive && lines[LineIndex].AwaitAction != null && !actionDone;
+
+    /// <summary>The action the current line waits for, or null.</summary>
+    public string AwaitingActionId => IsAwaitingAction ? lines[LineIndex].AwaitAction : null;
+
+    /// <summary>Completes the current line's awaited action once (wrong id, no wait or done already: false).</summary>
+    public bool TryCompleteAction(string actionId)
+    {
+        if (!IsAwaitingAction || actionId == null || actionId.Trim() != lines[LineIndex].AwaitAction) return false;
+        actionDone = true;
+        return true;
+    }
+
     public bool TryStart(IReadOnlyList<DialogueLine> source, Action completed, Action cancelled = null)
     {
         if (IsActive || source == null || source.Count == 0) return false;
@@ -26,11 +43,16 @@ public sealed class DialogueSession
             DialogueLine line = source[i];
             snapshot.Add(new DialogueLine(line.Speaker, line.Text, line.PortraitId, line.SpeakerName)
             {
-                CameraHint = line.CameraHint
+                CameraHint = line.CameraHint,
+                Emote = line.Emote,
+                EmoteBurst = line.EmoteBurst,
+                AwaitAction = string.IsNullOrWhiteSpace(line.AwaitAction) ? null : line.AwaitAction.Trim(),
+                ActionPrompt = line.ActionPrompt
             });
         }
         lines = snapshot;
         LineIndex = 0;
+        actionDone = false;
         onCompleted = completed;
         onCancelled = cancelled;
         return true;
@@ -39,8 +61,12 @@ public sealed class DialogueSession
     public bool TryAdvance(out bool completed)
     {
         completed = false;
-        if (!IsActive) return false;
-        if (LineIndex + 1 < lines.Count) LineIndex++;
+        if (!IsActive || IsAwaitingAction) return false;
+        if (LineIndex + 1 < lines.Count)
+        {
+            LineIndex++;
+            actionDone = false;
+        }
         else completed = true;
         return true;
     }
@@ -51,10 +77,11 @@ public sealed class DialogueSession
     {
         callback = null;
         if (!IsActive) return false;
-        if (reason == DialogueEndReason.Completed && LineIndex + 1 < lines.Count) return false;
+        if (reason == DialogueEndReason.Completed && (LineIndex + 1 < lines.Count || IsAwaitingAction)) return false;
         callback = reason == DialogueEndReason.Completed ? onCompleted : onCancelled;
         lines = null;
         LineIndex = 0;
+        actionDone = false;
         onCompleted = null;
         onCancelled = null;
         return true;

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -66,15 +67,52 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
         hasBeenTalkedTo = true;
         if (stateMachine == null) stateMachine = GetComponent<NpcStateMachine>();
         if (stateMachine != null) stateMachine.ChangeState(new NpcCompletedState());
-        if (profileCollected || profilePickup == null) return;
+        if (profilePickup == null) return;
         TaxpayerProfile data = TaxpayerProfileDatabase.GetByNpcId(npcId);
         if (data == null) return;
+        // The paper always knows its profile (the profile viewer and the n/1
+        // counter read Marie's paper after the side quest); it only lies in the
+        // world while it still has to be collected.
         profilePickup.Initialize(data);
-        profilePickup.gameObject.SetActive(true);
+        if (!profileCollected) profilePickup.gameObject.SetActive(true);
     }
 
     /// <summary>True while this NPC owns the shared conversation.</summary>
     public bool IsInConversation => dialogueSessionActive;
+
+    /// <summary>
+    /// T08: a visit owner (Marie's Client Copy handover) may take a tap on a
+    /// taxpayer whose plaza talk is over. It returns true when it handled the
+    /// tap (usually by calling TryStartVisit). Cleared with its owner.
+    /// </summary>
+    public static System.Func<TaxpayerNpcInteractable, bool> VisitHandler;
+
+    /// <summary>The visit owner's marker state for this taxpayer (null = the plaza state).</summary>
+    public static System.Func<TaxpayerNpcInteractable, NpcAvailability?> VisitAvailability;
+
+    private bool VisitOpen => hasBeenTalkedTo && VisitAvailability != null && VisitAvailability(this) == NpcAvailability.Available;
+
+    /// <summary>
+    /// T08: a visit conversation after the plaza talk (the shared dialogue
+    /// flow, this NPC as its owner, the usual talk / listen states). It never
+    /// changes the plaza talk, the profile or the level score.
+    /// </summary>
+    public bool TryStartVisit(List<DialogueLine> lines, System.Action completed, System.Action cancelled)
+    {
+        if (dialogueSessionActive || dialogueUI == null || stateMachine == null || lines == null || lines.Count == 0) return false;
+        INpcState prior = stateMachine.CurrentState;
+        if (!dialogueUI.TryStartDialogue(lines,
+                () => { dialogueSessionActive = false; stateMachine.ChangeState(prior is NpcCompletedState ? prior : new NpcCompletedState()); completed?.Invoke(); },
+                () => { dialogueSessionActive = false; stateMachine.ChangeState(prior is NpcCompletedState ? prior : new NpcCompletedState()); cancelled?.Invoke(); },
+                this))
+            return false;
+        AudioManager.Instance?.QueueInteractionSFX("npc");
+        dialogueSessionActive = true;
+        stateMachine.ChangeState(new NpcInteractState());
+        stateMachine.ChangeState(new NpcDialogueState());
+        ClearPointerFocus();
+        return true;
+    }
 
     private int dataValidity; // 0 unknown, 1 valid, -1 invalid (static data, checked once)
 
@@ -83,6 +121,8 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
     {
         get
         {
+            NpcAvailability? visit = hasBeenTalkedTo && VisitAvailability != null ? VisitAvailability(this) : null;
+            if (visit.HasValue) return visit.Value;
             if (dataValidity == 0)
                 dataValidity = TaxpayerProfileDatabase.GetByNpcId(npcId) != null &&
                                TownNpcDialogueLibrary.HasDialogueFor(npcId) ? 1 : -1;
@@ -147,7 +187,7 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
 
     private bool CanFocusPointer(PointerEventData eventData)
     {
-        return eventData != null && !hasBeenTalkedTo && !dialogueSessionActive &&
+        return eventData != null && (!hasBeenTalkedTo || VisitOpen) && !dialogueSessionActive &&
                InteractionRange.PlayerCanReach(this) &&
                !DialogueUI.IsAnyDialogueActive && !VirtualJoystick.BlocksWorldInput &&
                !MobileInputGuard.IsPointerOverUI(eventData.position);
@@ -163,13 +203,17 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
         if (DialogueUI.IsAnyDialogueActive) return;
         if (eventData.button != PointerEventData.InputButton.Left || MobileInputGuard.IsDragOrCancelled(eventData) || VirtualJoystick.BlocksWorldInput ||
             MobileInputGuard.IsPointerOverUI(eventData.position)) return;
-        if (hasBeenTalkedTo || dialogueSessionActive)
-        {
-            return;
-        }
+        if (dialogueSessionActive) return;
 
         // Only within reach (taps through the EventSystem have no distance limit).
         if (!InteractionRange.PlayerCanReach(this)) return;
+
+        // T08: after the plaza talk, a visit owner may take the tap (Marie's handover).
+        if (hasBeenTalkedTo)
+        {
+            if (VisitHandler != null) VisitHandler(this);
+            return;
+        }
 
         if (dialogueUI == null)
         {

@@ -38,6 +38,7 @@ public class BirFormEncodingUI : MonoBehaviour
 
     public void Show(RequiredForm form)
     {
+        if (ClientCopyHandover.CaseActionsBlocked) return;
         panelRoot.SetActive(true);
         formTitleText.text = $"BIR Form {form}";
 
@@ -70,6 +71,7 @@ public class BirFormEncodingUI : MonoBehaviour
 
     private void OnFieldValueSet(EncodedFieldId id, string value)
     {
+        if (ClientCopyHandover.CaseActionsBlocked) return;
         SetFieldValue(id, value);
         UpdateActionButton();
     }
@@ -117,6 +119,7 @@ public class BirFormEncodingUI : MonoBehaviour
 
     private void OnActionButtonPressed()
     {
+        if (ClientCopyHandover.CaseActionsBlocked) return;
         if (!isConfirmed)
         {
             isConfirmed = true;

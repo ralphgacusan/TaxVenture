@@ -232,6 +232,13 @@ public static class TaskListProvider
             },
             new TaskDefinition(ObjectiveTriggers.StatePrefix + nameof(CaseCompleteState),
                 "Submit the case folder to the Auditor in his office.", false, null),
+
+            // T08: the Client Copy handover (story runs; replays end at the result card).
+            new TaskDefinition(null, "Follow Through with Marie", true, null),
+            new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.ClientCopyPickedUp),
+                "Pick up Marie's client copy from the Auditor.", false, null),
+            new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.ClientCopyHandedOver),
+                "Return Marie's client copy (Conference Room).", false, null),
         };
     }
 

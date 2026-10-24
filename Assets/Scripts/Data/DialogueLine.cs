@@ -23,6 +23,18 @@ public class DialogueLine
     public string PortraitId;
     public string SpeakerName;
     public DialogueCameraHint CameraHint = DialogueCameraHint.Auto;
+    /// <summary>Optional emote shown over the speaker while this line lasts (T22); None = no emote.</summary>
+    public Emotion Emote = Emotion.None;
+    /// <summary>Peak moment: the emote plays as a burst of icons instead of a bubble.</summary>
+    public bool EmoteBurst;
+    /// <summary>
+    /// Optional awaited action (T08): the conversation pauses on this line
+    /// until the action with this id is completed (e.g. "client-copy");
+    /// taps do not advance it. Null = an ordinary line.
+    /// </summary>
+    public string AwaitAction;
+    /// <summary>What the player is asked to do while the line waits ("Drag the client copy to Marie").</summary>
+    public string ActionPrompt;
 
     public DialogueLine(
         DialogueSpeaker speaker,

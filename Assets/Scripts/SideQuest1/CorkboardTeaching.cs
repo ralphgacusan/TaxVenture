@@ -62,7 +62,7 @@ public static class CorkboardTeaching
         Npc("Some came from another country, fell for this place, and stayed. They live and do business here now."),
         Npc("And some are only passing through: foreign visitors on a short job, with a ticket home already booked."),
         Player("So I listen for where they're from, and where they actually live."),
-        Npc("Exactly! Drag each profile to the corner where it belongs. Wrong guesses bounce back, so think it through.")
+        Npc("Exactly! Pin each profile where you think it belongs. Once all four are up, I'll check the board, and your first check counts.")
     };
 
     private static readonly List<KeyValuePair<bool, string>> BuiltInDone = new List<KeyValuePair<bool, string>>

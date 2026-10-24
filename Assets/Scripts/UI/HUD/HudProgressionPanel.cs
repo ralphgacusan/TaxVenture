@@ -126,6 +126,8 @@ public sealed class HudProgressionPanel : MonoBehaviour
 
     public RectTransform ExpBar => expBar.Fill != null ? (RectTransform)expBar.Fill.parent : null;
     public RectTransform ReputationBar => repBar.Fill != null ? (RectTransform)repBar.Fill.parent : null;
+    /// <summary>The wallet / career line (T09 coin flights land here).</summary>
+    public RectTransform WalletLabel => careerText != null ? (RectTransform)careerText.transform : null;
 
     // =========================================================
     // BUILD
@@ -249,12 +251,16 @@ public sealed class HudProgressionPanel : MonoBehaviour
         if (subscribed) return;
         subscribed = true;
         LevelScoreLedger.EntryAdded += HandleScoreEntry;
+        PlayerProgressManager.ProgressChanged += HandleProgressChanged;
         if (GameStateMachine.Instance != null) GameStateMachine.Instance.OnStateChanged += HandleStateChanged;
     }
+
+    private void HandleProgressChanged(PlayerProgressData _) => RefreshFromGame(animate: true);
 
     private void OnDestroy()
     {
         LevelScoreLedger.EntryAdded -= HandleScoreEntry;
+        PlayerProgressManager.ProgressChanged -= HandleProgressChanged;
         if (GameStateMachine.Instance != null) GameStateMachine.Instance.OnStateChanged -= HandleStateChanged;
     }
 
@@ -288,10 +294,19 @@ public sealed class HudProgressionPanel : MonoBehaviour
             ApplyBadges(score, animate);
         }
 
+        // T08: in a campaign the hearts bar is Public Trust (saved value / 100, with the
+        // future support target as its tick), and the story never shows a passing line (T07).
+        bool trust = TrustDisplay.Active;
+        if (trust)
+        {
+            reputation = TrustDisplay.PublicTrust;
+            maxReputation = CampaignRecord.MaxTrust;
+            passing = 0;
+        }
         expBar.SetTarget(maxExp, exp, animate);
         repBar.SetTarget(maxReputation, reputation, animate);
         expBar.SetPassing(passing);
-        repBar.SetPassing(passing);
+        repBar.SetPassing(trust ? CampaignRewards.SupportTarget : passing);
         ApplyCareer();
         ApplyPassingCaption(progressionManager, passing);
         enabled = expBar.Animating || repBar.Animating;
@@ -396,7 +411,10 @@ public sealed class HudProgressionPanel : MonoBehaviour
         PlayerProgressManager manager = PlayerProgressManager.Instance;
         bool show = manager != null && manager.CurrentProgress != null;
         careerText.gameObject.SetActive(show);
-        if (show) careerText.SetText("Career {0} EXP", manager.CurrentProgress.totalExp);
+        if (!show) return;
+        // T09: a campaign shows its wallet (saved balance) here.
+        if (TrustDisplay.Active) careerText.SetText("{0} coins", manager.CurrentProgress.campaign.coins);
+        else careerText.SetText("Career {0} EXP", manager.CurrentProgress.totalExp);
     }
 
     // =========================================================

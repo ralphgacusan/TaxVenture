@@ -2564,8 +2564,15 @@ Check(folderHudOpen.Contains("if (FolderToHUDIcon.GetStoredFolderCount() <= 0) r
 
 // Drive production input dispatch with only managed fields and delegates.
 var folderPointer = (HudSubmittableIcon)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(HudSubmittableIcon));
-var countField = typeof(FolderToHUDIcon).GetField("storedFolderCount", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
-int savedFolderCount = (int)countField.GetValue(null);
+// Campaign Foundation T05 fix: the icon count is the set of stored folders (no bare static int).
+var storedSet = (HashSet<FolderToHUDIcon>)typeof(FolderToHUDIcon).GetField("storedFolders", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).GetValue(null);
+var savedFolders = new List<FolderToHUDIcon>(storedSet);
+void SetStoredCount(int count)
+{
+    storedSet.Clear();
+    for (int i = 0; i < count; i++) storedSet.Add((FolderToHUDIcon)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(FolderToHUDIcon)));
+}
+void RestoreStoredFolders() { storedSet.Clear(); foreach (FolderToHUDIcon f in savedFolders) storedSet.Add(f); }
 var availabilityField = typeof(HudSubmittableIcon).GetField("isAvailable", privateInstance);
 var canUseIcon = typeof(HudSubmittableIcon).GetMethod("CanUseIcon", privateInstance);
 int folderClickCalls = 0;
@@ -2573,13 +2580,13 @@ folderPointer.ClickOverride = () => { folderClickCalls++; return true; };
 try
 {
     availabilityField.SetValue(folderPointer, true);
-    countField.SetValue(null, 0);
+    SetStoredCount(0);
     folderPointer.OnPointerDown(null); // must reject before dereferencing event data
     typeof(HudSubmittableIcon).GetMethod("ToggleFloatingWindow", privateInstance).Invoke(folderPointer, null);
     Check(!(bool)canUseIcon.Invoke(folderPointer, null) && folderClickCalls == 0 &&
           !(bool)typeof(HudSubmittableIcon).GetField("pointerIsDown", privateInstance).GetValue(folderPointer),
         "count zero rejects production pointer-down and click callback even when serialized availability is true");
-    countField.SetValue(null, 1);
+    SetStoredCount(1);
     typeof(HudSubmittableIcon).GetMethod("ToggleFloatingWindow", privateInstance).Invoke(folderPointer, null);
     typeof(HudSubmittableIcon).GetMethod("ToggleFloatingWindow", privateInstance).Invoke(folderPointer, null);
     Check((bool)canUseIcon.Invoke(folderPointer, null) && folderClickCalls == 2 && FolderToHUDIcon.GetStoredFolderCount() == 1,
@@ -2587,11 +2594,11 @@ try
     availabilityField.SetValue(folderPointer, false);
     Check(!(bool)canUseIcon.Invoke(folderPointer, null), "availability still blocks a stored folder during a level lock");
     availabilityField.SetValue(folderPointer, true);
-    countField.SetValue(null, 0);
+    SetStoredCount(0);
     typeof(HudSubmittableIcon).GetField("kind", privateInstance).SetValue(folderPointer, HudSubmittableIcon.SubmittableKind.TaxReturn);
     Check((bool)canUseIcon.Invoke(folderPointer, null), "the folder-count guard does not block the Tax Return icon");
 }
-finally { countField.SetValue(null, savedFolderCount); }
+finally { RestoreStoredFolders(); }
 
 Check(Src("Scripts/CaseFolder/FolderToHUDIcon.cs").Contains("public bool TryTakeOutForView()") &&
       Src("Scripts/UI/HUD/CaseFolder3DView.cs").Contains("if (screenPosition.HasValue) TakeOutOfIcon();"),
@@ -2602,7 +2609,8 @@ var storedField = typeof(FolderToHUDIcon).GetField("folderStored", privateInstan
 try
 {
     storedField.SetValue(withdrawnStore, true);
-    countField.SetValue(null, 1);
+    storedSet.Clear();
+    storedSet.Add(withdrawnStore);
     Check(withdrawnStore.TryTakeOutForView() && FolderToHUDIcon.GetStoredFolderCount() == 0 && !withdrawnStore.IsFolderStored(),
         "drag-out removes the badge and stored status in production storage code");
     Check(!withdrawnStore.TryTakeOutForView() && FolderToHUDIcon.GetStoredFolderCount() == 0,
@@ -2614,7 +2622,7 @@ try
     storedField.SetValue(withdrawnStore, false);
     Check(!withdrawnStore.TryTakeOutForView(), "an unstored physical folder cannot supply a HUD withdrawal");
 }
-finally { countField.SetValue(null, savedFolderCount); }
+finally { RestoreStoredFolders(); }
 string folderViewSource = Src("Scripts/UI/HUD/CaseFolder3DView.cs");
 Check(folderViewSource.Contains("store?.ReturnFromView();") &&
       folderViewSource.Contains("if (t >= 1f) Restore();") &&

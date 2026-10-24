@@ -122,25 +122,9 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
     {
         dropElapsed += Time.deltaTime;
         float progress = Mathf.Clamp01(dropElapsed / dropDuration);
-        float easedProgress = progress * progress * (3f - 2f * progress);
-        float bobOffset = Mathf.Sin(Time.time * bobSpeed) * bobHeight;
-        Vector3 landingPosition = basePosition + Vector3.up * bobOffset;
-
-        Vector3 direction = basePosition - dropStartPosition;
-        Vector3 driftDirection = Vector3.Cross(Vector3.up, direction);
-        if (driftDirection.sqrMagnitude < 0.0001f)
-        {
-            driftDirection = Vector3.right;
-        }
-        driftDirection.Normalize();
-
-        float flutter = Mathf.Sin(progress * Mathf.PI * 4f) * (1f - progress);
-        float drift = Mathf.Sin(progress * Mathf.PI) * 0.035f;
-        float verticalFlutter = Mathf.Sin(progress * Mathf.PI * 3f) * (1f - progress) * 0.018f;
-        transform.position = Vector3.LerpUnclamped(dropStartPosition, landingPosition, easedProgress)
-            + driftDirection * drift
-            + Vector3.up * verticalFlutter;
-        transform.rotation = baseRotation * Quaternion.Euler(flutter * 2.5f, 0f, flutter * 5f);
+        Vector3 landingPosition = WorldPickupMotion.Hover(basePosition, Time.time, bobSpeed, bobHeight);
+        // The pop-up motion is shared with Marie's Client Copy (WorldPickupMotion, T08).
+        WorldPickupMotion.Drop(transform, dropStartPosition, basePosition, baseRotation, landingPosition, progress);
 
         if (progress >= 1f)
         {
@@ -152,8 +136,7 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
 
     private void ApplyIdleBob()
     {
-        float offset = Mathf.Sin(Time.time * bobSpeed) * bobHeight;
-        transform.position = basePosition + Vector3.up * offset;
+        transform.position = WorldPickupMotion.Hover(basePosition, Time.time, bobSpeed, bobHeight);
     }
 
     private void StopDropAndRestoreTarget()
@@ -207,22 +190,8 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
 
         collectElapsed += Time.deltaTime;
         float progress = Mathf.Clamp01(collectElapsed / collectionDuration);
-        float easedProgress = progress * progress * (3f - 2f * progress);
-
-        Vector2 screenPoint = Vector2.Lerp(collectionStartScreenPoint, targetScreenPoint, easedProgress);
-        screenPoint.y += Mathf.Sin(progress * Mathf.PI) * Screen.height * 0.055f;
-        screenPoint.x += Mathf.Sin(progress * Mathf.PI * 4f) * (1f - progress) * Screen.width * 0.006f;
-
-        float depth = Mathf.Lerp(collectionStartDepth, collectionTargetDepth, easedProgress);
-        transform.position = collectionCamera.ScreenToWorldPoint(new Vector3(screenPoint.x, screenPoint.y, depth));
-        float screenShrink = Mathf.Lerp(1f, 0.16f, easedProgress);
-        float depthScale = collectionCamera.orthographic ? 1f : depth / collectionStartDepth;
-        transform.localScale = collectionStartScale * depthScale * screenShrink;
-
-        Quaternion facingCamera = collectionCamera.transform.rotation;
-        float flutter = Mathf.Sin(progress * Mathf.PI * 4f) * (1f - progress);
-        Quaternion flutterRotation = Quaternion.AngleAxis(flutter * 3f, collectionCamera.transform.forward);
-        transform.rotation = flutterRotation * Quaternion.Slerp(collectionStartRotation, facingCamera, easedProgress);
+        WorldPickupMotion.Fly(transform, collectionCamera, collectionStartScreenPoint, targetScreenPoint,
+            collectionStartDepth, collectionTargetDepth, collectionStartRotation, collectionStartScale, progress);
 
         if (progress >= 1f)
         {
@@ -361,9 +330,7 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
         ClearPointerFocus();
         collectionStartScreenPoint = new Vector2(startScreenPoint.x, startScreenPoint.y);
         collectionStartDepth = startScreenPoint.z;
-        collectionTargetDepth = Mathf.Min(collectionStartDepth, collectionCamera.nearClipPlane + 0.4f);
-        collectionTargetDepth = Mathf.Max(collectionCamera.nearClipPlane + 0.05f, collectionTargetDepth);
-        collectionTargetDepth = Mathf.Min(collectionStartDepth, collectionTargetDepth);
+        collectionTargetDepth = WorldPickupMotion.FlightEndDepth(collectionCamera, collectionStartDepth);
         collectionStartRotation = transform.rotation;
         collectionStartScale = transform.localScale;
         collectElapsed = 0f;

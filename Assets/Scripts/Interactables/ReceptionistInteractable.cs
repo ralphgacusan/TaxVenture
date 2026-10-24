@@ -218,6 +218,22 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
     }
 
     /// <summary>T04 marker state: greets once per loaded case.</summary>
+    /// <summary>True once the hand-over conversation for this case finished.</summary>
+    public bool HasSpokenFor(string caseId) => !string.IsNullOrEmpty(caseId) && spokenForCaseId == caseId;
+
+    /// <summary>
+    /// Resume (T05): the hand-over for this case already happened. Retires the
+    /// receptionist without the conversation, the notes event or the deadline
+    /// announcement (the clock restores those).
+    /// </summary>
+    public void RestoreSpoken(string caseId)
+    {
+        if (string.IsNullOrEmpty(caseId)) return;
+        spokenForCaseId = caseId;
+        if (npcState == null) npcState = GetComponent<NpcStateMachine>();
+        if (npcState != null) npcState.ChangeState(new NpcCompletedState());
+    }
+
     public NpcAvailability Availability
     {
         get

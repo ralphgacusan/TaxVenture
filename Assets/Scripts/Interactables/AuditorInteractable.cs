@@ -44,9 +44,34 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     /// AuditorSubmissionTray. Clicking him now just acknowledges his
     /// presence / prompts the player toward the submission step.
     /// </summary>
+    /// <summary>T08: the Client Copy handover may answer a tap on the Auditor (true = handled).</summary>
+    public static System.Func<AuditorInteractable, bool> TalkOverride;
+
+    /// <summary>T08: the Client Copy handover's marker state for the Auditor (null = the case state).</summary>
+    public static System.Func<NpcAvailability?> AvailabilityOverride;
+
+    /// <summary>
+    /// T08: the Auditor says a few lines outside the audit (the Client Copy),
+    /// through the shared dialogue flow; he stays completed afterwards.
+    /// </summary>
+    public bool TrySay(List<DialogueLine> lines, System.Action done)
+    {
+        if (dialogueSessionActive || dialogueUI == null || lines == null || lines.Count == 0) return false;
+        if (!dialogueUI.TryStartDialogue(lines,
+                () => { dialogueSessionActive = false; npcState.ChangeState(new NpcCompletedState()); done?.Invoke(); },
+                () => { dialogueSessionActive = false; npcState.ChangeState(new NpcCompletedState()); done?.Invoke(); },
+                this))
+            return false;
+        dialogueSessionActive = true;
+        npcState.ChangeState(new NpcInteractState());
+        npcState.ChangeState(new NpcDialogueState());
+        return true;
+    }
+
     public void OnInteract()
     {
         if (dialogueSessionActive || dialogueUI == null) return;
+        if (TalkOverride != null && TalkOverride(this)) return;
 
         CaseData data = CaseManager.Instance.CurrentCase;
         if (auditPending && System.Object.ReferenceEquals(pendingAuditCase, data))
@@ -107,6 +132,16 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
 
     /// <summary>How many audits of the current case failed (read-only; the case finale uses it).</summary>
     public int FailedAudits => failedAudits;
+
+    /// <summary>Signature of the last answers that failed (the retry guard), for the Level 1 checkpoint.</summary>
+    public string LastFailedAnswers => lastFailedAnswers;
+
+    /// <summary>Resume (T05): the failed audits and the retry guard of the saved run (no dialogue, card or charge).</summary>
+    public void RestoreRetryGuard(int failed, string lastFailed)
+    {
+        failedAudits = Mathf.Max(0, failed);
+        lastFailedAnswers = failedAudits > 0 && !string.IsNullOrEmpty(lastFailed) ? lastFailed : null;
+    }
 
     /// <summary>The three required answers as one comparable string.</summary>
     private static string AnswerSignature(CaseData data)
@@ -441,6 +476,8 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     {
         get
         {
+            NpcAvailability? copy = AvailabilityOverride != null ? AvailabilityOverride() : null;
+            if (copy.HasValue) return copy.Value;
             CaseData data = CaseManager.Instance != null ? CaseManager.Instance.CurrentCase : null;
             IGameState state = GameStateMachine.Instance != null ? GameStateMachine.Instance.CurrentState : null;
             bool submitted = state is AuditSubmittedState || state is CaseOutcomeState ||

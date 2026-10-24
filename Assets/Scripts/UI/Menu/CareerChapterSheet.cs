@@ -248,13 +248,19 @@ public sealed class CareerChapterSheet : MonoBehaviour
         // A replay states what it can change (T03 run modes).
         if (progressAvailable && chapter.Launchable && CareerProgress.LaunchMode(chapter) == CampaignRunMode.MasteryReplay)
             descriptionLabel.text += "\n<size=72%>" + CampaignRun.WhatChanges(CampaignRunMode.MasteryReplay) + "</size>";
-        stampLabel.text = status == CareerChapterStatus.Available ? "OPEN" : CareerProgress.StatusLabel(status);
+        stampLabel.text = status == CareerChapterStatus.Available ? "OPEN" : CareerProgress.StatusLabel(chapter);
         Color stampColor = StampColor(status);
         stampLabel.color = stampColor;
         foreach (Material material in stampMaterials) CareerBoardKit.SetColor(material, stampColor);
 
         bool hasResult = chapter.HasResult && progressAvailable;
         resultRows.gameObject.SetActive(hasResult);
+        // T08: hearts mean Public Trust in a campaign, so the score-hearts row is not shown there.
+        foreach (string part in new[] { "Hearts icon", "Hearts bar", "Hearts value" })
+        {
+            Transform row = resultRows.Find(part);
+            if (row != null) row.gameObject.SetActive(!chapter.Campaign);
+        }
         emptyLabel.gameObject.SetActive(!hasResult);
         attemptsLabel.text = hasResult ? $"{chapter.Attempts} attempt{(chapter.Attempts == 1 ? "" : "s")}" : "";
         if (hasResult)
@@ -268,12 +274,12 @@ public sealed class CareerChapterSheet : MonoBehaviour
         }
         emptyLabel.text = chapter.PendingIntegration ? CareerProgress.PendingIntegrationText
             : status == CareerChapterStatus.ComingSoon ? "This chapter is still being written. Check back soon!"
-            : status == CareerChapterStatus.Locked ? "Locked. Pass the previous chapter to open it."
+            : status == CareerChapterStatus.Locked ? CareerProgress.LockedText(chapter)
             : "No result yet. Finish the chapter to record your best run.";
 
         bool showPass = status != CareerChapterStatus.ComingSoon && chapter.TargetExp > 0;
         passLine.gameObject.SetActive(showPass);
-        passLine.text = $"Pass line: {chapter.TargetExp:N0} EXP + {chapter.TargetHearts:N0} hearts in one run ({chapter.PassingPercent}%)";
+        passLine.text = CareerProgress.MasteryLine(chapter);
         timeLabel.gameObject.SetActive(hasResult);
         timeLabel.text = $"Best time {CareerProgress.FormatTime(chapter.BestSeconds)}    Last run {CareerProgress.FormatTime(chapter.LastSeconds)}    Total {CareerProgress.FormatTime(chapter.TotalSeconds)}";
 

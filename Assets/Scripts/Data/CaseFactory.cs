@@ -224,7 +224,13 @@ public static class CaseFactory
                     line.portraitId
                 );
             }
+
+            builder.Emote(line.emote, line.burst);
         }
+
+        if (builder.UnknownEmoteTags.Count > 0)
+            UnityEngine.Debug.LogWarning("[CaseFactory] Unknown dialogue emote ignored: " +
+                string.Join(", ", builder.UnknownEmoteTags));
 
         return builder.Build();
     }

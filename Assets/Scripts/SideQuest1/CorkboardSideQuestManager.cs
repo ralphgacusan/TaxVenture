@@ -3,7 +3,26 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>Runs the four-profile corkboard sorting sidequest.</summary>
+/// <summary>
+/// Runs the four-profile corkboard sorting sidequest.
+///
+/// T06 (Campaign Foundation): drafting, then a check once the board is full.
+/// - Placing or moving a card is only a draft: no correctness sound, tint,
+///   reaction, emote or guide hint, and nothing is scored.
+/// - The board checks itself as soon as all four areas hold a card (user
+///   decision 2026-10-24, replacing the CHECK BOARD stamp), after a short beat
+///   so the last pin lands. A re-check needs a changed board (a card moved).
+///   At 3/4 before the first check the guide warns once that the next card
+///   starts the check.
+/// - The FIRST complete check freezes the correct count, the tier (Gold 4/4,
+///   Silver 3/4, Bronze 0-2) and the settled quest XP. It marks each card and
+///   keeps right cards pinned; checks 1-2 give clues for the red cards, check 3
+///   on shows their corners. Corrections never change the frozen result. The
+///   quest completes only when all four match. The reward
+///   (TutorialNpcController) uses the frozen wrong count and tier.
+/// - While the board is open the profiles live in its tray: the HUD profiles
+///   icon shows 0/4 and cannot be opened or dragged (CollectedProfilesWorldPanel.ProfilesOnBoard).
+/// </summary>
 public class CorkboardSideQuestManager : MonoBehaviour
 {
     [Header("Setup")]
@@ -12,7 +31,6 @@ public class CorkboardSideQuestManager : MonoBehaviour
     [SerializeField] private Transform corkboardViewpoint;
     [SerializeField] private Transform cardTrayParent;
     [SerializeField] private GameObject profileCardPrefab;
-    [SerializeField] private float cardTraySpacing = 0.5f;
     [SerializeField] private List<CorkboardSlot> slots;
 
     [Header("Reward")]
@@ -48,8 +66,50 @@ public class CorkboardSideQuestManager : MonoBehaviour
 
     public bool CanInteract => sideQuestActive && !sideQuestCompleted;
 
-    /// <summary>Notification (Phase 3 reactions): a card was placed; correct?, locked after this miss?</summary>
+    /// <summary>
+    /// Notification: a card's verdict from a board CHECK (correct?, locked is
+    /// always false now). Raised only by a committed check, never by a draft drop.
+    /// </summary>
     public static event System.Action<ProfileDragCard, bool, bool> CardPlaced;
+
+    /// <summary>The draft changed (a card was placed, moved or taken off). Carries no verdict.</summary>
+    public static event System.Action DraftChanged;
+
+    /// <summary>A check was committed: how many of the four are right now (the first one is frozen).</summary>
+    public static event System.Action<int> BoardChecked;
+
+    // T06 first-check state (frozen at the first complete check).
+    private bool checkSubmitted;
+    private int frozenCorrect = -1;
+    private int settledExp = -1;
+    private readonly List<string> frozenWrongProfileIds = new List<string>();
+    private bool checking;
+    private bool lastCardWarned;
+    private int checkCount;
+    // Auto-check: when the board is full it checks after AutoCheckDelay (the pin lands first).
+    private const float AutoCheckDelay = 0.45f;
+    private float autoCheckAt = -1f;
+    private string lastCheckedDraft;
+
+    // Tray layout (user request 2026-10-24): four cards in the left column,
+    // vertically centred with equal top/bottom padding and clear gaps between.
+    private const float TrayViewX = 0.11f;
+    private const float TrayCardHeight = 0.21f;
+    private const float TrayCardGap = 0.04f;
+    private RectTransform feedbackPanel;
+
+    /// <summary>True once the first complete check was made.</summary>
+    public bool CheckSubmitted => checkSubmitted;
+    /// <summary>Right answers on the first complete check (-1 before it).</summary>
+    public int FrozenCorrect => frozenCorrect;
+    /// <summary>Quest XP settled from the first check (-1 before it).</summary>
+    public int SettledExp => settledExp;
+    /// <summary>The frozen tier as BadgeTier (None before the first check).</summary>
+    public BadgeTier FrozenTier => checkSubmitted ? (BadgeTier)ClassificationCheck.TierFor(frozenCorrect) : BadgeTier.None;
+    /// <summary>Complete checks made so far (1 = the first check).</summary>
+    public int CheckCount => checkCount;
+    /// <summary>Areas currently holding a card (the draft count).</summary>
+    public int PlacedCount => CountOccupied();
 
     /// <summary>Wrong drops in a row for one card before it is locked for LockSeconds.</summary>
     public const int MissesBeforeLock = 2;
@@ -57,7 +117,7 @@ public class CorkboardSideQuestManager : MonoBehaviour
     private readonly System.Collections.Generic.Dictionary<ProfileDragCard, int> missesByCard =
         new System.Collections.Generic.Dictionary<ProfileDragCard, int>();
     public bool IsCompleted => sideQuestCompleted;
-    /// <summary>Placements that were wrong this run (each one costs EXP; see rewards.json).</summary>
+    /// <summary>Profiles wrong on the FIRST complete check (each one costs EXP; see rewards.json). 0 before it.</summary>
     public int WrongPlacements => wrongPlacements;
 
     private void Awake()
@@ -103,11 +163,17 @@ public class CorkboardSideQuestManager : MonoBehaviour
     }
 
     /// <summary>Resume (T04): the board was already solved in the saved run (counters kept for the reward).</summary>
-    public void RestoreCompleted(int attempts, int wrong)
+    public void RestoreCompleted(int attempts, int wrong, int correctOnFirstCheck = -1)
     {
         if (sideQuestActive || sideQuestCompleted) return;
         placementAttempts = Mathf.Max(0, attempts);
-        wrongPlacements = Mathf.Clamp(wrong, 0, placementAttempts);
+        if (correctOnFirstCheck >= 0)
+        {
+            checkSubmitted = true;
+            frozenCorrect = Mathf.Clamp(correctOnFirstCheck, 0, ClassificationCheck.Profiles);
+            wrongPlacements = ClassificationCheck.Profiles - frozenCorrect;
+        }
+        else wrongPlacements = Mathf.Clamp(wrong, 0, ClassificationCheck.Profiles);
         sideQuestCompleted = true;
         completionEventRaised = true;
     }
@@ -120,6 +186,12 @@ public class CorkboardSideQuestManager : MonoBehaviour
             : sideQuestActive ? Level1FieldCheckpoint.PhaseActive : Level1FieldCheckpoint.PhaseNone;
         into.placementAttempts = placementAttempts;
         into.wrongPlacements = wrongPlacements;
+        into.checkSubmitted = checkSubmitted;
+        into.checkCorrectCount = checkSubmitted ? frozenCorrect : -1;
+        into.checkSettledExp = checkSubmitted ? settledExp : -1;
+        into.checkCount = checkSubmitted ? checkCount : 0;
+        into.checkWrongProfileIds.Clear();
+        if (checkSubmitted) into.checkWrongProfileIds.AddRange(frozenWrongProfileIds);
         into.placements.Clear();
         into.slotAttempts.Clear();
         if (!sideQuestActive || slots == null) return;
@@ -174,10 +246,23 @@ public class CorkboardSideQuestManager : MonoBehaviour
         }
 
         ClearRuntimeObjects();
+        // Profile windows opened from the HUD close: the cards are about to fly into the tray.
+        HudProfileCards hudCards = FindAnyObjectByType<HudProfileCards>(FindObjectsInactive.Exclude);
+        if (hudCards != null) hudCards.CloseCards();
         resuming = saved;
         placementAttempts = saved != null ? Mathf.Max(0, saved.placementAttempts) : 0;
-        wrongPlacements = saved != null ? Mathf.Clamp(saved.wrongPlacements, 0, placementAttempts) : 0;
         firstTrySolvedSlots.Clear();
+        checkSubmitted = saved != null && saved.checkSubmitted && saved.checkCorrectCount >= 0;
+        frozenCorrect = checkSubmitted ? Mathf.Clamp(saved.checkCorrectCount, 0, ClassificationCheck.Profiles) : -1;
+        wrongPlacements = checkSubmitted ? ClassificationCheck.Profiles - frozenCorrect : 0;
+        settledExp = checkSubmitted ? saved.checkSettledExp : -1;
+        frozenWrongProfileIds.Clear();
+        if (checkSubmitted && saved.checkWrongProfileIds != null) frozenWrongProfileIds.AddRange(saved.checkWrongProfileIds);
+        checkCount = checkSubmitted ? Mathf.Max(1, saved.checkCount) : 0;
+        checking = false;
+        lastCardWarned = false;
+        autoCheckAt = -1f;
+        lastCheckedDraft = null;
         sideQuestActive = true;
 
         if (sideQuestRoot != null && !sideQuestRoot.activeSelf)
@@ -198,7 +283,7 @@ public class CorkboardSideQuestManager : MonoBehaviour
         {
             CreateDividers();
             SetFeedback(saved != null ? "Welcome back. Your files are where you pinned them."
-                : "Your files are ready. Match each profile to a corkboard area.");
+                : "Your files are ready. Place each profile on a corkboard area, then check the board.");
         }
 
         if (CameraController.Instance != null)
@@ -233,6 +318,35 @@ public class CorkboardSideQuestManager : MonoBehaviour
     {
         // Safety: never leave the board bare if the title card never closes.
         if (revealHeld && !revealStarted && sideQuestActive && Time.unscaledTime > revealTimeout) ReleaseReveal();
+        UpdateAutoCheck();
+    }
+
+    /// <summary>
+    /// The board checks itself once all four areas hold a card and the board
+    /// differs from the last check. Waits while a card is moving; a card taken
+    /// off before the beat ends cancels it.
+    /// </summary>
+    private void UpdateAutoCheck()
+    {
+        if (autoCheckAt < 0f) return;
+        if (!CanInteract || !ClassificationCheck.CanCheck(CountOccupied())) { autoCheckAt = -1f; return; }
+        if (Time.unscaledTime < autoCheckAt) return;
+        foreach (ProfileDragCard card in spawnedCards)
+            if (card != null && card.IsBeingMoved) return;   // let the drag or pin finish
+        autoCheckAt = -1f;
+        if (DraftSignature() == lastCheckedDraft) return;
+        RequestCheck();
+    }
+
+    /// <summary>Which card is in which area (compares a board with the last check).</summary>
+    private string DraftSignature()
+    {
+        var parts = new List<string>();
+        if (slots != null)
+            foreach (CorkboardSlot slot in slots)
+                parts.Add(slot != null && slot.OccupyingCard != null && slot.OccupyingCard.Profile != null
+                    ? slot.OccupyingCard.Profile.ProfileId : "-");
+        return string.Join("|", parts);
     }
 
     private System.Collections.IEnumerator Reveal()
@@ -356,6 +470,9 @@ public class CorkboardSideQuestManager : MonoBehaviour
         }
 
         slot = FindSlotForQuadrant(boardPoint.x >= splitX, boardPoint.y >= splitY);
+        // T06: an area whose card a check marked right is settled; the dropped card goes back to the tray.
+        if (slot != null && slot.OccupyingCard != null && slot.OccupyingCard.transform != card && slot.OccupyingCard.IsLockedCorrect)
+            slot = null;
         if (slot == null)
         {
             slot = null;
@@ -398,65 +515,24 @@ public class CorkboardSideQuestManager : MonoBehaviour
             }
         }
 
+        // T06: a drop is only a draft. The area records the card (its hidden
+        // match is read only by a CHECK); no sound, reaction, emote or score.
         placementAttempts++;
-        bool firstAttempt = slot.PlacementAttempts == 0;
-        bool correct = slot.TryPlaceCard(card);
-        if (AudioManager.Instance != null)
-            AudioManager.Instance.PlayEffect(correct ? "sfx_classification_correct_01" : "sfx_classification_incorrect_01");
-        if (!correct) wrongPlacements++;
-
-        // No brute force: every second miss in a row locks the card briefly.
-        bool locked = false;
-        if (correct) missesByCard.Remove(card);
-        else
-        {
-            missesByCard.TryGetValue(card, out int misses);
-            misses++;
-            missesByCard[card] = misses;
-            if (misses % MissesBeforeLock == 0)
-            {
-                card.LockedUntil = Time.unscaledTime + LockSeconds;
-                locked = true;
-            }
-        }
-
-        // Arthur reacts: why it fits, or a hint toward the missed clue
-        // (never the answer). Shown in his bubble when the guide runs,
-        // otherwise in this board's own feedback line.
-        string reaction = CorkboardTeaching.ReactionFor(card.Profile, slot.ExpectedClassification);
-        if (locked)
-            reaction = $"Hold on! Let's re-read {card.Profile.TaxpayerName}'s card for a moment. " + reaction;
-        bool spoken = GuideVoice.TrySay(reaction, correct ? "wow" : "confused", correct ? 4f : locked ? 6.5f : 5.5f);
-        CardPlaced?.Invoke(card, correct, locked);
-        if (correct && firstAttempt)
-        {
-            firstTrySolvedSlots.Add(slot);
-        }
-
-        int solvedCount = CountSolvedSlots();
-        string count = $"{solvedCount}/4 areas sorted";
-        if (correct)
-        {
-            string firstTry = firstAttempt ? " First try!" : " Nice recovery!";
-            string lead = spoken || string.IsNullOrEmpty(reaction) ? $"{card.Profile.TaxpayerName} is filed correctly.{firstTry}" : reaction;
-            SetFeedback($"{lead} {count} • {placementAttempts} placements • {firstTrySolvedSlots.Count} first-try areas.");
-        }
-        else
-        {
-            string lead = spoken || string.IsNullOrEmpty(reaction) ? $"{card.Profile.TaxpayerName} bounced back. Try another corner." : reaction;
-            SetFeedback($"{lead} {count} • {placementAttempts} placements.");
-        }
-
-        CheckForCompletion();
-        return correct;
+        slot.TryPlaceCard(card);
+        SetFeedback(checkSubmitted
+            ? $"First check: {frozenCorrect}/4 ({FrozenTier}). {CountOccupied()}/4 placed. The board checks again when all four are pinned."
+            : ClassificationCheck.DraftMessage(CountOccupied()));
+        HandleDraftChanged();
+        return false;
     }
 
     public void NotifyCardRemovedFromSlot()
     {
-        if (CanInteract)
-        {
-            SetFeedback($"Move the files around until each area is correct. {CountSolvedSlots()}/4 sorted • {placementAttempts} placements.");
-        }
+        if (!CanInteract) return;
+        SetFeedback(checkSubmitted
+            ? $"First check: {frozenCorrect}/4 ({FrozenTier}). Pin the card again and the board checks again."
+            : ClassificationCheck.DraftMessage(CountOccupied()));
+        HandleDraftChanged();
     }
 
     public void CancelSideQuest()
@@ -507,9 +583,9 @@ public class CorkboardSideQuestManager : MonoBehaviour
             return;
         }
 
-        float step = Mathf.Clamp(cardTraySpacing / viewHeight, 0.235f, 0.24f);
-        float cardHeight = 0.22f;
-        float[] cardViewY = { 0.85f, 0.85f - step, 0.85f - step * 2f, 0.85f - step * 3f };
+        // Left tray column: four cards centred vertically (equal top/bottom padding) with clear gaps.
+        float cardHeight = TrayCardHeight;
+        float[] cardViewY = ClassificationCheck.TrayCentres(ClassificationCheck.Profiles, cardHeight, TrayCardGap);
         for (int i = 0; i < 4; i++)
         {
             GameObject cardObject = Instantiate(profileCardPrefab, cardTrayParent);
@@ -527,7 +603,7 @@ public class CorkboardSideQuestManager : MonoBehaviour
             float baseHeight = Mathf.Max(halfHeight * 2f, 0.01f);
             float scale = viewHeight * cardHeight / baseHeight;
             card.transform.localScale *= scale;
-            if (!TryGetTrayPoint(trayPlane, 0.11f, cardViewY[i], out Vector3 trayPosition))
+            if (!TryGetTrayPoint(trayPlane, TrayViewX, cardViewY[i], out Vector3 trayPosition))
             {
                 Destroy(cardObject);
                 CancelSideQuest();
@@ -540,14 +616,204 @@ public class CorkboardSideQuestManager : MonoBehaviour
             spawnedCards.Add(card);
         }
 
+        // The profiles are in the tray now: the HUD profiles icon is empty and locked.
+        if (CollectedProfilesWorldPanel.Instance != null) CollectedProfilesWorldPanel.Instance.SetProfilesOnBoard(true);
+        LayoutFeedbackUnderBoard();
         if (resuming != null)
         {
             RestorePins(resuming);
             resuming = null;
-            SetFeedback($"Welcome back. {CountSolvedSlots()}/4 areas sorted • {placementAttempts} placements. Cards can be moved again.");
+            if (checkSubmitted)
+            {
+                // The check already happened: show its marks again quietly (no sound, reaction or event).
+                MarkPlacedCards(raiseEvents: false);
+                lastCheckedDraft = DraftSignature();
+                SetFeedback($"Welcome back. First check: {frozenCorrect}/4 ({FrozenTier}). Move the red cards and the board checks again.");
+            }
+            else
+            {
+                SetFeedback("Welcome back. " + ClassificationCheck.DraftMessage(CountOccupied()));
+                // Left with a full board before its check: check it once the cards are back.
+                if (ClassificationCheck.CanCheck(CountOccupied())) autoCheckAt = Time.unscaledTime + AutoCheckDelay;
+            }
             return;
         }
-        SetFeedback("Drag a profile into its matching area. Cards can be moved again.");
+        SetFeedback(ClassificationCheck.DraftMessage(0));
+    }
+
+    // =========================================================
+    // CHECK BOARD (T06)
+    // =========================================================
+
+    /// <summary>The feedback line spans the board's width under it (centred on the board, not the screen).</summary>
+    private void LayoutFeedbackUnderBoard()
+    {
+        if (feedbackPanel == null || cachedCamera == null) return;
+        Transform board = BoardTransform;
+        float minX = 1f, maxX = 0f;
+        for (int i = 0; i < 4; i++)
+        {
+            float x = (i & 1) == 0 ? boardBounds.min.x : boardBounds.max.x;
+            float y = (i & 2) == 0 ? boardBounds.min.y : boardBounds.max.y;
+            Vector3 viewport = cachedCamera.WorldToViewportPoint(board.TransformPoint(new Vector3(x, y, boardPlaneZ)));
+            if (viewport.z <= 0f) return;
+            minX = Mathf.Min(minX, viewport.x);
+            maxX = Mathf.Max(maxX, viewport.x);
+        }
+        minX = Mathf.Clamp01(minX + 0.015f);
+        maxX = Mathf.Clamp01(maxX - 0.015f);
+        if (maxX - minX < 0.3f) return;
+        feedbackPanel.anchorMin = new Vector2(minX, 0f);
+        feedbackPanel.anchorMax = new Vector2(maxX, 0f);
+        feedbackPanel.sizeDelta = new Vector2(0f, feedbackPanel.sizeDelta.y);
+    }
+
+    /// <summary>
+    /// Checks the full board (started by UpdateAutoCheck). The first time, the
+    /// result is frozen (count, tier, settled XP); every check marks the cards
+    /// and gives clues (answers from check 3); all four right completes the quest.
+    /// </summary>
+    public void RequestCheck()
+    {
+        if (!CanInteract || checking) return;
+        foreach (ProfileDragCard card in spawnedCards)
+            if (card != null && card.IsBeingMoved) return;   // finish the drag first
+        int placed = CountOccupied();
+        if (!ClassificationCheck.CanCheck(placed))
+        {
+            SetFeedback(ClassificationCheck.RemainingMessage(placed));
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_card_return_01", 0.5f);
+            return;
+        }
+
+        checking = true;
+        autoCheckAt = -1f;
+        lastCheckedDraft = DraftSignature();
+        checkCount++;
+        int correct = CountSolvedSlots();
+        if (!checkSubmitted)
+        {
+            checkSubmitted = true;
+            frozenCorrect = correct;
+            wrongPlacements = ClassificationCheck.Profiles - correct;
+            frozenWrongProfileIds.Clear();
+            foreach (CorkboardSlot slot in slots)
+                if (slot != null && slot.OccupyingCard != null && !slot.IsSolved && slot.OccupyingCard.Profile != null)
+                    frozenWrongProfileIds.Add(slot.OccupyingCard.Profile.ProfileId);
+            settledExp = SettleExp(wrongPlacements);
+            Debug.Log($"[CorkboardSideQuestManager] First check frozen: {frozenCorrect}/4, tier {FrozenTier}, {settledExp} XP.");
+        }
+
+        MarkPlacedCards(raiseEvents: true);
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayEffect(correct == ClassificationCheck.Profiles ? "sfx_classification_correct_01" : "sfx_classification_incorrect_01");
+        try { BoardChecked?.Invoke(correct); }
+        catch (System.Exception error) { Debug.LogException(error); }
+
+        if (correct == ClassificationCheck.Profiles)
+        {
+            checking = false;
+            CheckForCompletion();
+            return;
+        }
+        // Hint ladder: clues on checks 1-2, the right corners from check 3 (ClassificationCheck).
+        bool reveal = ClassificationCheck.RevealsAnswers(checkCount);
+        List<ProfileDragCard> misses = RedCards();
+        string guide = string.Join(" ", misses.ConvertAll(card => reveal ? AnswerLine(card) : ClueLine(card)));
+        bool spoken = misses.Count > 0 && GuideVoice.TrySay(guide, reveal ? null : "confused", 4f + 3f * misses.Count);
+        SetFeedback(CorrectionText(correct, reveal, misses, spoken || misses.Count == 0 ? null : (reveal ? AnswerLine(misses[0]) : ClueLine(misses[0]))));
+        checking = false;
+    }
+
+    /// <summary>Marks every pinned card with the live verdict (right ones stay pinned).</summary>
+    private void MarkPlacedCards(bool raiseEvents)
+    {
+        foreach (CorkboardSlot slot in slots)
+        {
+            if (slot == null || slot.OccupyingCard == null) continue;
+            slot.OccupyingCard.MarkChecked(slot.IsSolved);
+            if (!raiseEvents) continue;
+            try { CardPlaced?.Invoke(slot.OccupyingCard, slot.IsSolved, false); }
+            catch (System.Exception error) { Debug.LogException(error); }
+        }
+    }
+
+    /// <summary>Pinned cards the last check marked wrong, in board order.</summary>
+    private List<ProfileDragCard> RedCards()
+    {
+        var red = new List<ProfileDragCard>();
+        foreach (CorkboardSlot slot in slots)
+        {
+            ProfileDragCard card = slot != null ? slot.OccupyingCard : null;
+            if (card != null && card.Profile != null && !slot.IsSolved) red.Add(card);
+        }
+        return red;
+    }
+
+    /// <summary>
+    /// The board line after a check that is not all right. Checks 1-2 name the
+    /// red cards only (the clues come from Arthur, or the first clue is added
+    /// here when he cannot speak); from check 3 the right corners are listed.
+    /// </summary>
+    private string CorrectionText(int correct, bool reveal, List<ProfileDragCard> misses, string inlineHint)
+    {
+        string head = $"First check: {frozenCorrect}/4 ({FrozenTier}).";
+        if (checkCount > 1) head += $" Check {checkCount}: {correct}/4.";
+        if (reveal)
+        {
+            var answers = misses.ConvertAll(card =>
+                $"{FirstName(card.Profile.TaxpayerName)} -> {EnumDisplayFormatter.Format(card.Profile.CorrectClassification.ToString())}");
+            return $"{head} Answers: {string.Join(", ", answers)}. Move them and the board checks again.";
+        }
+        string names = string.Join(", ", misses.ConvertAll(card => FirstName(card.Profile.TaxpayerName)));
+        string hint = string.IsNullOrEmpty(inlineHint) ? "Use Arthur's clues" : inlineHint;
+        return $"{head} Red: {names}. {hint} Move them and the board checks again.";
+    }
+
+    /// <summary>A clue for a red card: which of the two questions it missed (never the corner).</summary>
+    private static string ClueLine(ProfileDragCard card)
+    {
+        CorkboardSlot slot = card.CurrentSlot;
+        return slot != null ? CorkboardTeaching.ReactionFor(card.Profile, slot.ExpectedClassification) : "";
+    }
+
+    /// <summary>The answer for a red card (check 3 on): its corner and why.</summary>
+    private static string AnswerLine(ProfileDragCard card)
+    {
+        TaxpayerClassification right = card.Profile.CorrectClassification;
+        return $"{FirstName(card.Profile.TaxpayerName)} belongs in {EnumDisplayFormatter.Format(right.ToString())}. " +
+               CorkboardTeaching.ReactionFor(card.Profile, right);
+    }
+
+    private static string FirstName(string full)
+    {
+        if (string.IsNullOrWhiteSpace(full)) return "This profile";
+        int space = full.IndexOf(' ');
+        return space > 0 ? full.Substring(0, space) : full;
+    }
+
+    /// <summary>Quest XP from the frozen wrong count with the level's rewards.json (same maths as the reward).</summary>
+    private int SettleExp(int wrong)
+    {
+        CaseProgressionManager progression = CaseProgressionManager.Instance;
+        LevelRewardRules rules = progression != null ? progression.Score.Rules : null;
+        if (rules != null && rules.sideQuest != null) return LevelScoring.SideQuest(rules, wrong).Exp;
+        return ClassificationCheck.SettledExp(rewardExp, 5, 0, wrong);
+    }
+
+    private void HandleDraftChanged()
+    {
+        int placed = CountOccupied();
+        // One heads-up before the first check: the next card starts it.
+        if (placed == ClassificationCheck.Profiles - 1 && !checkSubmitted && !lastCardWarned)
+        {
+            lastCardWarned = true;
+            GuideVoice.TrySay(ClassificationCheck.LastCardPrompt, null, 4.5f);
+        }
+        // Full board: check after a short beat (UpdateAutoCheck); a card taken off cancels it.
+        autoCheckAt = ClassificationCheck.CanCheck(placed) ? Time.unscaledTime + AutoCheckDelay : -1f;
+        try { DraftChanged?.Invoke(); }
+        catch (System.Exception error) { Debug.LogException(error); }
     }
 
     /// <summary>Pins each saved card in the middle of its saved area (kept inside the area like a drop).</summary>
@@ -818,8 +1084,9 @@ public class CorkboardSideQuestManager : MonoBehaviour
         RectTransform panel = panelObject.GetComponent<RectTransform>();
         panel.anchorMin = panel.anchorMax = new Vector2(0.5f, 0f);
         panel.pivot = new Vector2(0.5f, 0f);
-        panel.anchoredPosition = new Vector2(0f, 18f);
-        panel.sizeDelta = new Vector2(650f, 72f);
+        panel.anchoredPosition = new Vector2(0f, 10f);
+        panel.sizeDelta = new Vector2(650f, 62f);
+        feedbackPanel = panel;
         Image background = panelObject.GetComponent<Image>();
         background.color = new Color(0.07f, 0.055f, 0.04f, 0.92f);
         background.raycastTarget = false;
@@ -834,7 +1101,10 @@ public class CorkboardSideQuestManager : MonoBehaviour
         feedbackText = textObject.GetComponent<TextMeshProUGUI>();
         feedbackText.font = TMP_Settings.defaultFontAsset;
         // Big and easy to read on the board (same font as the rest of the game).
-        feedbackText.fontSize = 24f;
+        feedbackText.fontSize = 22f;
+        feedbackText.enableAutoSizing = true;
+        feedbackText.fontSizeMin = 15f;
+        feedbackText.fontSizeMax = 22f;
         feedbackText.fontStyle = FontStyles.Bold;
         feedbackText.color = new Color(1f, 0.94f, 0.78f);
         feedbackText.alignment = TextAlignmentOptions.Center;
@@ -858,6 +1128,16 @@ public class CorkboardSideQuestManager : MonoBehaviour
         CompleteSideQuest();
     }
 
+    /// <summary>Areas holding a card, right or not (the draft count; reveals nothing).</summary>
+    private int CountOccupied()
+    {
+        int count = 0;
+        if (slots == null) return 0;
+        foreach (CorkboardSlot slot in slots)
+            if (slot != null && slot.OccupyingCard != null) count++;
+        return count;
+    }
+
     private int CountSolvedSlots()
     {
         int count = 0;
@@ -878,7 +1158,7 @@ public class CorkboardSideQuestManager : MonoBehaviour
 
         sideQuestCompleted = true;
         sideQuestActive = false;
-        SetFeedback($"Case closed! All four files are correct. {placementAttempts} placements • {firstTrySolvedSlots.Count}/4 first-try areas.");
+        SetFeedback($"All four files are correct! First check: {frozenCorrect}/4, {FrozenTier} tier.");
         GrantRewards();
         Invoke(nameof(HideSideQuestRoot), 2f);
     }
@@ -887,7 +1167,7 @@ public class CorkboardSideQuestManager : MonoBehaviour
     {
         // The level score is awarded by the tutorial NPC (TutorialNpcController)
         // from WrongPlacements and rewards.json; this only logs the run.
-        Debug.Log($"[CorkboardSideQuestManager] Side quest finished: {placementAttempts} placements, {wrongPlacements} wrong.");
+        Debug.Log($"[CorkboardSideQuestManager] Side quest finished: first check {frozenCorrect}/4 ({FrozenTier}), {settledExp} XP settled, {placementAttempts} placements.");
     }
 
     private void HideSideQuestRoot()
@@ -908,6 +1188,7 @@ public class CorkboardSideQuestManager : MonoBehaviour
         }
 
         completionEventRaised = true;
+        if (CollectedProfilesWorldPanel.Instance != null) CollectedProfilesWorldPanel.Instance.SetProfilesOnBoard(false);
         if (CameraController.Instance != null)
         {
             CameraController.Instance.ExitCorkboardSideQuest();
@@ -926,6 +1207,7 @@ public class CorkboardSideQuestManager : MonoBehaviour
             Destroy(feedbackCanvas.gameObject);
             feedbackCanvas = null;
             feedbackText = null;
+            feedbackPanel = null;
         }
         foreach (ProfileDragCard card in spawnedCards)
         {
@@ -935,6 +1217,10 @@ public class CorkboardSideQuestManager : MonoBehaviour
             }
         }
         spawnedCards.Clear();
+        autoCheckAt = -1f;
+        // The cards leave the tray: the HUD profiles icon holds them again.
+        if (CollectedProfilesWorldPanel.Instance != null) CollectedProfilesWorldPanel.Instance.SetProfilesOnBoard(false);
+
         if (slots != null)
         {
             foreach (CorkboardSlot slot in slots)

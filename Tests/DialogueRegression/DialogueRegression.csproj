@@ -20,5 +20,8 @@
     <Compile Include="../../Assets/Scripts/Player/DialogueCloseUpPolicy.cs" Link="DialogueCloseUpPolicy.cs" />
     <Compile Include="NpcMarkerTests.cs" />
     <Compile Include="../../Assets/Scripts/FSM/NPC/NpcAvailability.cs" Link="NpcAvailability.cs" />
+    <Compile Include="EmoteTests.cs" />
+    <Compile Include="../../Assets/Scripts/UI/HUD/EmoteCatalogue.cs" Link="EmoteCatalogue.cs" />
+    <Compile Include="../../Assets/Scripts/UI/HUD/EmoteShapes.cs" Link="EmoteShapes.cs" />
   </ItemGroup>
 </Project>

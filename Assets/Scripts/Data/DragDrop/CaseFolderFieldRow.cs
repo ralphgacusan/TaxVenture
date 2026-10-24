@@ -33,6 +33,12 @@ public class CaseFolderFieldRow :
     [SerializeField] private TextMeshProUGUI labelText;
     [SerializeField] private ValueSelectionHighlighter highlighter;
 
+    /// <summary>
+    /// T08: the case folder is Marie's approved Client Copy, read-only. While
+    /// set, no field accepts, gives or changes a value (reading is unchanged).
+    /// </summary>
+    public static bool ReadOnly;
+
     // ---------------------------------------------------------
     // Components
     // ---------------------------------------------------------
@@ -380,6 +386,7 @@ public class CaseFolderFieldRow :
     public void OnPointerClick(
         PointerEventData eventData)
     {
+        if (ReadOnly) return;
         AudioManager.Instance?.QueueInteractionSFX("paper_place");
 
         if (ValueTransferManager.Instance == null)
@@ -505,6 +512,7 @@ public class CaseFolderFieldRow :
     public void OnDrop(
         PointerEventData eventData)
     {
+        if (ReadOnly) return;
         DebugTrace.Log(
             $"[CaseFolder Drop] " +
             $"Dropped value on: {gameObject.name} " +
@@ -735,7 +743,7 @@ public class CaseFolderFieldRow :
     /// <summary>Same rule as CanAccept, without logging (safe to call every frame).</summary>
     public bool WouldAccept(DataValue value)
     {
-        return isDestination && value != null && value.Type == type &&
+        return !ReadOnly && isDestination && value != null && value.Type == type &&
                string.Equals(value.SemanticKey?.Trim(), semanticKey?.Trim(), System.StringComparison.OrdinalIgnoreCase);
     }
 
@@ -746,7 +754,7 @@ public class CaseFolderFieldRow :
     public bool CanAccept(
         DataValue value)
     {
-        if (!isDestination)
+        if (ReadOnly || !isDestination)
             return false;
 
         if (value == null)

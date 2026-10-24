@@ -48,6 +48,8 @@ public static class TownContentLoader
     {
         public string who;
         public string text;
+        public string emote;   // optional T22 emote tag, e.g. "heart"
+        public bool burst;     // optional: play it as a burst (peak moments only)
     }
 #pragma warning restore 0649
 
@@ -122,7 +124,7 @@ public static class TownContentLoader
                 if (talkProblem == null && (!talk.Exists(l => l.Key) || !talk.Exists(l => !l.Key)))
                     talkProblem = "needs at least one \"you\" line and one NPC line";
                 if (talkProblem != null) problems.AppendLine($"- {t.npcId} talk: {talkProblem}; built-in talk kept.");
-                else TownNpcDialogueLibrary.SetOverride(t.npcId, talk);
+                else TownNpcDialogueLibrary.SetOverride(t.npcId, talk, ToEmotes(t.talk, t.npcId, problems));
 
                 if (!string.IsNullOrWhiteSpace(t.description))
                     TaxpayerProfileDatabase.SetDescription(profile.ProfileId, t.description.Trim());
@@ -164,6 +166,23 @@ public static class TownContentLoader
             SideQuestSplash.Content = parsed.sideQuestSplash;
 
         if (problems.Length > 0) Debug.LogWarning($"[TownContent] {path}.json:\n{problems}");
+    }
+
+    /// <summary>Per-line emote tags of a talk; an unknown tag is reported and that line shows no emote.</summary>
+    private static List<KeyValuePair<string, bool>> ToEmotes(TownLine[] lines, string npcId, System.Text.StringBuilder problems)
+    {
+        var result = new List<KeyValuePair<string, bool>>(lines.Length);
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string tag = lines[i].emote;
+            if (!string.IsNullOrWhiteSpace(tag) && !EmoteCatalogue.TryParseTag(tag, out _))
+            {
+                problems.AppendLine($"- {npcId} talk line {i + 1}: unknown emote \"{tag}\"; ignored.");
+                tag = null;
+            }
+            result.Add(new KeyValuePair<string, bool>(tag, lines[i].burst));
+        }
+        return result;
     }
 
     /// <summary>"who": "you" (or "player") = the player; anything else = the NPC.</summary>

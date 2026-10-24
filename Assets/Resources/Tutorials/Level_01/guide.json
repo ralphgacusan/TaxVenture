@@ -90,7 +90,9 @@
     },
     { "step": "event:ReceptionistTalkedTo", "target": "Environment/OfficeBuilding/Rooms/Reception/Receptionist", "label": "Receptionist" },
     { "step": "event:CaseFolderStored", "target": "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk", "label": "Your desk" },
-    { "step": "state:CaseCompleteState", "target": "Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "label": "Auditor" }
+    { "step": "state:CaseCompleteState", "target": "Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "label": "Auditor" },
+    { "step": "event:ClientCopyPickedUp", "target": "Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "label": "Client copy" },
+    { "step": "event:ClientCopyHandedOver", "target": "Environment/Outside/Plaza/NPCS/NPC_Marie", "label": "Marie" }
   ],
 
   "lessons": [
@@ -227,7 +229,8 @@
         { "point": "type:CorkboardSlot", "gesture": "none", "text": "Welcome to the corkboard! Each corner is a different kind of taxpayer." },
         { "point": "type:ProfileDragCard", "gesture": "tap", "text": "Down here are the four profiles you collected. Read each one: where are they from, and where do they spend their year?" },
         { "point": "type:ProfileDragCard", "to": "type:CorkboardSlot", "gesture": "drag", "waitFor": "corkboard:placed|corkboard:wrong", "text": "Your turn: press and hold a card, then drag it onto the corner that matches." },
-        { "text": "After every card I'll tell you what I think. Wrong corner? No sweat! The card bounces back and you can try again. Sort all four to finish." }
+        { "text": "Take your time: cards can be moved freely, and nothing is graded while you sort." },
+        { "text": "When all four are pinned, the board checks itself. Your first check sets your reward, so be sure! Red cards get a clue from me: move them and it checks again." }
       ]
     },
     {

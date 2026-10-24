@@ -29,6 +29,7 @@ public class PrintJobController : MonoBehaviour
 
     public void BeginPrint(EncodedFormData formData)
     {
+        if (ClientCopyHandover.CaseActionsBlocked) return;
         StartCoroutine(PrintRoutine(formData));
     }
 
@@ -38,6 +39,12 @@ public class PrintJobController : MonoBehaviour
         printingStatusText.text = "Printing...";
 
         yield return new WaitForSeconds(printDuration);
+
+        if (ClientCopyHandover.CaseActionsBlocked)
+        {
+            if (printingStatusPanel != null) printingStatusPanel.SetActive(false);
+            yield break;
+        }
 
         CaseData data = CaseManager.Instance.CurrentCase;
         data.hasPrintedReturn = true;

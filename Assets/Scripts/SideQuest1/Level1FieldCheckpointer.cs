@@ -22,6 +22,19 @@ using UnityEngine.SceneManagement;
 /// replay clears it instead). A write that fails keeps the previous record,
 /// tells the player once and retries in 5 s.
 ///
+/// CASE AND CLOCK (T05): once the office is open, Marie's case work is part
+/// of the same record (Level1CaseCheckpoint: folder fields by key, documents
+/// read, flags; receptionist hand-over; folder stored or on the desk; audit
+/// counters and the Auditor's retry guard), plus the Office Hours clock from
+/// the level start. Saved on every case milestone (hand-over, folder
+/// opened/stored/returned, value transferred, book or return, state change,
+/// clock announcement / new day) and every 30 s while the clock runs, so a
+/// lost process loses at most that much time. Resume puts the clock back
+/// exactly (deadlines are never recomputed), refills the case, retires the
+/// receptionist, puts the folder back in the icon if it was stored and returns
+/// to the "case received" phase. A snapshot of another case or revision is
+/// kept aside, not applied, and the case starts again from the receptionist.
+///
 /// RESUME: puts the state back through each owner's quiet restore (no
 /// conversation, pickup, score, objective or guide event is raised and no
 /// toast plays): talked NPCs are retired, uncollected profiles lie beside
@@ -42,6 +55,11 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
 
     private bool ready;
     private bool settingsExit;
+    /// <summary>A case snapshot that did not match this case, carried in every later save (T05).</summary>
+    private Level1CaseRecord setAsideCase;
+    private OfficeHours watchedClock;
+    private GameStateMachine watchedMachine;
+    private ValueTransferManager watchedTransfers;
     private bool failureShown;
     private float nextSave;
     private string lastSavedJson;
@@ -88,9 +106,16 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
         TownEvents.OnProfileCollected += HandleProfileCollected;
         TownEvents.OnTutorialIntroCompleted += SaveNow;
         TownEvents.OnSideQuestCompleted += SaveNow;
-        CorkboardSideQuestManager.CardPlaced += HandleCardPlaced;
+        CorkboardSideQuestManager.DraftChanged += SaveNow;
+        CorkboardSideQuestManager.BoardChecked += HandleBoardChecked;
         LevelScoreLedger.EntryAdded += HandleScoreEntry;
         GuideDirector.LessonFinished += HandleLessonFinished;
+        GameplayEvents.OnNotesUnlockRequested += SaveNow;
+        GameplayEvents.OnCaseFolderOpened += SaveNow;
+        GameplayEvents.OnCaseFolderStored += SaveNow;
+        GameplayEvents.OnCaseFolderReturned += SaveNow;
+        GameplayEvents.OnTaxCodeBookFirstOpened += SaveNow;
+        GameplayEvents.OnTaxReturnCollected += SaveNow;
     }
 
     private void OnDisable()
@@ -99,10 +124,39 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
         TownEvents.OnProfileCollected -= HandleProfileCollected;
         TownEvents.OnTutorialIntroCompleted -= SaveNow;
         TownEvents.OnSideQuestCompleted -= SaveNow;
-        CorkboardSideQuestManager.CardPlaced -= HandleCardPlaced;
+        CorkboardSideQuestManager.DraftChanged -= SaveNow;
+        CorkboardSideQuestManager.BoardChecked -= HandleBoardChecked;
         LevelScoreLedger.EntryAdded -= HandleScoreEntry;
         GuideDirector.LessonFinished -= HandleLessonFinished;
+        GameplayEvents.OnNotesUnlockRequested -= SaveNow;
+        GameplayEvents.OnCaseFolderOpened -= SaveNow;
+        GameplayEvents.OnCaseFolderStored -= SaveNow;
+        GameplayEvents.OnCaseFolderReturned -= SaveNow;
+        GameplayEvents.OnTaxCodeBookFirstOpened -= SaveNow;
+        GameplayEvents.OnTaxReturnCollected -= SaveNow;
+        UnwatchCaseOwners();
     }
+
+    /// <summary>Instance events of the case owners (clock, state machine, value transfers), hooked once they exist.</summary>
+    private void WatchCaseOwners()
+    {
+        if (watchedClock == null && OfficeHours.Instance != null) { watchedClock = OfficeHours.Instance; watchedClock.Changed += SaveNow; }
+        if (watchedMachine == null && GameStateMachine.Instance != null) { watchedMachine = GameStateMachine.Instance; watchedMachine.OnStateChanged += HandleStateChanged; }
+        if (watchedTransfers == null && ValueTransferManager.Instance != null) { watchedTransfers = ValueTransferManager.Instance; watchedTransfers.OnTransferSucceeded += HandleTransfer; }
+    }
+
+    private void UnwatchCaseOwners()
+    {
+        if (watchedClock != null) watchedClock.Changed -= SaveNow;
+        if (watchedMachine != null) watchedMachine.OnStateChanged -= HandleStateChanged;
+        if (watchedTransfers != null) watchedTransfers.OnTransferSucceeded -= HandleTransfer;
+        watchedClock = null;
+        watchedMachine = null;
+        watchedTransfers = null;
+    }
+
+    private void HandleStateChanged(IGameState state) => SaveNow();
+    private void HandleTransfer(DataValue value) => SaveNow();
 
     private IEnumerator Start()
     {
@@ -123,10 +177,12 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
         lastSavedJson = InUse ? JsonUtility.ToJson(Capture()) : null;
         ready = true;
         nextSave = Time.unscaledTime + SaveEvery;
+        WatchCaseOwners();
     }
 
     private void Update()
     {
+        if (ready) WatchCaseOwners();
         if (!ready || Time.unscaledTime < nextSave) return;
         nextSave = Time.unscaledTime + SaveEvery;
         SaveNow();
@@ -141,7 +197,7 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
 
     private void HandleProfileCollected(string profileId) => SaveNow();
     private void HandleLessonFinished(string levelId, string lessonId) => SaveNow();
-    private void HandleCardPlaced(ProfileDragCard card, bool correct, bool locked) => SaveNow();
+    private void HandleBoardChecked(int correct) => SaveNow();
 
     private void HandleScoreEntry(ScoreEntry entry)
     {
@@ -165,6 +221,9 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
     }
 
     private void SaveNow() => SaveCurrent(force: false);
+
+    /// <summary>Explicitly saves a Client Copy phase transition (T08).</summary>
+    public bool RequestSave() => SaveCurrent(force: true);
 
     /// <summary>Writes the current field state when it changed. True when it is safely saved (or nothing to do).</summary>
     private bool SaveCurrent(bool force)
@@ -214,8 +273,53 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
         if (OfficeObjectives.Instance != null) checkpoint.objectiveTriggers.AddRange(OfficeObjectives.Instance.ReachedKeys());
         GuideDirector director = GuideRuntime.Instance != null ? GuideRuntime.Instance.Director : null;
         if (director != null) checkpoint.guideLessonsDone.AddRange(director.FinishedLessons());
+
+        if (OfficeHours.Instance != null) OfficeHours.Instance.CaptureClock(checkpoint.clock);
+        CaptureCase(checkpoint.caseRecord);
+        if (ClientCopyHandover.Instance != null) checkpoint.handoverPhase = ClientCopyHandover.Instance.SavedPhase;
+        else if (Progress != null) checkpoint.handoverPhase = ClientCopyRules.ToSaved(Progress.SavedClientCopyPhase);
+        if (ClientConsultation.Instance != null) checkpoint.consultation = ClientConsultation.Instance.Capture();
+        if (setAsideCase != null) checkpoint.setAsideCase = setAsideCase;
         checkpoint.Repair();
         return checkpoint;
+    }
+
+    /// <summary>Marie's case work, once the office is open (before that the case cannot have started).</summary>
+    private static void CaptureCase(Level1CaseRecord into)
+    {
+        CaseManager cases = CaseManager.Instance;
+        if (!LevelGate.SideQuestDone || cases == null || cases.CurrentCase == null || cases.CurrentDefinition == null ||
+            cases.CurrentDefinition.HasReview) return;
+        CaseData data = cases.CurrentCase;
+        Level1CaseCheckpoint.Capture(data, cases.CurrentDefinition, into);
+
+        ReceptionistInteractable receptionist = FindAnyObjectByType<ReceptionistInteractable>(FindObjectsInactive.Include);
+        into.receptionistDone = receptionist != null && receptionist.HasSpokenFor(into.caseId);
+
+        AuditorSubmissionTray tray = AuditorSubmissionTray.Instance;
+        IGameState state = GameStateMachine.Instance != null ? GameStateMachine.Instance.CurrentState : null;
+        bool stored = (tray != null && tray.FolderSubmitted) || state is AuditSubmittedState;
+        // Either folder component (closed desk folder or open folder) may hold the folder in the icon.
+        foreach (FolderToHUDIcon folder in FindObjectsByType<FolderToHUDIcon>(FindObjectsInactive.Include))
+            if (folder.IsStoredOrViewing) stored = true;
+        into.folder = stored ? Level1CaseRecord.FolderStored : Level1CaseRecord.FolderOnDesk;
+
+        into.encodedFormJson = data.encodedForm != null ? JsonUtility.ToJson(data.encodedForm) : null;
+        foreach (TaxCodeBookInteractable book in FindObjectsByType<TaxCodeBookInteractable>(FindObjectsInactive.Include))
+            if (book.HasBeenOpenedOnce) into.taxCodeBookOpened = true;
+
+        CaseProgressionManager progression = CaseProgressionManager.Instance;
+        if (progression != null)
+        {
+            into.auditAttempts = progression.CurrentCaseAuditAttempts;
+            into.auditMistakes = progression.CurrentCaseAuditMistakes;
+        }
+        AuditorInteractable auditor = FindAnyObjectByType<AuditorInteractable>(FindObjectsInactive.Include);
+        if (auditor != null)
+        {
+            into.failedAudits = auditor.FailedAudits;
+            into.lastFailedAnswers = auditor.LastFailedAnswers;
+        }
     }
 
     // =========================================================
@@ -225,6 +329,11 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
     private void TryRestore()
     {
         Level1FieldCheckpoint saved = Progress.GetLevelOneCheckpoint();
+        PlayerProgressData current = Progress != null ? Progress.CurrentProgress : null;
+        bool caseResultRecorded = current != null && current.HasCampaign &&
+            current.campaign.levelOneCaseResult != null && current.campaign.levelOneCaseResult.recorded;
+        bool followThroughDone = current != null && CampaignRewards.IsActivityCompleted(current,
+            CampaignRewards.Level1, CampaignRewards.FollowThrough);
         var board = FindAnyObjectByType<CorkboardSideQuestManager>(FindObjectsInactive.Include);
         var slotIds = new List<string>();
         foreach (TaxpayerClassification classification in System.Enum.GetValues(typeof(TaxpayerClassification)))
@@ -234,13 +343,21 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
 
         Level1RestoreOutcome outcome = Level1FieldCheckpointRules.Validate(saved,
             Level1FieldCheckpointRules.ProfileMap(TaxpayerProfileDatabase.All), slotIds, required);
-        if (outcome == Level1RestoreOutcome.None) return;
+        if (outcome == Level1RestoreOutcome.None)
+        {
+            if (!caseResultRecorded) return;
+            saved = new Level1FieldCheckpoint();
+            outcome = Level1RestoreOutcome.Repaired;
+        }
         if (outcome == Level1RestoreOutcome.Reset)
         {
             Debug.LogWarning("[Level1] The saved field progress is from a newer version; the level starts from its beginning.");
             Tell("Your saved progress for this level could not be used, so the level starts from the beginning.");
             return;
         }
+
+        Level1RestoreOutcome handover = Level1FieldCheckpointRules.ValidateHandover(saved, caseResultRecorded, followThroughDone);
+        if (handover == Level1RestoreOutcome.Repaired) outcome = Level1RestoreOutcome.Repaired;
 
         var collected = new HashSet<string>(saved.collectedProfileIds);
         foreach (TaxpayerNpcInteractable npc in FindObjectsByType<TaxpayerNpcInteractable>(FindObjectsInactive.Include))
@@ -258,7 +375,8 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
         bool active = saved.boardPhase == Level1FieldCheckpoint.PhaseActive;
         TutorialNpcController guide = FindAnyObjectByType<TutorialNpcController>(FindObjectsInactive.Include);
 
-        if ((solved || rewarded) && board != null) board.RestoreCompleted(saved.placementAttempts, saved.wrongPlacements);
+        if ((solved || rewarded) && board != null)
+            board.RestoreCompleted(saved.placementAttempts, saved.wrongPlacements, saved.checkSubmitted ? saved.checkCorrectCount : -1);
         if (active && (board == null || !board.ResumeSideQuest(saved)))
         {
             // The board could not reopen: the guide stays available to open it again.
@@ -268,16 +386,97 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
         }
         if (guide != null) guide.RestoreProgress(allProfiles, saved.guideIntroDone, solved, rewarded);
         if (solved || rewarded) LevelGate.MarkSideQuestDone();
+        // T23: Marie back in the conference room with her saved visits (quietly, no line or event).
+        if (ClientConsultation.Instance != null) ClientConsultation.Instance.Restore(saved.consultation, solved || rewarded);
         if (rewarded && CollectedProfilesWorldPanel.Instance != null) CollectedProfilesWorldPanel.Instance.LockToSingleSurvivingProfile();
 
         RestoreScore(saved, rewarded);
         if (OfficeObjectives.Instance != null) OfficeObjectives.Instance.RestoreTriggers(saved.objectiveTriggers);
         RestoreGuideCounts(saved, allProfiles, solved || rewarded);
+        if (OfficeHours.Instance != null)
+        {
+            OfficeHours.Instance.RestoreClock(saved.clock);
+            if (caseResultRecorded) OfficeHours.Instance.RestoreApprovedResult();
+        }
+        RestoreCase(saved, caseResultRecorded);
+        if (caseResultRecorded)
+        {
+            GameStateMachine machine = GameStateMachine.Instance;
+            if (machine != null)
+            {
+                machine.ChangeState(new LevelCompleteState(restoredApprovedResult: true));
+                machine.LockProgression();
+            }
+            if (ClientCopyHandover.Instance != null)
+                ClientCopyHandover.Instance.Restore(ClientCopyRules.Parse(saved.handoverPhase));
+        }
 
         Debug.Log($"[Level1] Resumed field progress: {saved.talkedNpcIds.Count} talks, {saved.collectedProfileIds.Count} profiles, " +
                   $"board '{saved.boardPhase}' ({saved.placements.Count} pins). Outcome: {outcome}.");
         if (outcome == Level1RestoreOutcome.Repaired)
             Tell("Welcome back. Part of your saved progress could not be used, so you continue from the nearest safe point.");
+    }
+
+    /// <summary>
+    /// Marie's case (T05), after the field state, objectives and clock: the
+    /// work goes back into CaseData, the receptionist is retired, the folder is
+    /// back in its icon if it was stored, the audit counters and retry guard
+    /// return, and the run continues from "case received". Nothing is
+    /// transferred, stamped, audited or charged again.
+    /// </summary>
+    private void RestoreCase(Level1FieldCheckpoint saved, bool approvedResultRecorded)
+    {
+        CaseManager cases = CaseManager.Instance;
+        CaseDefinition definition = cases != null ? cases.CurrentDefinition : null;
+        CaseData data = cases != null ? cases.CurrentCase : null;
+        if (definition == null || data == null || definition.HasReview) return;
+
+        Level1RestoreOutcome outcome = Level1FieldCheckpointRules.ValidateCase(saved, definition.caseId,
+            Level1CaseCheckpoint.Fingerprint(definition), Level1CaseCheckpoint.FieldKeys);
+        if (saved.setAsideCase != null && saved.setAsideCase.IsSet) setAsideCase = saved.setAsideCase;
+        if (outcome == Level1RestoreOutcome.None) return;
+        if (outcome == Level1RestoreOutcome.Reset)
+        {
+            Debug.LogWarning($"[Level1] The saved case ({setAsideCase?.caseId}) does not match {definition.caseId} as it is now; it was kept aside and the case starts from the receptionist.");
+            Tell("This case changed since you last played, so it starts again from the receptionist. Your other progress is kept.");
+            return;
+        }
+
+        Level1CaseRecord record = saved.caseRecord;
+        if (!record.IsSet) return;
+        int rejected = Level1CaseCheckpoint.Apply(record, data);
+        if (!string.IsNullOrEmpty(record.encodedFormJson))
+        {
+            try { data.encodedForm = JsonUtility.FromJson<EncodedFormData>(record.encodedFormJson); }
+            catch (System.Exception) { rejected++; }
+        }
+
+        if (record.receptionistDone || approvedResultRecorded)
+        {
+            ReceptionistInteractable receptionist = FindAnyObjectByType<ReceptionistInteractable>(FindObjectsInactive.Include);
+            if (receptionist != null) receptionist.RestoreSpoken(definition.caseId);
+            GameStateMachine machine = GameStateMachine.Instance;
+            if (!approvedResultRecorded && machine != null && !(machine.CurrentState is ReceiveCaseState))
+                machine.ChangeState(new ReceiveCaseState());
+        }
+        AuditorSubmissionTray tray = AuditorSubmissionTray.Instance;
+        if (record.folder == Level1CaseRecord.FolderStored && tray != null && tray.Folder != null)
+        {
+            tray.Folder.RestoreStored();
+            foreach (HudIconButton icon in FindObjectsByType<HudIconButton>(FindObjectsInactive.Include)) icon.RefreshFolderState();
+        }
+        if (record.taxCodeBookOpened)
+            foreach (TaxCodeBookInteractable book in FindObjectsByType<TaxCodeBookInteractable>(FindObjectsInactive.Include)) book.RestoreOpenedOnce();
+
+        if (CaseProgressionManager.Instance != null) CaseProgressionManager.Instance.RestoreAuditCounters(record.auditAttempts, record.auditMistakes);
+        AuditorInteractable auditor = FindAnyObjectByType<AuditorInteractable>(FindObjectsInactive.Include);
+        if (auditor != null) auditor.RestoreRetryGuard(record.failedAudits, record.lastFailedAnswers);
+        foreach (CaseFolderUI folder in FindObjectsByType<CaseFolderUI>(FindObjectsInactive.Include)) folder.RefreshCurrentPage();
+
+        Debug.Log($"[Level1] Resumed case {record.caseId}: {record.fields.Count} fields, folder {record.folder}, " +
+                  $"{record.failedAudits} failed audits, day {saved.clock.day}.");
+        if (rejected > 0 || outcome == Level1RestoreOutcome.Repaired)
+            Tell("Welcome back. A few saved case entries could not be used, so check the case folder before handing it in.");
     }
 
     /// <summary>The level score gets back what this run already earned (each once, without toasts).</summary>
@@ -295,9 +494,14 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
                 manager.AwardConversation(npcId, talked != null ? talked.TaxpayerName : npcId, null);
             }
             if (saved.collectedProfileIds.Count > 0) score.MarkSideQuestStarted();
-            if (rewarded) score.AddSideQuest(saved.wrongPlacements, null);
+            // T06: the frozen first-check tier; a board finished before T06 keeps the EXP-derived badge.
+            if (rewarded) score.AddSideQuest(saved.wrongPlacements, null,
+                saved.checkSubmitted ? (BadgeTier)ClassificationCheck.TierFor(saved.checkCorrectCount) : (BadgeTier?)null);
         }
         finally { score.Restoring = false; }
+        // T08/T09: a rewarded board whose field-assignment grants were never saved gets them now, quietly
+        // (claimed once; nothing happens when they were already saved).
+        if (rewarded && Progress != null) Progress.CommitFieldAssignment(questCorrected: true);
         foreach (HudProgressionPanel panel in FindObjectsByType<HudProgressionPanel>(FindObjectsInactive.Exclude))
             panel.RefreshFromGame(animate: false);
     }

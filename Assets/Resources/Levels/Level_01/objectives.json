@@ -19,6 +19,8 @@
     "event:TaxCodeBookOpened       the Tax Code Book was opened for the first time",
     "event:TaxReturnCollected      the printed tax return was collected",
     "event:CaseCompleted           the case was completed (Auditor approved)",
+    "event:ClientCopyPickedUp      the approved client copy was picked up beside the Auditor (story runs)",
+    "event:ClientCopyHandedOver    the client copy was handed to the client and the follow-through saved",
     "event:CaseFolderStored        the desk case folder was dragged into the HUD folder icon (count 0 -> 1)",
     "event:CaseFolderReturned      the case folder came back out of the HUD icon (failed audit / new case)",
     "area:<scene path>             the player is inside that object's area; only checked while it is the current step; join several paths with |",
@@ -40,6 +42,13 @@
         { "text": "Talk to the receptionist.", "trigger": "event:ReceptionistTalkedTo" },
         { "text": "Go to the main office room, finish the tax case and drag the case folder to your folder icon.", "trigger": "event:CaseFolderStored", "undoneBy": "event:CaseFolderReturned" },
         { "text": "Submit the case folder to the Auditor in his office.", "trigger": "state:CaseCompleteState" }
+      ]
+    },
+    {
+      "title": "Follow Through with Marie",
+      "steps": [
+        { "text": "Pick up Marie's client copy from the Auditor.", "trigger": "event:ClientCopyPickedUp" },
+        { "text": "Return Marie's client copy (Conference Room).", "trigger": "event:ClientCopyHandedOver" }
       ]
     }
   ]

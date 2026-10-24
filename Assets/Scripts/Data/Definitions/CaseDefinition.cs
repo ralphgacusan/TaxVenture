@@ -129,6 +129,13 @@ public class CaseDefinition
     // The end-of-level scene with the client (CaseFinale).
     public ClientFinaleDefinition clientFinale = new ClientFinaleDefinition();
 
+    // The Client Copy handover after approval (Campaign Foundation T08).
+    public ClientHandoverDefinition clientHandover = new ClientHandoverDefinition();
+
+    // Visits to the client in the conference room during the case (T23).
+    // Optional: left out, the client has no consultation.
+    public ClientConsultationDefinition consultation;
+
     // Optional prepared-packet review (Level 2+). Leave out for an ordinary
     // case; only a non-empty review.reviewId turns it on.
     public CaseReviewDefinition review = new CaseReviewDefinition();
@@ -181,6 +188,50 @@ public class ClientFinaleDefinition
     public List<string> great = new List<string>();
     public List<string> good = new List<string>();
     public List<string> okay = new List<string>();
+    /// <summary>
+    /// T08: her lines beside the result card after the Client Copy handover
+    /// (she already said great/good/okay in person), per result, each with an
+    /// optional emote. Empty lists use built-in defaults.
+    /// </summary>
+    public List<DialogueLineDefinition> farewellGreat = new List<DialogueLineDefinition>();
+    public List<DialogueLineDefinition> farewellGood = new List<DialogueLineDefinition>();
+    public List<DialogueLineDefinition> farewellOkay = new List<DialogueLineDefinition>();
+}
+
+/// <summary>
+/// The Client Copy handover (T08): the Auditor's lines when the copy appears
+/// and when he is asked again, the handover conversation with the client
+/// (opening lines, the line that waits for the copy, then Elijah's
+/// explanation), and the client's closing emote per result. Her closing
+/// lines are clientFinale's great / good / okay. Empty lists use built-in
+/// defaults.
+/// </summary>
+[Serializable]
+public class ClientHandoverDefinition
+{
+    public bool enabled = true;
+    /// <summary>
+    /// The Auditor's approval conversation after the Audit Summary, per result
+    /// (great / good / okay as in clientFinale); auditorGive follows it, and
+    /// the copy drops beside him when it ends.
+    /// </summary>
+    public List<DialogueLineDefinition> approvalGreat = new List<DialogueLineDefinition>();
+    public List<DialogueLineDefinition> approvalGood = new List<DialogueLineDefinition>();
+    public List<DialogueLineDefinition> approvalOkay = new List<DialogueLineDefinition>();
+    public List<DialogueLineDefinition> auditorGive = new List<DialogueLineDefinition>();
+    public List<DialogueLineDefinition> auditorRemind = new List<DialogueLineDefinition>();
+    /// <summary>A tap on the client before the copy is picked up.</summary>
+    public List<DialogueLineDefinition> waiting = new List<DialogueLineDefinition>();
+    public List<DialogueLineDefinition> opening = new List<DialogueLineDefinition>();
+    /// <summary>Elijah's line that waits until the copy is dragged to (or tapped for) the client.</summary>
+    public DialogueLineDefinition handover = new DialogueLineDefinition();
+    public string handoverPrompt = "Drag the client copy to Marie";
+    public string retryPrompt = "It didn't save. Drag the client copy to Marie again.";
+    public List<DialogueLineDefinition> explain = new List<DialogueLineDefinition>();
+    /// <summary>The client's emote on her closing lines, per result.</summary>
+    public string greatEmote = "sparkles";
+    public string goodEmote = "heart";
+    public string okayEmote = "music";
 }
 
 /// <summary>Real-world meaning of a mistake, per required field (never the answer).</summary>
@@ -267,4 +318,8 @@ public class DialogueLineDefinition
     public string speaker;
     public string text;
     public string portraitId;
+    /// <summary>Optional emote tag for this line (T22), e.g. "heart"; unknown tags are ignored with a warning.</summary>
+    public string emote;
+    /// <summary>Optional: play the emote as a burst (peak moments only).</summary>
+    public bool burst;
 }

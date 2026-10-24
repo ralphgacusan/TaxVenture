@@ -208,6 +208,12 @@ public sealed class HudRewardScreen : MonoBehaviour
     public static bool Present(GameObject panelRoot, RewardScreenData data)
     {
         if (panelRoot == null || data == null || OfficeHudRuntime.Instance == null) return false;
+        // T08: in a campaign every heart means Public Trust; score hearts are mastery data and are not drawn.
+        if (TrustDisplay.Active)
+        {
+            data.Hearts = 0;
+            data.MaxHearts = 0;
+        }
         HudRewardScreen screen = panelRoot.GetComponent<HudRewardScreen>();
         if (screen == null)
         {

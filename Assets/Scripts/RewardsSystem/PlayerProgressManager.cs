@@ -190,11 +190,11 @@ public class PlayerProgressManager : MonoBehaviour
             progress.ClearCheckpoint(levelTotal.LevelId);
 
         // Story runs record the campaign's first completion of the chapter (Continue then opens the career).
-        if (CampaignRun.AllowsStoryWrites(mode) && progress.HasCampaign && progress.campaign.MarkChapterCompleted(levelTotal.LevelId))
+        // T07: never Level 1 here: its story moves on only through the recorded case result
+        // (CommitLevelOneCaseResult) and the follow-through (CompleteChapterBridge until T08/T16).
+        if (CampaignRun.AllowsStoryWrites(mode) && progress.HasCampaign && levelTotal.LevelId != CampaignRecord.FirstChapterId &&
+            progress.campaign.MarkChapterCompleted(levelTotal.LevelId))
             Debug.Log($"[PlayerProgressManager] Story chapter {levelTotal.LevelId} completed.");
-        // ...and the finished Level 1 story run drops its field checkpoint in the same write (T04).
-        if (CampaignRun.AllowsStoryWrites(mode) && progress.HasCampaign && levelTotal.LevelId == CampaignRecord.FirstChapterId)
-            progress.campaign.levelOne = new Level1FieldCheckpoint();
 
         // Mastery records (MasteryBoundary): best result per level, badge tiers
         // and times; only a passing run unlocks the next level, and the career
@@ -223,6 +223,192 @@ public class PlayerProgressManager : MonoBehaviour
 
     /// <summary>The run mode in force (T03): a practice drill wins; a level loaded without a menu route is a direct Editor run.</summary>
     public static CampaignRunMode CurrentRunMode => CampaignRun.Resolve(CampaignRun.Chosen, TrainingSession.IsPracticing);
+
+    // =========================================================
+    // LEVEL 1 CASE RESULT (T07)
+    // =========================================================
+
+    public enum CaseResultCommit { NotStory, Committed, AlreadyRecorded, NotEligible, SaveFailed }
+
+    /// <summary>True when this finished run is Level 1 of a story campaign (its result goes through CommitLevelOneCaseResult).</summary>
+    public bool IsStoryCaseResult(LevelTotalResult levelTotal) =>
+        levelTotal != null && levelTotal.LevelId == CampaignRecord.FirstChapterId && progress != null && progress.HasCampaign &&
+        CampaignSave.CanContinue(campaignState) && CampaignRun.AllowsStoryWrites(CurrentRunMode);
+
+    /// <summary>
+    /// Records Level 1's first case result once: the result, its claim and the
+    /// run's mastery record are applied to a candidate copy, written, and only
+    /// then made live. The corrected quest is read from the saved checkpoint;
+    /// reaching the level result means the case was approved. On a failed
+    /// write nothing changes (no success is shown) and the caller may retry.
+    /// </summary>
+    public CaseResultCommit CommitLevelOneCaseResult(LevelTotalResult levelTotal, string caseId, string caseFingerprint)
+    {
+        if (!IsStoryCaseResult(levelTotal)) return CaseResultCommit.NotStory;
+        if (progress.campaign.levelOneCaseResult != null && progress.campaign.levelOneCaseResult.recorded)
+        {
+            lastAppliedRunId = levelTotal.RunId;
+            if (pendingResult == levelTotal) pendingResult = null;
+            LastCaseCoins = LastLedger(CampaignRewards.ClaimId(progress.campaign.campaignId, CampaignRewards.Level1,
+                CampaignRewards.CaseApproved, CampaignRewards.CoinsKind));
+            return CaseResultCommit.AlreadyRecorded;
+        }
+
+        Level1CaseResult result = CaseResultRules.Build(CampaignRecord.FirstChapterId, progress.campaign.levelOne, caseId, caseFingerprint,
+            caseApproved: true, levelTotal.TotalExp, levelTotal.MaxExp, levelTotal.TotalReputation, levelTotal.MaxReputation, levelTotal.RunSeconds);
+        if (!CaseResultRules.CanRecord(true, result.questCorrected, result.caseApproved))
+        {
+            Debug.LogWarning("[PlayerProgressManager] Level 1 case result not recorded: the classification quest is not corrected in the saved story.");
+            return CaseResultCommit.NotEligible;
+        }
+
+        PlayerProgressData candidate = CloneProgress();
+        CaseResultRules.Outcome outcome = CaseResultRules.Apply(candidate, result, ToMasteryRun(levelTotal));
+        if (outcome == CaseResultRules.Outcome.Rejected) return CaseResultCommit.NotEligible;
+        if (outcome == CaseResultRules.Outcome.AlreadyRecorded) return CaseResultCommit.AlreadyRecorded;
+        if (!TryWriteCandidate(candidate)) return CaseResultCommit.SaveFailed;
+
+        lastAppliedRunId = levelTotal.RunId;
+        if (pendingResult == levelTotal) pendingResult = null;
+        LastCaseCoins = LastLedger(CampaignRewards.ClaimId(progress.campaign.campaignId, CampaignRewards.Level1,
+            CampaignRewards.CaseApproved, CampaignRewards.CoinsKind));
+        Debug.Log($"[PlayerProgressManager] Level 1 case result recorded ({result.actionId}): first check {result.firstCheckCorrect}/4, " +
+                  $"tier {result.tier}, {result.exp}/{result.maxExp} EXP, wallet {progress.campaign.coins}. Next: {result.nextStep}.");
+        return CaseResultCommit.Committed;
+    }
+
+    /// <summary>The coins granted with the case result (T09), for the result card; Amount 0 when none.</summary>
+    public CampaignRewards.Change LastCaseCoins { get; private set; }
+
+    // =========================================================
+    // PUBLIC TRUST AND COINS (T08 / T09)
+    // =========================================================
+
+    /// <summary>What a committed story milestone changed (Saved false: nothing was written or shown).</summary>
+    public struct StoryGrants
+    {
+        public bool Saved;
+        public bool AlreadyDone;
+        public CampaignRewards.Change Trust;
+        public CampaignRewards.Change Coins;
+    }
+
+    /// <summary>Marie's follow-through is waiting (a recorded case result; T08).</summary>
+    public bool FollowThroughPending => progress != null && CampaignSave.CanContinue(campaignState) &&
+                                        !TrainingSession.IsPracticing && CaseResultRules.FollowThroughPending(progress);
+
+    /// <summary>The approved Level 1 end flow still needs to run after the Client Copy handover (T08).</summary>
+    public bool PendingLevelOneEndFlow => progress != null && progress.HasCampaign &&
+                                          CampaignSave.CanContinue(campaignState) &&
+                                          progress.campaign.levelOneEndFlowPending;
+
+    /// <summary>
+    /// The corrected Level 1 field assignment (the classification quest),
+    /// story runs only: Public Trust +2 and 60 coins, each claimed once, with
+    /// the activity, in one candidate write. questCorrected comes from the
+    /// board owner (all four right). Already claimed: AlreadyDone, nothing changes.
+    /// </summary>
+    public StoryGrants CommitFieldAssignment(bool questCorrected)
+    {
+        var grants = new StoryGrants();
+        if (!questCorrected || progress == null || !progress.HasCampaign || !CampaignSave.CanContinue(campaignState) ||
+            !CampaignRun.AllowsStoryWrites(CurrentRunMode)) return grants;
+        if (CampaignRewards.IsActivityCompleted(progress, CampaignRewards.Level1, CampaignRewards.FieldAssignment))
+        {
+            grants.Saved = grants.AlreadyDone = true;
+            return grants;
+        }
+        PlayerProgressData candidate = CloneProgress();
+        CampaignRewards.CompleteActivity(candidate, CampaignRewards.Level1, CampaignRewards.FieldAssignment);
+        grants.Trust = CampaignRewards.Grant(candidate, CampaignRewards.Level1, CampaignRewards.FieldAssignment, CampaignRewards.TrustKind);
+        grants.Coins = CampaignRewards.Grant(candidate, CampaignRewards.Level1, CampaignRewards.FieldAssignment, CampaignRewards.CoinsKind);
+        grants.Saved = TryWriteCandidate(candidate);
+        if (grants.Saved)
+            Debug.Log($"[PlayerProgressManager] Field assignment completed: trust {grants.Trust.After}/100, coins {grants.Coins.After}.");
+        return grants;
+    }
+
+    /// <summary>
+    /// Marie's follow-through (T08): Public Trust +4 (claimed once), the
+    /// activity and, until T16's wrap-up, Chapter 1's completion, in one
+    /// candidate write. Called once the Client Copy is handed to Marie
+    /// (ClientCopyHandover); only a recorded story case result makes it pending.
+    /// </summary>
+    public StoryGrants CommitFollowThrough()
+    {
+        var grants = new StoryGrants();
+        if (progress == null || !progress.HasCampaign || !CampaignSave.CanContinue(campaignState) ||
+            !CampaignRun.AllowsStoryWrites(CurrentRunMode) || TrainingSession.IsPracticing) return grants;
+        if (!FollowThroughPending)
+        {
+            grants.Saved = grants.AlreadyDone = progress != null && progress.HasCampaign &&
+                CampaignRewards.IsActivityCompleted(progress, CampaignRewards.Level1, CampaignRewards.FollowThrough);
+            return grants;
+        }
+        PlayerProgressData candidate = CloneProgress();
+        grants.Trust = CaseResultRules.CompleteFollowThrough(candidate);
+        grants.Saved = TryWriteCandidate(candidate);
+        if (grants.Saved)
+            Debug.Log($"[PlayerProgressManager] Marie's follow-through done: trust {grants.Trust.After}/100; Chapter 1 completed (T16 bridge).");
+        return grants;
+    }
+
+    /// <summary>
+    /// Acknowledges the finale/result card after it has been presented. The
+    /// marker and Level 1 checkpoint are cleared together; a failed write
+    /// leaves both available for the player to resume and retry.
+    /// </summary>
+    public bool AcknowledgeLevelOneEndFlow()
+    {
+        if (progress == null || !progress.HasCampaign || !CampaignSave.CanContinue(campaignState) ||
+            !CampaignRun.AllowsStoryWrites(CurrentRunMode) || !progress.campaign.levelOneEndFlowPending ||
+            CaseResultRules.FollowThroughPending(progress)) return false;
+
+        PlayerProgressData candidate = CloneProgress();
+        candidate.campaign.levelOneEndFlowPending = false;
+        candidate.campaign.levelOne = new Level1FieldCheckpoint();
+        candidate.ClearCheckpoint(CampaignRecord.FirstChapterId);
+        return TryWriteCandidate(candidate);
+    }
+
+    /// <summary>The ledger line of a claim as a Change (Amount 0 when it is not there).</summary>
+    private CampaignRewards.Change LastLedger(string claimId)
+    {
+        var change = new CampaignRewards.Change { Outcome = CampaignRewards.Outcome.AlreadyClaimed };
+        if (progress == null || !progress.HasCampaign) return change;
+        CampaignLedgerEntry entry = progress.campaign.ledger.FindLast(e => e.claimId == claimId);
+        if (entry == null) return change;
+        change.Outcome = CampaignRewards.Outcome.Applied;
+        change.Kind = entry.kind;
+        change.Amount = entry.amount;
+        change.After = entry.balanceAfter;
+        change.Before = entry.balanceAfter - entry.amount;
+        change.Reason = entry.reason;
+        return change;
+    }
+
+    private PlayerProgressData CloneProgress() => JsonUtility.FromJson<PlayerProgressData>(JsonUtility.ToJson(progress));
+
+    /// <summary>Writes a complete candidate; only after the write succeeds does it become the live progress.</summary>
+    private bool TryWriteCandidate(PlayerProgressData candidate)
+    {
+        if (candidate == null || store == null || !CampaignSave.AllowsOrdinarySave(campaignState)) return false;
+        try
+        {
+            candidate.Normalize();
+            store.Write(Encode(candidate));
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[PlayerProgressManager] Save failed: {e.Message}");
+            return false;
+        }
+        progress = candidate;
+        RememberSavedCompletion();
+        try { ProgressChanged?.Invoke(progress); }
+        catch (Exception e) { Debug.LogException(e); }
+        return true;
+    }
 
     /// <summary>
     /// Before a story run leaves its scene (menu / replay): save any waiting
@@ -374,7 +560,25 @@ public class PlayerProgressManager : MonoBehaviour
     /// <summary>Only a story run of a committed campaign keeps the Level 1 field checkpoint.</summary>
     public bool UsesLevelOneCheckpoint =>
         progress != null && progress.HasCampaign && CampaignSave.CanContinue(campaignState) &&
-        CampaignRun.AllowsStoryCheckpoint(CurrentRunMode);
+        CampaignRun.AllowsStoryCheckpoint(CurrentRunMode) &&
+        // T07: once the case result is recorded the case work is over; T08: the
+        // checkpoint still keeps the Client Copy handover until Marie has her copy.
+        (progress.campaign.levelOneCaseResult == null || !progress.campaign.levelOneCaseResult.recorded ||
+         CaseResultRules.FollowThroughPending(progress) || progress.campaign.levelOneEndFlowPending);
+
+    /// <summary>Where Marie's Client Copy is in the saved story (T08; None outside a story campaign).</summary>
+    public ClientCopyPhase SavedClientCopyPhase =>
+        UsesLevelOneCheckpoint ? ClientCopyRules.PhaseOf(progress) : ClientCopyPhase.None;
+
+    /// <summary>
+    /// T08: this story run ends Level 1's case with the Client Copy handover
+    /// (Marie's follow-through not done yet), so the finale and the case
+    /// result card wait for it. False for practice, replays and Editor runs.
+    /// </summary>
+    public bool ClientCopyHandoverExpected =>
+        progress != null && progress.HasCampaign && CampaignSave.CanContinue(campaignState) &&
+        CampaignRun.AllowsStoryWrites(CurrentRunMode) && !TrainingSession.IsPracticing &&
+        !CampaignRewards.IsActivityCompleted(progress, CampaignRewards.Level1, CampaignRewards.FollowThrough);
 
     /// <summary>
     /// Saves the complete candidate as the campaign's Level 1 field checkpoint.
@@ -403,6 +607,8 @@ public class PlayerProgressManager : MonoBehaviour
     /// <summary>Replay from the start: drops the Level 1 field checkpoint (restored in memory if the write fails).</summary>
     public bool ClearLevelOneCheckpoint()
     {
+        if (progress != null && progress.HasCampaign && CampaignRun.AllowsStoryWrites(CurrentRunMode) &&
+            (FollowThroughPending || PendingLevelOneEndFlow)) return false;
         if (!UsesLevelOneCheckpoint) return true;
         Level1FieldCheckpoint previous = progress.campaign.levelOne;
         if (previous == null || !previous.IsSet) return true;

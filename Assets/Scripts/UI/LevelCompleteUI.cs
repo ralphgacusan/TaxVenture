@@ -10,6 +10,14 @@ using TMPro;
 /// built once from LevelRewardAccumulator. This UI does NOT calculate
 /// anything itself; it only displays what it's given and applies it to
 /// permanent progress when the player presses the button.
+///
+/// T07 (Campaign Foundation): a STORY run of Level 1 shows a case result
+/// instead ("Case Approved"): it is committed once (PlayerProgressManager.
+/// CommitLevelOneCaseResult) BEFORE the card celebrates; the card shows the
+/// frozen first-check tier, XP and badge as mastery, no pass line, no score
+/// hearts, and the next step (Marie's Client Copy handover). A failed save
+/// shows a retry state without fanfare. The result card waits until Marie has
+/// received the copy.
 /// </summary>
 public class LevelCompleteUI : MonoBehaviour
 {
@@ -26,6 +34,9 @@ public class LevelCompleteUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI congratsText;
 
     private LevelTotalResult currentResult;
+    // T07: Level 1 story run (case result path) and whether its result is saved.
+    private bool storyCaseResult;
+    private bool caseResultSaved;
 
     private void Awake()
     {
@@ -56,9 +67,19 @@ public class LevelCompleteUI : MonoBehaviour
         }
 
         currentResult = result;
+        PlayerProgressManager manager = PlayerProgressManager.Instance;
+        storyCaseResult = manager != null && manager.IsStoryCaseResult(result);
+        caseResultSaved = storyCaseResult && TryCommitCaseResult();
+        if (storyCaseResult && caseResultSaved && manager.ClientCopyHandoverExpected &&
+            ClientCopyHandover.Instance != null && ClientCopyHandover.Instance.BeginAfterApproval(result))
+        {
+            Hide();
+            return;
+        }
         // Saved even if the player never presses Continue (app paused or closed).
-        if (PlayerProgressManager.Instance != null && result != null)
-            PlayerProgressManager.Instance.SetPendingResult(result);
+        // A story Level 1 result is committed above instead (once, before any celebration).
+        if (manager != null && result != null && !storyCaseResult)
+            manager.SetPendingResult(result);
 
         Debug.Log($"[LevelCompleteUI] Time: {result.FormattedCompletionTime}");
         Debug.Log($"[LevelCompleteUI] Cases: {result.CasesCompleted}");
@@ -107,7 +128,16 @@ public class LevelCompleteUI : MonoBehaviour
         casesCompletedText.text =
             $"Cases Completed: {result.CasesCompleted}";
 
-        if (result.HasScore)
+        if (storyCaseResult)
+        {
+            // T07: mastery numbers only; no pass line and no score hearts on the story's case result.
+            expText.text = $"EXP: {result.TotalExp} / {result.MaxExp}";
+            reputationText.text = "";
+            congratsText.text = caseResultSaved
+                ? $"Case approved. {CaseResultRules.NextStepText}"
+                : CaseResultSaveFailedText;
+        }
+        else if (result.HasScore)
         {
             expText.text =
                 $"EXP: {result.TotalExp} / {result.MaxExp} ({result.ExpPercent}%)";
@@ -145,15 +175,121 @@ public class LevelCompleteUI : MonoBehaviour
 
         Debug.Log("[LevelCompleteUI] All text fields updated.");
 
-        if (AudioManager.Instance != null)
+        // No fanfare for a case result that is not saved yet.
+        if (AudioManager.Instance != null && (!storyCaseResult || caseResultSaved))
         {
             AudioManager.Instance.PlayAchievementSFX();
         }
 
         panelRoot.SetActive(true);
-        HudRewardScreen.Present(panelRoot, BuildScreen(result));
+        HudRewardScreen.Present(panelRoot, storyCaseResult ? BuildCaseResultScreen(result, caseResultSaved) : BuildScreen(result));
 
         Debug.Log("[LevelCompleteUI] panelRoot activated successfully.");
+    }
+
+    /// <summary>Restores the approved result card from its durable case-result record.</summary>
+    public void ShowAfterHandover(LevelTotalResult result)
+    {
+        result ??= CreateSavedCaseResult();
+        if (result == null)
+        {
+            Debug.LogWarning("[LevelCompleteUI] No saved Level 1 result was available after the handover.");
+            return;
+        }
+        Show(result);
+    }
+
+    /// <summary>Rebuilds a result presentation from the once-only saved result, including its original run time.</summary>
+    public static LevelTotalResult CreateSavedCaseResult()
+    {
+        PlayerProgressData progress = PlayerProgressManager.Instance != null
+            ? PlayerProgressManager.Instance.CurrentProgress : null;
+        Level1CaseResult saved = progress != null && progress.HasCampaign ? progress.campaign.levelOneCaseResult : null;
+        if (saved == null || !saved.recorded) return null;
+
+        int seconds = Mathf.Max(0, Mathf.RoundToInt(saved.runSeconds));
+        int hours = seconds / 3600;
+        int minutes = seconds % 3600 / 60;
+        int remainder = seconds % 60;
+        var result = new LevelTotalResult
+        {
+            LevelId = CampaignRecord.FirstChapterId,
+            TotalExp = saved.exp,
+            MaxExp = saved.maxExp,
+            TotalReputation = saved.scoreHearts,
+            MaxReputation = saved.maxScoreHearts,
+            CasesCompleted = 1,
+            FormattedCompletionTime = $"{hours:00}:{minutes:00}:{remainder:00}",
+            RunSeconds = saved.runSeconds,
+            HasScore = true
+        };
+        result.BadgeTiers.Add((BadgeTier)saved.tier);
+        return result;
+    }
+
+    private const string CaseResultSaveFailedText = "Your case result could not be saved. Press Continue to try again.";
+
+    /// <summary>Commits the story case result (once); true when it is saved (now or earlier).</summary>
+    private bool TryCommitCaseResult()
+    {
+        PlayerProgressManager manager = PlayerProgressManager.Instance;
+        LevelTotalResult result = currentResult;
+        if (manager == null || result == null) return false;
+        CaseDefinition definition = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+        PlayerProgressManager.CaseResultCommit commit = manager.CommitLevelOneCaseResult(result,
+            definition != null ? definition.caseId : null, definition != null ? Level1CaseCheckpoint.Fingerprint(definition) : null);
+        return commit == PlayerProgressManager.CaseResultCommit.Committed || commit == PlayerProgressManager.CaseResultCommit.AlreadyRecorded;
+    }
+
+    /// <summary>
+    /// T07 case result card: "Case Approved", the frozen first-check tier and
+    /// mastery XP/badge, no pass line or score hearts, and the next step.
+    /// Not labelled "Chapter Complete" or "Level Complete".
+    /// </summary>
+    private static RewardScreenData BuildCaseResultScreen(LevelTotalResult result, bool saved)
+    {
+        CaseProgressionManager progression = CaseProgressionManager.Instance;
+        LevelRewardRules rules = progression != null ? progression.Score.Rules : null;
+        PlayerProgressData career = PlayerProgressManager.Instance != null ? PlayerProgressManager.Instance.CurrentProgress : null;
+        Level1CaseResult caseResult = career != null && career.HasCampaign ? career.campaign.levelOneCaseResult : null;
+        bool known = saved && caseResult != null && caseResult.recorded;
+        BadgeTier tier = known ? (BadgeTier)caseResult.tier : BadgeTier.None;
+        // T08: after the handover the level (Chapter 1, via the T16 bridge) is complete, not just the case.
+        bool delivered = saved && career != null &&
+            CampaignRewards.IsActivityCompleted(career, CampaignRewards.Level1, CampaignRewards.FollowThrough);
+
+        var data = new RewardScreenData
+        {
+            Title = delivered ? CaseResultRules.CompletedTitle : "Case Approved",
+            Subtitle = progression != null ? progression.CurrentLevelName : null,
+            Exp = result.TotalExp,
+            MaxExp = result.HasScore ? result.MaxExp : 0,
+            Hearts = 0,
+            MaxHearts = 0,          // score hearts are mastery data, never shown as trust (T08 owns the trust hearts)
+            PassingPercent = 0,     // no pass line: score never gates the story
+            HasStatus = true,
+            StatusGood = saved,
+            StatusText = delivered ? CaseResultRules.CompletedStatus : saved ? "CASE APPROVED" : "NOT SAVED YET",
+            StatusDetail = delivered ? CaseResultRules.CompletedDetail
+                : saved ? "Classification corrected  ·  Marie's return approved" : "Your progress is safe. Try again.",
+            Accent = saved ? HudBadgeArt.TierColor(tier == BadgeTier.None ? BadgeTier.Bronze : tier) : new Color32(150, 160, 175, 255),
+            Summary = delivered ? CaseResultRules.CompletedSummary : saved ? CaseResultRules.NextStepText : CaseResultSaveFailedText,
+            ButtonLabel = saved ? "CONTINUE" : "TRY AGAIN"
+        };
+        if (known && caseResult.firstCheckCorrect >= 0)
+            data.Fact("Board first check", $"{caseResult.firstCheckCorrect}/4  ·  {tier}");
+        // T09: the case's coins, saved with the result (a pending, unsaved result shows none).
+        CampaignRewards.Change coins = PlayerProgressManager.Instance != null ? PlayerProgressManager.Instance.LastCaseCoins : default;
+        if (saved && coins.Applied) data.Fact("Coins", $"+{coins.Amount}  ->  {coins.After}");
+        for (int i = 0; i < result.BadgeTiers.Count; i++)
+            if (result.BadgeTiers[i] != BadgeTier.None) data.Medals.Add(HudBadgeArt.For(rules, result.BadgeTiers[i]));
+        data.Fact("Time", result.FormattedCompletionTime);
+        OfficeHours hours = OfficeHours.Instance;
+        if (hours != null && hours.Announced)
+            data.Fact("Office hours", hours.BonusAwarded ? "On time ✓"
+                : hours.LateExpLost > 0 ? $"Late (day {hours.Day})  -{hours.LateExpLost} EXP" : $"Finished on day {hours.Day}");
+        if (career != null) data.Footer = $"Career {career.totalExp} EXP";
+        return data;
     }
 
     /// <summary>The reward card for the level (Office HUD); same values as the text fields.</summary>
@@ -229,7 +365,39 @@ public class LevelCompleteUI : MonoBehaviour
         if (leaving) return;   // one press only (the screen fades out first)
         leaving = true;
 
-        if (PlayerProgressManager.Instance != null && currentResult != null)
+        if (storyCaseResult && PlayerProgressManager.Instance != null && currentResult != null)
+        {
+            // T07: the case result must be saved before anything moves on (retry here on a failed save).
+            if (!caseResultSaved) caseResultSaved = TryCommitCaseResult();
+            if (!caseResultSaved)
+            {
+                leaving = false;
+                Debug.LogWarning("[LevelCompleteUI] Case result not saved; stay on the card and allow retry.");
+                if (congratsText != null) congratsText.text = CaseResultSaveFailedText;
+                return;
+            }
+            PlayerProgressManager manager = PlayerProgressManager.Instance;
+            if (manager.FollowThroughPending)
+            {
+                if (ClientCopyHandover.Instance != null && ClientCopyHandover.Instance.BeginAfterApproval(currentResult))
+                {
+                    Hide();
+                    leaving = false;
+                    return;
+                }
+                leaving = false;
+                if (congratsText != null) congratsText.text = "The Client Copy is not ready yet. Press Continue to try again.";
+                return;
+            }
+            if (manager.PendingLevelOneEndFlow && !manager.AcknowledgeLevelOneEndFlow())
+            {
+                leaving = false;
+                Debug.LogWarning("[LevelCompleteUI] End-of-level result could not be acknowledged; stay on the card and allow retry.");
+                if (congratsText != null) congratsText.text = "Your result could not be saved. Press Continue to try again.";
+                return;
+            }
+        }
+        else if (PlayerProgressManager.Instance != null && currentResult != null)
         {
             PlayerProgressManager.Instance.ApplyLevelResult(currentResult);
             if (!PlayerProgressManager.Instance.SaveBeforeLeaving())
@@ -251,6 +419,11 @@ public class LevelCompleteUI : MonoBehaviour
             return;
         }
 
+        LeaveForCareer();
+    }
+
+    private void LeaveForCareer()
+    {
         Debug.Log($"[LevelCompleteUI] Returning to the level select in {MenuEntry.MenuSceneName} (was '{mainModuleSceneName}').");
         // The main menu and the progress / level select are one scene now
         // ("3D Menu"); open it directly on the level select.

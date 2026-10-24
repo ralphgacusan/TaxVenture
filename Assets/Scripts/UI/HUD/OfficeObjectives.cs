@@ -105,6 +105,8 @@ public sealed class OfficeObjectives : MonoBehaviour
         GameplayEvents.OnCaseFolderStored += HandleCaseFolderStored;
         GameplayEvents.OnCaseFolderReturned += HandleCaseFolderReturned;
         GameplayEvents.OnCaseFolderRetrieved += HandleCaseFolderRetrieved;
+        GameplayEvents.OnClientCopyPickedUp += HandleClientCopyPickedUp;
+        GameplayEvents.OnClientCopyHandedOver += HandleClientCopyHandedOver;
         GameplayEvents.OnPreliminaryHoldStamped += HandlePreliminaryHoldStamped;
         GameplayEvents.OnFindingRecorded += HandleFindingRecorded;
         GameplayEvents.OnMarketDeskOpened += HandleMarketDeskOpened;
@@ -141,6 +143,8 @@ public sealed class OfficeObjectives : MonoBehaviour
         GameplayEvents.OnCaseFolderStored -= HandleCaseFolderStored;
         GameplayEvents.OnCaseFolderReturned -= HandleCaseFolderReturned;
         GameplayEvents.OnCaseFolderRetrieved -= HandleCaseFolderRetrieved;
+        GameplayEvents.OnClientCopyPickedUp -= HandleClientCopyPickedUp;
+        GameplayEvents.OnClientCopyHandedOver -= HandleClientCopyHandedOver;
         GameplayEvents.OnPreliminaryHoldStamped -= HandlePreliminaryHoldStamped;
         GameplayEvents.OnFindingRecorded -= HandleFindingRecorded;
         GameplayEvents.OnMarketDeskOpened -= HandleMarketDeskOpened;
@@ -190,6 +194,8 @@ public sealed class OfficeObjectives : MonoBehaviour
     private void HandleCaseFolderStored() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.CaseFolderStored));
     private void HandleCaseFolderReturned() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.CaseFolderReturned));
     private void HandleCaseFolderRetrieved() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.CaseFolderRetrieved));
+    private void HandleClientCopyPickedUp() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.ClientCopyPickedUp));
+    private void HandleClientCopyHandedOver() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.ClientCopyHandedOver));
     private void HandlePreliminaryHoldStamped() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.PreliminaryHoldStamped));
     private void HandleFindingRecorded() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.FindingRecorded));
     private void HandleMarketDeskOpened() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.MarketDeskOpened));

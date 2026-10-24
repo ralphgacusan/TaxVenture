@@ -5,6 +5,7 @@
     "GOLDEN RULE: never name a classification (resident, non-resident, citizen, alien). Tell the STORY; the player works it out.",
     "Every corner answers two questions: is the person Filipino? and do they live here most of the year?",
     "talk: the conversation, top to bottom. who = \"you\" for the player, \"npc\" for the client. Keep it short (about 6 lines).",
+    "emote (optional, per line): a small icon over the speaker while the line shows: heart, sparkles, alert, question, thinking, idea, sweat, worried, annoyed, music. Add \"burst\": true only for a peak moment. Lines without one show nothing.",
     "description: the profile card. A short summary of what they said (about 12-13 words) - clues, never the answer.",
     "placedRight: Arthur when the card lands in the right corner (say WHY, without the label).",
     "hintCitizenship / hintResidence / hintBoth: Arthur when the card is wrong because of where they're FROM / where they LIVE / both. Hint, never the answer.",
@@ -20,11 +21,11 @@
       "description": "Born and raised here, never lived abroad; salaried employee at a local BPO.",
       "talk": [
         { "who": "you", "text": "Hi! I'm the new tax consultant in town. Mind telling me a bit about yourself?" },
-        { "who": "npc", "text": "Not at all! Born and raised right here. My Filipino passport has never even been stamped!" },
+        { "who": "npc", "text": "Not at all! Born and raised right here. My Filipino passport has never even been stamped!", "emote": "music" },
         { "who": "you", "text": "Ha! So what keeps you busy these days?" },
         { "who": "npc", "text": "I work the night shift at the BPO office downtown. Same company for five years, and my pay comes in every payday." },
         { "who": "you", "text": "No side business or anything?" },
-        { "who": "npc", "text": "Just my salary! Work, sleep, and weekend karaoke with the family. Good luck on your first day!" }
+        { "who": "npc", "text": "Just my salary! Work, sleep, and weekend karaoke with the family. Good luck on your first day!", "emote": "sparkles" }
       ],
       "placedRight": "Yes! Born here, never left. Her home and her paycheck are both right here.",
       "hintCitizenship": "Hmm. Where was Marie born, and whose passport has never been stamped?",
@@ -41,7 +42,7 @@
         { "who": "you", "text": "Back to Qatar? What do you do there?" },
         { "who": "npc", "text": "I'm an engineer on a five-year contract. My apartment and my whole work life are over there now." },
         { "who": "you", "text": "You must miss home." },
-        { "who": "npc", "text": "Every day! I'm Pinoy to the bone, but I only get to come home for a few weeks a year." }
+        { "who": "npc", "text": "Every day! I'm Pinoy to the bone, but I only get to come home for a few weeks a year.", "emote": "worried" }
       ],
       "placedRight": "That's it! Filipino through and through, but his work keeps him abroad most of the year.",
       "hintCitizenship": "Listen again: Jhun-jhun called himself Pinoy to the bone.",
@@ -58,7 +59,7 @@
         { "who": "you", "text": "And you've stayed all this time?" },
         { "who": "npc", "text": "I came for a short visit, fell in love with the food, and never left. My house and my family are all here now." },
         { "who": "you", "text": "So the restaurant is how you make a living?" },
-        { "who": "npc", "text": "My pride and joy! I run it myself, every single day. Come try the adobo sometime!" }
+        { "who": "npc", "text": "My pride and joy! I run it myself, every single day. Come try the adobo sometime!", "emote": "heart" }
       ],
       "placedRight": "Exactly! He came from far away, but this town is truly his home now.",
       "hintCitizenship": "Did Milo grow up here? Remember where he said he's from.",
@@ -71,11 +72,11 @@
       "description": "Visitor from another planet on a paid 27-day job; flight home booked.",
       "talk": [
         { "who": "you", "text": "Good afternoon! What brings you to town?" },
-        { "who": "npc", "text": "BUSINESS. A TEMPORARY COMMERCIAL PROJECT FOR MY HOME PLANET." },
+        { "who": "npc", "text": "BUSINESS. A TEMPORARY COMMERCIAL PROJECT FOR MY HOME PLANET.", "emote": "alert" },
         { "who": "you", "text": "...Right. How long are you staying?" },
         { "who": "npc", "text": "TWENTY-SEVEN DAYS. MY RETURN FLIGHT IS ALREADY BOOKED." },
         { "who": "you", "text": "And you're paid for the work you do here?" },
-        { "who": "npc", "text": "AFFIRMATIVE. THEN I GO HOME. YOUR PLANET IS... NICE TO VISIT." }
+        { "who": "npc", "text": "AFFIRMATIVE. THEN I GO HOME. YOUR PLANET IS... NICE TO VISIT.", "emote": "music" }
       ],
       "placedRight": "Spot on! A visitor from far, far away, here only for a short paid project.",
       "hintCitizenship": "Hmm. Does a visitor from another planet carry a Filipino passport?",
@@ -92,7 +93,7 @@
     { "who": "npc", "text": "Some came from another country, fell for this place, and stayed. They live and do business here now." },
     { "who": "npc", "text": "And some are only passing through: foreign visitors on a short job, with a ticket home already booked." },
     { "who": "you", "text": "So I listen for where they're from, and where they actually live." },
-    { "who": "npc", "text": "Exactly! Drag each profile to the corner where it belongs. Wrong guesses bounce back, so think it through." }
+    { "who": "npc", "text": "Exactly! Pin each profile where you think it belongs. Once all four are up, I'll check the board, and your first check counts." }
   ],
 
   "_sideQuestSplash": "The title card shown right after Arthur's corkboard talk (tap to continue). Keep the description short.",
@@ -100,7 +101,7 @@
     "kicker": "SIDE QUEST 1",
     "title": "Know Your Taxpayer",
     "description": "Four townsfolk, four different stories. Sort each profile onto the corner of Arthur's corkboard where it belongs.",
-    "instruction": "Drag a profile onto a corner  ·  Wrong guesses bounce back",
+    "instruction": "Pin all four profiles  ·  The board checks itself",
     "button": "TAP TO CONTINUE"
   },
 

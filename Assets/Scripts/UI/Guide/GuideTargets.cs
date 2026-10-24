@@ -230,13 +230,13 @@ public sealed class GuideTargets
         return found;
     }
 
-    /// <summary>Still worth pointing at: skips solved slots, placed cards and NPCs with nothing to say.</summary>
+    /// <summary>Still worth pointing at: skips filled areas, settled cards and NPCs with nothing to say (T06: never reveals a draft's correctness).</summary>
     public static bool IsUseful(Component c)
     {
         if (c == null) return false;
         if (c is Behaviour b && !b.isActiveAndEnabled) return false;
-        if (c is CorkboardSlot slot) return !slot.IsSolved && slot.OccupyingCard == null;
-        if (c is ProfileDragCard card) return !card.IsCorrectlyPlaced;
+        if (c is CorkboardSlot slot) return slot.OccupyingCard == null;
+        if (c is ProfileDragCard card) return card.NeedsAttention;
         if (c is INpcAvailabilitySource npc) return npc.Availability == NpcAvailability.Available;
         return true;
     }

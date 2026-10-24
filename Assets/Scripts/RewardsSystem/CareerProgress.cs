@@ -24,6 +24,10 @@ public static class CareerProgress
 
         snapshot.TotalExp = data != null ? Math.Max(0, data.totalExp) : 0;
         snapshot.TotalHearts = data != null ? Math.Max(0, data.totalReputation) : 0;
+        // T08/T09: a campaign's hearts are Public Trust; its wallet is shown beside them.
+        snapshot.Campaign = data != null && data.HasCampaign;
+        snapshot.PublicTrust = snapshot.Campaign ? Math.Max(0, Math.Min(CampaignRecord.MaxTrust, data.campaign.publicTrust)) : 0;
+        snapshot.Coins = snapshot.Campaign ? Math.Max(0, data.campaign.coins) : 0;
 
         CareerChapterDef previous = null;
         foreach (CareerChapterDef def in catalog.chapters)
@@ -81,6 +85,11 @@ public static class CareerProgress
         bool passed = data != null && data.IsLevelPassed(id);
         // Same rule as PlayerProgressData.IsLevelUnlocked: the previous chapter must be passed.
         bool unlocked = MasteryBoundary.LegacyChapterUnlocked(data, previous?.id);
+        // T07: a campaign's story follows corrected, completed work, never a score: a chapter opens
+        // when the previous chapter's story is complete, and a completed chapter reads COMPLETED.
+        bool campaign = data != null && data.HasCampaign;
+        bool storyDone = campaign && data.campaign.IsChapterCompleted(id);
+        if (campaign) unlocked = previous == null || data.campaign.IsChapterCompleted(previous.id);
         bool hasScene = !string.IsNullOrWhiteSpace(def.scene);
 
         var view = new CareerChapterView
@@ -105,8 +114,12 @@ public static class CareerProgress
 
         // T03: a chapter not yet part of the updated story stays shut for a campaign, whatever its records say.
         view.PendingIntegration = data != null && data.HasCampaign && def.campaignPending && !def.comingSoon;
-        if (def.comingSoon || view.PendingIntegration || !hasScene && !passed && !completed)
+        view.Campaign = campaign;
+        view.StoryCompleted = storyDone;
+        if (def.comingSoon || view.PendingIntegration || !hasScene && !passed && !completed && !storyDone)
             view.Status = CareerChapterStatus.ComingSoon;
+        else if (campaign) view.Status = storyDone ? CareerChapterStatus.Passed
+            : unlocked ? CareerChapterStatus.Available : CareerChapterStatus.Locked;
         else if (passed) view.Status = CareerChapterStatus.Passed;
         else if (completed) view.Status = CareerChapterStatus.Finished;
         else if (unlocked) view.Status = CareerChapterStatus.Available;
@@ -157,12 +170,15 @@ public static class CareerProgress
         CareerChapterView goal = snapshot.Goal;
         if (goal == null) return "";
         if (goal.Status == CareerChapterStatus.Passed)
-            return "Every open chapter is passed. New chapters are coming soon.";
+            return goal.Campaign ? "Every open chapter is complete. New chapters are coming soon."
+                : "Every open chapter is passed. New chapters are coming soon.";
         if (goal.Status == CareerChapterStatus.ComingSoon)
             return $"Chapter {goal.Def.number} is coming soon. Until then, replay a chapter to beat your best or earn a gold badge.";
         CareerChapterView next = snapshot.ChapterAfter(goal);
         string unlocks = next != null && next.Status != CareerChapterStatus.ComingSoon
             ? $" to unlock Chapter {next.Def.number}." : ".";
+        // T07: the campaign moves on by finishing the corrected story work; scores are mastery only.
+        if (goal.Campaign) return $"Finish Chapter {goal.Def.number}'s story{unlocks}";
         return $"Pass Chapter {goal.Def.number}: {goal.TargetExp:N0} EXP + {goal.TargetHearts:N0} hearts in one run{unlocks}";
     }
 
@@ -177,10 +193,12 @@ public static class CareerProgress
         if (snapshot == null || !snapshot.Available) return changes;
         changes.ExpFrom = snapshot.TotalExp;
         changes.HeartsFrom = snapshot.TotalHearts;
+        changes.TrustFrom = snapshot.PublicTrust;
         if (seen == null) return changes;
 
         changes.ExpFrom = Clamp(seen.exp, 0, snapshot.TotalExp);
         changes.HeartsFrom = Clamp(seen.hearts, 0, snapshot.TotalHearts);
+        changes.TrustFrom = Clamp(seen.trust, 0, snapshot.PublicTrust);
         foreach (CareerChapterView chapter in snapshot.Chapters)
         {
             string id = chapter.Def.id;
@@ -201,6 +219,7 @@ public static class CareerProgress
         if (snapshot == null || !snapshot.Available) return seen;
         seen.exp = snapshot.TotalExp;
         seen.hearts = snapshot.TotalHearts;
+        seen.trust = snapshot.PublicTrust;
         foreach (CareerChapterView chapter in snapshot.Chapters)
         {
             if (chapter.Status == CareerChapterStatus.Passed) { seen.passed.Add(chapter.Def.id); seen.completed.Add(chapter.Def.id); }
@@ -225,6 +244,26 @@ public static class CareerProgress
     private static bool Contains(List<string> list, string id) => list != null && list.Contains(id);
 
     private static int Clamp(int value, int min, int max) => value < min ? min : value > max ? max : value;
+
+    /// <summary>The stamp/status word of a chapter: a campaign's finished chapter is COMPLETED (never PASSED / TRY AGAIN).</summary>
+    public static string StatusLabel(CareerChapterView chapter)
+    {
+        if (chapter == null) return StatusLabel(CareerChapterStatus.ComingSoon);
+        if (chapter.Campaign && chapter.StoryCompleted) return CompletedLabel;
+        return StatusLabel(chapter.Status);
+    }
+
+    public const string CompletedLabel = "COMPLETED";
+
+    /// <summary>The mastery line under a chapter's results: a descriptive goal for a campaign, the pass line otherwise.</summary>
+    public static string MasteryLine(CareerChapterView chapter) =>
+        chapter.Campaign
+            ? $"Mastery goal (optional): {chapter.TargetExp:N0} EXP + {chapter.TargetHearts:N0} score hearts in one run ({chapter.PassingPercent}%)"
+            : $"Pass line: {chapter.TargetExp:N0} EXP + {chapter.TargetHearts:N0} hearts in one run ({chapter.PassingPercent}%)";
+
+    /// <summary>What a locked chapter needs.</summary>
+    public static string LockedText(CareerChapterView chapter) =>
+        chapter != null && chapter.Campaign ? "Locked. Finish the previous chapter's story to open it." : "Locked. Pass the previous chapter to open it.";
 
     public static string StatusLabel(CareerChapterStatus status)
     {
@@ -324,6 +363,10 @@ public class CareerSnapshot
     public bool Available;
     public int TotalExp;
     public int TotalHearts;
+    /// <summary>Built from a campaign (T08: hearts shown are Public Trust; score hearts are mastery data only).</summary>
+    public bool Campaign;
+    public int PublicTrust;
+    public int Coins;
     public int Completed;
     public int Passed;
     /// <summary>Sum of the EXP / hearts maximums of every chapter that is not Coming Soon.</summary>
@@ -382,6 +425,10 @@ public class CareerChapterView
                           Status == CareerChapterStatus.Passed;
 
     public bool HasResult => Record != null;
+    /// <summary>Built from a campaign (T07: story status follows completed chapters, not scores).</summary>
+    public bool Campaign;
+    /// <summary>The campaign completed this chapter's story.</summary>
+    public bool StoryCompleted;
     public float ExpToTarget => TargetExp <= 0 ? 1f : Math.Min(1f, BestExp / (float)TargetExp);
     public float HeartsToTarget => TargetHearts <= 0 ? 1f : Math.Min(1f, BestHearts / (float)TargetHearts);
     public string Title => string.IsNullOrWhiteSpace(Def.title) ? $"Chapter {Def.number}" : Def.title;
@@ -401,6 +448,7 @@ public class CareerBadgeView
 [Serializable]
 public class CareerSeenState
 {
+    public int trust;
     public int exp;
     public int hearts;
     public List<string> completed = new List<string>();
@@ -411,6 +459,7 @@ public class CareerSeenState
 
 public class CareerChanges
 {
+    public int TrustFrom;
     public int ExpFrom;
     public int HeartsFrom;
     public readonly List<string> NewlyPassed = new List<string>();

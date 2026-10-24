@@ -96,6 +96,9 @@ public sealed class OfficeHours : MonoBehaviour
     public int MinutesLeft => OfficeHoursMath.MinutesLeft(GameSeconds, DeadlineSeconds);
     public float RealSecondsLeft => OfficeHoursMath.RealSecondsLeft(GameSeconds, DeadlineSeconds, Config.gameSecondsPerRealSecond);
 
+    /// <summary>Review seconds an appointment extension already added to today's deadline (T05 records it; T14 applies it).</summary>
+    public int ExtensionSeconds { get; private set; }
+
     /// <summary>True when the case was handed in during the first day, before the deadline.</summary>
     public bool OnTime => submittedDay == 1 && submittedAt >= 0 && submittedAt <= deadlineFirstDay;
 
@@ -218,7 +221,7 @@ public sealed class OfficeHours : MonoBehaviour
             stateMachine.OnStateChanged += HandleStateChanged;
         }
 
-        if (!Paused())
+        if (!CaseDone && !Paused())
         {
             float dt = Time.unscaledDeltaTime;
             activeSeconds += dt;
@@ -257,6 +260,83 @@ public sealed class OfficeHours : MonoBehaviour
         if (clock == shownClock) return;
         shownClock = clock;
         minimap.SetTitle(clock);
+    }
+
+    // =========================================================
+    // CHECKPOINT (T05): the game clock, never a statutory deadline
+    // =========================================================
+
+    /// <summary>The clock as plain values for the Level 1 checkpoint.</summary>
+    public void CaptureClock(Level1ClockRecord into)
+    {
+        if (into == null || Config == null || !Config.enabled) return;
+        into.isSet = true;
+        into.day = Day;
+        into.gameSeconds = GameSeconds;
+        into.activeSeconds = activeSeconds;
+        into.sideQuestSeconds = sideQuestSeconds;
+        into.allowance = allowance;
+        into.hasDeadline = HasDeadline;
+        into.announced = Announced;
+        into.deadlineSeconds = DeadlineSeconds;
+        into.deadlineFirstDay = deadlineFirstDay;
+        into.submittedAt = submittedAt;
+        into.submittedDay = submittedDay;
+        into.onTimeSaid = onTimeSaid;
+        into.missedOnce = MissedOnce;
+        into.extensionSeconds = ExtensionSeconds;
+    }
+
+    /// <summary>
+    /// Resume: the clock continues exactly where it was saved (day, time,
+    /// deadlines as saved, never recomputed). No warning, cheer or "next
+    /// morning" is replayed; a deadline already passed closes the day normally
+    /// once play resumes. Only the chip/minimap refresh (Changed).
+    /// </summary>
+    public void RestoreClock(Level1ClockRecord saved)
+    {
+        if (saved == null || !saved.isSet || Config == null || !Config.enabled || CaseDone) return;
+        Day = Mathf.Max(1, saved.day);
+        GameSeconds = saved.gameSeconds;
+        activeSeconds = saved.activeSeconds;
+        sideQuestSeconds = saved.sideQuestSeconds;
+        allowance = saved.allowance;
+        HasDeadline = saved.hasDeadline;
+        Announced = saved.announced && saved.hasDeadline;
+        DeadlineSeconds = saved.deadlineSeconds;
+        deadlineFirstDay = saved.deadlineFirstDay;
+        submittedAt = saved.submittedAt;
+        submittedDay = saved.submittedDay;
+        onTimeSaid = saved.onTimeSaid;
+        MissedOnce = saved.missedOnce;
+        ExtensionSeconds = Mathf.Clamp(saved.extensionSeconds, 0, Level1ClockRecord.MaxExtensionSeconds);
+        previousMinutesLeft = int.MaxValue;
+        shownClock = null;
+        Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Quietly restores an approved case result. The approval already saved
+    /// its score changes, so this only stops the clock and rebuilds the
+    /// presentation flags; it does not raise gameplay events or award bonuses.
+    /// </summary>
+    public void RestoreApprovedResult()
+    {
+        if (CaseDone) return;
+        if (nextMorning != null)
+        {
+            StopCoroutine(nextMorning);
+            nextMorning = null;
+        }
+        CaseDone = true;
+        BonusAwarded = Announced && OnTime;
+        if (Announced && Day > 1)
+        {
+            int daysLate = Mathf.Clamp(Day - 1, 0, Mathf.Max(0, Config.lateMaxDays));
+            LateExpLost = Config.lateExpPerDay * daysLate;
+            LateHeartsLost = Config.lateHeartsPerDay * daysLate;
+        }
+        Changed?.Invoke();
     }
 
     // =========================================================

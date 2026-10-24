@@ -34,6 +34,8 @@ public static class ObjectiveTriggers
     public const string CaseFolderStored = "CaseFolderStored";             // GameplayEvents.OnCaseFolderStored
     public const string CaseFolderReturned = "CaseFolderReturned";         // GameplayEvents.OnCaseFolderReturned
     public const string CaseFolderRetrieved = "CaseFolderRetrieved";       // GameplayEvents.OnCaseFolderRetrieved
+    public const string ClientCopyPickedUp = "ClientCopyPickedUp";         // GameplayEvents.OnClientCopyPickedUp (T08)
+    public const string ClientCopyHandedOver = "ClientCopyHandedOver";     // GameplayEvents.OnClientCopyHandedOver (T08)
     public const string FindingRecorded = "FindingRecorded";               // GameplayEvents.OnFindingRecorded
     public const string PreliminaryHoldStamped = "PreliminaryHoldStamped"; // GameplayEvents.OnPreliminaryHoldStamped
     public const string RosaRecordsCollected = "RosaRecordsCollected";     // GameplayEvents.OnRosaRecordsCollected
@@ -52,6 +54,7 @@ public static class ObjectiveTriggers
         ProfileCollected, AllProfilesCollected, TutorialGuideAppeared, TutorialGuideTalkedTo,
         SideQuestCompleted, ReceptionistTalkedTo, CaseFolderOpened, TaxCodeBookOpened,
         TaxReturnCollected, CaseCompleted, CaseFolderStored, CaseFolderReturned, CaseFolderRetrieved,
+        ClientCopyPickedUp, ClientCopyHandedOver,
         FindingRecorded, PreliminaryHoldStamped, RosaRecordsCollected, MarketDeskOpened,
         ToolkitDemoFinished, AnnotationTutorialCompleted, AnnotationsChecked, IncomeQuestCompleted,
         OfficeReviewCompleted, FinalAssessmentStamped, AuditReturned, ReviewDayRolled

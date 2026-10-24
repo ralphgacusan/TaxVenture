@@ -46,6 +46,12 @@ public static class GameplayEvents
     // completes the case.
     public static event Action OnCaseFolderRetrieved;
 
+    // T08 Client Copy handover: the approved copy was picked up beside the
+    // Auditor, and it was handed to the client (follow-through saved).
+    // Notification only: the HUD objectives listen.
+    public static event Action OnClientCopyPickedUp;
+    public static event Action OnClientCopyHandedOver;
+
     // Level 2 initial review: a complete finding was recorded on the folder's
     // Findings page, and the initial Not Ready hold was stamped. Notification only.
     public static event Action OnFindingRecorded;
@@ -105,6 +111,12 @@ public static class GameplayEvents
 
     public static void RaiseCaseFolderRetrieved()
         => OnCaseFolderRetrieved?.Invoke();
+
+    public static void RaiseClientCopyPickedUp()
+        => OnClientCopyPickedUp?.Invoke();
+
+    public static void RaiseClientCopyHandedOver()
+        => OnClientCopyHandedOver?.Invoke();
 
     public static void RaiseFindingRecorded()
         => OnFindingRecorded?.Invoke();

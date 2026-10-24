@@ -67,7 +67,43 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
     private Vector3 dragOffset;
 
     public TaxpayerProfile Profile => profile;
+    /// <summary>True only after a board check marked this pinned card right (T06: never during drafting).</summary>
     public bool IsCorrectlyPlaced { get; private set; }
+
+    // T06: the board's verdict after a check (null = not checked since it was last placed).
+    private bool? checkedResult;
+    // A card marked right by a check stays pinned while the others are corrected.
+    private bool lockedCorrect;
+
+    /// <summary>Pinned in an area (draft or checked).</summary>
+    public bool IsPlaced => currentSlot != null;
+
+    /// <summary>The area this card is pinned in (null in the tray).</summary>
+    public CorkboardSlot CurrentSlot => currentSlot;
+
+    /// <summary>Marked right by a check: stays pinned and its area takes no other card.</summary>
+    public bool IsLockedCorrect => lockedCorrect;
+
+    /// <summary>Being dragged or still moving to/from an area (the board waits before a check).</summary>
+    public bool IsBeingMoved => state == MotionState.Dragging || state == MotionState.Arriving ||
+                                state == MotionState.Pinning || state == MotionState.Returning;
+
+    /// <summary>Worth pointing at: not placed yet, or marked wrong by the last check (never reveals a draft).</summary>
+    public bool NeedsAttention => currentSlot == null || checkedResult == false;
+
+    /// <summary>
+    /// The board's check result for this pinned card (T06): right cards get the
+    /// green frame and stay pinned; wrong ones the red frame and can be moved.
+    /// No sound or reaction here; the board owns the check feedback.
+    /// </summary>
+    public void MarkChecked(bool correct)
+    {
+        if (currentSlot == null) return;
+        checkedResult = correct;
+        IsCorrectlyPlaced = correct;
+        lockedCorrect = correct;
+        SetColor(Color.Lerp(neutralColor, correct ? correctColor : wrongColor, 0.12f));
+    }
 
     private void Awake()
     {
@@ -96,6 +132,8 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
         currentSlot = pendingSlot = null;
         activePointerId = NoPointer;
         IsCorrectlyPlaced = false;
+        checkedResult = null;
+        lockedCorrect = false;
         state = MotionState.Idle;
         initialized = true;
         SetColor(neutralColor);
@@ -163,7 +201,7 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (IsLocked) return;
+        if (IsLocked || lockedCorrect) return;
         if (eventData.button != PointerEventData.InputButton.Left || state == MotionState.Pinning ||
             state == MotionState.Dragging || state == MotionState.Arriving || activePointerId != NoPointer ||
             (activeCard != null && activeCard != this) || (manager != null && !manager.CanInteract)) return;
@@ -410,37 +448,42 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
             return;
         }
 
-        bool correct = manager.HandleCardDropped(this, pendingSlot);
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_card_place_01");
-        currentSlot = pendingSlot;
+        // T06: a drop is only a draft; the neutral place sound, no verdict.
+        CorkboardSlot target = pendingSlot;
+        currentSlot = target;
         pendingSlot = null;
-        IsCorrectlyPlaced = correct;
+        IsCorrectlyPlaced = false;
+        checkedResult = null;
         pinnedPosition = transitionTargetPosition;
         pinnedRotation = transitionTargetRotation;
         placedAt = Time.unscaledTime;
         state = MotionState.Placed;
-        SetColor(Color.Lerp(neutralColor, correct ? correctColor : wrongColor, 0.12f));
+        SetColor(neutralColor);
         ShowPinMarker();
         ReleaseActiveCard();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_card_place_01");
+        manager.HandleCardDropped(this, target);
     }
 
     /// <summary>
-    /// Resume (T04): appears already pinned in its saved area, with the same
-    /// tint and pin a finished drop leaves, but no drop, sound or reaction.
+    /// Resume (T04/T06): appears already pinned in its saved area as a neutral
+    /// draft (a restored check is marked afterwards by the board), with no
+    /// drop, sound or reaction.
     /// </summary>
     public void RestorePinned(CorkboardSlot slot, Vector3 position, Quaternion rotation)
     {
         if (!initialized || slot == null || profile == null) return;
         currentSlot = slot;
         pendingSlot = null;
-        bool correct = profile.CorrectClassification == slot.ExpectedClassification;
-        IsCorrectlyPlaced = correct;
+        IsCorrectlyPlaced = false;
+        checkedResult = null;
+        lockedCorrect = false;
         transform.SetPositionAndRotation(position, rotation);
         pinnedPosition = position;
         pinnedRotation = rotation;
         placedAt = Time.unscaledTime;
         state = MotionState.Placed;
-        SetColor(Color.Lerp(neutralColor, correct ? correctColor : wrongColor, 0.12f));
+        SetColor(neutralColor);
         ShowPinMarker();
     }
 
@@ -458,6 +501,7 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
         currentSlot.VacateSlot(this);
         currentSlot = null;
         IsCorrectlyPlaced = false;
+        checkedResult = null;
         SetColor(neutralColor);
         manager?.NotifyCardRemovedFromSlot();
     }

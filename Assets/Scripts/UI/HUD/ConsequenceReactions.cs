@@ -4,10 +4,12 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// PURPOSE:
 /// People react to what the player does (Level 1 Phase 3):
-/// - Corkboard: every placed card gets a bubble: a cheer when it's right,
-///   a shrug when it's wrong, a "..." while it's locked after repeated misses.
+/// - Corkboard: every placed card gets a bubble: sparkles when it's right,
+///   a "?" when it's wrong, a "..." while it's locked after repeated misses.
 /// - Plaza: once the side quest is solved and the player is back on their
-///   feet, the four plaza clients cheer.
+///   feet, the four plaza clients show sparkles.
+/// (T22: the WorldEmote emotion set; the old Cheer/Shrug/Wait kinds map to
+/// Happy/Confused/Thinking, so timing and meaning are unchanged.)
 /// - The case client (Marie): after a failed audit, a worried bubble with
 ///   her sad portrait (her NPC marker then shows she has something to say
 ///   again in the conference room); after approval, a thank-you with her
@@ -62,8 +64,8 @@ public sealed class ConsequenceReactions : MonoBehaviour
     private void HandleCardPlaced(ProfileDragCard card, bool correct, bool locked)
     {
         if (card == null) return;
-        WorldEmote.Kind kind = correct ? WorldEmote.Kind.Cheer : locked ? WorldEmote.Kind.Wait : WorldEmote.Kind.Shrug;
-        WorldEmote.Show(card.transform, kind, locked ? CorkboardSideQuestManager.LockSeconds : 2.2f);
+        Emotion emotion = correct ? Emotion.Happy : locked ? Emotion.Thinking : Emotion.Confused;
+        WorldEmote.Show(card.transform, emotion, locked ? CorkboardSideQuestManager.LockSeconds : 2.2f);
     }
 
     private void HandleSideQuestCompleted() => plazaCheerPending = true;
@@ -89,7 +91,7 @@ public sealed class ConsequenceReactions : MonoBehaviour
         {
             plazaCheerPending = false;
             foreach (TaxpayerNpcInteractable npc in FindObjectsByType<TaxpayerNpcInteractable>(FindObjectsInactive.Exclude))
-                if (npc.gameObject.scene == gameObject.scene) WorldEmote.Show(npc.transform, WorldEmote.Kind.Cheer, 5f);
+                if (npc.gameObject.scene == gameObject.scene) WorldEmote.Show(npc.transform, Emotion.Happy, 5f);
         }
 
         CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
@@ -106,8 +108,9 @@ public sealed class ConsequenceReactions : MonoBehaviour
         if (clientThanksPending && !DialogueUI.IsAnyDialogueActive)
         {
             clientThanksPending = false;
-            // The end-of-level scene has her say it in person instead.
+            // The end-of-level scene, or the Client Copy handover (T08), has her say it in person instead.
             if (CaseFinale.Instance != null && CaseFinale.Instance.Running) return;
+            if (ClientCopyHandover.Defers || ClientCopyHandover.InProgress) return;
             if (def != null && !string.IsNullOrWhiteSpace(def.clientApprovedBubble))
                 GuideVoice.TrySay(def.clientApprovedBubble, "portrait:" + Portrait(def.clientApprovedPortrait, "Client1_Marie_Happy"), 6f);
         }

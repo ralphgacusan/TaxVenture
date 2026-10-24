@@ -179,7 +179,7 @@ public class MainMenu : MonoBehaviour
             // close/Back flow. A failed start can restore and retry.
             if ((settingsBoard == null || (!settingsBoard.IsOpen && !settingsBoard.MenuButtonsHidden)) &&
                 (TrainingBinder3D.Instance == null || !TrainingBinder3D.Instance.IsOpen)) RefreshMenu(null);
-        }       
+        }
     }
 
     /// <summary>NEW GAME: the existing confirmation card, shown without the settings board.</summary>

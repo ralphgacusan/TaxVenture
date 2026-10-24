@@ -29,6 +29,8 @@ public sealed class ProfileCardSkin : MonoBehaviour
     private const float TextBoost = 1.6f;
     private const float PixelScale = 1.2f;
 
+    private const float CorkboardTextBoost = 1.3f;
+    private static readonly float[] CorkboardTilts = { -1.6f, 1.2f, -0.9f, 1.8f };
     private static readonly Color CorrectFrame = new Color32(88, 135, 92, 255);
     private static readonly Color WrongFrame = new Color32(170, 78, 72, 255);
 
@@ -96,6 +98,20 @@ public sealed class ProfileCardSkin : MonoBehaviour
         rect.localRotation = Quaternion.identity;
         rect.localPosition = new Vector3(area.center.x, area.center.y, frontZ - FrontOffset);
 
+        // Corkboard cards (user request 2026-10-24) look like the HUD profile
+        // cards: paperclip, full header and the Classification line, a soft
+        // drop shadow and a slight paper tilt. Same size as before.
+        bool corkboard = face.GetComponentInParent<ProfileDragCard>(true) != null;
+        int number = ProfileCardFace.NumberOf(nameText.text);
+        if (corkboard)
+        {
+            RectTransform shadow = HudTheme.CreateRect("Drop Shadow", rect);
+            HudTheme.Stretch(shadow);
+            shadow.anchoredPosition = new Vector2(pixels.x * 0.018f, -pixels.y * 0.035f);
+            HudTheme.AddImage(shadow, HudTheme.Rounded, new Color(0f, 0f, 0f, 0.32f), 14f);
+            rect.localRotation = Quaternion.Euler(0f, 0f, CorkboardTilts[Mathf.Abs(number) % CorkboardTilts.Length]);
+        }
+
         // Result frame behind the card (hidden until placed on the corkboard).
         float border = pixels.x * 0.045f;
         RectTransform frame = HudTheme.CreateRect("Result Frame", rect);
@@ -105,8 +121,8 @@ public sealed class ProfileCardSkin : MonoBehaviour
 
         string name = nameText.text;
         string description = descriptionText != null ? descriptionText.text : string.Empty;
-        ProfileCardFace.Build(rect, name, description, ProfileCardFace.NumberOf(name), pixels, false, out _,
-            TextBoost, false, true);
+        ProfileCardFace.Build(rect, name, description, number, pixels, false, out _,
+            corkboard ? CorkboardTextBoost : TextBoost, corkboard, !corkboard);
 
         foreach (Graphic graphic in GetComponentsInChildren<Graphic>(true)) graphic.raycastTarget = false;
 

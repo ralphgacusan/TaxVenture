@@ -57,6 +57,7 @@ public sealed class HudFeedback : MonoBehaviour
         HudRewardFlyFX fx, HudProgressionPanel progression, OfficeObjectives objectives, RectTransform profileIcon)
     {
         var feedback = hostObject.AddComponent<HudFeedback>();
+        Instance = feedback;
         feedback.host = host;
         feedback.toasts = toasts;
         feedback.fx = fx;
@@ -105,20 +106,51 @@ public sealed class HudFeedback : MonoBehaviour
     // REWARDS
     // =========================================================
 
+    public static HudFeedback Instance { get; private set; }
+
+    /// <summary>
+    /// T08/T09: a committed story grant (Public Trust, coins): one reason toast
+    /// each and one grouped flight into the HUD (hearts to the trust bar, coins
+    /// to the wallet), then the bars ease to the saved values. Call only after
+    /// the write succeeded.
+    /// </summary>
+    public static void AnnounceCampaign(CampaignRewards.Change trust, CampaignRewards.Change coins, Vector3? origin)
+    {
+        HudFeedback feedback = Instance;
+        if (feedback == null || feedback.toasts == null) return;
+        if (trust.Applied && trust.Amount > 0)
+            feedback.toasts.Show(HudToastKind.Reputation, $"Public Trust +{trust.Amount}", trust.Reason, "trust");
+        if (coins.Applied && coins.Amount > 0)
+            feedback.toasts.Show(HudToastKind.Badge, $"+{coins.Amount} coins", coins.Reason, "coins");
+        feedback.pendingCampaign.Add(new PendingCampaign { Trust = trust, Coins = coins, Origin = origin });
+        if (feedback.progression != null) feedback.progression.HoldFillFor(0.85f);
+    }
+
+    private struct PendingCampaign
+    {
+        public CampaignRewards.Change Trust;
+        public CampaignRewards.Change Coins;
+        public Vector3? Origin;
+    }
+
+    private readonly List<PendingCampaign> pendingCampaign = new List<PendingCampaign>();
+
     private void HandleScoreEntry(ScoreEntry entry)
     {
         if (entry == null) return;
+        // T08: in a campaign, hearts mean Public Trust: score hearts are neither toasted nor flown.
+        bool trustHearts = TrustDisplay.Active;
 
         switch (entry.Source)
         {
             case ScoreSource.Conversation:
-                if (entry.Hearts > 0)
+                if (entry.Hearts > 0 && !trustHearts)
                     toasts.Show(HudToastKind.Reputation, "Client conversation", null, "talk", entry.Hearts);
                 break;
 
             case ScoreSource.SideQuest:
                 if (entry.Exp > 0) toasts.Show(HudToastKind.Exp, "Side quest reward", null, "exp", entry.Exp);
-                if (entry.Hearts > 0) toasts.Show(HudToastKind.Reputation, "Side quest reward", null, "rep", entry.Hearts);
+                if (entry.Hearts > 0 && !trustHearts) toasts.Show(HudToastKind.Reputation, "Side quest reward", null, "rep", entry.Hearts);
                 if (!string.IsNullOrEmpty(entry.BadgeName))
                 {
                     LevelScoreLedger ledger = CurrentScore();
@@ -134,12 +166,12 @@ public sealed class HudFeedback : MonoBehaviour
 
             case ScoreSource.Bonus:
                 if (entry.Exp > 0) toasts.Show(HudToastKind.Exp, entry.Label, null, "bonus", entry.Exp);
-                if (entry.Hearts > 0) toasts.Show(HudToastKind.Reputation, entry.Label, null, "bonusrep", entry.Hearts);
+                if (entry.Hearts > 0 && !trustHearts) toasts.Show(HudToastKind.Reputation, entry.Label, null, "bonusrep", entry.Hearts);
                 break;
 
             default:
                 if (entry.Exp > 0) toasts.Show(HudToastKind.Exp, "EXP earned", null, "exp", entry.Exp);
-                if (entry.Hearts > 0) toasts.Show(HudToastKind.Reputation, "Hearts earned", null, "rep", entry.Hearts);
+                if (entry.Hearts > 0 && !trustHearts) toasts.Show(HudToastKind.Reputation, "Hearts earned", null, "rep", entry.Hearts);
                 break;
         }
 
@@ -151,7 +183,8 @@ public sealed class HudFeedback : MonoBehaviour
         }
 
         LevelScoreLedger score = CurrentScore();
-        if (score != null && !passingAnnounced && score.Passed)
+        // A campaign's story never depends on the passing score (T07), so it is not announced there.
+        if (score != null && !passingAnnounced && score.Passed && !trustHearts)
         {
             passingAnnounced = true;
             toasts.Show(HudToastKind.Passing, "Passing score reached",
@@ -180,7 +213,8 @@ public sealed class HudFeedback : MonoBehaviour
     {
         var parts = new List<string>(2);
         if (exp > 0) parts.Add($"-{exp} EXP");
-        if (hearts > 0) parts.Add($"-{hearts} {(hearts == 1 ? "heart" : "hearts")}");
+        // T08: ordinary mistakes never show as lost hearts in a campaign (they are not Public Trust).
+        if (hearts > 0 && !TrustDisplay.Active) parts.Add($"-{hearts} {(hearts == 1 ? "heart" : "hearts")}");
         return string.Join("   ", parts);
     }
 
@@ -203,7 +237,7 @@ public sealed class HudFeedback : MonoBehaviour
             {
                 ScoreEntry r = pendingRewards[i];
                 Vector2 from = ScreenOrigin(r, centre);
-                int hearts = Mathf.Clamp(r.Hearts, 0, MaxHearts);
+                int hearts = TrustDisplay.Active ? 0 : Mathf.Clamp(r.Hearts, 0, MaxHearts);
                 int stars = r.Exp > 0 ? Mathf.Clamp(Mathf.CeilToInt(r.Exp / 12f), 3, MaxStars) : 0;
                 bool single = r.Source == ScoreSource.Conversation;
                 if ((stars > 0 || hearts > 0) && AudioManager.Instance != null)
@@ -220,6 +254,30 @@ public sealed class HudFeedback : MonoBehaviour
                 if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_reward_badge_01", 0.7f);
                 fx.PulseAfter(medal, 0.9f);
             }
+        }
+
+        // T08/T09: committed grants fly once into the trust bar / wallet, then the bars ease to the saved values.
+        if (pendingCampaign.Count > 0 && progression != null)
+        {
+            Vector2 centre = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            foreach (PendingCampaign grant in pendingCampaign)
+            {
+                Vector2 from = centre;
+                Camera cam = Camera.main;
+                if (grant.Origin.HasValue && cam != null)
+                {
+                    Vector3 p = cam.WorldToScreenPoint(grant.Origin.Value);
+                    if (p.z > 0f) from = p;
+                }
+                if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_reward_points_01", 0.65f);
+                if (grant.Trust.Applied)
+                    fx.Burst(HudTheme.Heart, HudTheme.Reputation, Mathf.Clamp(grant.Trust.Amount, 1, MaxHearts), from + new Vector2(40f, 0f),
+                        progression.ReputationBar, 40f);
+                if (grant.Coins.Applied)
+                    fx.Burst(HudTheme.Circle, HudTheme.Exp, 6, from + new Vector2(-40f, 0f), progression.WalletLabel, 30f);
+            }
+            pendingCampaign.Clear();
+            progression.RefreshFromGame(animate: true);
         }
 
         if (pendingProfilePulses > 0)

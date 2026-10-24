@@ -71,7 +71,7 @@ public sealed class SettingsBoard3D : MonoBehaviour
     private TextMeshPro musicState;
     private TextMeshPro sfxState;
     private CareerBoardButton backButton;
-    private enum SettingsAction { None, Quit, Replay, Menu, NewGame }
+    private enum SettingsAction { None, Quit, Replay, Menu, NewGame, ResumeClientCopy }
     private SettingsAction pendingAction;
     private Transform confirmation;
     private TextMeshPro confirmationTitle;
@@ -513,11 +513,14 @@ public sealed class SettingsBoard3D : MonoBehaviour
         if (actionBusy || leaving || pendingAction != SettingsAction.None) return;
         bool newGame = action == SettingsAction.NewGame;
         if (newGame && !MenuEntry.HasCareerAccess) return;
-        pendingAction = action;
-        confirmationTitle.text = newGame ? CampaignMenu.ConfirmTitle.ToUpperInvariant() :
+        bool resumeClientCopy = action == SettingsAction.Replay && MustFinishClientCopy();
+        pendingAction = resumeClientCopy ? SettingsAction.ResumeClientCopy : action;
+        confirmationTitle.text = resumeClientCopy ? "CASE STILL IN PROGRESS" : newGame ? CampaignMenu.ConfirmTitle.ToUpperInvariant() :
             action == SettingsAction.Replay ? (TutorialSettings ? "REPLAY TUTORIAL?" : "REPLAY LEVEL?")
             : action == SettingsAction.Menu ? (TutorialSettings ? "LEAVE TUTORIAL?" : "BACK TO MENU?") : "QUIT GAME?";
-        confirmationMessage.text = newGame
+        confirmationMessage.text = resumeClientCopy
+            ? "Finish Marie's handover and the result screen before replaying. Resume Level keeps your current progress."
+            : newGame
             ? CampaignMenu.ConfirmBody
             : action == SettingsAction.Replay ? (TutorialSettings
                 ? "Start this tutorial again? Your current practice attempt will be lost. Career progress is kept."
@@ -528,8 +531,8 @@ public sealed class SettingsBoard3D : MonoBehaviour
                     : "Leave this level? Your review will be saved so you can resume from the career board.")
                 : "Leave this level? Your current attempt will be lost. Earned career rewards are kept.")
             : "Are you sure you want to close TaxVenture?";
-        cancelButton.SetLabel(CampaignMenu.CancelButton.ToUpperInvariant());
-        confirmButton.SetLabel(newGame ? CampaignMenu.ConfirmButton.ToUpperInvariant() : action == SettingsAction.Replay ? "REPLAY" :
+        cancelButton.SetLabel(resumeClientCopy ? "STAY" : CampaignMenu.CancelButton.ToUpperInvariant());
+        confirmButton.SetLabel(resumeClientCopy ? "RESUME LEVEL" : newGame ? CampaignMenu.ConfirmButton.ToUpperInvariant() : action == SettingsAction.Replay ? "REPLAY" :
             action == SettingsAction.Menu ? (TutorialSettings ? "LEAVE TUTORIAL" : "LEAVE LEVEL") : "QUIT");
         ClearPointer();
         confirmationElapsed = 0f;
@@ -537,6 +540,14 @@ public sealed class SettingsBoard3D : MonoBehaviour
         confirmation.gameObject.SetActive(true);
         // The standalone New Game opener owns its select sound.
         if (action != SettingsAction.NewGame && AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+    }
+
+    private bool MustFinishClientCopy()
+    {
+        PlayerProgressManager manager = PlayerProgressManager.Instance;
+        return gameObject.scene.name == "Office_Level1" && manager != null &&
+               CampaignRun.AllowsStoryWrites(PlayerProgressManager.CurrentRunMode) &&
+               (manager.FollowThroughPending || manager.PendingLevelOneEndFlow);
     }
 
     private void CancelConfirmation()
@@ -579,6 +590,10 @@ public sealed class SettingsBoard3D : MonoBehaviour
 #else
                     Application.Quit();
 #endif
+                    break;
+                case SettingsAction.ResumeClientCopy:
+                    // Keep the saved handover phase/checkpoint and simply close settings.
+                    success = true;
                     break;
             }
         }

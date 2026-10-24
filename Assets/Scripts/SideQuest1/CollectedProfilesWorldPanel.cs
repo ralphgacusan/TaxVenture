@@ -45,6 +45,7 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
     private bool isOpen;
     private bool isClosing;
     private bool isLockedToSingleProfile;
+    private bool profilesOnBoard;
     private int animationVersion;
     private int papersArriving;
     private Transform draggedPaper;
@@ -308,6 +309,7 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
         }
 
         if (!isActiveAndEnabled || isClosing) return;
+        if (profilesOnBoard && !isOpen) return;   // the cards are in the corkboard tray
         if (isOpen)
         {
             BeginReturnToFolder();
@@ -547,9 +549,26 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// The corkboard side quest holds the profile cards in its tray (T06,
+    /// user request 2026-10-24): while true the icon is empty (0) and nothing
+    /// can be opened or dragged out of it. Closes the viewer if it is open.
+    /// </summary>
+    public void SetProfilesOnBoard(bool onBoard)
+    {
+        if (profilesOnBoard == onBoard) return;
+        profilesOnBoard = onBoard;
+        if (onBoard && isOpen && !isClosing) BeginReturnToFolder();
+        if (TaxpayerProfileCollectionHUD.Instance != null) TaxpayerProfileCollectionHUD.Instance.RefreshCountDisplay();
+    }
+
+    /// <summary>True while the corkboard tray holds the profile cards.</summary>
+    public bool ProfilesOnBoard => profilesOnBoard;
+
     /// <summary>The profiles the viewer would show (read-only use by the Office HUD profile cards).</summary>
     public List<TaxpayerProfile> GetProfilesToShow()
     {
+        if (profilesOnBoard) return new List<TaxpayerProfile>();
         if (isLockedToSingleProfile)
         {
             var single = new List<TaxpayerProfile>();
@@ -665,7 +684,7 @@ public class CollectedProfilesWorldPanel : MonoBehaviour
         }
     }
 
-    public int CollectedCount => isLockedToSingleProfile
+    public int CollectedCount => profilesOnBoard ? 0 : isLockedToSingleProfile
         ? (survivingProfileSource != null && survivingProfileSource.Profile != null ? 1 : 0)
         : collectedProfiles.Count;
 

@@ -270,9 +270,10 @@
   "clientPortraitSad": "Client1_Marie_Sad",
 
 
+  "_emotes": "Any dialogue line may add \"emote\": heart, sparkles, alert, question, thinking, idea, sweat, worried, annoyed or music (a small icon over the speaker while the line shows), and \"burst\": true for a peak moment only. Lines without one show nothing; unknown names are ignored with a warning.",
   "receptionistGreeting": [
     {"speaker": "Npc", "text": "Welcome to the office! You must be our new tax consultant.", "portraitId": "default"},
-    {"speaker": "Npc", "text": "Word travels fast around here. Everyone's saying you did great in the plaza!", "portraitId": "default"},
+    {"speaker": "Npc", "text": "Word travels fast around here. Everyone's saying you did great in the plaza!", "portraitId": "default", "emote": "sparkles"},
     {"speaker": "Npc", "text": "Remember Marie, from outside? She's your first case. Her case folder is already on your desk.", "portraitId": "default"},
     {"speaker": "Player", "text": "Great, I'll head straight there.", "portraitId": "Auditor_Default"}
   ],
@@ -449,12 +450,12 @@
   "_consequences": "Level 1 Phase 3. Marie's talk after a failed audit (her story again as clues, never the answer), her bubbles, what each mistake would mean in real life (Audit Summary), and the Auditor's lines that get stricter on each failed try (the last repeats).",
 
   "clientAfterFailedAudit": [
-    { "speaker": "Npc", "text": "The Auditor said something was off with my file... Did I tell you something wrong?", "portraitId": "Client1_Marie_Sad" },
+    { "speaker": "Npc", "text": "The Auditor said something was off with my file... Did I tell you something wrong?", "portraitId": "Client1_Marie_Sad", "emote": "worried" },
     { "speaker": "Player", "text": "Not at all. I just need to take another look. Can you remind me about your work?", "portraitId": "Auditor_Default" },
     { "speaker": "Npc", "text": "I've only ever had one job: the night shift at the BPO, with my salary every payday. No business on the side.", "portraitId": "Client1_Marie_Default" },
     { "speaker": "Npc", "text": "And I've lived in this town my whole life. My passport has never even been stamped!", "portraitId": "Client1_Marie_Default" },
-    { "speaker": "Player", "text": "That helps a lot. Leave it to me.", "portraitId": "Auditor_Default" },
-    { "speaker": "Npc", "text": "Thank you. I'll be right here.", "portraitId": "Client1_Marie_Happy" }
+    { "speaker": "Player", "text": "That helps a lot. Leave it to me.", "portraitId": "Auditor_Default", "emote": "idea" },
+    { "speaker": "Npc", "text": "Thank you. I'll be right here.", "portraitId": "Client1_Marie_Happy", "emote": "heart" }
   ],
 
   "clientFailedBubble": "Something's off with my file? Oh no... I'll be in the conference room if you need me!",
@@ -493,7 +494,110 @@
   ],
   "auditorSameAnswersLine": "These are the exact same answers you gave me last time. Change what's wrong first, then come back.",
 
-  "_clientFinale": "End-of-level scene: Marie (the plaza model) in the conference room on the left, the Level Complete card on the right. Her lines depend on the result: great = first try and on time; good = one slip (one failed audit, or one day late); okay = more slips. screenLeft = where she stands across the screen (0 left, 0.5 centre). distanceScale: 1 = default, bigger = camera farther back. floorPath = the room floor she stands on.",
+  "_consultation": "T23: visiting Marie in the conference room during her case (after the side quest, before approval). Each visit picks ONE entry in this order: a clue that fits (document = a documents[].documentName while it is unread; field = a case folder key such as ResidencyStatus while it is empty or wrong; each clue once until the next reset), then a special moment (failedAudit after a failed audit, laterDay on Office Hours day 2+), then the visit ladder (1st helpful, 2nd friendly, 3rd teasing, 4th playful, 5th+ redirect; the last step repeats). A failed audit or a new day restarts the ladder. The line just said is never picked again next. Ids must be unique. Clues are hints only: never write an answer (Resident Citizen, Compensation Earner, Employment Income). Visiting never changes trust, coins, XP, score or time.",
+  "consultation": {
+    "enabled": true,
+    "clues": [
+      { "id": "clue-form-2316", "document": "Certificate of Compensation Payment/Tax Withheld (BIR Form 2316)", "when": "unread", "lines": [
+        { "speaker": "Npc", "text": "Did you get to look at the BIR Form 2316 from my employer? HR gave it to me last week.", "portraitId": "Client1_Marie_Default", "emote": "question" },
+        { "speaker": "Player", "text": "Not yet. I'll check it next.", "portraitId": "Auditor_Default" }
+      ] },
+      { "id": "clue-employment-records", "document": "Employment Records", "when": "unread", "lines": [
+        { "speaker": "Npc", "text": "My employment records are in the folder too. HR said they explain my job.", "portraitId": "Client1_Marie_Default", "emote": "idea" },
+        { "speaker": "Player", "text": "Good to know. Thanks, Marie.", "portraitId": "Auditor_Default" }
+      ] },
+      { "id": "clue-government-id", "document": "Valid Government ID", "when": "unread", "lines": [
+        { "speaker": "Npc", "text": "Oh, and a copy of my ID is in there, if you need my details.", "portraitId": "Client1_Marie_Default" },
+        { "speaker": "Player", "text": "I'll take a look.", "portraitId": "Auditor_Default" }
+      ] },
+      { "id": "clue-residency", "field": "ResidencyStatus", "when": "empty", "lines": [
+        { "speaker": "Npc", "text": "Where I live? My ID has my address, and I can tell you I've never lived anywhere else.", "portraitId": "Client1_Marie_Default", "emote": "thinking" },
+        { "speaker": "Player", "text": "That helps. Thank you.", "portraitId": "Auditor_Default" }
+      ] },
+      { "id": "clue-taxpayer-type", "field": "TaxpayerType", "when": "empty", "lines": [
+        { "speaker": "Npc", "text": "What kind of worker am I? My employment records should spell that out better than I can.", "portraitId": "Client1_Marie_Default", "emote": "thinking" },
+        { "speaker": "Player", "text": "I'll read them carefully.", "portraitId": "Auditor_Default" }
+      ] },
+      { "id": "clue-income-source", "field": "IncomeSource", "when": "empty", "lines": [
+        { "speaker": "Npc", "text": "Everything about my pay should be on that BIR Form 2316. That's where my money comes from.", "portraitId": "Client1_Marie_Default", "emote": "idea" },
+        { "speaker": "Player", "text": "Got it.", "portraitId": "Auditor_Default" }
+      ] }
+    ],
+    "failedAudit": [
+        { "id": "failed-oh-no", "lines": [
+          { "speaker": "Npc", "text": "The Auditor sent it back? Oh no... did I tell you something wrong?", "portraitId": "Client1_Marie_Sad", "emote": "worried" },
+          { "speaker": "Player", "text": "Not at all. I just need another look. Can you remind me about your work?", "portraitId": "Auditor_Default" },
+          { "speaker": "Npc", "text": "I've only ever had the night shift at the BPO, with my salary every payday. No business on the side.", "portraitId": "Client1_Marie_Default" },
+          { "speaker": "Npc", "text": "And I've lived in this town my whole life. My passport has never even been stamped!", "portraitId": "Client1_Marie_Default" },
+          { "speaker": "Player", "text": "That helps a lot. Leave it to me.", "portraitId": "Auditor_Default", "emote": "idea" }
+        ] },
+        { "id": "failed-not-good", "lines": [
+          { "speaker": "Npc", "text": "Back from the Auditor... it's not good news, is it?", "portraitId": "Client1_Marie_Sad", "emote": "sweat" },
+          { "speaker": "Player", "text": "Not yet. One more careful pass and we'll get there.", "portraitId": "Auditor_Default" },
+          { "speaker": "Npc", "text": "I trust you. Take your time.", "portraitId": "Client1_Marie_Happy", "emote": "heart" }
+        ] }
+    ],
+    "laterDay": [
+        { "id": "day-hoping", "lines": [
+          { "speaker": "Npc", "text": "Good morning! I was hoping to hear back yesterday...", "portraitId": "Client1_Marie_Default", "emote": "thinking" },
+          { "speaker": "Player", "text": "It's taking a little longer, but I'm on it.", "portraitId": "Auditor_Default" },
+          { "speaker": "Npc", "text": "Okay! I'm not in a rush, just curious.", "portraitId": "Client1_Marie_Happy", "emote": "music" }
+        ] },
+        { "id": "day-still-desk", "lines": [
+          { "speaker": "Npc", "text": "Another day! Is my file still on your desk?", "portraitId": "Client1_Marie_Default", "emote": "question" },
+          { "speaker": "Player", "text": "Still working through it. Almost there.", "portraitId": "Auditor_Default" },
+          { "speaker": "Npc", "text": "Then I'll wait. I brought snacks!", "portraitId": "Client1_Marie_Happy", "emote": "music" }
+        ] }
+    ],
+    "ladder": [
+      { "mood": "helpful", "variants": [
+        { "id": "helpful-ask", "lines": [
+          { "speaker": "Npc", "text": "Oh, hello again! Ask me anything.", "portraitId": "Client1_Marie_Happy", "emote": "music" }
+        ] },
+        { "id": "helpful-need", "lines": [
+          { "speaker": "Npc", "text": "Hi! Do you need something from me for my file?", "portraitId": "Client1_Marie_Happy", "emote": "music" }
+        ] }
+      ] },
+      { "mood": "friendly", "variants": [
+        { "id": "friendly-back", "lines": [
+          { "speaker": "Npc", "text": "Back already? Sure, what do you need?", "portraitId": "Client1_Marie_Happy", "emote": "sparkles" }
+        ] },
+        { "id": "friendly-happy", "lines": [
+          { "speaker": "Npc", "text": "Hello again! I'm happy to help, really.", "portraitId": "Client1_Marie_Happy", "emote": "sparkles" }
+        ] }
+      ] },
+      { "mood": "teasing", "variants": [
+        { "id": "teasing-trouble", "lines": [
+          { "speaker": "Npc", "text": "You again! Is my file giving you trouble?", "portraitId": "Client1_Marie_Default", "emote": "sweat" }
+        ] },
+        { "id": "teasing-charm", "lines": [
+          { "speaker": "Npc", "text": "Third time's the charm, right? Is it that tricky?", "portraitId": "Client1_Marie_Default", "emote": "sweat" }
+        ] }
+      ] },
+      { "mood": "playful", "variants": [
+        { "id": "playful-life-story", "lines": [
+          { "speaker": "Npc", "text": "You'll know my life story better than I do!", "portraitId": "Client1_Marie_Happy", "emote": "annoyed" }
+        ] },
+        { "id": "playful-charge", "lines": [
+          { "speaker": "Npc", "text": "At this rate I should charge you for my time! Kidding.", "portraitId": "Client1_Marie_Happy", "emote": "annoyed" }
+        ] }
+      ] },
+      { "mood": "redirect", "variants": [
+        { "id": "redirect-documents", "lines": [
+          { "speaker": "Npc", "text": "I think I've told you everything. Maybe my documents have the rest?", "portraitId": "Client1_Marie_Default", "emote": "thinking" }
+        ] },
+        { "id": "redirect-folder", "lines": [
+          { "speaker": "Npc", "text": "Honestly, it's all in the folder I gave you. Take a look!", "portraitId": "Client1_Marie_Default", "emote": "thinking" }
+        ] },
+        { "id": "redirect-talked-out", "lines": [
+          { "speaker": "Npc", "text": "I'm all talked out! The documents will help more than me.", "portraitId": "Client1_Marie_Happy", "emote": "thinking" }
+        ] }
+      ] }
+    ],
+    "fallback": [ { "speaker": "Npc", "text": "Hello again! Let me know if you need anything about my file.", "portraitId": "Client1_Marie_Default" } ]
+  },
+
+  "_clientFinale": "End-of-level scene: Marie (the plaza model) in the conference room on the left, the Level Complete card on the right. Her lines depend on the result: great = first try and on time; good = one slip (one failed audit, or one day late); okay = more slips. screenLeft = where she stands across the screen (0 left, 0.5 centre). distanceScale: 1 = default, bigger = camera farther back. floorPath = the room floor she stands on. farewellGreat / farewellGood / farewellOkay = her goodbye beside the card after the Client Copy handover (each line may have an emote).",
   "clientFinale": {
     "enabled": true,
     "name": "Marie",
@@ -515,7 +619,66 @@
     "okay": [
       "Phew... it's finally approved.",
       "That was a bit of a journey... but thank you for sticking with it. Maybe a little quicker next time?"
+    ],
+    "farewellGreat": [
+      { "speaker": "Npc", "text": "Thank you again, Elijah! I'll keep this copy somewhere safe.", "emote": "heart" },
+      { "speaker": "Npc", "text": "I'm telling everyone at the plaza about you. Karaoke is still on me!", "emote": "sparkles" }
+    ],
+    "farewellGood": [
+      { "speaker": "Npc", "text": "Thank you for walking me through it. I understand my return now.", "emote": "heart" },
+      { "speaker": "Npc", "text": "I feel so much lighter. See you before the next filing!", "emote": "music" }
+    ],
+    "farewellOkay": [
+      { "speaker": "Npc", "text": "Thank you for not giving up on my file.", "emote": "sweat" },
+      { "speaker": "Npc", "text": "Next time I'll come by early. Promise!", "emote": "music" }
     ]
+  },
+
+  "_clientHandover": "After approval (story only): when the Audit Summary closes the Auditor explains the approval (approvalGreat / approvalGood / approvalOkay by result, as in clientFinale), then auditorGive, and the read-only client copy drops beside him when his conversation ends (auditorGive alone when asked again before pickup; auditorRemind when asked again once you carry it; waiting = Marie before you picked it up), you carry it to Marie in the conference room and talk to her: opening lines, then the handover line waits until you drag the copy onto her (or tap the folder icon); handoverPrompt is shown meanwhile, retryPrompt if saving failed. Then explain (Elijah), then her clientFinale lines for your result with greatEmote / goodEmote / okayEmote on the first one.",
+  "clientHandover": {
+    "enabled": true,
+    "approvalGreat": [
+      { "speaker": "Npc", "text": "Marie's return is approved. First try, and on time. Nicely done.", "portraitId": "Auditor_Happy", "emote": "sparkles" },
+      { "speaker": "Npc", "text": "Her residency status, taxpayer type and income source all match her documents.", "portraitId": "Auditor_Default" },
+      { "speaker": "Player", "text": "So everything checks out?", "portraitId": "Auditor_Default" },
+      { "speaker": "Npc", "text": "Every line. It is filed and on record.", "portraitId": "Auditor_Happy" }
+    ],
+    "approvalGood": [
+      { "speaker": "Npc", "text": "It took one more look, but Marie's return is approved.", "portraitId": "Auditor_Happy" },
+      { "speaker": "Npc", "text": "Her residency status, taxpayer type and income source now match her documents.", "portraitId": "Auditor_Default" },
+      { "speaker": "Player", "text": "Thanks for catching what I missed.", "portraitId": "Auditor_Default" },
+      { "speaker": "Npc", "text": "That is what the review is for. It is filed and on record.", "portraitId": "Auditor_Happy" }
+    ],
+    "approvalOkay": [
+      { "speaker": "Npc", "text": "That took a few tries, but Marie's return is approved now.", "portraitId": "Auditor_Default", "emote": "sweat" },
+      { "speaker": "Npc", "text": "Her residency status, taxpayer type and income source finally match her documents.", "portraitId": "Auditor_Default" },
+      { "speaker": "Player", "text": "I will check her documents more carefully next time.", "portraitId": "Auditor_Default" },
+      { "speaker": "Npc", "text": "Good. It is filed and on record now.", "portraitId": "Auditor_Happy" }
+    ],
+    "auditorGive": [
+      { "speaker": "Npc", "text": "Here is Marie's client copy. Bring it to her and walk her through it.", "portraitId": "Auditor_Happy", "emote": "alert" }
+    ],
+    "auditorRemind": [
+      { "speaker": "Npc", "text": "Marie is waiting in the conference room. Walk her through her copy.", "portraitId": "Auditor_Default" }
+    ],
+    "waiting": [
+      { "speaker": "Npc", "text": "Oh, hello! Is my file ready yet?", "portraitId": "Client1_Marie_Default", "emote": "question" },
+      { "speaker": "Player", "text": "Almost. The Auditor has your copy for me.", "portraitId": "Auditor_Default" }
+    ],
+    "opening": [
+      { "speaker": "Player", "text": "Marie! Good news: your return is approved.", "portraitId": "Auditor_Default", "emote": "alert" },
+      { "speaker": "Npc", "text": "Really? Already? Oh, I was so nervous!", "portraitId": "Client1_Marie_Happy", "emote": "sweat" }
+    ],
+    "handover": { "speaker": "Player", "text": "Here is your copy. The Auditor checked every line.", "portraitId": "Auditor_Default" },
+    "handoverPrompt": "Drag the client copy to Marie",
+    "retryPrompt": "It didn't save. Drag the client copy to Marie again.",
+    "explain": [
+      { "speaker": "Player", "text": "Keep it with your records. It shows what was filed for you and when.", "portraitId": "Auditor_Default" },
+      { "speaker": "Player", "text": "If your work or your pay ever changes, come and see me before the next filing.", "portraitId": "Auditor_Default", "emote": "idea" }
+    ],
+    "greatEmote": "sparkles",
+    "goodEmote": "heart",
+    "okayEmote": "music"
   }
 
 }

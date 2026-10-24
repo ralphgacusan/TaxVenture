@@ -12,6 +12,12 @@
     <Compile Include="../../Assets/Scripts/RewardsSystem/CareerProgress.cs" Link="CareerProgress.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignRun.cs" Link="CampaignRun.cs" />
     <Compile Include="../../Assets/Scripts/SideQuest1/Level1FieldCheckpointRules.cs" Link="Level1FieldCheckpointRules.cs" />
+    <Compile Include="../../Assets/Scripts/SideQuest1/ClassificationCheck.cs" Link="ClassificationCheck.cs" />
+    <Compile Include="../../Assets/Scripts/RewardsSystem/CaseResultRules.cs" Link="CaseResultRules.cs" />
+    <Compile Include="../../Assets/Scripts/RewardsSystem/ClientCopyRules.cs" Link="ClientCopyRules.cs" />
+    <Compile Include="../../Assets/Scripts/Data/ClientConsultationRules.cs" Link="ClientConsultationRules.cs" />
+    <Compile Include="ConsultationStubs.cs" />
+    <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignRewards.cs" Link="CampaignRewards.cs" />
     <Compile Include="../../Assets/Scripts/SideQuest1/TaxpayerProfileData.cs" Link="TaxpayerProfileData.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignMenu.cs" Link="CampaignMenu.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignSave.cs" Link="CampaignSave.cs" />

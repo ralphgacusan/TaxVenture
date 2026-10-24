@@ -31,6 +31,7 @@ public class ComputerInteractable : MonoBehaviour, IInteractable
     }
     public void OnInteract()
     {
+        if (ClientCopyHandover.CaseActionsBlocked) return;
         // Debug: Log a message to indicate that the Computer has been clicked
         Debug.Log("Computer clicked! Implement the logic to open the Computer UI here.");
         computerHomeUI.Show();

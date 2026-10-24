@@ -36,6 +36,12 @@ public class StampSetInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract()
     {
+        if (ClientCopyHandover.CaseActionsBlocked)
+        {
+            Debug.Log("[StampSetInteractable] The approved Client Copy cannot be stamped.");
+            return;
+        }
+
         Debug.Log("======================================");
         Debug.Log("[StampSetInteractable] STAMP SET CLICKED");
 

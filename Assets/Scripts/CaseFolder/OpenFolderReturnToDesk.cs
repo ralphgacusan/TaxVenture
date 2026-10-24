@@ -199,6 +199,16 @@ public class OpenFolderReturnToDesk :
     /// the open folder back onto the desk programmatically, without requiring
     /// an actual pointer-up drop event.
     /// </summary>
+    /// <summary>
+    /// Resume (Campaign Foundation T05): the folder was in the HUD icon in the
+    /// saved run, so the closed desk copy is hidden exactly as opening the
+    /// folder hides it (its drag stays enabled, so ForceReturnToDesk works).
+    /// </summary>
+    public void HideClosedFolderForRestore()
+    {
+        if (originalClosedFolder != null) originalClosedFolder.SetActive(false);
+    }
+
     public void ForceReturnToDesk()
     {
         if (deskDropFolder == null || originalClosedFolder == null)

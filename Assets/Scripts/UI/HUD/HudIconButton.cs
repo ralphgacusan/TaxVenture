@@ -154,6 +154,12 @@ public class HudIconButton : MonoBehaviour
         else SetLocked();
     }
 
+    /// <summary>Resume (T05): the folder icon follows a quietly restored folder (other icons are unchanged).</summary>
+    public void RefreshFolderState()
+    {
+        if (unlockTrigger == UnlockTrigger.CaseFolderOpened) RefreshFolderAvailability();
+    }
+
     private void RefreshFolderAvailability()
     {
         SetAvailable(FolderToHUDIcon.GetStoredFolderCount() > 0);

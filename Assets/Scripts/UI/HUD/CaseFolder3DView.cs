@@ -53,6 +53,7 @@ public sealed class CaseFolder3DView : MonoBehaviour
     private float fromScale, toScale;
     private FloatingFolderGrab grab;
     private FolderToHUDIcon store;
+    private bool layerWasAlwaysComposite;
 
     public bool IsOpen => phase == Phase.Opening || phase == Phase.Open;
     public Doc3DLayer Layer => layer;
@@ -147,6 +148,15 @@ public sealed class CaseFolder3DView : MonoBehaviour
         grab = folder.gameObject.AddComponent<FloatingFolderGrab>();
         grab.Owner = this;
 
+        // Floating in front of the camera it must never be cut by the world
+        // (at the desk the tabletop is nearer than the reading distance), the
+        // same rule as Level 2's floating Tax Code Book.
+        if (layer != null)
+        {
+            layerWasAlwaysComposite = layer.AlwaysComposite;
+            layer.AlwaysComposite = true;
+        }
+
         phase = Phase.Opening;
         elapsed = 0f;
         layer?.BringToFront();
@@ -184,6 +194,7 @@ public sealed class CaseFolder3DView : MonoBehaviour
         }
         if (grab != null) Destroy(grab);
         grab = null;
+        if (layer != null) layer.AlwaysComposite = layerWasAlwaysComposite;
         if (pages != null) pages.HideFor3DView();
 
         folder.SetParent(savedParent, true);

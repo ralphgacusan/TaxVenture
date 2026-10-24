@@ -1,6 +1,9 @@
 using TMPro;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 /// <summary>
 /// PURPOSE:
@@ -39,7 +42,16 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         new System.Collections.Generic.List<CanvasGroup>();
     private readonly System.Collections.Generic.List<CanvasGroup> addedButtonGroups =
         new System.Collections.Generic.List<CanvasGroup>();
-    private float sceneButtonsAlpha = 1f;
+    private CanvasGroup settingsButtons;
+    private CanvasGroup iconButtons;
+    private RectTransform caseFolderIcon;
+    private float trustPeekUntil;
+    private bool awaitedControlsApplied;
+    private readonly Dictionary<Button, bool> awaitedButtonStates = new Dictionary<Button, bool>();
+    private readonly Dictionary<HudSubmittableIcon, bool> awaitedIconStates = new Dictionary<HudSubmittableIcon, bool>();
+    private readonly Dictionary<Behaviour, bool> awaitedPointerHandlerStates = new Dictionary<Behaviour, bool>();
+    private readonly Dictionary<CanvasGroup, AwaitedCanvasGroupState> awaitedSiblingVisualStates =
+        new Dictionary<CanvasGroup, AwaitedCanvasGroupState>();
     private readonly System.Collections.Generic.List<Behaviour> disabledNotesHandlers =
         new System.Collections.Generic.List<Behaviour>();
 
@@ -63,6 +75,13 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         new System.Collections.Generic.List<Component>();
     private float laidOutWidth = -1f;
 
+    private struct AwaitedCanvasGroupState
+    {
+        public float Alpha;
+        public bool BlocksRaycasts;
+        public bool Interactable;
+    }
+
     /// <summary>True once the HUD has fully faded in; animations wait for this.</summary>
     public bool IsShown => group != null && group.alpha >= 0.99f;
 
@@ -70,6 +89,7 @@ public sealed class OfficeHudRuntime : MonoBehaviour
     public HudProgressionPanel Progression => progression;
     public HudObjectiveTracker Objectives => objectives;
     public OfficeObjectives ObjectiveProgress => objectiveProgress;
+    public RectTransform CaseFolderIcon => caseFolderIcon;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void InitializeForLoadedScenes()
@@ -154,8 +174,8 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         HideLegacy(level);
         HideLegacy(debugLabel);
 
-        AddSceneButtonGroup(canvasRoot.Find("PermanentHUD/Settings"));
-        AddSceneButtonGroup(canvasRoot.Find("PermanentHUD/IconButtons"));
+        settingsButtons = AddSceneButtonGroup(canvasRoot.Find("PermanentHUD/Settings"));
+        iconButtons = AddSceneButtonGroup(canvasRoot.Find("PermanentHUD/IconButtons"));
 
         // Phase 4: game-style interaction prompt and icon count badges.
         AttachPrompt(canvasRoot);
@@ -319,6 +339,7 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         var profileIcon = canvasRoot.Find("PermanentHUD/IconButtons/TaxpayerProfileIcon") as RectTransform;
         var notesIcon = canvasRoot.Find("PermanentHUD/IconButtons/NotesIconButton") as RectTransform;
         var caseFolderIcon = canvasRoot.Find("PermanentHUD/IconButtons/CaseFolderIconButton") as RectTransform;
+        this.caseFolderIcon = caseFolderIcon;
 
         // Taxpayer profiles: paper cards; tap the icon, or drag a stack out.
         profileCards = HudProfileCards.Create(canvasRoot, profileIcon);
@@ -365,16 +386,24 @@ public sealed class OfficeHudRuntime : MonoBehaviour
             CaseFolder3DView view = caseFolder3D;
             folderIcon.ClickOverride = () =>
             {
+                if (ClientCopyHandover.Instance != null && ClientCopyHandover.Instance.TryIconTap()) return true;
                 view.Toggle();
                 return true;
             };
+            folderIcon.DropResolver = screen => ClientCopyHandover.Instance != null
+                ? ClientCopyHandover.Instance.ResolveDrop(screen) : null;
             folderIcon.DropOpenOverride = screen =>
             {
                 view.Open(screen);
                 return true; // A rejected 3D open must not start the legacy flat window.
             };
             folderIcon.DragVisual = HudDragItem.Create(canvasRoot, "Case Folder", caseFolderIcon,
-                new Vector2(300f, 220f), -6f, HudDragItem.BuildClosedFolder);
+                new Vector2(300f, 220f), -6f, (root, size) =>
+                {
+                    HudDragItem.BuildClosedFolder(root, size);
+                    if (ClientCopyHandover.CopyActive)
+                        ClientCopyStamp.Build(root, size.x * 0.62f, new Vector2(size.x * 0.16f, -size.y * 0.12f));
+                });
             patchedFolderIcon = folderIcon;
         }
         else
@@ -426,9 +455,9 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         disabledNotesHandlers.Add(handler);
     }
 
-    private void AddSceneButtonGroup(Transform target)
+    private CanvasGroup AddSceneButtonGroup(Transform target)
     {
-        if (target == null) return;
+        if (target == null) return null;
         CanvasGroup group = target.GetComponent<CanvasGroup>();
         if (group == null)
         {
@@ -436,6 +465,7 @@ public sealed class OfficeHudRuntime : MonoBehaviour
             addedButtonGroups.Add(group);
         }
         sceneButtonGroups.Add(group);
+        return group;
     }
 
     /// <summary>Settings and the HUD icons step aside only for conversations and results.</summary>
@@ -448,20 +478,105 @@ public sealed class OfficeHudRuntime : MonoBehaviour
     private void FadeSceneButtons()
     {
         if (sceneButtonGroups.Count == 0) return;
-        float target = SceneButtonsVisible() ? 1f : 0f;
-        if (Mathf.Approximately(sceneButtonsAlpha, target)) return;
-
-        sceneButtonsAlpha = Mathf.MoveTowards(sceneButtonsAlpha, target, FadeSpeed * Time.unscaledDeltaTime);
-        bool interactive = sceneButtonsAlpha > 0.5f;
+        bool visible = SceneButtonsVisible();
+        bool awaiting = ClientCopyHandover.AwaitingHandoverAction;
         for (int i = 0; i < sceneButtonGroups.Count; i++)
         {
             CanvasGroup group = sceneButtonGroups[i];
             if (group == null) continue;
-            group.alpha = sceneButtonsAlpha;
+            bool show = awaiting ? group == iconButtons : visible;
+            group.alpha = Mathf.MoveTowards(group.alpha, show ? 1f : 0f, FadeSpeed * Time.unscaledDeltaTime);
+            bool interactive = group.alpha > 0.5f;
             group.blocksRaycasts = interactive;
             group.interactable = interactive;
         }
+        GateNonFolderIcons(awaiting);
     }
+
+    private void GateNonFolderIcons(bool active)
+    {
+        if (active)
+        {
+            awaitedControlsApplied = true;
+            if (iconButtons != null)
+            {
+                foreach (Transform sibling in iconButtons.transform)
+                {
+                    if (sibling == caseFolderIcon || IsCaseFolderControl(sibling)) continue;
+                    CanvasGroup siblingGroup = sibling.GetComponent<CanvasGroup>();
+                    if (siblingGroup == null)
+                    {
+                        siblingGroup = sibling.gameObject.AddComponent<CanvasGroup>();
+                        addedButtonGroups.Add(siblingGroup);
+                    }
+                    if (!awaitedSiblingVisualStates.ContainsKey(siblingGroup))
+                        awaitedSiblingVisualStates.Add(siblingGroup, new AwaitedCanvasGroupState
+                        {
+                            Alpha = siblingGroup.alpha,
+                            BlocksRaycasts = siblingGroup.blocksRaycasts,
+                            Interactable = siblingGroup.interactable
+                        });
+                    siblingGroup.alpha = 0f;
+                    siblingGroup.blocksRaycasts = false;
+                    siblingGroup.interactable = false;
+                }
+                foreach (Button button in iconButtons.GetComponentsInChildren<Button>(true))
+                {
+                    if (button == null || button.transform == caseFolderIcon) continue;
+                    if (!awaitedButtonStates.ContainsKey(button)) awaitedButtonStates.Add(button, button.interactable);
+                    button.interactable = false;
+                    HudSubmittableIcon icon = button.GetComponent<HudSubmittableIcon>();
+                    if (icon != null)
+                    {
+                        if (!awaitedIconStates.ContainsKey(icon)) awaitedIconStates.Add(icon, icon.enabled);
+                        icon.enabled = false;
+                    }
+                }
+                foreach (Behaviour handler in iconButtons.GetComponentsInChildren<Behaviour>(true))
+                {
+                    if (handler == null || handler is HudSubmittableIcon || IsCaseFolderControl(handler.transform) ||
+                        !HandlesPointerInput(handler)) continue;
+                    if (!awaitedPointerHandlerStates.ContainsKey(handler))
+                        awaitedPointerHandlerStates.Add(handler, handler.enabled);
+                    handler.enabled = false;
+                }
+            }
+            return;
+        }
+
+        if (!awaitedControlsApplied) return;
+        foreach (KeyValuePair<Button, bool> saved in awaitedButtonStates)
+            if (saved.Key != null) saved.Key.interactable = saved.Value;
+        foreach (KeyValuePair<HudSubmittableIcon, bool> saved in awaitedIconStates)
+            if (saved.Key != null) saved.Key.enabled = saved.Value;
+        foreach (KeyValuePair<Behaviour, bool> saved in awaitedPointerHandlerStates)
+            if (saved.Key != null) saved.Key.enabled = saved.Value;
+        foreach (KeyValuePair<CanvasGroup, AwaitedCanvasGroupState> saved in awaitedSiblingVisualStates)
+            if (saved.Key != null)
+            {
+                saved.Key.alpha = saved.Value.Alpha;
+                saved.Key.blocksRaycasts = saved.Value.BlocksRaycasts;
+                saved.Key.interactable = saved.Value.Interactable;
+            }
+        awaitedButtonStates.Clear();
+        awaitedIconStates.Clear();
+        awaitedPointerHandlerStates.Clear();
+        awaitedSiblingVisualStates.Clear();
+        awaitedControlsApplied = false;
+        if (caseFolderIcon != null)
+        {
+            HudIconButton folder = caseFolderIcon.GetComponent<HudIconButton>();
+            if (folder != null) folder.RefreshFolderState();
+        }
+    }
+
+    private bool IsCaseFolderControl(Transform control) => caseFolderIcon != null &&
+        (control == caseFolderIcon || control.IsChildOf(caseFolderIcon));
+
+    private static bool HandlesPointerInput(Behaviour handler) =>
+        handler is IPointerClickHandler || handler is IPointerDownHandler || handler is IPointerUpHandler ||
+        handler is IPointerEnterHandler || handler is IPointerExitHandler || handler is IInitializePotentialDragHandler ||
+        handler is IBeginDragHandler || handler is IDragHandler || handler is IEndDragHandler || handler is IDropHandler;
 
     private static GameObject HideLegacy(Transform legacy)
     {
@@ -511,16 +626,26 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         GameStateMachine gameState = GameStateMachine.Instance;
         // The paper windows (Notes, profile cards) hold the player still via
         // the profile-viewer mode; the HUD stays up while they are open.
+        bool dialoguePeek = ClientCopyHandover.AwaitingHandoverAction || Time.unscaledTime < trustPeekUntil;
         bool freeOrReading = cameraController != null &&
             (cameraController.CanStartDialogue ||
-             cameraController.CurrentMode == CameraController.CameraMode.ProfileViewer);
+             cameraController.CurrentMode == CameraController.CameraMode.ProfileViewer) || dialoguePeek;
         return freeOrReading &&
-               !DialogueUI.IsAnyDialogueActive && Time.timeScale > 0f &&
+               (!DialogueUI.IsAnyDialogueActive || dialoguePeek) && (Time.timeScale > 0f || dialoguePeek) &&
                !InGameSettings.IsOpen && (settings == null || !settings.IsVisible) &&
                (results == null || !results.IsVisible) &&
                !HudRewardScreen.AnyOpen &&
                (gameState == null || !gameState.IsPaused);
     }
+
+    /// <summary>Shows the saved Public Trust meter briefly while Marie's dialogue continues.</summary>
+    public void PeekDuringDialogue(float seconds)
+    {
+        trustPeekUntil = Mathf.Max(trustPeekUntil, Time.unscaledTime + Mathf.Max(0f, seconds));
+    }
+
+    /// <summary>Closes the floating, read-only 3D view before starting Marie's handover conversation.</summary>
+    public void CloseCaseFolderView() => caseFolder3D?.Close();
 
     private void ResolveSceneDependencies()
     {
@@ -560,9 +685,11 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         if (patchedFolderIcon != null)
         {
             patchedFolderIcon.ClickOverride = null;
+            patchedFolderIcon.DropResolver = null;
             patchedFolderIcon.DropOpenOverride = null;
             patchedFolderIcon.DragVisual = null;
         }
+        GateNonFolderIcons(false);
         if (safeRoot != null) Destroy(safeRoot.gameObject);
     }
 }

@@ -78,7 +78,31 @@ public class FolderToHUDIcon :
     private bool folderStored;
     private bool outForView;
 
-    private static int storedFolderCount = 0;
+    // The folders in the HUD icon right now (stored, not out for a view).
+    // Kept as the live objects, not a bare number, so the count can never
+    // outlive its folders: leaving the scene destroys them and their entries
+    // (a static int stayed at 1 after leaving Level 1, and a resumed folder
+    // then showed 2 with one real folder).
+    private static readonly System.Collections.Generic.HashSet<FolderToHUDIcon> storedFolders =
+        new System.Collections.Generic.HashSet<FolderToHUDIcon>();
+
+    private static int storedFolderCount => storedFolders.Count;
+
+    // Safety net for a folder that never woke up (no OnDestroy): a new
+    // single-scene load starts with an empty icon, before any folder can be
+    // stored (Level 2 also resets it when its office starts).
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ClearOnSceneLoad()
+    {
+        storedFolders.Clear();
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= HandleSceneLoaded;
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += HandleSceneLoaded;
+    }
+
+    private static void HandleSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        if (mode == UnityEngine.SceneManagement.LoadSceneMode.Single) storedFolders.Clear();
+    }
 
 
     private void Awake()
@@ -205,7 +229,39 @@ public class FolderToHUDIcon :
     }
 
 
-    private void StoreFolder()
+    private void StoreFolder() => StoreFolder(restoring: false);
+
+    /// <summary>
+    /// Resume (T05): the folder was already in the HUD icon in the saved run.
+    /// Stored and hidden exactly like a drop, without the paper sound or the
+    /// stored event.
+    /// </summary>
+    public void RestoreStored()
+    {
+        if (folderStored) return;
+        StoreFolder(restoring: true);
+        // Normal play stores the open folder after opening hid the closed desk
+        // copy; a restore must hide that copy too, or the folder sits on the
+        // desk and in the icon at once (user report 2026-10-23).
+        if (openFolderReturnToDesk != null) openFolderReturnToDesk.HideClosedFolderForRestore();
+    }
+
+    /// <summary>
+    /// T08: the approved case folder leaves the icon for good (it became Marie's
+    /// Client Copy, or she has it now): the icon empties, the folder stays
+    /// hidden and is not returned to the desk, and no returned event is raised.
+    /// RestoreStored puts it back quietly (the copy is picked up).
+    /// </summary>
+    public void ReleaseQuietly()
+    {
+        if (!folderStored) return;
+        folderStored = false;
+        outForView = false;
+        storedFolders.Remove(this);
+        UpdateFolderCountText();
+    }
+
+    private void StoreFolder(bool restoring)
     {
         if (folderStored)
         {
@@ -215,15 +271,15 @@ public class FolderToHUDIcon :
         folderStored = true;
 
         // Play paper sound when the folder is dropped onto the HUD icon.
-        if (AudioManager.Instance != null)
+        if (!restoring && AudioManager.Instance != null)
         {
             AudioManager.Instance.PlayPaperSFX();
         }
 
-        storedFolderCount++;
+        storedFolders.Add(this);
 
         UpdateFolderCountText();
-        GameplayEvents.RaiseCaseFolderStored();
+        if (!restoring) GameplayEvents.RaiseCaseFolderStored();
 
         /*
          * Disable the open folder's drag system.
@@ -274,6 +330,8 @@ public class FolderToHUDIcon :
     }
 
 
+    private void OnDestroy() => storedFolders.Remove(this);
+
     private void UpdateFolderCountText()
     {
         if (folderCountText != null)
@@ -284,6 +342,9 @@ public class FolderToHUDIcon :
     }
 
 
+    /// <summary>True while the folder belongs to the HUD icon, including while it is out for a quick view (T05 checkpoint).</summary>
+    public bool IsStoredOrViewing => folderStored;
+
     public bool IsFolderStored()
     {
         return folderStored && !outForView;
@@ -293,9 +354,9 @@ public class FolderToHUDIcon :
     /// <summary>Withdraws the badge for an animated view without resetting the real model.</summary>
     public bool TryTakeOutForView()
     {
-        if (!folderStored || outForView || storedFolderCount <= 0) return false;
+        if (!folderStored || outForView || !storedFolders.Contains(this)) return false;
         outForView = true;
-        storedFolderCount--;
+        storedFolders.Remove(this);
         UpdateFolderCountText();
         GameplayEvents.RaiseCaseFolderReturned();
         return true;
@@ -306,7 +367,7 @@ public class FolderToHUDIcon :
     {
         if (!folderStored || !outForView) return;
         outForView = false;
-        storedFolderCount++;
+        storedFolders.Add(this);
         UpdateFolderCountText();
         GameplayEvents.RaiseCaseFolderStored();
     }
@@ -319,7 +380,7 @@ public class FolderToHUDIcon :
 
     public static void ResetStoredFolderCount()
     {
-        storedFolderCount = 0;
+        storedFolders.Clear();
     }
 
 
@@ -364,7 +425,7 @@ public class FolderToHUDIcon :
 
         folderStored = false;
 
-        if (!outForView) storedFolderCount = Mathf.Max(0, storedFolderCount - 1);
+        storedFolders.Remove(this);
         outForView = false;
         UpdateFolderCountText();
         GameplayEvents.RaiseCaseFolderReturned();
