@@ -31,3 +31,9 @@ Thumbs.db
 *.apk
 *_BackUpThisFolder_ButDontShipItWithYourGame/
 *_BurstDebugInformation_DoNotShip/
+
+/output/
+/tmp/
+Tests/CampaignFoundationRegression/bin/
+Tests/CampaignFoundationRuntimeRegression/bin/
+Tests/Level2Regression/bin/Debug/net10.0/UnityEngine.InputLegacyModule.*
