@@ -13,9 +13,12 @@ EXPECTED = {
     "T13": ["T11", "T12"], "T14": ["T05", "T11", "T12"],
     "T15": ["T06", "T10"],
     "T16": ["T08", "T09", "T11", "T13", "T14", "T15", "T23"],
-    "T17": ["T16"], "T18": ["T17"], "T19": ["T18"],
+    "T17": ["T16", "T29"], "T18": ["T17"], "T19": ["T18"],
     "T20": ["T18"], "T21": ["T19", "T20"],
     "T22": [], "T23": ["T08", "T22"],
+    "T24": ["T16"], "T25": ["T31"], "T26": ["T25"],
+    "T27": ["T26"], "T28": ["T27"], "T29": ["T28"],
+    "T30": ["T24"], "T31": ["T30"],
 }
 errors = []
 documents = sorted(PACK.rglob("*.md"))
@@ -120,7 +123,7 @@ def ancestors(ticket_id):
         result.update(ancestors(blocker))
     return result
 
-AMENDMENTS = {"T22", "T23"}  # Delivery A amendments added 2026-10-24
+AMENDMENTS = {f"T{number:02}" for number in range(22, 32)}  # 2026-10-24 / 2026-10-26
 if ancestors("T17") != {f"T{number:02}" for number in range(1, 17)} | AMENDMENTS:
     errors.append("Delivery A gate does not cover all earlier tickets")
 if ancestors("T21") != {f"T{number:02}" for number in range(1, 21)} | AMENDMENTS:

@@ -1,6 +1,6 @@
 # Campaign Foundation — Menu, Level 1, then Level 2
 
-A detailed implementation ticket pack for the approved TaxVenture campaign systems. Created 2026-10-21. **Planned; nothing in this pack is implemented or manually accepted yet.**
+A detailed implementation ticket pack for the approved TaxVenture campaign systems. Created 2026-10-21. **Implementation evidence lives in PROGRESS.md. Original T24 is implemented internally; its opening is superseded by T30 and T31 (implemented internally 2026-10-26, user manual pending). T25 and T26 implemented internally 2026-10-27 (user manual pending), followed the same day by a user revision (no BIR form in Level 1, clients hand over flippable 3D IDs, printed background sheet, guided file reading; see PROGRESS). Next: T27-T29 -> T17, then Delivery B.**
 
 ## Overall want
 
@@ -15,13 +15,14 @@ The player is Elijah, a new arrival helping Coast Tales with income-tax work. Ar
 1. [AGENTS](AGENTS.md): ownership, internal-only verification, user manual acceptance and preservation rules.
 2. [SPEC](SPEC.md): approved behavior, inspected baseline, saved-state/transaction contracts, release scope and starting fixtures.
 3. [WORLD_AND_FEEDBACK](WORLD_AND_FEEDBACK.md): physical assets, player gestures, motion, sound and presentation.
-4. [TICKETS](TICKETS.md): 23 bounded, dependency-linked slices (T22-T23 are Delivery A amendments, 2026-10-24).
+4. [TICKETS](TICKETS.md): 31 bounded, dependency-linked slices (T22-T31 are Delivery A amendments; T30/T31 precede T25-T29 and T17).
 5. [VERIFICATION](VERIFICATION.md): actual internal checks and separate USER manual scripts.
 6. [PROGRESS](PROGRESS.md) and [KNOWN_ISSUES](KNOWN_ISSUES.md): truth of work/evidence and blockers.
 7. Selected ticket under tickets/; inspect referenced current code before implementing.
 
 ## Ticket navigation
 
+- **Current next:** [T30 — Arthur's reviewed file](tickets/T30-arthur-reviewed-file-and-opening-route.md) and [T31 — physical record extraction](tickets/T31-physical-record-extraction-and-reattachment.md) are implemented (internally verified, user manual pending), and so are [T25 — Marie's desk records](tickets/T25-marie-desk-record-connection.md) and [T26 — the corkboard reference](tickets/T26-corkboard-reference-and-plaza-pacing.md) (2026-10-27); next [T27 — the eight-type paper library](tickets/T27-eight-document-template-library.md), then T28, T29, T17 and Delivery B. Read the [supporting document standard](../SupportingDocuments.md).
 - [Start T01](tickets/T01-mastery-boundary.md).
 - [Delivery A acceptance gate](tickets/T17-delivery-a-verification.md).
 - [Next: Level 2 integration](tickets/T18-level2-campaign-and-inventory.md).

@@ -12,6 +12,8 @@ Before: the Rosa review runs through its existing case checkpoint but is outside
 
 ## Work
 
+Supporting-paper amendment 2026-10-26: after T17, adopt the [eight-type library](../../SupportingDocuments.md) completed in [T27](T27-eight-document-template-library.md). Bind Rosa's six D1–D6 records to Types 4–7 using the recorded fixture adapter map. Preserve all six individual papers, source IDs, periods, amounts, evidence links, annotations and current review flow. This is presentation adoption within existing case/inventory work, not permission to redesign Rosa or introduce every library type into her case. Keep the paid comparison stand benefit and free inspection paths intact. T21 must verify this adoption as part of Delivery B.
+
 Keep the existing Level 2 case, annotated papers, clock, records, tutorial and finale content intact while adapting campaign ownership at its boundaries. Continue using the saved Level 2 checkpoint data and stable review/case IDs. Preserve original and working document identity/revision separately and keep answer keys out of bag item snapshots. Add existing acquired records, profile references and annotated/working papers to the same bag as T10/T11; the bag is a catalogue of real models, not a replacement for the desk or a second source of case values. A player can inspect owned records while exploring, with movement locked during the viewer; formal comparison, transfer, filing, stamping, findings submission and approval remain at their existing workstations. Bag viewing follows the active review clock rule, while only the same authored blocking pauses used by the existing review may pause it.
 
 ### Source starting points

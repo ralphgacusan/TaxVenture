@@ -71,6 +71,7 @@ Changes take effect on the next Play. Invalid lessons and pages are skipped, and
 - Lessons are checked from top to bottom. Each one plays **once**, when its `when` is met and its `after` lesson has finished. Only one lesson plays at a time.
 - `onlyIn` pauses the lesson (hides it) while the condition is false. For example, if the player leaves the desk, the lesson waits and comes back when they sit down again.
 - `delay` is the number of seconds after `when` before the lesson shows.
+- `preserveWhileHidden: true` keeps the current action page pending when its context closes, then resumes that page when the context returns; by default, a completed action can advance quietly while hidden.
 - `duringResults: true` lets the lesson show over a reward card. `endIfGone: true` ends the lesson (instead of pausing it) when `onlyIn` stops being true.
 
 ### Pages

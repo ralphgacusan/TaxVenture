@@ -2,7 +2,13 @@
 
 Status: agreed planning baseline · 26 October 2026 · implementation pending.
 
+Current implementation plan: [T30 — Arthur's reviewed file](CampaignFoundation/tickets/T30-arthur-reviewed-file-and-opening-route.md), [T31 — physical record handling](CampaignFoundation/tickets/T31-physical-record-extraction-and-reattachment.md), then revised T25-T29 before T17. Original T24's bench/Jhun-first route was implemented internally but is superseded by this plan; its history stays in CampaignFoundation/PROGRESS.md. No new runtime work is performed by this documentation update.
+
+**Level 1 standard:** after the Supply Counter, meet/click Arthur, collect his teal Reviewed File and inspect its two pages. Then all four regular clients give only their existing taxpayer profiles, in any order. Marie later uses the same two-page folder structure as an editable manila case. Only Types 1–3 enter Level 1; Rosa adopts other types in T18 without losing her existing pages/records.
+
 **Read this file when planning, modeling, designing, or changing supporting documents in any TaxVenture level.** Keep this as the single reference; update it when the user changes a decision.
+
+**User revision 2026-10-27:** Level 1 has no BIR form (no 2316 anywhere). Marie's page two holds her ID and background like Arthur's. Every ID card (Arthur's, Marie's and the four plaza clients' copies) is one 3D model that turns over with a tap: the ID on the front, the client's taxpayer profile on the back, in the ID's style. The plaza clients hand over their IDs instead of profile papers. Every printed face sits on its own paper inside a 3D body with visible depth (bevelled both sides, a darker core) and a soft drop shadow when out; the background sheet keeps its original print.
 
 ## Core direction
 
@@ -13,6 +19,20 @@ Simple, stylized 3D office papers or cards that fit TaxVenture's low-poly world,
 - Types are not paper counts: three invoices are three papers of one type.
 - These are game investigation records, not a universal BIR filing checklist.
 - Case Folder, Taxpayer Profile, Findings Sheet, Tax Code Book, and completed tax return are separate existing game items; they do not expand this library.
+
+## Two separate Level 1 folders
+
+| | Arthur's Reviewed File | Marie's Case Folder |
+|---|---|---|
+| Identity | Muted teal cover, cream pages, brass REVIEWED tab, former client's name | Existing manila active-case identity |
+| Page 1 | Client Information; three completed read-only entries | Client Information; existing player-editable entries and unanswered values |
+| Page 2 | Supporting Records; attached ID above background sheet | Supporting Records; her ID above her employment/background sheet (user revision 2026-10-27: no BIR form in Level 1) |
+| Storage | Permanent reference item in Case Files in the existing Bag | Existing active-case storage and hand-in flow |
+| Actions | Read, extract, compare, return; never edit/submit/transfer answers | Inspect records, choose entries using the book, submit and correct |
+
+One shared visual identity supplies each folder's world pickup, open/closed model, drag ghost, Bag icon and preview. Opening the reference never replaces or changes the active case. The sample is a distinct former client, not one of the four board profiles. It illustrates why completed entries follow from evidence; the other four clients remain independent decisions.
+
+Arthur's reference uses one Bag slot; its documents use none. Latest restart correction: keep the file when continuing the same run and after ordinary closes/scene visits; an explicit fresh/restarted Level 1 recollects it from Arthur rather than inheriting it at the start. Add +1 to base and every bag-upgrade capacity, including maximum, once from configuration; preserve prices, upgrade deltas and ownership. Hotbar unchanged. Keep the reference available later without requiring repeated openings.
 
 ## The eight types
 
@@ -89,6 +109,15 @@ The recorded total is the client's claim, not an automatic confirmation that it 
 - Color identifies the paper type only. It never reveals whether evidence or an answer is correct. Pair color with a title/icon so recognition does not depend on color alone.
 - Use fictional issuer designs and masked identifiers; simplified “2316” and “2307” titles are sufficient. No official seals or claim that these props are official forms.
 
+### Physical 3D acceptance
+
+- ID: real edge thickness, soft bevels, matte surface, subtle raised silhouette frame. Background: thin visible paper edge, slight curvature/lifted corners, modeled clip. Both have contact/depth shadows and readable surface printing.
+- The object must show volume when tilted and separation from its holder when lifted. A flat UI rectangle, even floating in 3D space, is not final art.
+- Resting records are attached to their owning page. Extracted records enlarge, drag within safe screen bounds and come forward when clicked. Return restores original holders; foreign-folder drops are refused.
+- Optional two-second stationary hold groups same-folder detached records; movement/cancel aborts the hold. Normal tap/drag remains immediate. A grouped drop restores each attachment once.
+- Closing/storing gathers detached records safely. Reopening/restoring begins attached; transient transforms/stack offsets are not saved.
+- Reuse existing Findings/annotation floating controls and focus order. This is physical document handling, not an evidence-placement answer puzzle.
+
 ## Animation and polish standard
 
 Documents should feel like small physical objects: smooth movement, readable resting poses, soft shadows, and restrained paper/card sounds. Reuse the same motion style across the campaign. The timings below are starting targets for playtesting.
@@ -111,20 +140,19 @@ Documents should feel like small physical objects: smooth movement, readable res
 - Play one appropriate sound per action through the existing effects setting; no looping rustle, repeated sound while dragging, or new spoken narration requirement.
 - Reuse existing motion/audio features where suitable. Prioritize readable poses and stable touch behavior over elaborate effects.
 
-## Proposed placement — planning, not yet implemented
-
-**Documents belong to the client and their packet, rather than being scattered collectibles.** Exact scene anchors remain to be chosen during implementation.
+## Placement
 
 | Location | Placement and access |
 |---|---|
-| Plaza encounter | The client presents the relevant copy after the conversation. Use a small sleeve on their nearby table/counter; where no surface exists, use a brief handover into inspection. No identity cards lying on the ground. |
-| Carrying records | Keep papers grouped by client inside the existing profile/case packet and inventory flow. No separate hotbar icon for every supporting sheet. Supporting papers remain distinct from the profile summary. |
-| Corkboard | The four profile cards remain the board pieces. Open a profile's supporting records for reference; do not pin every supporting paper onto the board. |
-| Office desk | Keep the client's packet beside the Case Folder. Bring one paper forward to inspect and allow the needed pair to sit side by side; keep the book and folder accessible. |
-| Level 2 client location | Rosa's supporting copies come from her existing records handover at the stall and stay associated with her case packet. Reuse the existing folder-page/inspection flow. |
-| After use | Return papers to their assigned packet/stack. Preserve availability for rereading and case correction; closing a paper does not discard it. |
+| Opening after Supply Counter | Arthur stands at editable Arthur Start Placement position/yaw. Deliberate click uses existing dialogue; completion presents one floating reviewed-folder pickup using Auditor-style motion. |
+| Arthur's folder | Page one completed reference; page two physical ID/background. Collect once into the Bag, then open; no second handover. |
+| Four plaza clients | Ordinary existing talks; each drops a copy of their ID (Type 1 front, their taxpayer profile on the back, user revision 2026-10-27); no bench sleeve, first-Jhun priority or other client documents. |
+| Corkboard | Pin the four IDs (a tap turns one over to its profile). The Client IDs leave the bar and Bag once they fly into the tray. Arthur's file remains optional Bag reference; category meanings remain static and client-independent. |
+| Marie's desk | Two-page manila folder; her ID (profile on its back) and background attached on page two, looked over like Arthur's (take out, turn the ID over, put back). No separate sleeve, no BIR form. |
+| Level 2 | Rosa's existing handover, six record identities and page flow remain; T18 later adapts presentation. Two pages is not a campaign-wide cap. |
+| After use | Return records to original attachment anchors. Close/store gathers them; source ownership and reread access persist. |
 
-Level 1 example: inspect Jhun-jhun's identity and background during his encounter, collect his profile with access to those records, consult them while sorting, then inspect Marie's compensation certificate at her office desk. The recommended placement adds a small client-record sleeve, not another workstation or room.
+Arthur is one logical start/board actor; placement/availability transitions must avoid a visible duplicate or teleport. Only two short record moments enter Level 1, targeting roughly 2–3 minutes combined by replacing explanation.
 
 ## Evidence and interaction rules
 
@@ -139,15 +167,15 @@ Level 1 example: inspect Jhun-jhun's identity and background during his encounte
 
 | Stage                 | Introduce / reuse                                 | Learning purpose                                                                    |
 | --------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| **Level 1 plaza**     | Types 1–2: identity and background                | Separate citizenship from living situation; one supported encounter, then less help |
-| **Level 1 office**    | Add Type 3: compensation certificate              | Connect Marie's work arrangement with employment income; no new calculation task    |
+| **Level 1 opening**   | Arthur’s reference: Types 1–2, identity and background                | Separate citizenship from living situation; one supported encounter, then less help |
+| **Level 1 office**    | Reuse Types 1–2 on Marie's case (2026-10-27: no Type 3 in Level 1) | Her ID, its profile back and her background; no new calculation task |
 | **Level 2**           | Add Types 4–7 as the current Rosa case needs them | Compare collections, transaction records, bank entries, and a loan agreement        |
 | **Later credit case** | Add Type 8 when relevant                          | Understand supported creditable withholding                                         |
 | **Later levels**      | Reuse familiar types in different combinations    | More interpretation and reconciliation; no requirement for a new type each level    |
 
-Level 1 introduces **two types first, three by the end**. Later-level placement is provisional until those cases are designed.
+Level 1 uses **two types** (user revision 2026-10-27: the 2316 left Level 1; Type 3 waits for a later case). Later-level placement is provisional until those cases are designed.
 
-Example packets: Marie **1/2/3**; Jhun-jhun **1/2**, with **7** only if his contract is needed; Rosa's investigation **4/5/6/7**. Her existing six records are six papers across four types, not six new categories.
+Example packets: Arthur's reference **1/2**; Marie **1/2**; Rosa's investigation **4/5/6/7**. The four plaza clients give a copy of their ID (profile on the back). Rosa's six records remain six papers across four types, not six new categories.
 
 ## Acceptance check
 
@@ -157,6 +185,6 @@ Example packets: Marie **1/2/3**; Jhun-jhun **1/2**, with **7** only if his cont
 - Handover, inspection, comparison, and return have smooth consistent motion; documents rest still while being read.
 - Sounds respect effects settings; repeated taps and interrupted animations never duplicate or lose papers.
 - Every paper has a case purpose; the player is not collecting all eight for every client.
-- This document defines presentation and the library; it does not change existing case answers, progression, rewards, or scenes.
+- The standard fixes the library/presentation; T30/T31 and T25 own the approved route, Bag-capacity and two-page changes. Existing case answers/rewards remain unchanged.
 
 Reference anchors for real form names only: [BIR 2316](https://bir-cdn.bir.gov.ph/local/pdf/2316%20Sep%202021%20ENCS_Final_corrected.pdf) · [BIR income-tax instructions including 2307](https://efps.bir.gov.ph/efps-war/EFPSWeb_war/help/help1701_v2.html). Gameplay uses simplified fictional props.
