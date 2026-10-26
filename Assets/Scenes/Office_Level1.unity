@@ -66509,7 +66509,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 300.00003}
+  m_AnchoredPosition: {x: 0, y: 300.0009}
   m_SizeDelta: {x: 0, y: 800}
   m_Pivot: {x: 0, y: 1}
 --- !u!4 &819781689 stripped
@@ -77949,7 +77949,7 @@ Transform:
   m_GameObject: {fileID: 959859122}
   serializedVersion: 2
   m_LocalRotation: {x: 0.0353244, y: 0.822027, z: 0.40364593, w: -0.40011725}
-  m_LocalPosition: {x: 27.9, y: 0.6, z: 127.29}
+  m_LocalPosition: {x: 43.82, y: -0.36, z: 126.97}
   m_LocalScale: {x: 0.7, y: 0.7, z: 0.7}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -106511,7 +106511,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4624547177012468, guid: 49b01b7a78740ad4d8b56a3cc523528b, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 12.849999
+      value: 13.25
       objectReference: {fileID: 0}
     - target: {fileID: 4624547177012468, guid: 49b01b7a78740ad4d8b56a3cc523528b, type: 3}
       propertyPath: m_LocalPosition.z
@@ -149626,8 +149626,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 515171271}
   m_HandleRect: {fileID: 515171270}
   m_Direction: 2
-  m_Value: 0
-  m_Size: 0.625
+  m_Value: -0.0000028483073
+  m_Size: 0.62499833
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -170721,6 +170721,50 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NotesChestPlacement
   scale: 1
+--- !u!1 &2147002501
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2147002502}
+  - component: {fileID: 2147002503}
+  m_Layer: 0
+  m_Name: Arthur Start Placement
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2147002502
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2147002501}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0.75334567, z: -0, w: 0.6576247}
+  m_LocalPosition: {x: 17.39, y: 0.25, z: 122.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -97.762, z: 0}
+--- !u!114 &2147002503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2147002501}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e15ae8d29e674f839b55bd38099eb1d7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArthurStartPlacement
 --- !u!1001 &1399792787226824441
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -171161,3 +171205,4 @@ SceneRoots:
   - {fileID: 1967822609}
   - {fileID: 434171630}
   - {fileID: 263585192}
+  - {fileID: 2147002502}

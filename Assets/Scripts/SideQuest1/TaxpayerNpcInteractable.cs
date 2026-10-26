@@ -19,6 +19,10 @@ using UnityEngine.EventSystems;
 /// - DialogueUI (assign the same shared DialogueUI used everywhere else)
 /// - TownNpcDialogueLibrary (hardcoded lines, keyed by npcId)
 /// - TaxpayerProfileWorldPickup (the paper that appears after talking)
+/// - ArthurOpening (T30): the plaza order (WaitingForRound / WaitingTapped):
+///   all four clients wait until Arthur's reviewed file was looked over.
+///   ProfileHandover / ReleaseHeldProfile (T24) stay as a generic hook with no
+///   owner since T30: every talk drops its profile directly.
 ///
 /// LIFECYCLE NOTE (T02 Phase 2):
 /// Admission through DialogueUI.TryStartDialogue happens BEFORE any NPC
@@ -48,20 +52,46 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
     private HighlightEffect pointerHighlight;
     private bool hasBeenTalkedTo;
     private bool dialogueSessionActive;
+    private bool profileHeld;
 
-    /// <summary>True once this NPC's conversation completed and its profile dropped.</summary>
+    /// <summary>True once this NPC's conversation completed (its profile dropped, or is held for the records step, T24).</summary>
     public bool HasBeenTalkedTo => hasBeenTalkedTo;
 
     /// <summary>Stable id (TownNpcDialogueLibrary / TaxpayerProfileDatabase).</summary>
     public string NpcId => npcId;
 
+    /// <summary>The name shown on this NPC's dialogue lines.</summary>
+    public string DisplayName => npcDisplayName;
+
+    /// <summary>T24 hook: the talk is done but the profile waits for its owner (none since T30).</summary>
+    public bool IsProfileHeld => profileHeld;
+
+    /// <summary>
+    /// The plaza rounds' order (T24; ArthurOpening since T30). True = this client is
+    /// not ready for a first talk yet: no marker, no highlight, and a tap goes
+    /// to WaitingTapped instead of starting the talk. Cleared with its owner.
+    /// </summary>
+    public static System.Func<TaxpayerNpcInteractable, bool> WaitingForRound;
+
+    /// <summary>A tap on a waiting client (a short line the first time, nothing after).</summary>
+    public static System.Action<TaxpayerNpcInteractable> WaitingTapped;
+
+    /// <summary>
+    /// T24: asked when a first talk completes, before the profile drops. True =
+    /// the owner takes the handover and drops the profile later through
+    /// ReleaseHeldProfile. Cleared with its owner. No owner since T30.
+    /// </summary>
+    public static System.Func<TaxpayerNpcInteractable, bool> ProfileHandover;
+
+    private bool WaitingForTurn => !hasBeenTalkedTo && WaitingForRound != null && WaitingForRound(this);
+
     /// <summary>
     /// Resume (T04): this NPC's conversation already happened in the saved run.
     /// Retires the NPC without the dialogue, the drop animation or the score
     /// award; the profile paper lies beside the NPC again unless it was
-    /// already collected. Raises no events.
+    /// already collected, or (T24) is still held for the records step. Raises no events.
     /// </summary>
-    public void RestoreHandover(bool profileCollected)
+    public void RestoreHandover(bool profileCollected, bool holdProfile = false)
     {
         if (hasBeenTalkedTo) return;
         hasBeenTalkedTo = true;
@@ -74,7 +104,8 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
         // counter read Marie's paper after the side quest); it only lies in the
         // world while it still has to be collected.
         profilePickup.Initialize(data);
-        if (!profileCollected) profilePickup.gameObject.SetActive(true);
+        profileHeld = holdProfile && !profileCollected;
+        if (!profileCollected && !profileHeld) profilePickup.gameObject.SetActive(true);
     }
 
     /// <summary>True while this NPC owns the shared conversation.</summary>
@@ -114,6 +145,40 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
         return true;
     }
 
+    /// <summary>
+    /// T24: the held profile drops beside the NPC now (the records step is
+    /// done). False when nothing is held or the drop cannot happen (it stays held).
+    /// </summary>
+    public bool ReleaseHeldProfile()
+    {
+        if (!hasBeenTalkedTo || !profileHeld) return false;
+        if (!TryDropTaxpayerProfile()) return false;
+        profileHeld = false;
+        return true;
+    }
+
+    /// <summary>
+    /// T24: a short aside (a waiting client's line) through the shared dialogue
+    /// flow. It never changes the plaza talk, the profile or the level score;
+    /// the NPC goes back to how it was.
+    /// </summary>
+    public bool TryStartAside(List<DialogueLine> lines)
+    {
+        if (hasBeenTalkedTo || dialogueSessionActive || dialogueUI == null || stateMachine == null || lines == null || lines.Count == 0) return false;
+        INpcState prior = stateMachine.CurrentState;
+        if (!dialogueUI.TryStartDialogue(lines,
+                () => { dialogueSessionActive = false; RestoreNpcState(prior); },
+                () => { dialogueSessionActive = false; RestoreNpcState(prior); },
+                this))
+            return false;
+        AudioManager.Instance?.QueueInteractionSFX("npc");
+        dialogueSessionActive = true;
+        stateMachine.ChangeState(new NpcInteractState());
+        stateMachine.ChangeState(new NpcDialogueState());
+        ClearPointerFocus();
+        return true;
+    }
+
     private int dataValidity; // 0 unknown, 1 valid, -1 invalid (static data, checked once)
 
     /// <summary>T04 marker state: one conversation that drops this NPC's profile.</summary>
@@ -123,6 +188,7 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
         {
             NpcAvailability? visit = hasBeenTalkedTo && VisitAvailability != null ? VisitAvailability(this) : null;
             if (visit.HasValue) return visit.Value;
+            if (WaitingForTurn) return NpcAvailability.Unavailable;
             if (dataValidity == 0)
                 dataValidity = TaxpayerProfileDatabase.GetByNpcId(npcId) != null &&
                                TownNpcDialogueLibrary.HasDialogueFor(npcId) ? 1 : -1;
@@ -153,7 +219,7 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
     /// </summary>
     public void OnFocus()
     {
-        if (hasBeenTalkedTo || dialogueSessionActive) return;
+        if (hasBeenTalkedTo || dialogueSessionActive || WaitingForTurn) return;
 
         if (stateMachine.CurrentState is NpcIdleState)
         {
@@ -187,7 +253,7 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
 
     private bool CanFocusPointer(PointerEventData eventData)
     {
-        return eventData != null && (!hasBeenTalkedTo || VisitOpen) && !dialogueSessionActive &&
+        return eventData != null && (!hasBeenTalkedTo || VisitOpen) && !dialogueSessionActive && !WaitingForTurn &&
                InteractionRange.PlayerCanReach(this) &&
                !DialogueUI.IsAnyDialogueActive && !VirtualJoystick.BlocksWorldInput &&
                !MobileInputGuard.IsPointerOverUI(eventData.position);
@@ -212,6 +278,13 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
         if (hasBeenTalkedTo)
         {
             if (VisitHandler != null) VisitHandler(this);
+            return;
+        }
+
+        // T24: not this client's turn yet; the talk (and its profile) waits.
+        if (WaitingForTurn)
+        {
+            WaitingTapped?.Invoke(this);
             return;
         }
 
@@ -280,10 +353,17 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
 
         if (hasBeenTalkedTo) return;
 
+        // T24: the round owner may take the handover (records first); the
+        // paper knows its profile but stays out of the world until released.
+        if (ProfileHandover != null && CanDeliverProfile() && ProfileHandover(this))
+        {
+            profilePickup.Initialize(TaxpayerProfileDatabase.GetByNpcId(npcId));
+            profileHeld = true;
+        }
         // Drop first: the profile is this conversation's outcome. If the
         // drop cannot happen the NPC stays available instead of silently
         // retiring with no paper for the player to collect.
-        if (!TryDropTaxpayerProfile())
+        else if (!TryDropTaxpayerProfile())
         {
             RestoreNpcState(priorNpcState);
             return;

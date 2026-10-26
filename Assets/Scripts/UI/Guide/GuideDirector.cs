@@ -98,6 +98,10 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
     private bool collapsed;
     private bool asideActive;
     private float asideUntil;
+    private float asideDuration;
+    private float pageReadAt = -1f;
+    private bool pageGoalReached;
+    public bool IsSpeaking => asideActive || pendingAside != null;
     private float typedDoneAt = -1f;
     private CameraController.CameraMode? pageStartMode;
     private GuideWelcomeCard welcomeCard;
@@ -191,6 +195,8 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
             if (IsBlocking && !suspended) HoldControls();
         }
         GuideVoice.Handler = Say;
+        TownEvents.OnArthurMet += HandleArthurMet;
+        TownEvents.OnReviewedFileLookedOver += HandleReviewedFileLookedOver;
         TownEvents.OnProfileCollected += HandleProfileCollected;
         TownEvents.OnAllProfilesCollected += HandleAllProfiles;
         TownEvents.OnTutorialNpcReady += HandleGuideReady;
@@ -228,6 +234,8 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
         }
         if (GuideVoice.Handler == (System.Func<string, string, float, bool>)Say) GuideVoice.Handler = null;
         HudRewardScreen.HoldAutoContinue = false;
+        TownEvents.OnArthurMet -= HandleArthurMet;
+        TownEvents.OnReviewedFileLookedOver -= HandleReviewedFileLookedOver;
         TownEvents.OnProfileCollected -= HandleProfileCollected;
         TownEvents.OnAllProfilesCollected -= HandleAllProfiles;
         TownEvents.OnTutorialNpcReady -= HandleGuideReady;
@@ -261,6 +269,8 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
     }
 
     private void HandleGuideCue(string name) => Fire(GuideTriggers.CuePrefix + name);
+    private void HandleArthurMet() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.ArthurMet));
+    private void HandleReviewedFileLookedOver() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.ReviewedFileLookedOver));
     private void HandleProfileCollected(string id) => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.ProfileCollected));
     private void HandleAllProfiles() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.AllProfilesCollected));
     private void HandleGuideReady() => Fire(ObjectiveTriggers.EventKey(ObjectiveTriggers.TutorialGuideAppeared));
@@ -329,7 +339,7 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
         }
 
         PlayerControlHold.Refresh();
-        if (pendingAside != null && (!IsBlocking || suspended))
+        if (pendingAside != null && ((!IsBlocking && (page == null || page.minimumReadSeconds <= 0f)) || suspended))
         {
             string line = pendingAside;
             pendingAside = null;
@@ -341,7 +351,7 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
 
         if (lesson == null)
         {
-            if (started) PickLesson(now);
+            if (started && !IsSpeaking) PickLesson(now);
             return;
         }
 
@@ -583,6 +593,8 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
     {
         switch (window)
         {
+            case "reviewed":
+                return ReviewedFileViewer.Instance != null && ReviewedFileViewer.Instance.IsOpen;
             case "notes":
                 if (notesPanel == null) notesPanel = FindAnyObjectByType<NotesPanelUI>(FindObjectsInactive.Include);
                 return notesPanel != null && notesPanel.IsOpen;
@@ -628,6 +640,8 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
             page.IsHint && string.IsNullOrWhiteSpace(page.waitFor) ? "seconds:5" : page.waitFor);
         pageCounts = new Dictionary<string, int>(counts);
         pageStart = Time.unscaledTime;
+        pageReadAt = -1f;
+        pageGoalReached = false;
         pageStartMode = CurrentMode;
         moved = looked = 0f;
         hasLastPose = false;
@@ -643,8 +657,10 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
     private void ShowPage()
     {
         if (page.revealArrows) RevealArrows();
+        bool alreadyDone = pageWait != null && WaitSatisfied(Time.unscaledTime);
+        pageGoalReached |= alreadyDone;
         // A page can turn the view smoothly toward what it talks about (T12: the Supply Counter, then the plaza).
-        if (!string.IsNullOrEmpty(page.face))
+        if (!alreadyDone && !string.IsNullOrEmpty(page.face))
         {
             GuideTargets.Hit faced = targets.Resolve(page.face);
             if (faced.HasWorld) ViewTurn.Toward(faced.World, 0.8f);
@@ -688,7 +704,12 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
             UpdatePointer(true);
             view.ShowBox(chip, text, tap, ParsePlacement(page.box));
         }
-        UpdatePointer(true);
+        if (!alreadyDone) UpdatePointer(true);
+        else
+        {
+            view.Hand.Hide();
+            view.SetHole(false, default);
+        }
     }
 
     private void UpdateLesson(float now)
@@ -707,9 +728,10 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
         if (!allowed)
         {
             if (!suspended) Suspend();
-            // The goal can happen while hidden (e.g. "start a conversation"):
-            // finish quietly instead of flashing the page back afterwards.
-            if (pageWait != null && advanceAt < 0f && WaitSatisfied(now))
+            // Some actions can complete while hidden (e.g. starting a conversation).
+            // Most lessons finish those pages quietly; document lessons can opt to
+            // keep their current instruction until the document is open again.
+            if (!lesson.preserveWhileHidden && pageWait != null && advanceAt < 0f && WaitSatisfied(now))
             {
                 if (pageIndex >= lesson.pages.Length - 1) EndLesson();
                 else advanceAt = now;
@@ -723,8 +745,16 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
         }
 
         TrackMotion();
-        UpdatePointer(false);
+        bool goalDone = pageGoalReached || (pageWait != null && WaitSatisfied(now));
+        pageGoalReached = goalDone;
+        if (goalDone)
+        {
+            view.Hand.Hide();
+            view.SetHole(false, default);
+        }
+        else UpdatePointer(false);
         UpdateCollapse(now);
+        if (pageReadAt < 0f && !view.IsTyping) pageReadAt = now;
         if (!asideActive && HintExpired(now)) view.HideHint();
 
         if (IsBlocking && welcomeCard == null && Keyboard.current != null &&
@@ -737,7 +767,7 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
             return;
         }
 
-        if (pageWait != null && WaitSatisfied(now))
+        if (goalDone && ReadingTimeSatisfied(view.IsTyping, pageReadAt, now, page.minimumReadSeconds))
         {
             // A short beat so the player sees their action land.
             advanceAt = now + 0.45f;
@@ -754,7 +784,7 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
     {
         if (string.IsNullOrWhiteSpace(text)) return false;
         // Never on top of a lesson box: the line waits until the box is dismissed (latest line wins).
-        if (IsBlocking && !suspended)
+        if ((IsBlocking || (page != null && page.minimumReadSeconds > 0f)) && !suspended)
         {
             pendingAside = text;
             pendingAsideMood = mood;
@@ -764,7 +794,8 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
         view.SetPortrait(Portrait(string.IsNullOrEmpty(mood) ? "default" : mood), true);
         view.ShowHint(Format(text));
         asideActive = true;
-        asideUntil = Time.unscaledTime + Mathf.Max(1.5f, seconds);
+        asideUntil = -1f;
+        asideDuration = Mathf.Max(1.5f, seconds);
         return true;
     }
 
@@ -773,7 +804,9 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
 
     private void TickAside(float now)
     {
-        if (!asideActive || now < asideUntil) return;
+        if (!asideActive || view.IsTyping) return;
+        if (asideUntil < 0f) asideUntil = now + asideDuration;
+        if (now < asideUntil) return;
         asideActive = false;
         // Hand the bubble back to a page that uses it, otherwise hide it.
         if (page != null && !suspended && (page.IsHint || collapsed) && !HintExpired(now))
@@ -786,6 +819,9 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
             view.HideHint();
         }
     }
+
+    private static bool ReadingTimeSatisfied(bool typing, float readAt, float now, float minimum) =>
+        !typing && (minimum <= 0f || (readAt >= 0f && now - readAt >= minimum));
 
     /// <summary>
     /// "Your turn" pages step out of the way: once the text has been read
@@ -961,7 +997,7 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
         page = null;
         HudRewardScreen.HoldAutoContinue = false;
         view.HideBox();
-        view.HideHint();
+        if (!asideActive) view.HideHint();
         view.Hand.Hide();
         view.SetHole(false, default);
         SetBlocking(false, dim: false);

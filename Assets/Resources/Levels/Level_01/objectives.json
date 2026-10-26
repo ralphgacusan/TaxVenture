@@ -9,6 +9,8 @@
     "Fields starting with '_' are notes and are ignored by the game."
   ],
   "_triggers": [
+    "event:ArthurMet               Arthur's opening talk finished and his reviewed file was presented (T30)",
+    "event:ReviewedFileLookedOver  both records of Arthur's file were read and put back and page one seen again; the four clients are open (T30)",
     "event:ProfileCollected        any taxpayer profile was collected",
     "event:AllProfilesCollected    all taxpayer profiles collected (4)",
     "event:TutorialGuideAppeared   the tutorial guide appeared in the plaza",
@@ -30,9 +32,11 @@
     {
       "title": "Finish Side Quest 1",
       "steps": [
-        { "text": "Explore the plaza and talk to the 4 clients to get their taxpayer profiles.", "trigger": "event:AllProfilesCollected", "progress": "profiles" },
+        { "text": "Meet Arthur.", "trigger": "event:ArthurMet" },
+        { "text": "Look over Arthur's file.", "trigger": "event:ReviewedFileLookedOver" },
+        { "text": "Meet the four clients and collect all 4 IDs.", "trigger": "event:AllProfilesCollected", "progress": "profiles" },
         { "text": "Talk to Arthur in the plaza.", "trigger": "event:TutorialGuideTalkedTo" },
-        { "text": "Finish Side Quest 1 at the corkboard.", "trigger": "event:SideQuestCompleted" }
+        { "text": "Organize the four IDs on Arthur's corkboard.", "trigger": "event:SideQuestCompleted" }
       ]
     },
     {

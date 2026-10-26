@@ -8,7 +8,10 @@ using System;
 /// - Drafting never grades: the board is graded only when all four areas are
 ///   filled (it checks itself then; user decision 2026-10-24).
 /// - The FIRST complete check freezes the correct count; the tier comes from
-///   it: Gold 4/4, Silver 3/4, Bronze 0-2/4. Corrections never change it.
+///   it: Gold 4/4, Silver 2/4, Bronze 0-1/4. Corrections never change it.
+///   (2026-10-27: each corner holds one card, so one wrong card always moves
+///   a second one: 3/4 can never happen and Silver used to be unreachable.
+///   Silver is now the one-swap result, 2/4.)
 /// - Quest XP is settled once from that frozen count: questEXP minus
 ///   expPerWrong per incorrect profile, never below minExp (the same maths as
 ///   LevelScoring.SideQuest), so 30..50 with today's 50 / 5 defaults.
@@ -21,9 +24,12 @@ public static class ClassificationCheck
     public const int Silver = 2;
     public const int Gold = 3;
 
-    /// <summary>The frozen first-check tier: Gold 4/4, Silver 3/4, Bronze otherwise.</summary>
+    /// <summary>The fewest right cards on the first check that still earn Silver (one swapped pair).</summary>
+    public const int SilverAtLeast = Profiles - 2;
+
+    /// <summary>The frozen first-check tier: Gold 4/4, Silver 2/4 (one swapped pair), Bronze otherwise.</summary>
     public static int TierFor(int correct) =>
-        correct >= Profiles ? Gold : correct == Profiles - 1 ? Silver : Bronze;
+        correct >= Profiles ? Gold : correct >= SilverAtLeast ? Silver : Bronze;
 
     /// <summary>Quest XP settled from the frozen count (never below minExp, never negative).</summary>
     public static int SettledExp(int questExp, int expPerWrong, int minExp, int wrong) =>
@@ -46,7 +52,7 @@ public static class ClassificationCheck
             : $"{Math.Max(0, placed)}/{Profiles} placed. Move cards freely; the board checks once all four are pinned.";
 
     /// <summary>The guide's one heads-up at 3/4 before the first check (reveals nothing).</summary>
-    public const string LastCardPrompt = "One more card and I'll check the board. Your first check counts, so be sure!";
+    public const string LastCardPrompt = "One more ID and I'll check the board. Your first check sets your medal, so be sure!";
 
     /// <summary>
     /// Viewport y centres for the tray cards: centred on the view with equal

@@ -31,6 +31,18 @@ public static class TownEvents
     /// </summary>
     public static event Action OnTutorialIntroCompleted;
 
+    /// <summary>T30: Arthur's opening talk completed; his reviewed file is presented beside him.</summary>
+    public static event Action OnArthurMet;
+
+    /// <summary>T30: both records of his file were shown and put back and page one seen again; the four clients are open.</summary>
+    public static event Action OnReviewedFileLookedOver;
+
+    public static void RaiseArthurMet() =>
+        OnArthurMet?.Invoke();
+
+    public static void RaiseReviewedFileLookedOver() =>
+        OnReviewedFileLookedOver?.Invoke();
+
     public static void RaiseProfileCollected(string profileId) =>
         OnProfileCollected?.Invoke(profileId);
 

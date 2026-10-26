@@ -26,8 +26,8 @@ public sealed class SideQuestSplash : MonoBehaviour
     {
         public string kicker = "SIDE QUEST 1";
         public string title = "Know Your Taxpayer";
-        public string description = "Four townsfolk, four different stories. Sort each profile onto the corner of Arthur's corkboard where it belongs.";
-        public string instruction = "Pin all four profiles  ·  The board checks itself";
+        public string description = "Four townsfolk, four different stories. Pin each ID onto the corner of Arthur's corkboard where it belongs.";
+        public string instruction = "Pin all four IDs  ·  Tap one to turn it over  ·  The board checks itself";
         public string button = "TAP TO CONTINUE";
     }
 

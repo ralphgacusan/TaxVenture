@@ -209,19 +209,40 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     public bool IsLocked => Time.unscaledTime < LockedUntil;
 
+    // 2026-10-27: a press only becomes a drag once the finger moves past the
+    // drag threshold; a tap (press and release in place) turns the ID card
+    // over instead, so reading a card never changes the draft.
+    private bool pressPending;
+    private int pressPointerId = NoPointer;
+
+    /// <summary>A tap turned this card over (the guide's flip step listens).</summary>
+    public static event System.Action<ProfileDragCard> Flipped;
+
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (IsLocked || lockedCorrect) return;
         if (eventData.button != PointerEventData.InputButton.Left || state == MotionState.Pinning ||
             state == MotionState.Dragging || state == MotionState.Arriving || activePointerId != NoPointer ||
-            (activeCard != null && activeCard != this) || (manager != null && !manager.CanInteract)) return;
+            (manager != null && !manager.CanInteract)) return;
+        pressPending = true;
+        pressPointerId = eventData.pointerId;
+    }
+
+    /// <summary>The press turned into a drag: pick the card up where the finger first went down.</summary>
+    private bool TryBeginDrag(PointerEventData eventData)
+    {
+        if (IsLocked || lockedCorrect) return false;
+        if (state == MotionState.Pinning || state == MotionState.Dragging || state == MotionState.Arriving || activePointerId != NoPointer ||
+            (activeCard != null && activeCard != this) || (manager != null && !manager.CanInteract)) return false;
 
         if (mainCamera == null) mainCamera = Camera.main;
-        if (mainCamera == null) return;
+        if (mainCamera == null) return false;
+        // A card read on its back turns to its ID again as it is picked up.
+        CardFlip turn = ProfileCardSkin.FlipOf(this);
+        if (turn != null && turn.ShowingBack) turn.Toggle();
 
         dragPlane = new Plane(mainCamera.transform.forward, transform.position);
-        Ray ray = mainCamera.ScreenPointToRay(eventData.position);
-        if (!dragPlane.Raycast(ray, out float enter)) return;
+        Ray ray = mainCamera.ScreenPointToRay(eventData.pressPosition);
+        if (!dragPlane.Raycast(ray, out float enter)) return false;
 
         // Picked up mid pin-in: back to its own size at once.
         if (state == MotionState.Placed) transform.localScale = placedScale;
@@ -237,10 +258,17 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
         HidePinMarker();
 
         if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_card_pickup_01");
+        return true;
     }
 
     public void OnDrag(PointerEventData eventData)
     {
+        if (pressPending && eventData.pointerId == pressPointerId)
+        {
+            pressPending = false;
+            pressPointerId = NoPointer;
+            if (!TryBeginDrag(eventData)) return;
+        }
         if (state != MotionState.Dragging || eventData.pointerId != activePointerId) return;
         if (mainCamera == null)
         {
@@ -255,6 +283,16 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     public void OnPointerUp(PointerEventData eventData)
     {
+        if (pressPending && eventData.pointerId == pressPointerId)
+        {
+            pressPending = false;
+            pressPointerId = NoPointer;
+            // A tap in place: read the other side (the board, the draft and the check are untouched).
+            if (!eventData.dragging && (state == MotionState.Idle || state == MotionState.Placed) &&
+                (manager == null || manager.CanInteract) && ProfileCardSkin.Flip(this))
+                Flipped?.Invoke(this);
+            return;
+        }
         if (state != MotionState.Dragging || eventData.pointerId != activePointerId) return;
         activePointerId = NoPointer;
 

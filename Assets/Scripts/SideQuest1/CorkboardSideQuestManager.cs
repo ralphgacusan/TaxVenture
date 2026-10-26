@@ -15,7 +15,7 @@ using UnityEngine.UI;
 ///   At 3/4 before the first check the guide warns once that the next card
 ///   starts the check.
 /// - The FIRST complete check freezes the correct count, the tier (Gold 4/4,
-///   Silver 3/4, Bronze 0-2) and the settled quest XP. It marks each card and
+///   Silver 2/4, Bronze 0-1) and the settled quest XP. It marks each card and
 ///   keeps right cards pinned; checks 1-2 give clues for the red cards, check 3
 ///   on shows their corners. Corrections never change the frozen result. The
 ///   quest completes only when all four match. The reward
@@ -44,6 +44,8 @@ public class CorkboardSideQuestManager : MonoBehaviour
     private Material dividerMaterial;
     private Canvas feedbackCanvas;
     private TextMeshProUGUI feedbackText;
+    // T26: the static category reference (CATEGORIES control), while the board is open.
+    private BoardCategoryReference categoryReference;
 
     // Reveal (Side Quest 1 title card): while the card shows, the board is
     // bare; the corner labels, dividers, prompt and the profile cards only
@@ -65,6 +67,32 @@ public class CorkboardSideQuestManager : MonoBehaviour
     private bool boardGeometryReady;
 
     public bool CanInteract => sideQuestActive && !sideQuestCompleted;
+
+    /// <summary>
+    /// T26: the category reference may open now: the board is open and nothing is under way
+    /// (no card moving, no check pending or running, the reveal finished), so opening or
+    /// closing it never swallows a drag or starts a check.
+    /// </summary>
+    public bool ReferenceMayOpen
+    {
+        get
+        {
+            if (!CanInteract || checking || autoCheckAt >= 0f || revealHeld) return false;
+            foreach (ProfileDragCard card in spawnedCards)
+                if (card != null && card.IsBeingMoved) return false;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// 2026-10-27: the clients' IDs are on the board for good: all four flew into the tray (their
+    /// fly-in finished) or the quest is solved. The Client IDs item then leaves the bar and Bag
+    /// (HudHotbar); a cancelled board gives it back.
+    /// </summary>
+    public static bool IdsOnBoard { get; private set; }
+
+    /// <summary>T26: the category reference is open (the board takes no touches meanwhile).</summary>
+    public bool ReferenceOpen => categoryReference != null && categoryReference.IsOpen;
 
     /// <summary>
     /// Notification: a card's verdict from a board CHECK (correct?, locked is
@@ -120,8 +148,20 @@ public class CorkboardSideQuestManager : MonoBehaviour
     /// <summary>Profiles wrong on the FIRST complete check (each one costs EXP; see rewards.json). 0 before it.</summary>
     public int WrongPlacements => wrongPlacements;
 
+    // Guide fact flag:board-flipped: an ID on the board was turned over (2026-10-27).
+    private bool boardFlipped;
+    private bool Flag(string name) => name == "board-flipped" && boardFlipped;
+    private void HandleCardFlipped(ProfileDragCard card) => boardFlipped = true;
+
+    private void OnEnable()
+    {
+        GuideFlags.Add(Flag);
+        ProfileDragCard.Flipped += HandleCardFlipped;
+    }
+
     private void Awake()
     {
+        IdsOnBoard = false;
         if (sideQuestRoot != null)
         {
             sideQuestRoot.SetActive(false);
@@ -130,6 +170,8 @@ public class CorkboardSideQuestManager : MonoBehaviour
 
     private void OnDisable()
     {
+        GuideFlags.Remove(Flag);
+        ProfileDragCard.Flipped -= HandleCardFlipped;
         CancelInvoke();
         if (sideQuestCompleted && !completionEventRaised)
         {
@@ -283,7 +325,9 @@ public class CorkboardSideQuestManager : MonoBehaviour
         {
             CreateDividers();
             SetFeedback(saved != null ? "Welcome back. Your files are where you pinned them."
-                : "Your files are ready. Place each profile on a corkboard area, then check the board.");
+                : "Your IDs are ready. Place each one on a corkboard area; tap any ID to read its back.");
+            // Resume included: the reference is simply there again (no guidance, no sound replayed).
+            ShowCategoryReference();
         }
 
         if (CameraController.Instance != null)
@@ -319,6 +363,9 @@ public class CorkboardSideQuestManager : MonoBehaviour
         // Safety: never leave the board bare if the title card never closes.
         if (revealHeld && !revealStarted && sideQuestActive && Time.unscaledTime > revealTimeout) ReleaseReveal();
         UpdateAutoCheck();
+        if (!IdsOnBoard && sideQuestActive && spawnedCards.Count == ClassificationCheck.Profiles &&
+            spawnedCards.TrueForAll(card => card != null && !card.IsBeingMoved))
+            IdsOnBoard = true;
     }
 
     /// <summary>
@@ -368,9 +415,10 @@ public class CorkboardSideQuestManager : MonoBehaviour
         yield return Wait(0.25f);
 
         // The prompt panel pops up.
-        SetFeedback("Your files are ready. Match each profile to a corkboard area.");
+        SetFeedback("Your IDs are ready. Match each one to a corkboard area; tap any ID to read its back.");
         Transform panel = feedbackCanvas != null ? feedbackCanvas.transform.Find("FeedbackPanel") : null;
         if (panel != null) StartCoroutine(Pop(panel, panel.localScale, 0.3f));
+        ShowCategoryReference();
         yield return Wait(0.2f);
 
         revealHeld = false;
@@ -1158,6 +1206,8 @@ public class CorkboardSideQuestManager : MonoBehaviour
 
         sideQuestCompleted = true;
         sideQuestActive = false;
+        IdsOnBoard = true;
+        HideCategoryReference();
         SetFeedback($"All four files are correct! First check: {frozenCorrect}/4, {FrozenTier} tier.");
         GrantRewards();
         Invoke(nameof(HideSideQuestRoot), 2f);
@@ -1197,10 +1247,26 @@ public class CorkboardSideQuestManager : MonoBehaviour
         TownEvents.RaiseSideQuestCompleted();
     }
 
+    /// <summary>T26: the corner CATEGORIES control (created once per opening of the board).</summary>
+    private void ShowCategoryReference()
+    {
+        if (categoryReference == null) categoryReference = BoardCategoryReference.Create(this);
+    }
+
+    private void HideCategoryReference()
+    {
+        if (categoryReference == null) return;
+        Destroy(categoryReference.gameObject);
+        categoryReference = null;
+    }
+
     private void ClearRuntimeObjects()
     {
+        // A board closed before it was solved hands the IDs back to the bar.
+        if (!sideQuestCompleted) IdsOnBoard = false;
         RestoreSlotLabels();
         revealHeld = false;
+        HideCategoryReference();
         DestroyDividers();
         if (feedbackCanvas != null)
         {

@@ -75,6 +75,8 @@
   "_levelCompleteNote": "Result-card lessons are ONE tap page each, shown right after the card appears; one tap and the card is yours, no more interruptions. The card's auto-continue waits while it shows.",
   "_waypoints": "Where the arrows lead for each objectives.json step. 'step' must match the step's trigger exactly. pick: nearestAvailable | nearest | first.",
   "waypoints": [
+    { "step": "event:ArthurMet", "target": "Environment/Outside/Plaza/NPCS/NPC_TutorialGuide", "label": "Arthur" },
+    { "step": "event:ReviewedFileLookedOver", "target": "type:ReviewedFilePickup|Environment/Outside/Plaza/NPCS/NPC_TutorialGuide", "pick": "first", "label": "Arthur's file", "arriveDistance": 1.5 },
     {
       "step": "event:AllProfilesCollected",
       "target": "type:TaxpayerProfileWorldPickup|Environment/Outside/Plaza/NPCS/NPC_Marie|Environment/Outside/Plaza/NPCS/NPC_Zorbix|Environment/Outside/Plaza/NPCS/NPC_Jhun|Environment/Outside/Plaza/NPCS/NPC_Milo",
@@ -103,9 +105,8 @@
       "pages": [
         { "show": "welcome" },
         { "mood": "wow", "text": "Well hello there, rookie! I'm {guide}. I've been sorting out this town's taxes since before you were born!" },
-        { "text": "Quick tip: when I'm talking, just tap anywhere to hear my next line. Same goes for chats with the townsfolk!" },
-        { "text": "Today's your very first day, so I'll be right here showing you the ropes. Nothing to stress about, okay?" },
-        { "text": "We've got two big goals: first, help the folks in the plaza with a little side quest. Then, we head to the office and crack your first real tax case!" }
+        { "text": "Quick tip: when I'm talking, tap anywhere to hear my next line. Same goes for chats with the townsfolk." },
+        { "text": "First day! We'll start with the plaza and its people, then your first real case in the office." }
       ]
     },
     {
@@ -114,10 +115,10 @@
       "when": "lesson:welcome",
       "after": "welcome",
       "pages": [
-        { "point": "hud:progress", "gesture": "tap", "text": "This card is your progress. EXP records mastery, and hearts show Public Trust. The town's future support goal is 65; neither one locks the story." },
-        { "point": "hud:minimap", "gesture": "tap", "text": "Your minimap! The blue arrow is you, and the yellow diamonds are people. The time of day is on top. It's 7:30 in the morning, bright and early!" },
-        { "point": "hud:icons", "gesture": "none", "text": "These squares down the side are your carry slots. Empty for now, but whatever you pick up today lands in them, ready to use." },
-        { "point": "hud:settings", "gesture": "tap", "text": "Settings, in case you want to change the sound or controls." }
+        { "point": "hud:progress", "gesture": "tap", "text": "This card is your progress. EXP grows as you get better at the job, and hearts show how much the town trusts you." },
+        { "point": "hud:minimap", "gesture": "tap", "text": "Your minimap! The blue arrow is you, and the yellow diamonds are people. It's 7:30 in the morning, bright and early!" },
+        { "point": "hud:icons", "gesture": "none", "text": "These squares are your carry slots. Whatever you pick up today lands here, ready to use." },
+        { "point": "hud:settings", "gesture": "tap", "text": "And Settings, for the sound and controls." }
       ]
     },
     {
@@ -126,7 +127,7 @@
       "when": "lesson:hud-tour",
       "after": "hud-tour",
       "pages": [
-        { "point": "hud:joystick", "gesture": "joystick", "waitFor": "move:4", "text": "Your turn: put your left thumb on the joystick and push it to walk around. Go on, give it a try!" },
+        { "point": "hud:joystick", "gesture": "joystick", "waitFor": "move:4", "text": "Put your left thumb on the joystick and push it to walk." },
         { "mood": "wow", "text": "Nice moves! You're a natural." }
       ]
     },
@@ -136,8 +137,8 @@
       "when": "lesson:move",
       "after": "move",
       "pages": [
-        { "point": "hud:look", "gesture": "swipe", "waitFor": "look:90", "text": "Your turn: slide your right thumb across the right side of the screen to look around." },
-        { "text": "Perfect! Now you can see the whole plaza." }
+        { "point": "hud:look", "gesture": "swipe", "waitFor": "look:90", "text": "Now slide your right thumb across the right side of the screen to look around." },
+        { "text": "Perfect! That's the whole plaza. Walk and look together, and you can go anywhere." }
       ]
     },
     {
@@ -146,8 +147,8 @@
       "when": "lesson:look",
       "after": "look",
       "pages": [
-        { "point": "hud:bag", "gesture": "tap", "waitFor": "open:bag", "text": "Before we head out, let's try your Bag. Tap it to open it." },
-        { "point": "ui:Inventory Back", "gesture": "tap", "waitFor": "not:open:bag", "text": "It's empty for now. Your things will be kept here when your slots are full. Tap BACK to close it." }
+        { "point": "hud:bag", "gesture": "tap", "waitFor": "open:bag", "text": "One more thing before we head out: your Bag. Tap it to open it." },
+        { "point": "ui:Inventory Back", "gesture": "tap", "waitFor": "not:open:bag", "text": "Empty for now. When your slots are full, things wait in here. Tap BACK to close it." }
       ]
     },
     {
@@ -156,7 +157,7 @@
       "when": "lesson:bag-empty",
       "after": "bag-empty",
       "pages": [
-        { "gesture": "none", "waitFor": "active:type:NotesChestPaperPickup|owns:notes", "text": "Look around for a small chest near the trees. Open it when you find it." }
+        { "gesture": "none", "waitFor": "active:type:NotesChestPaperPickup|owns:notes", "text": "Let's put those thumbs to work! There's a small chest near the trees. Walk over and open it." }
       ]
     },
     {
@@ -168,12 +169,10 @@
       "after": "chest-find",
       "delay": 0.4,
       "pages": [
-        { "point": "type:NotesChestPaperPickup", "gesture": "tap", "waitFor": "not:active:type:NotesChestPaperPickup", "text": "There it is! Tap the paper to pick it up and send it to your Notes slot." },
-        { "point": "hud:notes", "gesture": "none", "text": "Whoosh! Today's Notes flew into your slot. They list every main objective and step." },
-        { "point": "hud:notes", "gesture": "tap", "waitFor": "open:notes", "text": "Your turn: tap the Notes icon to open them." },
-        { "point": "ui:NotesPanel", "gesture": "none", "text": "There it is: every main objective with its steps. A check mark appears as you finish each one." },
-        { "point": "hud:notes", "gesture": "tap", "waitFor": "not:open:notes", "text": "Tap your Notes again to put them away. You can open them any time you need them!" },
-        { "mood": "wow", "text": "Perfect! Now let's see what the Supply Counter has to offer." }
+        { "point": "type:NotesChestPaperPickup", "gesture": "tap", "waitFor": "not:active:type:NotesChestPaperPickup", "text": "There it is! Tap the paper to pick it up." },
+        { "point": "hud:notes", "gesture": "tap", "waitFor": "open:notes", "text": "Whoosh! Today's Notes flew into your slot. Tap them to open them." },
+        { "point": "ui:NotesPanel", "gesture": "none", "text": "Every main objective and its steps. A check mark appears as you finish each one." },
+        { "point": "hud:notes", "gesture": "tap", "waitFor": "not:open:notes", "text": "Tap your Notes again to put them away. They're always one tap away." }
       ]
     },
     {
@@ -185,10 +184,10 @@
       "onlyIn": "active:type:SupplyCounter",
       "delay": 0.4,
       "pages": [
-        { "point": "type:SupplyCounter", "face": "type:SupplyCounter", "gesture": "none", "mood": "wow", "text": "Before you meet the townsfolk, look over there! That's the Supply Counter, right beside the office." },
+        { "point": "type:SupplyCounter", "face": "type:SupplyCounter", "gesture": "none", "mood": "wow", "text": "See that stall beside the office? That's the Supply Counter." },
         { "point": "type:SupplyCounter", "gesture": "none", "text": "Finish jobs and you earn coins. Spend them here on handy gear, like a bigger bag or a set of bookmarks." },
-        { "point": "type:SupplyCounter", "gesture": "tap", "waitFor": "cue:ShopOpened", "text": "Your turn: walk over and tap the counter to take a look." },
-        { "point": "ui:Shop Wallet", "gesture": "none", "text": "This is the catalogue. Prices are in coins, and your coins show up right here. You don't have any yet, but you will soon!" },
+        { "point": "type:SupplyCounter", "gesture": "tap", "waitFor": "cue:ShopOpened", "text": "Walk over and tap the counter to take a look." },
+        { "point": "ui:Shop Wallet", "gesture": "none", "text": "Prices are in coins, and your coins show up right here. None yet, but that changes soon!" },
         { "style": "hint", "gesture": "none", "waitFor": "cue:ShopClosed", "text": "Browse as long as you like, then tap BACK." }
       ]
     },
@@ -198,27 +197,82 @@
       "when": "lesson:shop-intro|not:active:type:SupplyCounter",
       "after": "notes",
       "pages": [
-        { "point": "waypoint", "face": "waypoint", "gesture": "none", "revealArrows": true, "mood": "wow", "text": "Ta-da! See the glowing arrows on the ground, and the pin floating over your goal? They always lead to your next objective." },
-        { "point": "hud:minimap", "gesture": "none", "text": "Your goal pulses on the minimap too, with little dots showing the way." },
-        { "point": "hud:joystick", "gesture": "joystick", "waitFor": "move:8", "text": "Your turn: follow the arrows! They're taking you to the townsfolk in the plaza." }
+        { "point": "waypoint", "face": "waypoint", "gesture": "none", "revealArrows": true, "mood": "wow", "text": "Ta-da! The glowing arrows and the floating pin always lead to your next step." },
+        { "point": "hud:minimap", "gesture": "none", "text": "Your goal pulses on the minimap too." },
+        { "point": "hud:joystick", "gesture": "joystick", "waitFor": "move:8|near:4:world:Environment/Outside/Plaza/NPCS/NPC_TutorialGuide|dialogue:start", "text": "Follow the arrows. They lead to me!" }
       ]
     },
     {
       "id": "talk",
       "title": "TALKING TO PEOPLE",
-      "when": "near:3:type:TaxpayerNpcInteractable",
+      "when": "near:3:world:Environment/Outside/Plaza/NPCS/NPC_TutorialGuide|near:3:type:TaxpayerNpcInteractable",
       "after": "follow",
       "pages": [
-        { "point": "hud:prompt", "gesture": "tap", "waitFor": "dialogue:start", "box": "top", "text": "Someone's close! Your turn: look at them and tap to say hello. The button at the bottom tells you what a tap will do." }
+        { "point": "hud:prompt", "gesture": "tap", "waitFor": "dialogue:start", "box": "top", "text": "Look at someone and tap to talk. The button at the bottom shows what a tap does." }
       ]
     },
     {
       "id": "dialogue-tip",
+      "_note": "2026-10-27: shown in the first client chat (after Arthur's file), not over Arthur's own opening talk.",
       "when": "dialogue:active",
-      "after": "follow",
+      "after": "reviewed-notes",
       "duringDialogue": true,
       "pages": [
-        { "style": "hint", "waitFor": "seconds:5", "text": "Tap the dialogue box to read the next line. Listen closely, it helps later!" }
+        { "style": "hint", "waitFor": "seconds:5", "text": "Listen closely: what they tell you ends up on their ID." }
+      ]
+    },
+    {
+      "id": "reviewed-take",
+      "title": "ARTHUR'S FILE",
+      "_note": "T30 (2026-10-27): the file floats beside Arthur after his completed talk. The page ends only when the file was really collected (saved).",
+      "when": "cue:ReviewedFilePresented|owns:arthur_reviewed_file",
+      "onlyIn": "mode:FirstPerson|mode:ProfileViewer",
+      "after": "follow",
+      "delay": 0.3,
+      "pages": [
+        { "point": "type:ReviewedFilePickup", "face": "type:ReviewedFilePickup", "gesture": "tap", "box": "top", "waitFor": "cue:ReviewedFileCollected|owns:arthur_reviewed_file", "text": "Go on, tap the file to take it." }
+      ]
+    },
+    {
+      "id": "reviewed-open",
+      "title": "ARTHUR'S FILE",
+      "_note": "T30 (2026-10-27): one direct prompt; it resolves in walking and file-viewer modes so a quick first open cannot strand it.",
+      "when": "cue:ReviewedFileCollected|owns:arthur_reviewed_file",
+      "onlyIn": "mode:FirstPerson|mode:ProfileViewer",
+      "after": "reviewed-take",
+      "delay": 0.5,
+      "pages": [
+        { "point": "hud:reviewed", "gesture": "tap", "minimumReadSeconds": 0.8, "waitFor": "cue:ReviewedFileOpened|open:reviewed|flag:reviewed-complete", "text": "It's in your slots now. Tap it to open it." }
+      ]
+    },
+    {
+      "id": "reviewed-inspect",
+      "title": "ARTHUR'S FILE",
+      "_note": "2026-10-27 (second pass): one hands-on step per page inside the open file, each shown by the hand on the real paper (record:* targets) and opening with Arthur's short reaction to the step before. Each waits for the real action (ArthurOpening flags); the flip and the stack also pass once the records are back, so nothing can strand the route.",
+      "when": "cue:ReviewedFileOpened|open:reviewed|flag:reviewed-complete",
+      "onlyIn": "open:reviewed",
+      "after": "reviewed-open",
+      "preserveWhileHidden": true,
+      "pages": [
+        { "point": "ui:RightEdgeIndicator", "gesture": "tap", "box": "top", "minimumReadSeconds": 1.2, "waitFor": "flag:reviewed-page2|flag:reviewed-complete", "text": "This page has his finished entries. The proof is on the next one: tap the arrow on the right." },
+        { "point": "record:attached", "to": "screen:0.22,0.5", "gesture": "drag", "box": "top", "waitFor": "flag:reviewed-one-out|flag:reviewed-complete", "text": "His ID and background are clipped here. Drag one off the page." },
+        { "point": "record:attached", "to": "screen:0.8,0.5", "gesture": "drag", "box": "top", "waitFor": "flag:reviewed-inspected|flag:reviewed-complete", "text": "That's it! Now the other one." },
+        { "point": "record:id", "gesture": "tap", "box": "top", "minimumReadSeconds": 1.2, "waitFor": "flag:reviewed-flipped|flag:reviewed-complete", "text": "The ID gives his citizenship, the background where he lives. Tap the ID to flip it." },
+        { "point": "record:out", "gesture": "hold", "box": "top", "minimumReadSeconds": 1.2, "waitFor": "flag:reviewed-grouped|flag:reviewed-complete", "text": "His profile's on the back. Now press and hold a paper, keep still for two seconds, and they stack." },
+        { "point": "record:out", "to": "record:page", "gesture": "drag", "box": "top", "waitFor": "flag:reviewed-returned|flag:reviewed-complete", "text": "Neat, right? Drag the stack back onto the page." }
+      ]
+    },
+    {
+      "id": "reviewed-notes",
+      "title": "ARTHUR'S FILE",
+      "_note": "2026-10-27: Arthur ties the proof to the finished entries in two lines, after the file turns back to page one.",
+      "when": "event:ReviewedFileLookedOver|flag:reviewed-complete",
+      "onlyIn": "open:reviewed",
+      "after": "reviewed-inspect",
+      "preserveWhileHidden": true,
+      "pages": [
+        { "box": "top", "text": "Filipino, but his home is abroad: that's his classification. And his own shop explains the other two." },
+        { "box": "top", "text": "Keep it handy. Now go meet the four clients: each will hand you a copy of their ID." }
       ]
     },
     {
@@ -227,7 +281,7 @@
       "when": "visible:type:TaxpayerProfileWorldPickup",
       "after": "follow",
       "pages": [
-        { "point": "type:TaxpayerProfileWorldPickup", "gesture": "tap", "waitFor": "event:ProfileCollected", "mood": "wow", "text": "They left you their taxpayer profile! Your turn: tap the paper to pick it up." }
+        { "point": "type:TaxpayerProfileWorldPickup", "gesture": "tap", "waitFor": "event:ProfileCollected", "mood": "wow", "text": "A copy of their ID! Tap it to pick it up." }
       ]
     },
     {
@@ -237,12 +291,11 @@
       "onlyIn": "mode:FirstPerson|mode:ProfileViewer",
       "after": "follow",
       "delay": 0.8,
+      "_note": "2026-10-27: open, flip one, put away; the flip step also passes when the IDs are put away.",
       "pages": [
-        { "point": "hud:profiles", "gesture": "none", "text": "Whoosh! It flew right into your Profile Binder, in your slots." },
-        { "point": "hud:profiles", "gesture": "tap", "waitFor": "open:profiles", "text": "Your turn: tap the Profile Binder to read it." },
-        { "text": "This is everything you learned about them. You can drag a card around to read it better." },
-        { "point": "hud:profiles", "gesture": "tap", "waitFor": "not:open:profiles", "text": "Tap the binder again to put the cards away." },
-        { "point": "hud:objective", "gesture": "none", "text": "One down, three to go! The tracker keeps count for you. Follow the arrows to the next person." }
+        { "point": "hud:profiles", "gesture": "tap", "waitFor": "open:profiles", "text": "It went into your Client IDs. Tap them to have a look." },
+        { "gesture": "tap", "waitFor": "flag:ids-flipped|not:open:profiles", "text": "Tap a card to flip it: their profile is on the back." },
+        { "point": "hud:profiles", "gesture": "tap", "waitFor": "not:open:profiles", "text": "Tap the icon again to put them away. Three clients to go!" }
       ]
     },
     {
@@ -251,10 +304,10 @@
       "when": "event:TutorialGuideAppeared",
       "onlyIn": "mode:FirstPerson",
       "delay": 1.0,
+      "_note": "T26: a follow-up with the same Arthur, not another introduction; the board talk itself is town.json arthurBoardIntro (three lines).",
       "pages": [
-        { "mood": "wow", "text": "That's all four profiles! Great job." },
-        { "point": "waypoint", "gesture": "tap", "waitFor": "near:4:world:Environment/Outside/Plaza/NPCS/NPC_TutorialGuide|dialogue:start", "text": "Your turn: follow the arrows back to me in the plaza." },
-        { "point": "world:Environment/Outside/Plaza/NPCS/NPC_TutorialGuide", "gesture": "tap", "waitFor": "dialogue:start", "text": "Your turn: tap me to talk, and we'll sort them on my corkboard." }
+        { "point": "waypoint", "gesture": "tap", "mood": "wow", "waitFor": "near:4:world:Environment/Outside/Plaza/NPCS/NPC_TutorialGuide|dialogue:start", "text": "That's all four IDs! Follow the arrows back to me." },
+        { "point": "world:Environment/Outside/Plaza/NPCS/NPC_TutorialGuide", "gesture": "tap", "waitFor": "dialogue:start", "text": "Tap me, and we'll organize them on my corkboard." }
       ]
     },
     {
@@ -263,12 +316,12 @@
       "when": "mode:CorkboardSideQuest",
       "onlyIn": "mode:CorkboardSideQuest",
       "delay": 2.0,
+      "_note": "T26 (2026-10-27): one target at a time: the CATEGORIES reference, reading an ID's back, the first drag, then how the check and the medal work.",
       "pages": [
-        { "point": "type:CorkboardSlot", "gesture": "none", "text": "Welcome to the corkboard! Each corner is a different kind of taxpayer." },
-        { "point": "type:ProfileDragCard", "gesture": "tap", "text": "Down here are the four profiles you collected. Read each one: where are they from, and where do they spend their year?" },
-        { "point": "type:ProfileDragCard", "to": "type:CorkboardSlot", "gesture": "drag", "waitFor": "corkboard:placed|corkboard:wrong", "text": "Your turn: press and hold a card, then drag it onto the corner that matches." },
-        { "text": "Take your time: cards can be moved freely, and nothing is graded while you sort." },
-        { "text": "When all four are pinned, the board checks itself. Your first check sets your reward, so be sure! Red cards get a clue from me: move them and it checks again." }
+        { "point": "ui:Board Categories", "gesture": "none", "text": "Each corner is a kind of taxpayer. CATEGORIES explains them any time." },
+        { "point": "type:ProfileDragCard", "gesture": "tap", "waitFor": "flag:board-flipped|corkboard:placed|corkboard:wrong", "text": "Tap an ID to flip it and read the profile." },
+        { "point": "type:ProfileDragCard", "to": "type:CorkboardSlot", "gesture": "drag", "waitFor": "corkboard:placed|corkboard:wrong", "text": "Now drag an ID onto the corner that fits." },
+        { "mood": "wow", "text": "Once all four are pinned, the board checks itself. That first check sets your medal: Gold for all four right, Silver for two, Bronze for fewer." }
       ]
     },
     {
@@ -280,7 +333,7 @@
       "endIfGone": true,
       "delay": 0.5,
       "pages": [
-        { "point": "hud:card", "gesture": "none", "mood": "wow", "box": "bottom", "text": "Your first reward! The EXP and hearts go to your progress, and fewer wrong tries earn a shinier badge. Have a look, then tap Continue." }
+        { "point": "hud:card", "gesture": "none", "mood": "wow", "box": "bottom", "text": "Your first medal! It shows your first check: Gold, Silver or Bronze. The EXP and hearts go to your progress. Have a look, then tap Continue." }
       ]
     },
     {
@@ -291,23 +344,21 @@
       "delay": 1.0,
       "pages": [
         { "mood": "wow", "point": "hud:progress", "gesture": "none", "text": "Brilliant work! See your EXP and hearts go up? That's your side-quest reward." },
-        { "point": "waypoint", "gesture": "none", "waitFor": "step:event:ReceptionistTalkedTo", "text": "Now for the real job. Your turn: follow the arrows to the office building." }
+        { "point": "waypoint", "gesture": "none", "waitFor": "step:event:ReceptionistTalkedTo", "text": "Now for the real job. Follow the arrows to the office." }
       ]
     },
     {
       "id": "office-welcome",
       "title": "WELCOME TO THE OFFICE",
-      "_note": "Plays once, the first time the player walks into the office (the 'Go to the office' step is done), before the receptionist.",
+      "_note": "Plays once, the first time the player walks into the office (the 'Go to the office' step is done), before the receptionist. 2026-10-27: three pages (was five).",
       "when": "step:event:ReceptionistTalkedTo",
       "onlyIn": "mode:FirstPerson",
       "after": "to-office",
       "delay": 0.4,
       "pages": [
-        { "mood": "wow", "text": "Welcome to the Town Tax Consultancy Office! This is where the real work happens, and where you'll spend most of your career." },
-        { "point": "world:Environment/OfficeBuilding/Rooms/Reception/Receptionist", "gesture": "none", "text": "This is the reception. Every working day starts here: the receptionist hands you your case for the day." },
-        { "text": "Further in is the main office room with your very own desk. That's where you read your client's papers and fill in their case folder." },
-        { "text": "The Auditor has his own office. When your case is finished, you hand it to him for the final check. There's also a file storage room and a conference room for meeting clients." },
-        { "point": "hud:minimap", "gesture": "none", "text": "Lost? Your minimap shows every room from above, and the arrows always lead to your next step." }
+        { "mood": "wow", "text": "Welcome to the Town Tax Consultancy Office! This is where the real work happens." },
+        { "point": "world:Environment/OfficeBuilding/Rooms/Reception/Receptionist", "gesture": "none", "text": "Every working day starts here at reception with your case. Your desk is in the main room, and the Auditor checks finished cases in his office." },
+        { "point": "hud:minimap", "gesture": "none", "text": "Lost? The minimap shows every room, and the arrows always lead to your next step." }
       ]
     },
     {
@@ -317,7 +368,7 @@
       "onlyIn": "mode:FirstPerson",
       "after": "office-welcome",
       "pages": [
-        { "point": "waypoint", "gesture": "tap", "waitFor": "dialogue:start", "text": "Here we are! Your turn: tap the receptionist to say hi. She'll hand you today's case." }
+        { "point": "waypoint", "gesture": "tap", "waitFor": "dialogue:start", "text": "Here we are! Tap the receptionist to say hi. She'll hand you today's case." }
       ]
     },
     {
@@ -340,7 +391,7 @@
       "onlyIn": "mode:FirstPerson",
       "delay": 0.6,
       "pages": [
-        { "point": "waypoint", "gesture": "tap", "waitFor": "mode:Workstation", "text": "Your desk is in the main office room. Your turn: follow the arrows, then tap the desk to sit down." }
+        { "point": "waypoint", "gesture": "tap", "waitFor": "mode:Workstation", "text": "Your desk is in the main office room. Follow the arrows, then tap the desk to sit down." }
       ]
     },
     {
@@ -350,48 +401,51 @@
       "onlyIn": "mode:Workstation",
       "delay": 0.8,
       "pages": [
-        { "mood": "wow", "text": "Welcome to your very own desk! Everything you need for the case is right here." },
-        { "point": "world:Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/StackedCaseFolder/CaseFolder", "to": "screen:0.5,0.45", "gesture": "drag", "waitFor": "event:CaseFolderOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder", "text": "First, the Case Folder. Your turn: drag it off the pile toward you to open it." }
+        { "mood": "wow", "text": "Your very own desk! Everything for Marie's case is right here." },
+        { "point": "world:Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/StackedCaseFolder/CaseFolder", "to": "screen:0.5,0.45", "gesture": "drag", "waitFor": "event:CaseFolderOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder", "text": "Drag the Case Folder off the pile toward you to open it." }
       ]
     },
     {
       "id": "case-folder",
       "title": "THE CASE FOLDER",
+      "_note": "2026-10-27: Marie's folder works like Arthur's file (entries, then her ID and background). Each step is a short reminder that waits for the real action (CaseRecordsDesk flags, already true for a case under way). Arthur never names her entries.",
       "when": "event:CaseFolderOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder",
       "onlyIn": "mode:Workstation",
       "after": "desk",
       "delay": 0.6,
       "pages": [
-        { "point": "field", "gesture": "none", "text": "This is your client's file. See the three empty fields? Classification, Type and Income Sources. Your job is to fill them in correctly." },
-        { "text": "The answers come from what you know about your client, and the rules are in the Tax Code Book." },
-        { "point": "world:Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/StackedTaxCodeBook/TaxCodeBook", "to": "screen:0.5,0.45", "gesture": "drag", "waitFor": "event:TaxCodeBookOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenTaxCodeBook", "text": "Your turn: drag the Tax Code Book toward you to open it." }
+        { "point": "field", "gesture": "none", "text": "Same as my file, except these three entries are yours to fill." },
+        { "point": "ui:RightEdgeIndicator", "gesture": "tap", "box": "top", "minimumReadSeconds": 1.2, "waitFor": "flag:case-records-shown", "text": "Her ID and background are on the next page. Take both out." },
+        { "point": "record:id", "gesture": "tap", "box": "top", "waitFor": "flag:case-id-flipped|flag:case-records-prepared", "text": "Flip her ID: her profile from the plaza is on the back." },
+        { "point": "record:out", "to": "record:page", "gesture": "drag", "box": "top", "minimumReadSeconds": 1.2, "waitFor": "flag:case-records-prepared", "text": "Got the details? Slide both back onto the page." },
+        { "point": "world:Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/StackedTaxCodeBook/TaxCodeBook", "to": "screen:0.5,0.45", "gesture": "drag", "waitFor": "event:TaxCodeBookOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenTaxCodeBook", "text": "Now the rules. Drag the Tax Code Book toward you." }
       ]
     },
     {
       "id": "book-pages",
+      "_note": "2026-10-27: one page; the page arrows were met in Arthur's file.",
       "title": "TURNING PAGES",
       "when": "event:TaxCodeBookOpened|active:world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenTaxCodeBook",
       "onlyIn": "mode:Workstation",
       "after": "case-folder",
       "delay": 0.6,
       "pages": [
-        { "point": "ui:RightEdgeIndicator", "gesture": "tap", "text": "The Tax Code Book has a section for each field. To turn to the next page, tap the round arrow on the right edge of the page." },
-        { "point": "ui:LeftEdgeIndicator", "gesture": "tap", "text": "The arrow on the left edge takes you back. Section 1 is Taxpayer Classification, then Taxpayer Type, then Income Sources." }
+        { "point": "ui:RightEdgeIndicator", "gesture": "tap", "text": "The book turns pages like your folder, with the arrows on its edges. Section 1 is Taxpayer Classification, then Taxpayer Type, then Income Sources." }
       ]
     },
     {
       "id": "value-transfer",
       "title": "MOVING VALUES",
+      "_note": "2026-10-27: four pages (the neat-part intro is folded into the first action).",
       "when": "lesson:book-pages",
       "onlyIn": "mode:Workstation",
       "after": "book-pages",
       "delay": 0.6,
       "pages": [
-        { "mood": "wow", "text": "Here's the neat part! Values in the book, like 'Resident Citizen', can be moved straight into your folder." },
-        { "point": "chip", "gesture": "tap", "waitFor": "value:selected", "text": "Your turn: tap a value to pick it up. It lights up so you know it's selected." },
-        { "point": "field", "gesture": "tap", "waitFor": "value:placed|value:rejected", "text": "Now tap the field where it belongs. It glows green when it fits, red when it doesn't." },
-        { "point": "chip", "to": "field", "gesture": "drag", "waitFor": "value:placed|value:rejected", "text": "You can also drag! Your turn: press a value and drag it onto its field. A frame shows where it will land: green means it fits." },
-        { "mood": "confused", "text": "One thing to remember: a value only fits the right KIND of field. But fitting isn't the same as being correct! Pick what really matches your client." }
+        { "point": "chip", "gesture": "tap", "waitFor": "value:selected", "mood": "wow", "text": "Values in the book go straight into her file. Tap one to pick it up." },
+        { "point": "field", "gesture": "tap", "waitFor": "value:placed|value:rejected", "text": "Now tap the entry where it belongs. Green means it fits." },
+        { "point": "chip", "to": "field", "gesture": "drag", "waitFor": "value:placed|value:rejected", "text": "You can also drag a value straight onto an entry." },
+        { "mood": "confused", "text": "Careful: fitting isn't the same as right. Pick what really matches Marie." }
       ]
     },
     {
@@ -409,12 +463,9 @@
       "onlyIn": "mode:Workstation",
       "after": "value-transfer",
       "delay": 0.4,
+      "_note": "2026-10-27: one reminder (was a Profiles routine): the clients' IDs went onto the corkboard, and Marie's profile is on the back of her ID in her folder.",
       "pages": [
-        { "point": "hud:icons", "gesture": "none", "mood": "wow", "text": "Good tax detectives use every clue! Your Notes and Taxpayer Profiles work right here at the desk, or anywhere you are." },
-        { "point": "hud:profiles", "gesture": "tap", "waitFor": "open:profiles", "text": "Your turn: tap Profiles to pull up your client's profile right next to the book." },
-        { "text": "That's the trick: read the profile, find the matching rule in the Tax Code Book, then move that value into the Case Folder. Profile, book, folder!" },
-        { "point": "hud:profiles", "gesture": "tap", "waitFor": "not:open:profiles", "text": "Tap the Profiles icon again to put it away." },
-        { "point": "hud:notes", "gesture": "tap", "text": "And if you ever forget what's next, peek at your Notes. Now go fill in those three fields. I believe in you!" }
+        { "point": "hud:notes", "gesture": "none", "text": "Stuck? Her ID and background are on page two of her folder, and the book has the rules." }
       ]
     },
     {
@@ -435,7 +486,7 @@
       "when": "event:CaseFolderStored",
       "after": "store-folder",
       "pages": [
-        { "point": "hud:exit", "gesture": "tap", "waitFor": "mode:FirstPerson", "text": "Folder's safe! Your turn: tap Exit Desk to stand up." }
+        { "point": "hud:exit", "gesture": "tap", "waitFor": "mode:FirstPerson", "text": "Folder's safe! Tap Exit Desk to stand up." }
       ]
     },
     {
@@ -446,7 +497,7 @@
       "after": "store-folder",
       "delay": 0.5,
       "pages": [
-        { "point": "waypoint", "gesture": "none", "waitFor": "near:3.5:world:Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "text": "Last stop: the Auditor's office. Your turn: follow the arrows to the Auditor." }
+        { "point": "waypoint", "gesture": "none", "waitFor": "near:3.5:world:Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "text": "Last stop: the Auditor's office. Follow the arrows to the Auditor." }
       ]
     },
     {
@@ -456,7 +507,7 @@
       "onlyIn": "mode:FirstPerson",
       "after": "auditor",
       "pages": [
-        { "point": "world:Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "gesture": "tap", "waitFor": "dialogue:start", "text": "This is the Auditor. He checks every case before it's done. Your turn: tap him to start your hand-in." }
+        { "point": "world:Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "gesture": "tap", "waitFor": "dialogue:start", "text": "This is the Auditor. He checks every case before it's done. Tap him to start your hand-in." }
       ]
     },
     {
@@ -466,7 +517,7 @@
       "after": "submit",
       "duringDialogue": true,
       "pages": [
-        { "point": "hud:folder", "to": "world:Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "gesture": "drag", "box": "top", "waitFor": "state:AuditSubmittedState", "text": "He's asking for your case. Your turn: press and hold your Case Folder icon, then drag it onto the Auditor." }
+        { "point": "hud:folder", "to": "world:Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "gesture": "drag", "box": "top", "waitFor": "state:AuditSubmittedState", "text": "He's asking for your case. Press and hold your Case Folder icon, then drag it onto the Auditor." }
       ]
     },
     {
@@ -553,7 +604,7 @@
       "endIfGone": true,
       "delay": 0.5,
       "pages": [
-        { "point": "hud:continue", "gesture": "tap", "mood": "wow", "box": "bottom", "text": "Congratulations, rookie! That wraps up my tutorial for Level 1. Take your time, then tap Continue to save and head to the level select." }
+        { "point": "hud:continue", "gesture": "tap", "mood": "wow", "box": "bottom", "text": "Congratulations, rookie! That wraps up your first day. Take your time, then tap Continue to save and head to the level select." }
       ]
     }
   ]

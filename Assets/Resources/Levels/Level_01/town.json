@@ -9,8 +9,10 @@
     "description: the profile card. A short summary of what they said (about 12-13 words) - clues, never the answer.",
     "placedRight: Arthur when the card lands in the right corner (say WHY, without the label).",
     "hintCitizenship / hintResidence / hintBoth: Arthur when the card is wrong because of where they're FROM / where they LIVE / both. Hint, never the answer.",
-    "arthurBoardIntro / arthurBoardDone: the guide's talk when the corkboard opens, and when every card is right.",
+    "arthurBoardIntro / arthurBoardDone: the guide's talk when the corkboard opens (T26: at most 3 short lines, a reminder; never describe each client again), and when every card is right.",
     "Marie is also the office client: her talk and profile hint how she earns her money (for the Case Folder) without naming the answer.",
+    "waiting: the one line a client says if tapped before the rounds open (T30: all four wait until Arthur's reviewed file was looked over).",
+    "reviewedFile (T30): Arthur's Reviewed File, a FORMER client's finished reference (never one of the four). entries: the three completed first-page entries (keys fixed, values are enum names). records: his ID card and background sheet (ids and types fixed). arthurIntro: one or two short lines. notes: exactly four lines, one at a time (first record looked at; back on page one: classification; work and earnings; send-off). A blank field keeps the built-in text.",
     "Invalid entries are skipped with a Console warning and the built-in text is used instead."
   ],
 
@@ -30,7 +32,8 @@
       "placedRight": "Yes! Born here, never left. Her home and her paycheck are both right here.",
       "hintCitizenship": "Hmm. Where was Marie born, and whose passport has never been stamped?",
       "hintResidence": "Close! But has Marie ever actually lived anywhere else?",
-      "hintBoth": "Not quite. Think about where Marie is from, and where she spends her days."
+      "hintBoth": "Not quite. Think about where Marie is from, and where she spends her days.",
+      "waiting": "Oh, hi! I'm just finishing a call. Can you come back in a bit?"
     },
     {
       "npcId": "npc_jhunjhun",
@@ -44,6 +47,7 @@
         { "who": "you", "text": "You must miss home." },
         { "who": "npc", "text": "Every day! I'm Pinoy to the bone, but I only get to come home for a few weeks a year.", "emote": "worried" }
       ],
+      "waiting": "Sorry, I'm on the phone with my ride. Come back in a bit?",
       "placedRight": "That's it! Filipino through and through, but his work keeps him abroad most of the year.",
       "hintCitizenship": "Listen again: Jhun-jhun called himself Pinoy to the bone.",
       "hintResidence": "Almost! Where does Jhun-jhun spend most of his year?",
@@ -64,7 +68,8 @@
       "placedRight": "Exactly! He came from far away, but this town is truly his home now.",
       "hintCitizenship": "Did Milo grow up here? Remember where he said he's from.",
       "hintResidence": "Close! Six years, a house and a family here. Is Milo just visiting?",
-      "hintBoth": "Not quite. Think about where Milo is from, and where he has made his home."
+      "hintBoth": "Not quite. Think about where Milo is from, and where he has made his home.",
+      "waiting": "Welcome! The lunch rush has me running. Come back in a little while?"
     },
     {
       "npcId": "npc_zorbix",
@@ -81,32 +86,84 @@
       "placedRight": "Spot on! A visitor from far, far away, here only for a short paid project.",
       "hintCitizenship": "Hmm. Does a visitor from another planet carry a Filipino passport?",
       "hintResidence": "Almost! Twenty-seven days and a flight home booked. Does Zorbix live here?",
-      "hintBoth": "Not quite. Where is Zorbix from, and how long is he staying?"
+      "hintBoth": "Not quite. Where is Zorbix from, and how long is he staying?",
+      "waiting": "GREETINGS. MY TRANSLATOR IS STILL WARMING UP. RETURN SHORTLY."
     }
   ],
 
+  "reviewedFile": {
+    "clientName": "Ramon Ilagan",
+    "tin": "•••• 4180",
+    "taxYear": "2025",
+    "reviewedBy": "Arthur",
+    "entries": [
+      { "key": "ResidencyStatus", "label": "Taxpayer Classification", "value": "NonResidentCitizen" },
+      { "key": "TaxpayerType", "label": "Taxpayer Type", "value": "SelfEmployed" },
+      { "key": "IncomeSource", "label": "Income Source", "value": "BusinessIncome" }
+    ],
+    "records": [
+      {
+        "id": "reviewed-identity",
+        "type": "identity",
+        "tab": "Identity",
+        "title": "IDENTITY CARD",
+        "name": "Ramon Ilagan",
+        "citizenship": "Filipino",
+        "born": "21 Feb 1986",
+        "address": "Coast Tales (family home)",
+        "reference": "•••• 4180"
+      },
+      {
+        "id": "reviewed-background",
+        "type": "background",
+        "tab": "Background",
+        "title": "CLIENT BACKGROUND",
+        "name": "Ramon Ilagan",
+        "period": "Year 2025",
+        "reference": "BG-0402",
+        "living": "Lives in Dubai since 2019\nHome visits: 2 weeks/year",
+        "work": "Own trading shop in Dubai",
+        "income": "Profit from shop sales",
+        "footer": "Client interview notes"
+      }
+    ],
+    "arthurIntro": [
+      "There you are, Elijah! Before you meet today's clients, I want you to see a case I finished.",
+      "It's closed, so it's just for reading. Here, take it!"
+    ],
+    "notes": [
+      "The ID gives his citizenship, the background where he lives.",
+      "Filipino, but his home is abroad: that's his classification.",
+      "And his own shop explains the other two.",
+      "Keep it handy. Now go meet the four clients: each will hand you a copy of their ID."
+    ]
+  },
+
   "arthurBoardIntro": [
-    { "who": "npc", "text": "Great work collecting all four profiles! Now let's sort them on my corkboard." },
-    { "who": "npc", "text": "Every taxpayer comes down to two clues: where their passport is from, and where they spend most of their year." },
-    { "who": "npc", "text": "Some were born Filipino and never really left. Their whole life, and their paycheck, is right here." },
-    { "who": "npc", "text": "Some are Filipino to the bone, but work keeps them overseas most of the year. Home is just for visits." },
-    { "who": "npc", "text": "Some came from another country, fell for this place, and stayed. They live and do business here now." },
-    { "who": "npc", "text": "And some are only passing through: foreign visitors on a short job, with a ticket home already booked." },
-    { "who": "you", "text": "So I listen for where they're from, and where they actually live." },
-    { "who": "npc", "text": "Exactly! Pin each profile where you think it belongs. Once all four are up, I'll check the board, and your first check counts." }
+    { "who": "npc", "text": "You've got all four IDs, Elijah. Let's organize them on my corkboard." },
+    { "who": "npc", "text": "For each client, weigh the same two details as my file: their nationality, and where they live most of the year." },
+    { "who": "npc", "text": "Pin all four. When the last one is up, I'll check the whole board, and that first check sets your medal." }
+  ],
+
+  "_boardCategories": "T26: the board's category reference (the CATEGORIES button while sorting). One short sentence per corner from the board's two questions only. These are the formal names already printed on the corners; never name a client, an assignment or which corner a profile goes to. category = ResidentCitizen | NonResidentCitizen | ResidentAlien | NonResidentAlien; a blank meaning keeps the built-in sentence.",
+  "boardCategories": [
+    { "category": "ResidentCitizen", "meaning": "A Filipino citizen whose home is in the Philippines." },
+    { "category": "NonResidentCitizen", "meaning": "A Filipino citizen whose home is abroad for most of the year." },
+    { "category": "ResidentAlien", "meaning": "A citizen of another country whose home is now in the Philippines." },
+    { "category": "NonResidentAlien", "meaning": "A citizen of another country whose home is not in the Philippines." }
   ],
 
   "_sideQuestSplash": "The title card shown right after Arthur's corkboard talk (tap to continue). Keep the description short.",
   "sideQuestSplash": {
     "kicker": "SIDE QUEST 1",
     "title": "Know Your Taxpayer",
-    "description": "Four townsfolk, four different stories. Sort each profile onto the corner of Arthur's corkboard where it belongs.",
-    "instruction": "Pin all four profiles  ·  The board checks itself",
+    "description": "Four townsfolk, four different stories. Pin each ID onto the corner of Arthur's corkboard where it belongs.",
+    "instruction": "Pin all four IDs  ·  Tap one to turn it over  ·  The board checks itself",
     "button": "TAP TO CONTINUE"
   },
 
   "arthurBoardDone": [
-    { "who": "npc", "text": "Excellent work! Every profile is in its right spot." },
+    { "who": "npc", "text": "Excellent work! Every ID is in its right spot." },
     { "who": "npc", "text": "You listened for the two clues: where they're from and where they live. That instinct will serve you well in the office." },
     { "who": "npc", "text": "Now, let's head there. Your first real case is waiting!" }
   ]

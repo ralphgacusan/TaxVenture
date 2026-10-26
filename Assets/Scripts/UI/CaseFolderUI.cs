@@ -35,7 +35,7 @@ public class CaseFolderUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI bodyText;
     [SerializeField] private TextMeshProUGUI pageIndicatorText;
 
-    [Header("Page 6 Document Links")]
+    [Header("Document Links (a page with the document-links role)")]
     [SerializeField] private SupportingDocumentsPageLink supportingDocumentsPageLink;
 
     [Header("Page Edge Navigation")]
@@ -114,6 +114,49 @@ public class CaseFolderUI : MonoBehaviour
     /// </summary>
     public static System.Action<int, PageBuilder> PageDecorator;
 
+    /// <summary>
+    /// Optional pages of THIS folder instance only, after the case's own pages
+    /// (T25: Marie's "Supporting Documents" page on the Level 1 desk folder).
+    /// Never copied to another instance (a reference copy ignores it), and
+    /// found by CaseFolderPageContent.Role rather than a page number.
+    /// </summary>
+    [System.NonSerialized] public System.Func<CaseData, List<CaseFolderPageContent>> InstancePages;
+
+    // ============================================================
+    // REFERENCE COPY (T30 revision, 2026-10-26: Arthur's Reviewed File)
+    // ============================================================
+
+    private CaseData referenceData;
+    private List<CaseFolderPageContent> referencePages;
+
+    /// <summary>True for a reference copy of this folder: it prints its own finished data, never the active case.</summary>
+    public bool IsReference => referenceData != null;
+
+    /// <summary>
+    /// Binds this folder instance to a finished reference instead of CaseManager's
+    /// active case: the same pages, layout, typography and page turns, printed
+    /// from data, with extraPages after the front page. A reference copy runs no
+    /// level hooks (ExtraPages, PageDecorator), review pages, document links or
+    /// game-state change; its document layer makes every value read-only
+    /// (Doc3DLayer.AlwaysReadOnly). Marie's folder never calls this.
+    /// </summary>
+    public void UseReference(CaseData data, List<CaseFolderPageContent> extraPages)
+    {
+        referenceData = data;
+        referencePages = extraPages;
+        BindPageNavigation();
+    }
+
+    /// <summary>Raised after a page has been drawn (its index).</summary>
+    public event System.Action<int> PageRendered;
+
+    /// <summary>The front page's rows as drawn now.</summary>
+    public IReadOnlyList<CaseFolderFieldRow> FrontPageRows => page1Rows;
+
+    /// <summary>What this folder prints: its reference, or the active case.</summary>
+    private CaseData CurrentData =>
+        referenceData ?? (CaseManager.Instance != null ? CaseManager.Instance.CurrentCase : null);
+
     /// <summary>The paper the pages print on (also what flips on a page turn).</summary>
     public RectTransform PaperRect => GetPageTurnRoot();
 
@@ -128,6 +171,10 @@ public class CaseFolderUI : MonoBehaviour
 
     /// <summary>Find a level page by its printed heading; -1 when unavailable.</summary>
     public int FindPageIndex(string heading) => pages == null ? -1 : pages.FindIndex(p => p.Heading == heading);
+
+    /// <summary>Find a page by its stable role (CaseFolderPageContent.Role) in this folder's current pages; -1 when it has none.</summary>
+    public int FindPageIndexByRole(string role) =>
+        pages == null || string.IsNullOrEmpty(role) ? -1 : pages.FindIndex(p => p.Role == role);
 
     /// <summary>True for the desk folder's world-space paper (not the flat HUD copy).</summary>
     public bool IsWorldPaper
@@ -197,16 +244,25 @@ public class CaseFolderUI : MonoBehaviour
 
     private void Awake()
     {
-        if (leftEdgeZone != null)
-            leftEdgeZone.OnTapped += PreviousPage;
-
-        if (rightEdgeZone != null)
-            rightEdgeZone.OnTapped += NextPage;
+        BindPageNavigation();
 
         if (swipeToClose != null)
             swipeToClose.OnSwipeClosed += Hide;
+    }
 
+    private void BindPageNavigation()
+    {
+        if (leftEdgeZone != null)
+        {
+            leftEdgeZone.OnTapped -= PreviousPage;
+            leftEdgeZone.OnTapped += PreviousPage;
+        }
 
+        if (rightEdgeZone != null)
+        {
+            rightEdgeZone.OnTapped -= NextPage;
+            rightEdgeZone.OnTapped += NextPage;
+        }
     }
 
     private void OnDisable()
@@ -234,7 +290,7 @@ public class CaseFolderUI : MonoBehaviour
         DebugTrace.Log("[CaseFolderUI] Show() was called");
         DebugTrace.Log("========== CASE FOLDER SHOW ==========");
 
-        if (CaseManager.Instance == null)
+        if (!IsReference && CaseManager.Instance == null)
         {
             Debug.LogError(
                 "[CaseFolderUI] CaseManager.Instance is NULL."
@@ -242,7 +298,7 @@ public class CaseFolderUI : MonoBehaviour
             return;
         }
 
-        if (CaseManager.Instance.CurrentCase == null)
+        if (CurrentData == null)
         {
             Debug.LogError(
                 "[CaseFolderUI] CurrentCase is NULL."
@@ -287,7 +343,7 @@ public class CaseFolderUI : MonoBehaviour
 
         // Build case pages.
         pages = BuildPages(
-            CaseManager.Instance.CurrentCase
+            CurrentData
         );
 
         // Reset to the first page.
@@ -310,8 +366,8 @@ public class CaseFolderUI : MonoBehaviour
             $"activeInHierarchy={folderPanelRoot.activeInHierarchy}"
         );
 
-        // Change the game state only on the first opening.
-        if (!hasOpenedBefore)
+        // Change the game state only on the first opening (never for a reference copy).
+        if (!hasOpenedBefore && !IsReference)
         {
             hasOpenedBefore = true;
 
@@ -386,7 +442,7 @@ public class CaseFolderUI : MonoBehaviour
     /// <summary>Renders the desk paper; the 3D view alone owns its position and animation.</summary>
     public bool ShowFor3DView(System.Action close)
     {
-        if (close == null || CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null || folderPanelRoot == null)
+        if (close == null || CurrentData == null || folderPanelRoot == null)
             return false;
         FloatingWindow window = FolderWindow;
         savedWindowEnabled = window != null && window.enabled;
@@ -397,7 +453,7 @@ public class CaseFolderUI : MonoBehaviour
         }
         close3DView = close;
         openedAs3DView = true;
-        pages = BuildPages(CaseManager.Instance.CurrentCase);
+        pages = BuildPages(CurrentData);
         StopPageTurn();
         currentPageIndex = Page1Index;
         RenderPage(currentPageIndex);
@@ -408,7 +464,7 @@ public class CaseFolderUI : MonoBehaviour
         openedAsWindow = true;
         HudWindowLock.Acquire(this);
         if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX();
-        if (!hasOpenedBefore)
+        if (!hasOpenedBefore && !IsReference)
         {
             hasOpenedBefore = true;
             if (GameStateMachine.Instance != null && GameStateMachine.Instance.CurrentState is ReceiveCaseState)
@@ -441,12 +497,12 @@ public class CaseFolderUI : MonoBehaviour
     public bool ShowAsWindow(Vector2? dropScreenPosition)
     {
         bool wasOpen = IsPanelOpen;
-        if (CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null || folderPanelRoot == null)
+        if (CurrentData == null || folderPanelRoot == null)
         {
             return false;
         }
 
-        pages = BuildPages(CaseManager.Instance.CurrentCase);
+        pages = BuildPages(CurrentData);
         StopPageTurn();
         currentPageIndex = Page1Index;
         RenderPage(currentPageIndex);
@@ -478,7 +534,7 @@ public class CaseFolderUI : MonoBehaviour
         if (!wasOpen && AudioManager.Instance != null)
             AudioManager.Instance.PlayDocumentSFX();
 
-        if (!hasOpenedBefore)
+        if (!hasOpenedBefore && !IsReference)
         {
             hasOpenedBefore = true;
 
@@ -788,8 +844,8 @@ public class CaseFolderUI : MonoBehaviour
                 $"Page {index + 1} / {pages.Count}";
         }
 
-        // Arrows only when there is a page that way (a one-page Level 1
-        // folder shows none, as before), like the Tax Code Book.
+        // Arrows only when there is a page that way (a one-page folder
+        // shows none), like the Tax Code Book.
         if (leftEdgeIndicator != null)
         {
             leftEdgeIndicator.SetActive(index > 0);
@@ -800,11 +856,12 @@ public class CaseFolderUI : MonoBehaviour
             rightEdgeIndicator.SetActive(index < pages.Count - 1);
         }
 
-        bool isReviewCase = CaseManager.Instance != null && CaseManager.Instance.CurrentDefinition != null &&
+        bool isReviewCase = !IsReference && CaseManager.Instance != null && CaseManager.Instance.CurrentDefinition != null &&
             CaseManager.Instance.CurrentDefinition.HasReview;
-        supportingDocumentsPageLink?.OnFolderPageChanged(isReviewCase ? -1 : index);
+        // Document buttons only on a page with that role (no fixed page number); a reference copy never shows the active case's links.
+        supportingDocumentsPageLink?.OnFolderPageChanged(!isReviewCase && !IsReference && page.Role == CaseFolderPageContent.DocumentLinksRole);
 
-        CaseData data = CaseManager.Instance.CurrentCase;
+        CaseData data = CurrentData;
 
         if (page1FieldRowsContainer != null)
         {
@@ -878,8 +935,9 @@ public class CaseFolderUI : MonoBehaviour
             BuildReviewPageRows(data, page.Document);
         }
 
-        PageDecorator?.Invoke(index, new PageBuilder(this));
+        if (!IsReference) PageDecorator?.Invoke(index, new PageBuilder(this));
         FitRowHeights();
+        PageRendered?.Invoke(index);
     }
 
     /// <summary>Tallest a value row may grow to (an easier drag source / drop target).</summary>
@@ -944,7 +1002,19 @@ public class CaseFolderUI : MonoBehaviour
             )
         );
 
+        if (IsReference)
+        {
+            if (referencePages != null) list.AddRange(referencePages);
+            return list;
+        }
+
         AddReviewPages(list, data);
+
+        if (InstancePages != null)
+        {
+            List<CaseFolderPageContent> own = InstancePages(data);
+            if (own != null) list.AddRange(own);
+        }
 
         if (ExtraPages != null)
         {
@@ -1012,11 +1082,10 @@ public class CaseFolderUI : MonoBehaviour
     /// <summary>Rebuilds the pages and redraws the current one, if the folder is open.</summary>
     public void RefreshCurrentPage()
     {
-        if (folderPanelRoot == null || !folderPanelRoot.activeInHierarchy ||
-            CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null)
+        if (folderPanelRoot == null || !folderPanelRoot.activeInHierarchy || CurrentData == null)
             return;
 
-        pages = BuildPages(CaseManager.Instance.CurrentCase);
+        pages = BuildPages(CurrentData);
         currentPageIndex = Mathf.Clamp(currentPageIndex, 0, pages.Count - 1);
         RenderPage(currentPageIndex);
     }

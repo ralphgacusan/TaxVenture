@@ -202,40 +202,44 @@ public sealed class HudDragItem : MonoBehaviour, IHudDragVisual
     private static readonly Color NotesBack = new Color32(226, 214, 186, 255);
 
     /// <summary>A closed manila case folder with a tab, papers peeking out and a label.</summary>
-    public static void BuildClosedFolder(RectTransform root, Vector2 size)
+    /// <summary>The closed Case Folder (reviewed: Arthur's Reviewed File, the same drawing with the teal cover).</summary>
+    public static void BuildClosedFolder(RectTransform root, Vector2 size, bool reviewed = false)
     {
         float u = size.x / 300f;
+        Color folderEdge = reviewed ? ReviewedFileLook.Teal(FolderEdge) : FolderEdge;
+        Color folderBack = reviewed ? ReviewedFileLook.Teal(FolderBack) : FolderBack;
+        Color folderFront = reviewed ? ReviewedFileLook.Teal(FolderFront) : FolderFront;
         RectTransform thickness = HudTheme.CreateRect("Thickness", root);
         HudTheme.Stretch(thickness);
         thickness.offsetMin += new Vector2(5f, -7f) * u;
         thickness.offsetMax += new Vector2(5f, -7f) * u;
-        HudTheme.AddImage(thickness, HudTheme.Rounded, FolderEdge, 10f * u);
+        HudTheme.AddImage(thickness, HudTheme.Rounded, folderEdge, 10f * u);
 
         RectTransform back = HudTheme.CreateRect("Back Cover", root);
         HudTheme.Stretch(back);
-        Image backImage = HudTheme.AddImage(back, HudTheme.Rounded, FolderBack, 10f * u);
+        Image backImage = HudTheme.AddImage(back, HudTheme.Rounded, folderBack, 10f * u);
         var shadow = backImage.gameObject.AddComponent<Shadow>();
         shadow.effectColor = new Color(0f, 0f, 0f, 0.3f);
         shadow.effectDistance = new Vector2(8f, -10f) * u;
 
         RectTransform tab = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Tab", root), 16f * u, -24f * u, 112f * u, 40f * u);
-        HudTheme.AddImage(tab, HudTheme.Rounded, FolderBack, 8f * u);
+        HudTheme.AddImage(tab, HudTheme.Rounded, folderBack, 8f * u);
 
         RectTransform paper = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Papers", root), 14f * u, 8f * u, size.x - 28f * u, 60f * u);
         paper.localRotation = Quaternion.Euler(0f, 0f, 1.2f);
         HudTheme.AddImage(paper, HudTheme.Rounded, new Color32(250, 248, 240, 255), 4f * u);
 
         RectTransform front = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Front Cover", root), 0f, 30f * u, size.x, size.y - 30f * u);
-        HudTheme.AddImage(front, HudTheme.Rounded, FolderFront, 10f * u);
+        HudTheme.AddImage(front, HudTheme.Rounded, folderFront, 10f * u);
         RectTransform lip = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Lip", front), 0f, 0f, size.x, 4f * u);
-        HudTheme.AddImage(lip, null, FolderEdge);
+        HudTheme.AddImage(lip, null, folderEdge);
 
         RectTransform label = HudTheme.CreateRect("Label", front);
         label.anchorMin = label.anchorMax = new Vector2(0.5f, 0.5f);
         label.sizeDelta = new Vector2(170f * u, 54f * u);
         label.anchoredPosition = new Vector2(0f, 6f * u);
         HudTheme.AddImage(label, HudTheme.Rounded, new Color32(252, 250, 242, 255), 6f * u);
-        var text = HudTheme.CreateLabel("Text", label, "CASE FOLDER", 22f * u, ProfileCardFace.Ink,
+        var text = HudTheme.CreateLabel("Text", label, reviewed ? ReviewedFileLook.Label : "CASE FOLDER", 22f * u, ProfileCardFace.Ink,
             TMPro.TextAlignmentOptions.Center, TMPro.FontStyles.Bold);
         text.characterSpacing = 4f;
         HudTheme.Stretch((RectTransform)text.transform, 4f * u);
@@ -275,32 +279,34 @@ public sealed class HudDragItem : MonoBehaviour, IHudDragVisual
         }
     }
 
-    /// <summary>A neat stack of taxpayer profile cards, the top one readable.</summary>
+    /// <summary>
+    /// A neat stack of the clients' ID cards (2026-10-27): the top one is the real 3D card
+    /// (IdCardPortrait), one more peeking out underneath.
+    /// </summary>
     public static Action<RectTransform, Vector2> ProfileStackBuilder(Func<System.Collections.Generic.List<TaxpayerProfile>> profiles)
     {
         return (root, size) =>
         {
             var list = profiles();
-            // At most one card peeking out underneath: a neat stack, not a pile.
-            int count = list.Count > 1 ? 2 : 1;
-            for (int i = count - 1; i >= 1; i--)
+            if (list.Count > 1)
             {
-                RectTransform under = HudTheme.CreateRect("Card Under " + i, root);
-                HudTheme.Stretch(under);
-                under.offsetMin += new Vector2(8f, -8f);
-                under.offsetMax += new Vector2(8f, -8f);
-                under.localRotation = Quaternion.Euler(0f, 0f, 3f);
-                HudTheme.AddImage(under, HudTheme.Rounded, ProfileCardFace.CardBack, 6f);
-                RectTransform band = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Band", under), 0f, 0f, size.x, size.y * 0.16f);
-                HudTheme.AddImage(band, HudTheme.Rounded, ProfileCardFace.HeaderBlue, 6f);
+                RectTransform under = HudTheme.CreateRect("Card Under", root);
+                HudTheme.Stretch(under, size.y * 0.06f);
+                under.offsetMin += new Vector2(10f, -10f);
+                under.offsetMax += new Vector2(10f, -10f);
+                under.localRotation = Quaternion.Euler(0f, 0f, 4f);
+                HudTheme.AddImage(under, HudTheme.Rounded, IdCardModel.CardStock, 12f);
+                RectTransform band = HudTheme.CreateRect("Band", under);
+                band.anchorMin = new Vector2(0f, 0.8f);
+                band.anchorMax = Vector2.one;
+                band.offsetMin = band.offsetMax = Vector2.zero;
+                HudTheme.AddImage(band, HudTheme.Rounded, SupportingDocumentFace.IdentityBlue, 12f);
             }
 
             RectTransform top = HudTheme.CreateRect("Top Card", root);
             HudTheme.Stretch(top);
             TaxpayerProfile first = list.Count > 0 ? list[0] : null;
-            ProfileCardFace.Build(top, first != null ? first.TaxpayerName : "Taxpayer",
-                first != null ? first.Description : string.Empty,
-                first != null ? ProfileCardFace.NumberOf(first.TaxpayerName) : 0, size, false, out _);
+            if (first != null) IdCardPortrait.Create(top, CaseRecordRules.FromProfile(first));
         };
     }
 }

@@ -741,14 +741,18 @@ public sealed class SupplyShopScreen : MonoBehaviour
         if (owned && !animateUnlock) baseline = target;
         if (animateUnlock) baseline = Mathf.Min(capacityBefore, target);
         int count = target;
-        float width = count * 52f + (count - 1) * 8f;
+        // Up to 13 Bag slots (T30): the tiles shrink a little to keep the row inside the page.
+        float size = Mathf.Min(52f, (700f - (count - 1) * 6f) / Mathf.Max(1, count));
+        float step = size + Mathf.Min(8f, size * 0.15f);
+        float width = count * size + (count - 1) * (step - size);
         for (int i = 0; i < slotTiles.Count; i++)
         {
             SlotPreview tile = slotTiles[i];
             bool used = i < count;
             tile.Rect.gameObject.SetActive(used);
             if (!used) continue;
-            tile.Rect.anchoredPosition = new Vector2(-width * 0.5f + 26f + i * 60f, 0f);
+            tile.Rect.sizeDelta = new Vector2(size, size);
+            tile.Rect.anchoredPosition = new Vector2(-width * 0.5f + size * 0.5f + i * step, 0f);
             bool locked = i >= baseline;
             tile.Face.sprite = HudIconArt.Get(locked ? "locked" : "slot");
             tile.Padlock.gameObject.SetActive(locked);

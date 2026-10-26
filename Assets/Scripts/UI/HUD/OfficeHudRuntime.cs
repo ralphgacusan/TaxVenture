@@ -361,7 +361,7 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         if (profileIcon != null)
         {
             var drag = profileIcon.gameObject.AddComponent<HudIconDragOpen>();
-            drag.Visual = HudDragItem.Create(canvasRoot, "Profiles", profileIcon, new Vector2(300f, 183f), 3f,
+            drag.Visual = HudDragItem.Create(canvasRoot, "Profiles", profileIcon, new Vector2(300f, 188f), 3f,
                 HudDragItem.ProfileStackBuilder(HudProfileCards.CurrentProfiles));
             drag.CanDrag = profileCards.CanDragOut;
             drag.OpenAt = profileCards.OpenFromDrop;

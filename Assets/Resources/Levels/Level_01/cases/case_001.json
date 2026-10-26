@@ -90,75 +90,6 @@
   "documents": [
 
     {
-      "documentName": "Certificate of Compensation Payment/Tax Withheld (BIR Form 2316)",
-
-      "fields": [
-
-        {
-          "label": "Employee Name",
-          "displayValue": "Marie Bautista",
-          "correctValue": "Marie Bautista",
-          "type": "Text",
-          "semanticKey": "FullName",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Gross Compensation Income",
-          "displayValue": "₱480,000",
-          "correctValue": "₱480,000",
-          "type": "Number",
-          "semanticKey": "GrossIncome",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Tax Withheld",
-          "displayValue": "₱32,500",
-          "correctValue": "₱32,500",
-          "type": "Number",
-          "semanticKey": "TaxWithheldOrCredits",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Employer",
-          "displayValue": "Sunrise BPO Solutions Inc.",
-          "correctValue": "Sunrise BPO Solutions Inc.",
-          "type": "Text",
-          "semanticKey": "EmployerName",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        },
-
-        {
-          "label": "Employer TIN",
-          "displayValue": "789-012-345-000",
-          "correctValue": "789-012-345-000",
-          "type": "Text",
-          "semanticKey": "EmployerTin",
-          "isIncorrect": false,
-          "incorrectReason": "",
-          "issueType": "",
-          "severity": ""
-        }
-
-      ]
-    },
-
-
-    {
       "documentName": "Valid Government ID",
 
       "fields": [
@@ -498,10 +429,6 @@
   "consultation": {
     "enabled": true,
     "clues": [
-      { "id": "clue-form-2316", "document": "Certificate of Compensation Payment/Tax Withheld (BIR Form 2316)", "when": "unread", "lines": [
-        { "speaker": "Npc", "text": "Did you get to look at the BIR Form 2316 from my employer? HR gave it to me last week.", "portraitId": "Client1_Marie_Default", "emote": "question" },
-        { "speaker": "Player", "text": "Not yet. I'll check it next.", "portraitId": "Auditor_Default" }
-      ] },
       { "id": "clue-employment-records", "document": "Employment Records", "when": "unread", "lines": [
         { "speaker": "Npc", "text": "My employment records are in the folder too. HR said they explain my job.", "portraitId": "Client1_Marie_Default", "emote": "idea" },
         { "speaker": "Player", "text": "Good to know. Thanks, Marie.", "portraitId": "Auditor_Default" }
@@ -519,7 +446,7 @@
         { "speaker": "Player", "text": "I'll read them carefully.", "portraitId": "Auditor_Default" }
       ] },
       { "id": "clue-income-source", "field": "IncomeSource", "when": "empty", "lines": [
-        { "speaker": "Npc", "text": "Everything about my pay should be on that BIR Form 2316. That's where my money comes from.", "portraitId": "Client1_Marie_Default", "emote": "idea" },
+        { "speaker": "Npc", "text": "My pay? It all comes from my one job. My employment records say how I'm paid.", "portraitId": "Client1_Marie_Default", "emote": "idea" },
         { "speaker": "Player", "text": "Got it.", "portraitId": "Auditor_Default" }
       ] }
     ],

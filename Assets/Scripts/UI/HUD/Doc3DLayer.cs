@@ -49,16 +49,22 @@ public sealed class Doc3DLayer : MonoBehaviour
     private readonly List<int> savedLayers = new List<int>();
     private readonly List<Renderer> renderers = new List<Renderer>();
     private readonly List<RectTransform> canvases = new List<RectTransform>();
+    private readonly List<Canvas> pageCanvases = new List<Canvas>();
     private static readonly Vector3[] Corners = new Vector3[4];
 
     public Transform Source => source;
     public int SortingOrder => sortingOrder;
-    public bool IsVisible => source != null && source.gameObject.activeInHierarchy;
+    public bool IsVisible => isActiveAndEnabled && source != null && source.gameObject.activeInHierarchy;
     public bool IsComposited => composited;
     /// <summary>Opt-in for held tools that must also cover composited desk documents.</summary>
     public bool CompositeOverDocuments { get; set; }
     /// <summary>Held tools remain visible even where world geometry would occlude them.</summary>
     public bool AlwaysComposite { get; set; }
+    /// <summary>
+    /// A reference document (T30 revision: Arthur's Reviewed File): nothing inside it can give, take,
+    /// select or change a value anywhere, at the desk included. Reading and page turns are unchanged.
+    /// </summary>
+    public bool AlwaysReadOnly { get; set; }
     /// <summary>Optional stable layer for runtime tools; ordinary documents use temporary isolation.</summary>
     public int PersistentRenderLayer { get; set; } = -1;
     /// <summary>
@@ -68,6 +74,10 @@ public sealed class Doc3DLayer : MonoBehaviour
     /// dragged costs a render.
     /// </summary>
     public bool RenderOnlyWhenChanged { get; set; }
+    /// <summary>Opt-in oversampling for small SDF record text; ordinary documents keep native resolution.</summary>
+    public float ResolutionScale { get; set; } = 1f;
+    /// <summary>Refresh editable SDF geometry at its current world scale before a cached record capture.</summary>
+    public bool RefreshTextBeforeCapture { get; set; }
     /// <summary>Opt-in: the footprint is this screen-overlay rect (the paper's window) instead of a scan of every renderer.</summary>
     public RectTransform FootprintRect { get; set; }
 
@@ -131,6 +141,24 @@ public sealed class Doc3DLayer : MonoBehaviour
     {
         sortingOrder = order;
         if (overlay != null) overlay.sortingOrder = order;
+        SyncPageSorting();
+    }
+
+    /// <summary>Page controls must receive input at the same layer where their document is drawn.</summary>
+    private void SyncPageSorting()
+    {
+        if (source == null) return;
+        source.GetComponentsInChildren(false, pageCanvases);
+        foreach (Canvas canvas in pageCanvases)
+        {
+            if (canvas.renderMode != RenderMode.WorldSpace) continue;
+            // Otherwise a nearer cover collider (order 0) can steal a Next/Previous tap
+            // from a page drawn above it by our composited overlay.
+            canvas.overrideSorting = true;
+            // Attached records have their own raycasters. Their clear grab
+            // face must beat the page below, regardless of page graphic depth.
+            canvas.sortingOrder = sortingOrder + (canvas.GetComponentInParent<ClientRecordPaper>(true) != null ? 1 : 0);
+        }
     }
 
     /// <summary>Puts this document on top of everything, with a small pop.</summary>
@@ -164,6 +192,8 @@ public sealed class Doc3DLayer : MonoBehaviour
     /// </summary>
     public static bool BlocksValueTransfer(Transform t)
     {
+        Doc3DLayer owner = For(t);
+        if (owner != null && owner.AlwaysReadOnly) return true;
         CameraController cc = CameraController.Instance;
         if (HudHotbar.Instance == null || cc == null || cc.CurrentMode == CameraController.CameraMode.Workstation) return false;
         return For(t) != null;
@@ -230,6 +260,8 @@ public sealed class Doc3DLayer : MonoBehaviour
             return;
         }
 
+        // Enabling a copied/nested canvas can reset its override; keep input and drawing together.
+        SyncPageSorting();
         footprintValid = ComputeFootprint(main, out footprint);
         if (!footprintValid || !CoversAPaperBelow())
         {
@@ -289,8 +321,17 @@ public sealed class Doc3DLayer : MonoBehaviour
 
     private void RenderDocument(Camera main)
     {
+        if (RefreshTextBeforeCapture)
+        {
+            Canvas.ForceUpdateCanvases();
+            foreach (TMPro.TMP_Text text in source.GetComponentsInChildren<TMPro.TMP_Text>(false))
+                text.ForceMeshUpdate();
+        }
         int width = Mathf.Max(1, main.pixelWidth);
         int height = Mathf.Max(1, main.pixelHeight);
+        float scale = Mathf.Max(1f, Mathf.Min(ResolutionScale, 2048f / Mathf.Max(width, height)));
+        width = Mathf.CeilToInt(width * scale);
+        height = Mathf.CeilToInt(height * scale);
         if (texture == null || texture.width != width || texture.height != height)
         {
             if (texture != null)
@@ -299,6 +340,7 @@ public sealed class Doc3DLayer : MonoBehaviour
                 Destroy(texture);
             }
             texture = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32) { name = "3D Document " + name };
+            texture.filterMode = FilterMode.Bilinear;
             texture.Create();
             image.texture = texture;
         }

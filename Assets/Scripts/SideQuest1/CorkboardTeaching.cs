@@ -3,8 +3,9 @@ using System.Collections.Generic;
 /// <summary>
 /// PURPOSE:
 /// What the guide (Arthur) says about the corkboard, without ever naming a
-/// classification: his introduction (one indirect line per corner), his
-/// wrap-up, and his reaction to every card placed on the board.
+/// classification: his short introduction (T26: a reminder of the two
+/// details, no client described again), his wrap-up, his reaction to every
+/// card placed on the board, and the board's static category reference.
 ///
 /// THE TWO HIDDEN QUESTIONS:
 /// Every corner is the answer to two questions: is the person Filipino?
@@ -53,21 +54,22 @@ public static class CorkboardTeaching
     // The guide's talks (built-in; town.json may replace)
     // ---------------------------------------------------------
 
+    // T26: a short follow-up with the Arthur already met at the opening (at most
+    // three lines): the records are in, the two details to weigh, the whole
+    // board is checked. No client is described again.
     private static readonly List<KeyValuePair<bool, string>> BuiltInIntro = new List<KeyValuePair<bool, string>>
     {
-        Npc("Great work collecting all four profiles! Now let's sort them on my corkboard."),
-        Npc("Every taxpayer comes down to two clues: where their passport is from, and where they spend most of their year."),
-        Npc("Some were born Filipino and never really left. Their whole life, and their paycheck, is right here."),
-        Npc("Some are Filipino to the bone, but work keeps them overseas most of the year. Home is just for visits."),
-        Npc("Some came from another country, fell for this place, and stayed. They live and do business here now."),
-        Npc("And some are only passing through: foreign visitors on a short job, with a ticket home already booked."),
-        Player("So I listen for where they're from, and where they actually live."),
-        Npc("Exactly! Pin each profile where you think it belongs. Once all four are up, I'll check the board, and your first check counts.")
+        Npc("You've got all four IDs, Elijah. Let's organize them on my corkboard."),
+        Npc("For each client, weigh the same two details as my file: their nationality, and where they live most of the year."),
+        Npc("Pin all four. When the last one is up, I'll check the whole board, and that first check sets your medal.")
     };
+
+    /// <summary>The board introduction's longest allowed length (T26).</summary>
+    public const int MaxIntroLines = 3;
 
     private static readonly List<KeyValuePair<bool, string>> BuiltInDone = new List<KeyValuePair<bool, string>>
     {
-        Npc("Excellent work! Every profile is in its right spot."),
+        Npc("Excellent work! Every ID is in its right spot."),
         Npc("You listened for the two clues: where they're from and where they live. That instinct will serve you well in the office."),
         Npc("Now, let's head there. Your first real case is waiting!")
     };
@@ -103,6 +105,59 @@ public static class CorkboardTeaching
             HintBoth = "Not quite. Where is Zorbix from, and how long is he staying?"
         }
     };
+
+    // ---------------------------------------------------------
+    // The board's category reference (T26): what each corner's
+    // formal name means, one sentence each, from the board's own two
+    // distinctions (Filipino citizen or not; home here or not).
+    // Static and client-independent: it never names a client, an
+    // assignment or a destination, and never changes with the draft.
+    // ---------------------------------------------------------
+
+    public sealed class CategoryMeaning
+    {
+        public TaxpayerClassification Category;
+        public string Name;
+        public string Meaning;
+    }
+
+    private static readonly CategoryMeaning[] BuiltInCategories =
+    {
+        new CategoryMeaning { Category = TaxpayerClassification.ResidentCitizen, Name = "Resident Citizen",
+            Meaning = "A Filipino citizen whose home is in the Philippines." },
+        new CategoryMeaning { Category = TaxpayerClassification.NonResidentCitizen, Name = "Non-Resident Citizen",
+            Meaning = "A Filipino citizen whose home is abroad for most of the year." },
+        new CategoryMeaning { Category = TaxpayerClassification.ResidentAlien, Name = "Resident Alien",
+            Meaning = "A citizen of another country whose home is now in the Philippines." },
+        new CategoryMeaning { Category = TaxpayerClassification.NonResidentAlien, Name = "Non-Resident Alien",
+            Meaning = "A citizen of another country whose home is not in the Philippines." }
+    };
+
+    private static readonly Dictionary<TaxpayerClassification, string> categoryOverrides = new Dictionary<TaxpayerClassification, string>();
+
+    /// <summary>The four categories in a fixed order (town.json "boardCategories" may reword a meaning).</summary>
+    public static IReadOnlyList<CategoryMeaning> Categories
+    {
+        get
+        {
+            var list = new List<CategoryMeaning>();
+            foreach (CategoryMeaning c in BuiltInCategories)
+                list.Add(new CategoryMeaning
+                {
+                    Category = c.Category,
+                    Name = c.Name,
+                    Meaning = categoryOverrides.TryGetValue(c.Category, out string edited) ? edited : c.Meaning
+                });
+            return list;
+        }
+    }
+
+    /// <summary>Rewords one category's meaning (blank keeps the built-in sentence).</summary>
+    public static void SetCategoryMeaning(TaxpayerClassification category, string meaning)
+    {
+        if (string.IsNullOrWhiteSpace(meaning)) categoryOverrides.Remove(category);
+        else categoryOverrides[category] = meaning.Trim();
+    }
 
     private static List<KeyValuePair<bool, string>> introOverride;
     private static List<KeyValuePair<bool, string>> doneOverride;
@@ -178,7 +233,9 @@ public static class CorkboardTeaching
     // Overrides (town.json)
     // ---------------------------------------------------------
 
-    public static void SetIntro(List<KeyValuePair<bool, string>> lines) => introOverride = lines != null && lines.Count > 0 ? lines : null;
+    /// <summary>town.json's introduction (one to MaxIntroLines lines; anything longer keeps the built-in one).</summary>
+    public static void SetIntro(List<KeyValuePair<bool, string>> lines) =>
+        introOverride = lines != null && lines.Count > 0 && lines.Count <= MaxIntroLines ? lines : null;
 
     public static void SetDone(List<KeyValuePair<bool, string>> lines) => doneOverride = lines != null && lines.Count > 0 ? lines : null;
 
@@ -195,5 +252,6 @@ public static class CorkboardTeaching
         introOverride = null;
         doneOverride = null;
         reactionOverrides.Clear();
+        categoryOverrides.Clear();
     }
 }

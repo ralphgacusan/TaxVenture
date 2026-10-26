@@ -31,7 +31,7 @@ public class ShopProduct
     public string title = "";
     /// <summary>One line under the title on its card.</summary>
     public string tagline = "";
-    /// <summary>What it does, plainly ("Your bag grows from 5 to 8 slots").</summary>
+    /// <summary>What it does, plainly ("Your bag grows from 6 to 9 slots").</summary>
     public string effect = "";
     /// <summary>HudIconArt picture key.</summary>
     public string icon = "";
@@ -170,7 +170,7 @@ public class ShopCatalogue
             else if (p.IsUpgrade)
             {
                 if (p.area == "Bag" && (p.capacity <= CampaignInventoryRecord.StartBag || p.capacity > CampaignInventoryRecord.MaxBag))
-                    problems.Add($"product \"{p.id}\" raises the bag to {p.capacity} (6-{CampaignInventoryRecord.MaxBag})");
+                    problems.Add($"product \"{p.id}\" raises the bag to {p.capacity} ({CampaignInventoryRecord.StartBag + 1}-{CampaignInventoryRecord.MaxBag})");
                 else if (p.area == "Hotbar" && (p.capacity <= CampaignInventoryRecord.StartHotbar || p.capacity > CampaignInventoryRecord.MaxHotbar))
                     problems.Add($"product \"{p.id}\" raises the bar to {p.capacity} (4-{CampaignInventoryRecord.MaxHotbar})");
                 else if (p.area != "Bag" && p.area != "Hotbar") problems.Add($"product \"{p.id}\" upgrades unknown area \"{p.area}\"");
@@ -219,9 +219,9 @@ public class ShopCatalogue
         });
         c.products.Add(new ShopProduct
         {
-            id = Satchel, kind = ShopProduct.KindUpgrade, section = SectionSupplies, area = "Bag", capacity = 8, price = 50, icon = "bag",
+            id = Satchel, kind = ShopProduct.KindUpgrade, section = SectionSupplies, area = "Bag", capacity = 9, price = 50, icon = "bag",
             title = "Satchel", tagline = "A roomier canvas bag",
-            effect = "Your bag grows from 5 to 8 slots."
+            effect = "Your bag grows from 6 to 9 slots."
         });
         c.products.Add(new ShopProduct
         {
@@ -231,9 +231,9 @@ public class ShopCatalogue
         });
         c.products.Add(new ShopProduct
         {
-            id = BigSatchel, kind = ShopProduct.KindUpgrade, section = SectionSupplies, area = "Bag", capacity = 12, price = 90, icon = "bag",
+            id = BigSatchel, kind = ShopProduct.KindUpgrade, section = SectionSupplies, area = "Bag", capacity = 13, price = 90, icon = "bag",
             title = "Large Satchel", tagline = "Room for a whole case file",
-            effect = "Your bag grows to 12 slots.", requires = "chapter:Level_02", requiresLabel = "Requires corrected Level 2", after = Satchel
+            effect = "Your bag grows to 13 slots.", requires = "chapter:Level_02", requiresLabel = "Requires corrected Level 2", after = Satchel
         });
         c.products.Add(new ShopProduct
         {

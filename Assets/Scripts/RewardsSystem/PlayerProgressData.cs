@@ -132,6 +132,8 @@ public class Level1CaseRecord
     /// <summary>What the player typed into the BIR form (JsonUtility of EncodedFormData), or empty.</summary>
     public string encodedFormJson;
     public bool taxCodeBookOpened;
+    /// <summary>T25: Marie's two work records (background, 2316) were taken out and put back at the desk once (never relocked).</summary>
+    public bool workRecordsPrepared;
     public int auditAttempts;
     public int auditMistakes;
     public int failedAudits;
@@ -255,6 +257,16 @@ public class Level1FieldCheckpoint
     public List<string> guideLessonsDone = new List<string>();
     /// <summary>T16: the Notes chest lid stays open after a quiet Continue restore.</summary>
     public bool notesChestOpened;
+    /// <summary>T30: Arthur's opening talk completed (his reviewed file was presented). ReviewedFileRules.</summary>
+    public bool arthurIntroDone;
+    /// <summary>Records in Arthur's reviewed file (stable ids, T30; T24 used these lists for Jhun-jhun's) that reached a settled close-up.</summary>
+    public List<string> presentedRecordIds = new List<string>();
+    /// <summary>The same records put back after that close-up.</summary>
+    public List<string> returnedRecordIds = new List<string>();
+    /// <summary>T30: the reviewed file's completed first page was shown again after both records were put back.</summary>
+    public bool reviewedPageRevisited;
+    /// <summary>T30: the four plaza clients are open (the reviewed file was looked over, or the rounds had already begun).</summary>
+    public bool roundsOpen;
 
     /// <summary>Marie's case (T05); empty until the office part begins.</summary>
     public Level1CaseRecord caseRecord = new Level1CaseRecord();
@@ -310,6 +322,8 @@ public class Level1FieldCheckpoint
         objectiveTriggers = CleanIds(objectiveTriggers, ref changed);
         guideLessonsDone = CleanIds(guideLessonsDone, ref changed);
         checkWrongProfileIds = CleanIds(checkWrongProfileIds, ref changed);
+        presentedRecordIds = CleanIds(presentedRecordIds, ref changed);
+        returnedRecordIds = CleanIds(returnedRecordIds, ref changed);
         if (boardPhase == null || !IsKnownPhase(boardPhase.Trim()))
         {
             boardPhase = PhaseNone;
@@ -547,11 +561,14 @@ public class InventoryItemRecord
 [Serializable]
 public class CampaignInventoryRecord
 {
-    public const int CurrentVersion = 1;
+    /// <summary>2 (T30): every Bag capacity is one slot larger (base 6, Satchel 9, Large Satchel 13).</summary>
+    public const int CurrentVersion = 2;
+    /// <summary>The version that added the extra Bag slot; older records get it once on repair.</summary>
+    public const int ExtraBagSlotVersion = 2;
     public const int StartHotbar = 3;
     public const int MaxHotbar = 5;
-    public const int StartBag = 5;
-    public const int MaxBag = 12;
+    public const int StartBag = 6;
+    public const int MaxBag = 13;
     /// <summary>How many recent command action ids are kept for idempotency.</summary>
     public const int MaxActionIds = 64;
 
@@ -587,15 +604,23 @@ public class CampaignInventoryRecord
     }
 
     /// <summary>
-    /// Capacities clamp to 3-5 / 5-12, slot lists match their capacity (items
+    /// Capacities clamp to 3-5 / 6-13, slot lists match their capacity (items
     /// in slots beyond it move to a free slot or the drawer, never lost), no
     /// negative quantities, one drawer entry and one record per item, clean
-    /// id lists. True when anything changed.
+    /// id lists. T30: a record from before version 2 gets its one extra Bag
+    /// slot here exactly once (5 -> 6, 8 -> 9, 12 -> 13; items stay in their
+    /// slots), then is version 2. True when anything changed.
     /// </summary>
     public bool Repair()
     {
         bool changed = false;
         if (version <= 0) { version = CurrentVersion; changed = true; }
+        if (version < ExtraBagSlotVersion)
+        {
+            bagCapacity += 1;
+            version = ExtraBagSlotVersion;
+            changed = true;
+        }
         int hotbarCap = Math.Max(StartHotbar, Math.Min(MaxHotbar, hotbarCapacity));
         if (hotbarCap != hotbarCapacity) { hotbarCapacity = hotbarCap; changed = true; }
         int bagCap = Math.Max(StartBag, Math.Min(MaxBag, bagCapacity));

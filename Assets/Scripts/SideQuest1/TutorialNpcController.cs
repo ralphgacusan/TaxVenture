@@ -3,12 +3,11 @@ using UnityEngine.EventSystems;
 
 /// <summary>
 /// PURPOSE:
-/// The tutorial NPC that appears only after all 4 taxpayer profiles have
-/// been collected. Talking to them explains the corkboard sidequest and
-/// then hands control to CorkboardSideQuestManager.
-///
-/// Place this NPC in the scene already, with its visual root INACTIVE.
-/// It reveals itself automatically via TownEvents.OnAllProfilesCollected.
+/// Arthur appears after the supply stall in normal Level 1 for the reviewed-file
+/// handover. The corkboard talk still waits for all four taxpayer profiles.
+/// Practice and other levels retain the profile-triggered appearance.
+/// Keep the scene actor and its visualRoot binding; ArthurOpening places it
+/// at the editable start marker without creating a second NPC.
 ///
 /// LIFECYCLE NOTE (T02 Phase 2):
 /// Both of this guide's conversations go through explicit DialogueUI
@@ -22,11 +21,18 @@ using UnityEngine.EventSystems;
 public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler, INpcAvailabilitySource
 {
     [Header("References")]
-    [Tooltip("The NPC's model/visuals. Hidden until all profiles are collected.")]
+    [Tooltip("The NPC model. Revealed after the supply stall in normal Level 1; after the profiles in practice.")]
     [SerializeField] private GameObject visualRoot;
+
+    /// <summary>The character mesh only, excluding talk markers and other world UI.</summary>
+    public Transform ModelRoot => visualRoot != null ? visualRoot.transform : transform;
 
     [SerializeField] private DialogueUI dialogueUI;
     [SerializeField] private CorkboardSideQuestManager corkboardSideQuest;
+
+    private Pose corkboardPose;
+    private bool corkboardPoseCaptured;
+    private bool returnedToCorkboard;
 
     private bool hasAppeared;
     private bool hasStartedSideQuest;
@@ -59,6 +65,7 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
     /// </summary>
     public void RestoreProgress(bool appeared, bool introDone, bool solved, bool rewarded)
     {
+        if (appeared) ReturnToCorkboard();
         if (appeared && !hasAppeared)
         {
             hasAppeared = true;
@@ -72,17 +79,70 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
         pendingCompletionDialogue = !rewarded;
     }
 
-    /// <summary>T04 marker state: intro available after all profiles; done after the result panel.</summary>
-    public NpcAvailability Availability =>
-        NpcAvailabilityRules.Guide(hasAppeared, hasStartedSideQuest, hasShownCompletionPanel);
+    /// <summary>
+    /// T30 (Level 1, ArthurOpening): outside the board's own talk, the opening
+    /// may give this guide a marker state (null = the board rules) and take a
+    /// tap (true = handled). Cleared with their owner; Level 2 never sets them.
+    /// </summary>
+    public static System.Func<TutorialNpcController, NpcAvailability?> OpeningAvailability;
+    public static System.Func<TutorialNpcController, bool> OpeningTapped;
+
+    private bool shownInPlaza;
+
+    /// <summary>Visible after the stall route (before the profiles), without the board's appearance.</summary>
+    public bool IsShownInPlaza => shownInPlaza || hasAppeared;
+
+    /// <summary>The opening owner reveals Arthur when the stall route is complete.</summary>
+    public void ShowInPlaza()
+    {
+        shownInPlaza = true;
+        if (visualRoot != null) visualRoot.SetActive(true);
+    }
+
+    private bool BoardTalkOpen => hasAppeared && !hasStartedSideQuest;
+
+    /// <summary>T04 marker state: intro available after all profiles; done after the result panel (T30: the opening before / around it).</summary>
+    public NpcAvailability Availability
+    {
+        get
+        {
+            bool boardPending = hasAppeared && !hasShownCompletionPanel;
+            NpcAvailability? opening = !boardPending && OpeningAvailability != null ? OpeningAvailability(this) : null;
+            return opening ?? NpcAvailabilityRules.Guide(hasAppeared, hasStartedSideQuest, hasShownCompletionPanel);
+        }
+    }
+
+    private bool OpeningOpen => !BoardTalkOpen && OpeningAvailability != null && OpeningAvailability(this) == NpcAvailability.Available;
+
+    /// <summary>
+    /// T30: Arthur's opening talk through the shared, owner-scoped dialogue
+    /// (completed / cancelled reported to its owner; nothing else changes here).
+    /// </summary>
+    public bool TryStartOpeningTalk(System.Collections.Generic.List<DialogueLine> lines, System.Action completed, System.Action cancelled)
+    {
+        if (dialogueSessionActive || dialogueUI == null || lines == null || lines.Count == 0) return false;
+        if (!dialogueUI.TryStartDialogue(lines,
+                () => { dialogueSessionActive = false; completed?.Invoke(); },
+                () => { dialogueSessionActive = false; cancelled?.Invoke(); },
+                this))
+            return false;
+        AudioManager.Instance?.QueueInteractionSFX("npc");
+        dialogueSessionActive = true;
+        ClearPointerFocus();
+        return true;
+    }
 
     private void Awake()
     {
+        // Capture the scene-authored board position before the opening marker moves Arthur.
+        corkboardPose = new Pose(transform.position, transform.rotation);
+        corkboardPoseCaptured = true;
         pointerHighlight = HighlightEffect.For(this);
 
+        // ArthurOpening reveals this actor after the supply-stall route.
         if (visualRoot != null)
         {
-            visualRoot.SetActive(false);
+            visualRoot.SetActive(shownInPlaza || hasAppeared);
         }
     }
 
@@ -216,8 +276,19 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
         }
     }
 
+    /// <summary>After the client round, instantly restore the scene-authored corkboard pose.</summary>
+    private void ReturnToCorkboard()
+    {
+        if (returnedToCorkboard || !corkboardPoseCaptured) return;
+        returnedToCorkboard = true;
+        ClearPointerFocus();
+        transform.SetPositionAndRotation(corkboardPose.position, corkboardPose.rotation);
+        Physics.SyncTransforms();
+    }
+
     private void HandleAllProfilesCollected()
     {
+        ReturnToCorkboard();
         if (hasAppeared)
         {
             return;
@@ -240,13 +311,17 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
         if (DialogueUI.IsAnyDialogueActive) return;
         if (eventData.button != PointerEventData.InputButton.Left || MobileInputGuard.IsDragOrCancelled(eventData) || VirtualJoystick.BlocksWorldInput ||
             MobileInputGuard.IsPointerOverUI(eventData.position)) return;
-        if (!hasAppeared || hasStartedSideQuest || dialogueSessionActive)
-        {
-            return;
-        }
+        if (dialogueSessionActive) return;
 
         // Only within reach (taps through the EventSystem have no distance limit).
         if (!InteractionRange.PlayerCanReach(this)) return;
+
+        // T30: outside the board's talk, Level 1's opening may take the tap.
+        if (!BoardTalkOpen)
+        {
+            if (OpeningTapped != null) OpeningTapped(this);
+            return;
+        }
 
         if (dialogueUI == null)
         {
@@ -289,7 +364,7 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
 
     private bool CanFocusPointer(PointerEventData eventData)
     {
-        return eventData != null && hasAppeared && !hasStartedSideQuest && !dialogueSessionActive &&
+        return eventData != null && (BoardTalkOpen || OpeningOpen) && !dialogueSessionActive &&
                InteractionRange.PlayerCanReach(this) &&
                !DialogueUI.IsAnyDialogueActive && !VirtualJoystick.BlocksWorldInput &&
                !MobileInputGuard.IsPointerOverUI(eventData.position);

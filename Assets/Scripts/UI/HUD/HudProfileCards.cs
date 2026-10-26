@@ -24,8 +24,10 @@ using UnityEngine.UI;
 /// </summary>
 public sealed class HudProfileCards : MonoBehaviour
 {
-    private const float CardWidth = 540f;
-    private const float CardHeight = 330f;
+    // 2026-10-27: each window holds the client's 3D ID card (IdCardPortrait), ID proportions, large
+    // enough to read on a phone (four fit as a 2 x 2 fan).
+    private const float CardWidth = 720f;
+    private const float CardHeight = 450f;
     private const float HoldSeconds = 1.2f;
     private const float HoldRingDelay = 0.3f;
     private const float HoldSlop = 22f;
@@ -64,11 +66,17 @@ public sealed class HudProfileCards : MonoBehaviour
         view.profileIcon = profileIcon;
         view.BuildHoldRing(hudCanvas);
         TaxpayerProfileCollectionHUD.IconClickOverride = view.HandleIconTapped;
+        GuideFlags.Add(view.Flag);
         return view;
     }
 
+    /// <summary>Guide fact flag:ids-flipped: an ID in the binder was turned over this run.</summary>
+    private bool flippedOnce;
+    private bool Flag(string name) => name == "ids-flipped" && flippedOnce;
+
     private void OnDestroy()
     {
+        GuideFlags.Remove(Flag);
         if (TaxpayerProfileCollectionHUD.IconClickOverride == (System.Func<bool>)HandleIconTapped)
             TaxpayerProfileCollectionHUD.IconClickOverride = null;
         if (holdRing != null) Destroy(holdRing.transform.parent.gameObject);
@@ -390,6 +398,18 @@ public sealed class HudProfileCards : MonoBehaviour
     // CARD
     // =========================================================
 
+    /// <summary>A tap (no drag, no hold) on a card turns its ID over.</summary>
+    internal void CardTapped(ProfileCardHold card)
+    {
+        if (mode != Mode.Idle || card == null || card.Portrait == null || card.Portrait.Flip == null) return;
+        if (!card.Portrait.Flip.Toggle()) return;
+        flippedOnce = true;
+        Flipped?.Invoke();
+    }
+
+    /// <summary>A card in the binder was turned over (the guide's flip step listens).</summary>
+    public static event System.Action Flipped;
+
     private FloatingWindow BuildCard(TaxpayerProfile profile, int index)
     {
         RectTransform card = HudTheme.CreateRect("Profile Card " + (index + 1), layer);
@@ -402,19 +422,22 @@ public sealed class HudProfileCards : MonoBehaviour
         hit.color = new Color(1f, 1f, 1f, 0f);
         hit.raycastTarget = true;
 
-        ProfileCardFace.Build(card, profile.TaxpayerName, profile.Description,
-            ProfileCardFace.NumberOf(profile.TaxpayerName), new Vector2(CardWidth, CardHeight), true, out Button close, 1.1f);
+        // The client's ID card in 3D (front: the ID; a tap turns it over to their profile).
+        RectTransform film = HudTheme.CreateRect("ID Card", card);
+        HudTheme.Stretch(film);
+        film.sizeDelta = Vector2.zero;
+        IdCardPortrait.Create(film, CaseRecordRules.FromProfile(profile));
 
         // Window behaviour shared with Notes and the Case Folder.
         FloatingWindow window = card.gameObject.AddComponent<FloatingWindow>();
         card.gameObject.AddComponent<GraphicRaycaster>();
         if (profileIcon != null) window.SetReturnIcon(profileIcon);
         window.UsePaperMotion(Tilts[index % Tilts.Length], profileIcon);
-        if (close != null) close.onClick.AddListener(window.CloseWindow);
 
         var hold = card.gameObject.AddComponent<ProfileCardHold>();
         hold.Owner = this;
         hold.Window = window;
+        hold.Portrait = film.GetComponent<IdCardPortrait>();
 
         card.gameObject.SetActive(false);
         return window;

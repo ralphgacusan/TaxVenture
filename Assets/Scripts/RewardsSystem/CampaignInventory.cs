@@ -88,6 +88,8 @@ public class InventoryItemDefinition
     public bool returnsToWorld;
     /// <summary>T11: at most this many carried (bar, bag and hand together); more are refused. 0 = no limit.</summary>
     public int carryLimit;
+    /// <summary>T30: a read-only reference kept for good (Arthur's Reviewed File): never edited, submitted or needed by a case.</summary>
+    public bool reference;
 }
 
 /// <summary>A neutral story fact the evidence journal can list once learned, with its source record.</summary>
@@ -116,6 +118,8 @@ public class InventoryCatalogue
     public const string Postcard = "coast_postcard";
     public const string ReviewVoucher = "review_voucher";
     public const string BookmarkSet = "bookmark_set";
+    /// <summary>T30: Arthur's Reviewed File (ReviewedFileRules.ItemId).</summary>
+    public const string ReviewedFile = "arthur_reviewed_file";
 
     public List<InventoryItemDefinition> items = new List<InventoryItemDefinition>();
     public List<InventoryJournalFact> journal = new List<InventoryJournalFact>();
@@ -149,6 +153,8 @@ public class InventoryCatalogue
             if (item.required && item.stackLimit != 1) problems.Add($"required item \"{item.id}\" cannot stack");
             if (item.carryLimit < 0) problems.Add($"item \"{item.id}\" has carry limit {item.carryLimit}");
             if (item.required && item.carryLimit > 0) problems.Add($"required item \"{item.id}\" cannot have a carry limit (it could be refused)");
+            if (item.reference && (!item.required || !string.IsNullOrEmpty(item.scope)))
+                problems.Add($"reference \"{item.id}\" must be required (never discarded) and kept for the whole campaign (scope \"\")");
         }
         var factIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (InventoryJournalFact fact in journal ?? new List<InventoryJournalFact>())
@@ -168,7 +174,7 @@ public class InventoryCatalogue
         var catalogue = new InventoryCatalogue();
         catalogue.items.Add(new InventoryItemDefinition
         {
-            id = ProfileBinder, label = "Profile Binder", category = Profiles, icon = "profiles", required = true, container = true, scope = "Level_01",
+            id = ProfileBinder, label = "Client IDs", category = Profiles, icon = "profiles", required = true, container = true, scope = "Level_01",
             description = "Every taxpayer profile you collect, kept together in one binder."
         });
         catalogue.items.Add(new InventoryItemDefinition
@@ -201,10 +207,15 @@ public class InventoryCatalogue
             id = BookmarkSet, label = "Bookmark Set", category = ToolsAndSupplies, icon = "bookmarks",
             description = "Three leather ribbon pins. Pin up to three records to the top of your Bag; every record stays free to read."
         });
-        catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_marie", text = "You met Marie Bautista in the plaza and took her profile card.", sourceItemId = ProfileBinder });
-        catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_jhunjhun", text = "You met Jhun-jhun in the plaza and took his profile card.", sourceItemId = ProfileBinder });
-        catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_milo", text = "You met Milo in the plaza and took his profile card.", sourceItemId = ProfileBinder });
-        catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_zorbix", text = "You met Zorbix in the plaza and took his profile card.", sourceItemId = ProfileBinder });
+        catalogue.items.Add(new InventoryItemDefinition
+        {
+            id = ReviewedFile, label = "Arthur's Reviewed File", category = CaseFiles, icon = "reviewed", required = true, container = true, reference = true,
+            description = "A finished file Arthur reviewed for a former client: completed entries, then the ID and background behind them. Read only; yours to keep."
+        });
+        catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_marie", text = "You met Marie Bautista in the plaza and took a copy of her ID.", sourceItemId = ProfileBinder });
+        catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_jhunjhun", text = "You met Jhun-jhun in the plaza and took a copy of his ID.", sourceItemId = ProfileBinder });
+        catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_milo", text = "You met Milo in the plaza and took a copy of his ID.", sourceItemId = ProfileBinder });
+        catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_zorbix", text = "You met Zorbix in the plaza and took a copy of his ID.", sourceItemId = ProfileBinder });
         catalogue.journal.Add(new InventoryJournalFact { id = "case-received", text = "The receptionist handed you Marie's case for the day.", sourceItemId = CaseFolder });
         catalogue.journal.Add(new InventoryJournalFact { id = "client-copy", text = "The Auditor gave you Marie's client copy to deliver.", sourceItemId = CaseFolder });
         return catalogue;
@@ -363,9 +374,10 @@ public static class InventoryRules
 
     /// <summary>
     /// A new item arrives (world pickup, handover, purchase). preferred: the
-    /// hotbar slot it was dropped on (swap if occupied), else auto-placement.
-    /// A non-stackable item already owned is a no-change. Full: it is held in
-    /// the hand and the outcome is NeedsRoom.
+    /// hotbar slot it was dropped on (swap if occupied), or (T30) an empty Bag
+    /// slot it should go straight into; else auto-placement. A non-stackable
+    /// item already owned is a no-change. Full: it is held in the hand and the
+    /// outcome is NeedsRoom.
     /// </summary>
     public static InventoryResult Acquire(CampaignInventoryRecord r, InventoryCatalogue c, string itemId, int quantity, string actionId,
         SlotRef? preferred = null, InventoryItemRecord info = null)
@@ -424,6 +436,11 @@ public static class InventoryRules
                     result.Outcome = InventoryOutcome.NeedsRoom;
                 }
             }
+        }
+        else if (preferred.HasValue && preferred.Value.Area == InventoryArea.Bag && IsUsable(r, preferred.Value) && SlotAt(r, preferred.Value).IsEmpty)
+        {
+            Put(SlotAt(r, preferred.Value), itemId, quantity);
+            result.Location = preferred.Value;
         }
         else
         {
@@ -729,7 +746,7 @@ public static class InventoryRules
     // CAPACITY AND PRESENTATION STATE
     // =========================================================
 
-    /// <summary>Raises a capacity (never lowers it, capped at 5 / 12); new slots are empty and unlocked at once.</summary>
+    /// <summary>Raises a capacity (never lowers it, capped at 5 / 13); new slots are empty and unlocked at once.</summary>
     public static InventoryResult UpgradeCapacity(CampaignInventoryRecord r, InventoryArea area, int capacity, string actionId)
     {
         if (r == null) return InventoryResult.Reject("No inventory");
@@ -933,7 +950,7 @@ public static class InventoryRules
         return changed;
     }
 
-    /// <summary>Content rule: the required items one level can hold at once never exceed the starting capacity (3 + 5).</summary>
+    /// <summary>Content rule: the required items one level can hold at once never exceed the starting capacity (3 + 6).</summary>
     public static List<string> RequiredCapacityProblems(InventoryCatalogue c, string levelId)
     {
         var problems = new List<string>();

@@ -21,6 +21,8 @@ public static class ObjectiveTriggers
     public const string AreaPrefix = "area:";
 
     // Event names and the existing game event each one listens to.
+    public const string ArthurMet = ReviewedFileRules.MetEvent;                     // TownEvents.OnArthurMet (T30)
+    public const string ReviewedFileLookedOver = ReviewedFileRules.LookedOverEvent; // TownEvents.OnReviewedFileLookedOver (T30)
     public const string ProfileCollected = "ProfileCollected";             // TownEvents.OnProfileCollected
     public const string AllProfilesCollected = "AllProfilesCollected";     // TownEvents.OnAllProfilesCollected
     public const string TutorialGuideAppeared = "TutorialGuideAppeared";   // TownEvents.OnTutorialNpcReady
@@ -51,6 +53,7 @@ public static class ObjectiveTriggers
 
     public static readonly string[] Events =
     {
+        ArthurMet, ReviewedFileLookedOver,
         ProfileCollected, AllProfilesCollected, TutorialGuideAppeared, TutorialGuideTalkedTo,
         SideQuestCompleted, ReceptionistTalkedTo, CaseFolderOpened, TaxCodeBookOpened,
         TaxReturnCollected, CaseCompleted, CaseFolderStored, CaseFolderReturned, CaseFolderRetrieved,

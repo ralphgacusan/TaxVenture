@@ -27,6 +27,25 @@ public class TaxpayerProfile
     public TaxpayerClassification CorrectClassification;
     public string NpcId;
 
+    // The client's ID card (user revision 2026-10-27): each client hands over a
+    // copy of their ID; the profile above is printed on its back. Same Type 1
+    // layout as Marie's and Arthur's IDs (Documentation/SupportingDocuments.md).
+    public string Citizenship;
+    public string Born;
+    public string Address;
+    /// <summary>A masked ID reference ("•••• 0101").</summary>
+    public string IdReference;
+
+    /// <summary>Sets the ID card facts (chainable, for the built-in list).</summary>
+    public TaxpayerProfile WithId(string citizenship, string born, string address, string reference)
+    {
+        Citizenship = citizenship;
+        Born = born;
+        Address = address;
+        IdReference = reference;
+        return this;
+    }
+
     public TaxpayerProfile(
         string id,
         string name,
@@ -59,7 +78,7 @@ public static class TaxpayerProfileDatabase
             "Born and raised here, never lived abroad; salaried employee at a local BPO.",
             TaxpayerClassification.ResidentCitizen,
             "npc_marie"
-        ),
+        ).WithId("Filipino", "14 Mar 1997", "Poblacion, Town Proper", "•••• 0101"),
 
         new TaxpayerProfile(
             "profile_jhunjhun",
@@ -67,7 +86,7 @@ public static class TaxpayerProfileDatabase
             "Pinoy engineer on a Qatar contract; lives abroad, home only weeks a year.",
             TaxpayerClassification.NonResidentCitizen,
             "npc_jhunjhun"
-        ),
+        ).WithId("Filipino", "9 Aug 1990", "Coast Tales (family home)", "•••• 2231"),
 
         new TaxpayerProfile(
             "profile_milo",
@@ -75,7 +94,7 @@ public static class TaxpayerProfileDatabase
             "From very far away; settled here six years with family; runs his restaurant.",
             TaxpayerClassification.ResidentAlien,
             "npc_milo"
-        ),
+        ).WithId("Valtorian", "2 Nov 1981", "Calle Mabini, Town Proper", "•••• 6610"),
 
         new TaxpayerProfile(
             "profile_zorbix",
@@ -83,7 +102,7 @@ public static class TaxpayerProfileDatabase
             "Visitor from another planet on a paid 27-day job; flight home booked.",
             TaxpayerClassification.NonResidentAlien,
             "npc_zorbix"
-        ),
+        ).WithId("Planet Zorb", "Cycle 4471", "Bayview Inn, Room 12", "•••• 0027"),
     };
 
     public static IReadOnlyList<TaxpayerProfile> All => profiles;

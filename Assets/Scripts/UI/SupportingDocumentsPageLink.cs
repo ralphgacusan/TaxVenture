@@ -26,13 +26,6 @@ public class SupportingDocumentsPageLink : MonoBehaviour
 
 
     // =========================================================
-    // PAGE
-    // =========================================================
-
-    private const int SUPPORTING_DOCUMENTS_PAGE_INDEX = 5;
-
-
-    // =========================================================
     // BUTTONS
     // =========================================================
 
@@ -43,14 +36,15 @@ public class SupportingDocumentsPageLink : MonoBehaviour
     // FOLDER PAGE CHANGED
     // =========================================================
 
+    /// <summary>
+    /// The folder drew a page: the buttons show only on a page whose role is
+    /// CaseFolderPageContent.DocumentLinksRole (by identity, never a fixed
+    /// page number; T25 removed the old page-six index).
+    /// </summary>
     public void OnFolderPageChanged(
-        int pageIndex
+        bool isDocumentsPage
     )
     {
-        bool isDocumentsPage =
-            pageIndex ==
-            SUPPORTING_DOCUMENTS_PAGE_INDEX;
-
 
         if (documentButtonListRoot != null)
         {

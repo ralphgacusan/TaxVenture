@@ -16,6 +16,12 @@ using UnityEngine.SceneManagement;
 /// visibility, drag setting). The world paper never starts a flat-window animation.
 /// Sitting down at the desk closes the floating view first.
 /// It joins the shared front-to-back order through its Doc3DLayer.
+///
+/// REFERENCE COPY (T30 revision, 2026-10-26): CreateReference drives a
+/// runtime copy of this folder (Arthur's Reviewed File) through the same
+/// open pose, flight, cover drag, layering and close. It skips only what
+/// belongs to Marie's case: the folder store/count, the level gate, the desk
+/// stack and the case-folder-opened event; Opened / Closed report instead.
 /// </summary>
 public sealed class CaseFolder3DView : MonoBehaviour
 {
@@ -71,6 +77,21 @@ public sealed class CaseFolder3DView : MonoBehaviour
 
     public bool IsOpen => phase == Phase.Opening || phase == Phase.Open;
 
+    // T30 revision: a reference copy (Arthur's Reviewed File) instead of Marie's desk folder.
+    private bool reference;
+    private System.Func<RectTransform> iconResolver;
+
+    /// <summary>A reference copy finished opening (its pages were drawn).</summary>
+    public event System.Action Opened;
+    /// <summary>A reference copy is back in its HUD place (closed, hidden).</summary>
+    public event System.Action Closed;
+    public bool IsReference => reference;
+    public CaseFolderUI Pages => pages;
+    public Transform Folder => folder;
+
+    /// <summary>Where the folder flies from and back to: its icon, or (a reference copy) wherever its item sits now.</summary>
+    private RectTransform Icon => iconResolver != null ? iconResolver() : icon;
+
     /// <summary>The folder is out of its icon (opening, open, closing or going back to the desk).</summary>
     public bool IsOut => phase != Phase.Closed;
     public Doc3DLayer Layer => layer;
@@ -84,7 +105,24 @@ public sealed class CaseFolder3DView : MonoBehaviour
             return null;
         }
 
+        return Configure(host.AddComponent<CaseFolder3DView>(), scene, folder, caseFolderIcon, folderLayer);
+    }
+
+    /// <summary>
+    /// T30 revision: drives a runtime copy of the desk folder (placed at the desk folder's pose, hidden)
+    /// as a read-only reference. icon says where its item sits now (bar slot or Bag).
+    /// </summary>
+    public static CaseFolder3DView CreateReference(GameObject host, Scene scene, Transform folderCopy, System.Func<RectTransform> icon, Doc3DLayer copyLayer)
+    {
+        if (folderCopy == null) return null;
         var view = host.AddComponent<CaseFolder3DView>();
+        view.reference = true;
+        view.iconResolver = icon;
+        return Configure(view, scene, folderCopy, null, copyLayer);
+    }
+
+    private static CaseFolder3DView Configure(CaseFolder3DView view, Scene scene, Transform folder, RectTransform caseFolderIcon, Doc3DLayer folderLayer)
+    {
         view.folder = folder;
         view.viewpoint = Find(scene, ViewpointPath);
         view.pages = folder.GetComponentInChildren<CaseFolderUI>(true);
@@ -118,10 +156,10 @@ public sealed class CaseFolder3DView : MonoBehaviour
     /// <summary>Shows the real folder (at screenPosition when dropped there).</summary>
     public bool Open(Vector2? screenPosition)
     {
-        if (FolderToHUDIcon.GetStoredFolderCount() <= 0) return false;
+        if (!reference && FolderToHUDIcon.GetStoredFolderCount() <= 0) return false;
 
-        // Level order: the case starts only after the side quest (rewards.json).
-        if (phase == Phase.Closed && !LevelGate.TryCase()) return false;
+        // Level order: the case starts only after the side quest (rewards.json). A reference copy is not the case.
+        if (phase == Phase.Closed && !reference && !LevelGate.TryCase()) return false;
 
         if (phase != Phase.Closed)
         {
@@ -133,10 +171,13 @@ public sealed class CaseFolder3DView : MonoBehaviour
         Camera main = MainCamera();
         if (main == null || pages == null || pages.PaperRect == null) return false;
         store = null;
-        foreach (GameObject root in gameObject.scene.GetRootGameObjects())
-            foreach (FolderToHUDIcon candidate in root.GetComponentsInChildren<FolderToHUDIcon>(true))
-                if (candidate.IsFolderStored()) { store = candidate; break; }
-        if (store == null) return false;
+        if (!reference)
+        {
+            foreach (GameObject root in gameObject.scene.GetRootGameObjects())
+                foreach (FolderToHUDIcon candidate in root.GetComponentsInChildren<FolderToHUDIcon>(true))
+                    if (candidate.IsFolderStored()) { store = candidate; break; }
+            if (store == null) return false;
+        }
 
         savedParent = folder.parent;
         savedPosition = folder.position;
@@ -154,6 +195,9 @@ public sealed class CaseFolder3DView : MonoBehaviour
         // Initialize the real model at rest before any temporary entrance scale.
         folder.gameObject.SetActive(true);
         folder.SetParent(null, true);
+        // A copied desk canvas must hit-test from the camera rendering this floating view.
+        foreach (Canvas canvas in folder.GetComponentsInChildren<Canvas>(true))
+            if (canvas.renderMode == RenderMode.WorldSpace) canvas.worldCamera = main;
         phase = Phase.Opening;
         if (!pages.ShowFor3DView(Close))
         {
@@ -191,7 +235,8 @@ public sealed class CaseFolder3DView : MonoBehaviour
         if (screenPosition.HasValue) TakeOutOfIcon();
         // HUD opens bypass CaseFolderInteractable. Notify the guide and other
         // observers only after the real folder has successfully opened.
-        GameplayEvents.RaiseCaseFolderOpened();
+        if (reference) Opened?.Invoke();
+        else GameplayEvents.RaiseCaseFolderOpened();
         return true;
     }
 
@@ -236,6 +281,7 @@ public sealed class CaseFolder3DView : MonoBehaviour
         phase = Phase.Closed;
         store?.ReturnFromView();
         store = null;
+        if (reference) Closed?.Invoke();
     }
 
     // =========================================================
@@ -357,8 +403,9 @@ public sealed class CaseFolder3DView : MonoBehaviour
     internal void Dropped(PointerEventData data)
     {
         if (phase != Phase.Open) return;
+        RectTransform target = Icon;
         bool overBar = HudSlotDrop.Active ? HudSlotDrop.IsOver(data.position)
-            : icon != null && RectTransformUtility.RectangleContainsScreenPoint(icon, data.position, null);
+            : target != null && RectTransformUtility.RectangleContainsScreenPoint(target, data.position, null);
         if (overBar) { Close(); return; }
         CameraController cc = CameraController.Instance;
         if (cc != null && cc.CurrentMode == CameraController.CameraMode.Workstation && deskReturn != null &&
@@ -484,8 +531,9 @@ public sealed class CaseFolder3DView : MonoBehaviour
 
     private Vector3 IconWorldPoint(Camera main, float depth, Vector3 fallback)
     {
-        if (icon == null || depth <= main.nearClipPlane) return fallback;
-        Vector2 screen = RectTransformUtility.WorldToScreenPoint(null, icon.TransformPoint(icon.rect.center));
+        RectTransform target = Icon;
+        if (target == null || depth <= main.nearClipPlane) return fallback;
+        Vector2 screen = RectTransformUtility.WorldToScreenPoint(null, target.TransformPoint(target.rect.center));
         return main.ScreenToWorldPoint(new Vector3(screen.x, screen.y, depth));
     }
 

@@ -92,6 +92,8 @@ public sealed class OfficeObjectives : MonoBehaviour
 
     private void OnEnable()
     {
+        TownEvents.OnArthurMet += HandleArthurMet;
+        TownEvents.OnReviewedFileLookedOver += HandleReviewedFileLookedOver;
         TownEvents.OnProfileCollected += HandleProfileCollected;
         TownEvents.OnAllProfilesCollected += HandleAllProfilesCollected;
         TownEvents.OnTutorialNpcReady += HandleGuideAppeared;
@@ -130,6 +132,8 @@ public sealed class OfficeObjectives : MonoBehaviour
 
     private void OnDisable()
     {
+        TownEvents.OnArthurMet -= HandleArthurMet;
+        TownEvents.OnReviewedFileLookedOver -= HandleReviewedFileLookedOver;
         TownEvents.OnProfileCollected -= HandleProfileCollected;
         TownEvents.OnAllProfilesCollected -= HandleAllProfilesCollected;
         TownEvents.OnTutorialNpcReady -= HandleGuideAppeared;
@@ -182,6 +186,8 @@ public sealed class OfficeObjectives : MonoBehaviour
         if (!Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.ProfileCollected))) Changed?.Invoke();
     }
 
+    private void HandleArthurMet() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.ArthurMet));
+    private void HandleReviewedFileLookedOver() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.ReviewedFileLookedOver));
     private void HandleAllProfilesCollected() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.AllProfilesCollected));
     private void HandleGuideAppeared() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.TutorialGuideAppeared));
     private void HandleGuideTalkedTo() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.TutorialGuideTalkedTo));

@@ -25,6 +25,8 @@ public sealed class HudIconDragOpen : MonoBehaviour,
 
     private bool dragging;
 
+    public bool IsDragging => dragging;
+
     public void OnInitializePotentialDrag(PointerEventData eventData)
     {
         eventData.useDragThreshold = true;

@@ -1,40 +1,40 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 /// <summary>
 /// PURPOSE:
-/// Gives the physical taxpayer profile papers in the world — the paper an
-/// NPC drops in the plaza and the corkboard side-quest cards (tray and
-/// pinned) — the same card as the HUD profile windows (ProfileCardFace):
-/// the same landscape shape, with large readable text.
+/// Gives the physical papers a plaza client hands over — the copy an NPC
+/// drops in the plaza and the corkboard side-quest cards (tray and pinned) —
+/// the look of that client's ID card (user revision 2026-10-27, replacing the
+/// flat taxpayer-profile card): the same 3D ID card as Marie's and Arthur's
+/// (IdCardModel: bevelled, laminated, Type 1 front), with the client's
+/// taxpayer profile printed on its back. A tap on a corkboard card turns it
+/// over (CardFlip); the world drop is still collected with one tap.
 ///
-/// HOW: a world-space canvas sits just in front of the paper's face. The
-/// card keeps the HUD card's 540:330 shape, centred on the paper and wider
-/// than the old square paper (WidthFactor) so the text is big enough to read
-/// on the corkboard. The old paper mesh and its 3D texts are hidden (not
-/// deleted) and the paper's box collider is resized to the card, so grabbing
-/// matches what is seen. The canvas takes no UI raycasts: pickup and drag
-/// still go through the physics collider.
+/// HOW: the card is real geometry in front of the old paper's face, centred
+/// on it and wider (WidthFactor) so the print reads on the corkboard. The old
+/// paper mesh and its 3D texts are hidden (not deleted) and the paper's box
+/// collider is resized to the card, so grabbing matches what is seen.
+/// Pickup and drag still go through the physics collider.
 ///
-/// FEEDBACK: on the corkboard a thick frame shows the result — a muted green
-/// when the card is in the right area, a muted red when it is not.
+/// FEEDBACK: on the corkboard a frame behind the card shows the result — a
+/// muted green when the card is in the right area, a muted red when it is not.
 /// Presentation only; Office_Level1 and Play Mode only.
 /// </summary>
 public sealed class ProfileCardSkin : MonoBehaviour
 {
     private const string TargetScene = "Office_Level1";
-    private const float FrontOffset = 0.003f;
+    private const float FrontOffset = 0.002f;
     private const float WidthFactor = 1.6f;
-    private const float TextBoost = 1.6f;
-    private const float PixelScale = 1.2f;
+    private const float CardAspect = 1.6f;
 
-    private const float CorkboardTextBoost = 1.3f;
     private static readonly float[] CorkboardTilts = { -1.6f, 1.2f, -0.9f, 1.8f };
     private static readonly Color CorrectFrame = new Color32(88, 135, 92, 255);
     private static readonly Color WrongFrame = new Color32(170, 78, 72, 255);
 
-    private Image resultFrame;
+    private Renderer resultFrame;
+    private Material frameMaterial;
+    private CardFlip flip;
 
     /// <summary>Called from ProfileCardTextLayout.Apply after the texts are set.</summary>
     public static void Apply(TMP_Text nameText, TMP_Text descriptionText)
@@ -49,11 +49,9 @@ public sealed class ProfileCardSkin : MonoBehaviour
         ProfileCardSkin skin = face.GetComponentInChildren<ProfileCardSkin>(true);
         if (skin == null)
         {
-            var go = new GameObject("Profile Card Skin", typeof(RectTransform));
+            var go = new GameObject("Client ID Card");
             go.layer = face.gameObject.layer;
             go.transform.SetParent(face, false);
-            var canvas = go.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.WorldSpace;
             skin = go.AddComponent<ProfileCardSkin>();
         }
 
@@ -71,7 +69,22 @@ public sealed class ProfileCardSkin : MonoBehaviour
         if (skin == null || skin.resultFrame == null) return;
 
         skin.resultFrame.enabled = correct.HasValue;
-        if (correct.HasValue) skin.resultFrame.color = correct.Value ? CorrectFrame : WrongFrame;
+        if (correct.HasValue) skin.frameMaterial.color = correct.Value ? CorrectFrame : WrongFrame;
+    }
+
+    /// <summary>Turns the card's ID over (front: the ID; back: the profile). False when it cannot turn now.</summary>
+    public static bool Flip(Component card)
+    {
+        if (card == null) return false;
+        ProfileCardSkin skin = card.GetComponentInChildren<ProfileCardSkin>(true);
+        return skin != null && skin.flip != null && skin.flip.Toggle();
+    }
+
+    /// <summary>The card's flip (null before it is skinned).</summary>
+    public static CardFlip FlipOf(Component card)
+    {
+        ProfileCardSkin skin = card != null ? card.GetComponentInChildren<ProfileCardSkin>(true) : null;
+        return skin != null ? skin.flip : null;
     }
 
     private void Build(Transform face, TMP_Text nameText, TMP_Text descriptionText)
@@ -80,51 +93,40 @@ public sealed class ProfileCardSkin : MonoBehaviour
 
         Rect area = MeasureFace(face, out float frontZ);
 
-        // Landscape card like the HUD cards: wider than the paper, same centre.
+        // A landscape ID card, wider than the old paper, same centre, at a uniform world scale.
         Vector3 lossy = face.lossyScale;
         float sx = Mathf.Max(1e-5f, Mathf.Abs(lossy.x));
         float sy = Mathf.Max(1e-5f, Mathf.Abs(lossy.y));
-        float aspect = ProfileCardFace.DesignSize.x / ProfileCardFace.DesignSize.y;
+        float sz = Mathf.Max(1e-5f, Mathf.Abs(lossy.z));
         float worldWidth = area.width * sx * WidthFactor;
-        float worldHeight = worldWidth / aspect;
-        Vector2 local = new Vector2(worldWidth / sx, worldHeight / sy);
-        Vector2 pixels = ProfileCardFace.DesignSize * PixelScale;
+        float worldHeight = worldWidth / CardAspect;
+        var size = new Vector2(worldWidth, worldHeight);
 
-        var rect = (RectTransform)transform;
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = pixels;
-        rect.localScale = new Vector3(local.x / pixels.x, local.y / pixels.y, local.x / pixels.x);
-        rect.localRotation = Quaternion.identity;
-        rect.localPosition = new Vector3(area.center.x, area.center.y, frontZ - FrontOffset);
-
-        // Corkboard cards (user request 2026-10-24) look like the HUD profile
-        // cards: paperclip, full header and the Classification line, a soft
-        // drop shadow and a slight paper tilt. Same size as before.
+        // Card space: +Y out of its front (toward the reader, the face's -Z), +Z its top (the face's +Y).
         bool corkboard = face.GetComponentInParent<ProfileDragCard>(true) != null;
-        int number = ProfileCardFace.NumberOf(nameText.text);
-        if (corkboard)
-        {
-            RectTransform shadow = HudTheme.CreateRect("Drop Shadow", rect);
-            HudTheme.Stretch(shadow);
-            shadow.anchoredPosition = new Vector2(pixels.x * 0.018f, -pixels.y * 0.035f);
-            HudTheme.AddImage(shadow, HudTheme.Rounded, new Color(0f, 0f, 0f, 0.32f), 14f);
-            rect.localRotation = Quaternion.Euler(0f, 0f, CorkboardTilts[Mathf.Abs(number) % CorkboardTilts.Length]);
-        }
+        TaxpayerProfile profile = Find(nameText.text);
+        float tilt = corkboard && profile != null ? CorkboardTilts[Mathf.Abs(ProfileCardFace.NumberOf(profile.TaxpayerName)) % CorkboardTilts.Length] : 0f;
+        transform.localPosition = new Vector3(area.center.x, area.center.y, frontZ - FrontOffset);
+        transform.localRotation = Quaternion.Euler(0f, 0f, tilt) * Quaternion.Euler(-90f, 0f, 0f);
+        transform.localScale = new Vector3(1f / sx, 1f / sz, 1f / sy);
 
-        // Result frame behind the card (hidden until placed on the corkboard).
-        float border = pixels.x * 0.045f;
-        RectTransform frame = HudTheme.CreateRect("Result Frame", rect);
-        HudTheme.Stretch(frame, -border);
-        resultFrame = HudTheme.AddImage(frame, HudTheme.Rounded, CorrectFrame, 14f);
+        ClientRecord record = profile != null ? CaseRecordRules.FromProfile(profile)
+            : new ClientRecord { id = "id-unknown", type = ClientRecord.Identity, title = "IDENTITY CARD", name = nameText.text,
+                profileText = descriptionText != null ? descriptionText.text : null };
+        flip = IdCardModel.Build(transform, record, size, gameObject.layer, out _, out _);
+        IdCardModel.AddDropShadow(transform, record, size, gameObject.layer);
+
+        // Result frame behind the card (hidden until the board checks it).
+        var frame = new GameObject("Result Frame");
+        frame.layer = gameObject.layer;
+        frame.transform.SetParent(transform, false);
+        frame.transform.localPosition = new Vector3(0f, -0.0012f, 0f);
+        frame.AddComponent<MeshFilter>().sharedMesh = SupportingDocumentMesh.RoundedSlab(size.x * 1.07f, size.y * 1.11f, 0.001f, size.x * 0.07f);
+        resultFrame = frame.AddComponent<MeshRenderer>();
+        frameMaterial = new Material(SupportingDocumentMesh.Matte(CorrectFrame)) { name = "ID Result Frame" };
+        resultFrame.sharedMaterial = frameMaterial;
+        resultFrame.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         resultFrame.enabled = false;
-
-        string name = nameText.text;
-        string description = descriptionText != null ? descriptionText.text : string.Empty;
-        ProfileCardFace.Build(rect, name, description, number, pixels, false, out _,
-            corkboard ? CorkboardTextBoost : TextBoost, corkboard, !corkboard);
-
-        foreach (Graphic graphic in GetComponentsInChildren<Graphic>(true)) graphic.raycastTarget = false;
 
         // Hide the old square paper and its texts (not deleted).
         nameText.enabled = false;
@@ -135,9 +137,21 @@ public sealed class ProfileCardSkin : MonoBehaviour
         BoxCollider box = face.GetComponent<BoxCollider>();
         if (box != null)
         {
-            box.size = new Vector3(local.x, local.y, box.size.z);
+            box.size = new Vector3(worldWidth / sx, worldHeight / sy, box.size.z);
             box.center = new Vector3(area.center.x, area.center.y, box.center.z);
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (frameMaterial != null) Destroy(frameMaterial);
+    }
+
+    private static TaxpayerProfile Find(string name)
+    {
+        foreach (TaxpayerProfile profile in TaxpayerProfileDatabase.All)
+            if (profile != null && profile.TaxpayerName == name) return profile;
+        return null;
     }
 
     /// <summary>

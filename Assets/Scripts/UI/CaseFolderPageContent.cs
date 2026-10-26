@@ -27,6 +27,19 @@ public class CaseFolderPageContent
     /// </summary>
     public System.Action<CaseFolderUI.PageBuilder> Render;
 
+    /// <summary>
+    /// The page's stable identity in its folder (e.g. SupportingRecordsRole), found with
+    /// CaseFolderUI.FindPageIndexByRole; never a fixed page number. Empty for ordinary pages.
+    /// </summary>
+    public string Role;
+
+    /// <summary>A folder's attached supporting records (Arthur's file, T30; Marie's case, T25).</summary>
+    public const string SupportingRecordsRole = "supporting-records";
+    /// <summary>The printed heading of that page, the same in every folder.</summary>
+    public const string SupportingRecordsHeading = "Supporting Documents";
+    /// <summary>A page that lists the case's documents as buttons (SupportingDocumentsPageLink); no level uses it now.</summary>
+    public const string DocumentLinksRole = "document-links";
+
     public CaseFolderPageContent(string heading, string body)
     {
         Heading = heading;

@@ -88,7 +88,7 @@ public static class GuideTriggers
     public const string NotPrefix = "not:";
     /// <summary>A level fact the level provides through GuideFlags (e.g. flag:bookStored).</summary>
     public const string FlagPrefix = "flag:";
-    public static readonly string[] Windows = { "notes", "profiles", "folder", "bag" };
+    public static readonly string[] Windows = { "notes", "profiles", "folder", "bag", "reviewed" };
 
     public const string MovePrefix = "move:";
     public const string LookPrefix = "look:";
@@ -425,11 +425,28 @@ public static class GuideTriggers
 /// <summary>
 /// Level facts for "flag:&lt;name&gt;" guide conditions. The running level sets
 /// Source (Level 2: Level2OfficeStart); unknown names and no level read false.
-/// Observation only: the guide never changes these facts.
+/// A second owner of the same level adds its own facts with Add (T25: Marie's
+/// case records beside Arthur's opening). Observation only: the guide never
+/// changes these facts.
 /// </summary>
 public static class GuideFlags
 {
     public static Func<string, bool> Source;
+    private static readonly List<Func<string, bool>> extra = new List<Func<string, bool>>();
 
-    public static bool Get(string name) => Source != null && !string.IsNullOrEmpty(name) && Source(name);
+    public static void Add(Func<string, bool> source)
+    {
+        if (source != null && !extra.Contains(source)) extra.Add(source);
+    }
+
+    public static void Remove(Func<string, bool> source) => extra.Remove(source);
+
+    public static bool Get(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return false;
+        if (Source != null && Source(name)) return true;
+        foreach (Func<string, bool> source in extra)
+            if (source != null && source(name)) return true;
+        return false;
+    }
 }

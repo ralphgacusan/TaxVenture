@@ -10,8 +10,11 @@ using UnityEngine.SceneManagement;
 /// and applies it over the built-in text:
 /// - each plaza NPC's conversation (TownNpcDialogueLibrary),
 /// - each taxpayer profile's description (TaxpayerProfileDatabase),
-/// - Arthur's corkboard introduction / wrap-up and his reaction to every
-///   card placed (CorkboardTeaching).
+/// - Arthur's corkboard introduction (at most three lines, T26) / wrap-up,
+///   his reaction to every card placed and the board's category meanings
+///   ("boardCategories", T26) (CorkboardTeaching),
+/// - each client's waiting line ("waiting", T24) for a tap before the rounds
+///   open, and Arthur's Reviewed File ("reviewedFile", ReviewedFileRules, T30).
 ///
 /// Missing file or invalid entries: the built-in text is kept and a Console
 /// warning says why. Runs automatically when a level scene loads; other
@@ -29,6 +32,16 @@ public static class TownContentLoader
         public TownLine[] arthurBoardIntro;
         public TownLine[] arthurBoardDone;
         public SideQuestSplash.SplashContent sideQuestSplash;
+        public ReviewedFileContent reviewedFile;
+        public TownCategory[] boardCategories;
+    }
+
+    /// <summary>T26: one corner's meaning on the board's category reference (category = enum name).</summary>
+    [Serializable]
+    private class TownCategory
+    {
+        public string category;
+        public string meaning;
     }
 
     [Serializable]
@@ -41,6 +54,7 @@ public static class TownContentLoader
         public string hintCitizenship;
         public string hintResidence;
         public string hintBoth;
+        public string waiting;   // optional line for a tap before the rounds open (T24; T30: all four wait for Arthur's file)
     }
 
     [Serializable]
@@ -81,6 +95,7 @@ public static class TownContentLoader
         TownNpcDialogueLibrary.ClearOverrides();
         TaxpayerProfileDatabase.ClearOverrides();
         CorkboardTeaching.ClearOverrides();
+        ReviewedFileRules.ClearOverrides();
     }
 
     public static void Load(string levelId)
@@ -129,6 +144,8 @@ public static class TownContentLoader
                 if (!string.IsNullOrWhiteSpace(t.description))
                     TaxpayerProfileDatabase.SetDescription(profile.ProfileId, t.description.Trim());
 
+                if (!string.IsNullOrWhiteSpace(t.waiting)) TownNpcDialogueLibrary.SetWaitingOverride(t.npcId, t.waiting);
+
                 if (!string.IsNullOrWhiteSpace(t.placedRight) && !string.IsNullOrWhiteSpace(t.hintCitizenship) &&
                     !string.IsNullOrWhiteSpace(t.hintResidence) && !string.IsNullOrWhiteSpace(t.hintBoth))
                 {
@@ -150,15 +167,34 @@ public static class TownContentLoader
         List<KeyValuePair<bool, string>> intro = ToLines(parsed.arthurBoardIntro, out string introProblem);
         if (parsed.arthurBoardIntro != null && parsed.arthurBoardIntro.Length > 0)
         {
+            if (introProblem == null && intro.Count > CorkboardTeaching.MaxIntroLines)
+                introProblem = $"at most {CorkboardTeaching.MaxIntroLines} short lines (a reminder, not every client again)";
             if (introProblem != null) problems.AppendLine($"- arthurBoardIntro: {introProblem}; built-in kept.");
             else CorkboardTeaching.SetIntro(intro);
         }
+
+        // T26: the board's category reference (static meanings; never a client or an answer).
+        if (parsed.boardCategories != null)
+            foreach (TownCategory c in parsed.boardCategories)
+            {
+                if (c == null) continue;
+                if (!Enum.TryParse(c.category, out TaxpayerClassification category))
+                    problems.AppendLine($"- boardCategories: unknown category \"{c.category}\"; skipped.");
+                else CorkboardTeaching.SetCategoryMeaning(category, c.meaning);
+            }
 
         List<KeyValuePair<bool, string>> done = ToLines(parsed.arthurBoardDone, out string doneProblem);
         if (parsed.arthurBoardDone != null && parsed.arthurBoardDone.Length > 0)
         {
             if (doneProblem != null) problems.AppendLine($"- arthurBoardDone: {doneProblem}; built-in kept.");
             else CorkboardTeaching.SetDone(done);
+        }
+
+        // T30: Arthur's Reviewed File (records matched by id; blank parts keep the built-in text).
+        if (parsed.reviewedFile != null)
+        {
+            foreach (string problem in ReviewedFileRules.Problems(parsed.reviewedFile)) problems.AppendLine($"- reviewedFile: {problem}.");
+            ReviewedFileRules.SetOverrides(parsed.reviewedFile);
         }
 
         // The Side Quest 1 title card (missing fields keep their defaults).

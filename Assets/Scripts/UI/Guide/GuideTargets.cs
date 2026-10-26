@@ -18,6 +18,9 @@ using UnityEngine.SceneManagement;
 ///   type:&lt;ComponentName&gt;    the best active one (on screen, still useful)
 ///   ui:&lt;object name&gt;       any UI object with that name in the scene
 ///   screen:x,y[,w,h]        a point/area in screen fractions (0..1)
+///   record:attached|out|id|page  the open folder's supporting records (2026-10-27): one still
+///                           clipped to its page, the front one taken out, the ID card taken
+///                           out, or the records' page itself (where they go back)
 ///   waypoint                the current objective goal (see ObjectiveGuide)
 /// </summary>
 public sealed class GuideTargets
@@ -33,10 +36,13 @@ public sealed class GuideTargets
         public Vector3 World;
     }
 
+    /// <summary>record:&lt;name&gt; targets on an open folder's supporting page.</summary>
+    public static readonly string[] RecordNames = { "attached", "out", "id", "page" };
+
     public static readonly string[] HudNames =
     {
         "objective", "progress", "timer", "minimap", "notes", "folder", "profiles", "settings", "icons",
-        "joystick", "look", "prompt", "exit", "card", "continue", "bag", "slot", "book"
+        "joystick", "look", "prompt", "exit", "card", "continue", "bag", "slot", "book", "reviewed"
     };
 
     private const float CacheSeconds = 0.4f;
@@ -79,7 +85,9 @@ public sealed class GuideTargets
         if (key.StartsWith("ui:", StringComparison.Ordinal)) return key.Length > 3 ? null : "ui: needs an object name";
         if (key.StartsWith("screen:", StringComparison.Ordinal))
             return TryParseScreen(key, out _, out _) ? null : "screen: needs x,y (0..1) or x,y,w,h";
-        return $"target \"{key}\" must start with hud:, world:, type:, ui:, screen: or be waypoint";
+        if (key.StartsWith("record:", StringComparison.Ordinal))
+            return Array.IndexOf(RecordNames, key.Substring(7)) >= 0 ? null : $"unknown record target (use {string.Join(", ", RecordNames)})";
+        return $"target \"{key}\" must start with hud:, world:, type:, ui:, screen:, record: or be waypoint";
     }
 
     /// <summary>"screen:0.7,0.5" or "screen:0.7,0.5,0.3,0.4" (centre and size as screen fractions).</summary>
@@ -141,6 +149,8 @@ public sealed class GuideTargets
         }
 
         if (key.StartsWith("hud:", StringComparison.Ordinal)) return FromRect(ResolveHud(key.Substring(4)));
+
+        if (key.StartsWith("record:", StringComparison.Ordinal)) return ResolveRecord(key.Substring(7));
 
         if (key.StartsWith("ui:", StringComparison.Ordinal))
         {
@@ -376,6 +386,8 @@ public sealed class GuideTargets
             case "folder": return HotbarTarget(InventoryCatalogue.CaseFolder) ?? HudPath("PermanentHUD/IconButtons/CaseFolderIconButton");
             case "profiles": return HotbarTarget(InventoryCatalogue.ProfileBinder) ?? HudPath("PermanentHUD/IconButtons/TaxpayerProfileIcon");
             case "book": return HotbarTarget(InventoryCatalogue.TaxCodeBook);
+            // T30: Arthur's Reviewed File in its slot, or the Bag icon while it is in the Bag.
+            case "reviewed": return HotbarTarget(InventoryCatalogue.ReviewedFile);
             case "bag": return HudHotbar.Instance != null ? HudHotbar.Instance.BagIcon : null;
             case "slot": return HudHotbar.Instance != null ? HudHotbar.Instance.LandingSlot : HudPath("PermanentHUD/IconButtons/CaseFolderIconButton");
             case "settings": return HudPath("PermanentHUD/Settings/SettingsButton");
@@ -566,6 +578,28 @@ public sealed class GuideTargets
         hit.ScreenRect = Rect.MinMaxRect(min.x, min.y, max.x, max.y);
         hit.OnScreen = hit.ScreenRect.width > 2f && hit.ScreenRect.height > 2f;
         return hit;
+    }
+
+    /// <summary>The open folder's supporting records (Arthur's file or Marie's folder), read-only.</summary>
+    private Hit ResolveRecord(string name)
+    {
+        foreach (AttachedRecordsPage page in UnityEngine.Object.FindObjectsByType<AttachedRecordsPage>(FindObjectsInactive.Exclude))
+        {
+            if (page == null || page.gameObject.scene != scene || !page.IsOpenNow) continue;
+            if (name == "page") return page.PageRect != null && page.PageIndex == page.CurrentPage ? FromRect(page.PageRect) : new Hit();
+            ClientRecordPaper best = null;
+            foreach (ClientRecordPaper paper in page.Papers)
+            {
+                if (paper == null) continue;
+                bool wanted = name == "attached" ? paper.IsAttached && paper.gameObject.activeInHierarchy
+                    : name == "id" ? paper.IsSettledOut && paper.Record.IsCard
+                    : paper.IsSettledOut;
+                if (wanted) best = paper;   // the last one in page order (for "out": the most recently laid out)
+                if (wanted && name == "attached") break;
+            }
+            if (best != null) return FromTransform(best.transform);
+        }
+        return new Hit();
     }
 
     private Hit FromWorldPoint(Vector3 world, float sizePixels)

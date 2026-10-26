@@ -16,6 +16,9 @@ using System.Collections.Generic;
 /// them per NPC (TownContentLoader calls SetOverride at level load).
 /// TaxpayerNpcInteractable just calls GetDialogueFor(npcId, ...).
 /// A few lines carry an emote (T22); town.json lines may set "emote"/"burst".
+/// Each client has one waiting line for a tap before the plaza rounds open
+/// (T24; T30: all four wait until Arthur's reviewed file was looked over).
+/// Talks end with the profile only (T30 removed T24's records sleeve line).
 /// </summary>
 public static class TownNpcDialogueLibrary
 {
@@ -25,6 +28,40 @@ public static class TownNpcDialogueLibrary
     // npcId -> per-line emote (tag, burst), same order as the override lines
     private static readonly Dictionary<string, List<KeyValuePair<string, bool>>> overrideEmotes =
         new Dictionary<string, List<KeyValuePair<string, bool>>>();
+    // npcId -> the line said when tapped before the rounds open (town.json "waiting")
+    private static readonly Dictionary<string, string> waitingOverrides = new Dictionary<string, string>();
+
+    /// <summary>
+    /// The one line a client says when tapped before the rounds open (T30:
+    /// after Arthur's reviewed file). Null for an unknown client.
+    /// </summary>
+    public static List<DialogueLine> GetWaitingLine(string npcId, string npcDisplayName)
+    {
+        if (!IsAuthored(npcId)) return null;
+        string text = waitingOverrides.TryGetValue(npcId, out string custom) ? custom : BuiltInWaitingLine(npcId);
+        return string.IsNullOrWhiteSpace(text) ? null : new DialogueBuilder(npcDisplayName).Npc(text).Build();
+    }
+
+    /// <summary>Built-in waiting lines (town.json "waiting" keeps the same text).</summary>
+    public static string BuiltInWaitingLine(string npcId)
+    {
+        switch (npcId)
+        {
+            case "npc_marie": return "Oh, hi! I'm just finishing a call. Can you come back in a bit?";
+            case "npc_jhunjhun": return "Sorry, I'm on the phone with my ride. Come back in a bit?";
+            case "npc_milo": return "Welcome! The lunch rush has me running. Come back in a little while?";
+            case "npc_zorbix": return "GREETINGS. MY TRANSLATOR IS STILL WARMING UP. RETURN SHORTLY.";
+            default: return null;
+        }
+    }
+
+    /// <summary>Replaces one client's waiting line (null or empty restores the built-in one).</summary>
+    public static void SetWaitingOverride(string npcId, string text)
+    {
+        if (string.IsNullOrEmpty(npcId)) return;
+        if (string.IsNullOrWhiteSpace(text)) waitingOverrides.Remove(npcId);
+        else waitingOverrides[npcId] = text.Trim();
+    }
 
     public static List<DialogueLine> GetDialogueFor(string npcId, string npcDisplayName)
     {
@@ -66,6 +103,7 @@ public static class TownNpcDialogueLibrary
     {
         overrides.Clear();
         overrideEmotes.Clear();
+        waitingOverrides.Clear();
     }
 
     public static List<DialogueLine> GetDialogueFor(string npcId, string npcDisplayName,

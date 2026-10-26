@@ -212,13 +212,16 @@ public static class TaskListProvider
         return new List<TaskDefinition>
         {
             new TaskDefinition(null, "Finish Side Quest 1", true, null),
+            // T30: the rounds start with Arthur's reviewed file.
+            new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.ArthurMet), "Meet Arthur.", false, null),
+            new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.ReviewedFileLookedOver), "Look over Arthur's file.", false, null),
             new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.AllProfilesCollected),
-                "Explore the plaza and talk to the 4 clients to get their taxpayer profiles.", false,
+                "Meet the four clients and collect all 4 IDs.", false,
                 ObjectiveTriggers.ProfilesProgress),
             new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.TutorialGuideTalkedTo),
                 "Talk to Arthur in the plaza.", false, null),
             new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.SideQuestCompleted),
-                "Finish Side Quest 1 at the corkboard.", false, null),
+                "Organize the four IDs on Arthur's corkboard.", false, null),
 
             new TaskDefinition(null, "Finish a Tax Case", true, null),
             new TaskDefinition(ObjectiveTriggers.AreaPrefix + ReceptionArea,

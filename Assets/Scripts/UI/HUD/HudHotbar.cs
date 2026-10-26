@@ -316,13 +316,30 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
     }
 
     /// <summary>
-    /// The floating Case Folder is out of its slot: its icon waits dimmed (still tappable to call it
+    /// A floating folder is out of its slot: its icon waits dimmed (still tappable to call it
     /// back) and lights up again once the folder is back. The Tax Code Book's icon dims itself.
     /// </summary>
     private void DimWhileOut(ItemView view)
     {
-        if (view.ItemId != InventoryCatalogue.CaseFolder || view.Icon == null || view.Generic) return;
-        bool isOut = OfficeHudRuntime.Instance != null && OfficeHudRuntime.Instance.CaseFolderViewOut;
+        if (view.Icon == null) return;
+        bool reviewed = view.ItemId == InventoryCatalogue.ReviewedFile;
+        if (!reviewed && view.ItemId != InventoryCatalogue.CaseFolder) return;
+        bool isOut = reviewed
+            ? (ReviewedFileViewer.Instance != null && ReviewedFileViewer.Instance.IsOut) ||
+              (view.Icon.GetComponent<HudIconDragOpen>() != null && view.Icon.GetComponent<HudIconDragOpen>().IsDragging)
+            : OfficeHudRuntime.Instance != null && OfficeHudRuntime.Instance.CaseFolderViewOut;
+        if (view.Generic)
+        {
+            // Its wrapper group owns slot visibility; fade only the picture, never reveal a hidden Bag item.
+            Image picture = view.Icon.GetComponent<Image>();
+            if (picture != null)
+            {
+                Color color = picture.color;
+                color.a = Mathf.MoveTowards(color.a, isOut ? OutAlpha : 1f, Time.unscaledDeltaTime * 4f);
+                picture.color = color;
+            }
+            return;
+        }
         // Gone from the inventory (on the desk, with the Auditor): no leftover dim when it comes back.
         if (!InventoryRules.Owns(Inventory, InventoryCatalogue.CaseFolder) && view.IconGroup != null) { view.IconGroup.alpha = 1f; return; }
         if (view.IconGroup == null)
@@ -471,6 +488,7 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         OfficeHudRuntime.StyleIconButton(button);
         // Usable at once: an item with a printed card opens it (T11 postcard, voucher); otherwise the Bag shows it.
         button.onClick.AddListener(() => { if (!CanOpenPanels() || !OpenViewer(itemId)) OpenInventory(SlotRef.None, itemId); });
+        if (itemId == InventoryCatalogue.ReviewedFile) AddFolderDragOut(wrapper);
         TextMeshProUGUI count = HudTheme.CreateLabel("Count", wrapper, "", 24f, HudTheme.TextPrimary, TextAlignmentOptions.BottomRight, FontStyles.Bold);
         HudTheme.Stretch(count.rectTransform, 12f);
         count.outlineWidth = 0.25f;
@@ -479,6 +497,21 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         SetShown(view, false);
         views[itemId] = view;
         return view;
+    }
+
+    /// <summary>
+    /// T30 revision: like the Case Folder icon, Arthur's file can be dragged out of its slot (a teal closed-folder
+    /// ghost) and opens where it is dropped.
+    /// </summary>
+    private void AddFolderDragOut(RectTransform slotIcon)
+    {
+        Canvas canvas = slotIcon.GetComponentInParent<Canvas>();
+        if (canvas == null) return;
+        var drag = slotIcon.gameObject.AddComponent<HudIconDragOpen>();
+        drag.Visual = HudDragItem.Create(canvas.rootCanvas.transform, "Reviewed File", slotIcon, new Vector2(300f, 220f), -6f,
+            (root, size) => HudDragItem.BuildClosedFolder(root, size, reviewed: true));
+        drag.CanDrag = () => ReviewedFileViewer.Instance != null && !ReviewedFileViewer.Instance.IsOut && CanOpenPanels();
+        drag.OpenAt = screen => ReviewedFileViewer.Instance != null && ReviewedFileViewer.Instance.Open(screen);
     }
 
     private void CreateBagIcon()
@@ -777,8 +810,10 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         if (!resumedRun)
             foreach (InventoryItemDefinition def in catalogue.items)
             {
-                // The scene alone decides here: a Notes left in the bag by the abandoned run is not proof the world gave it (replay).
-                if (def == null || def.scope != levelId || !InventoryRules.Owns(r, def.id) || WorldOwns(def.id, trustInventory: false) == true) continue;
+                // Fresh/restarted attempts recollect Arthur's reference too. Continue never enters this reset.
+                // A Notes left in the bag is not proof the new run's world gave it.
+                if (def == null || (def.scope != levelId && def.id != InventoryCatalogue.ReviewedFile) ||
+                    !InventoryRules.Owns(r, def.id) || WorldOwns(def.id, trustInventory: false) == true) continue;
                 Commit(rec => InventoryRules.Remove(rec, catalogue, def.id, NewAction("reset/" + def.id)));
                 bookDropped |= def.id == InventoryCatalogue.TaxCodeBook;
             }
@@ -800,7 +835,9 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         switch (itemId)
         {
             case InventoryCatalogue.ProfileBinder:
-                return TaxpayerProfileCollectionHUD.Instance != null && TaxpayerProfileCollectionHUD.Instance.CollectedProfiles.Count > 0;
+                // 2026-10-27: once the IDs are on the corkboard (or the side quest is done) they are gone from the bar and Bag.
+                return TaxpayerProfileCollectionHUD.Instance != null && TaxpayerProfileCollectionHUD.Instance.CollectedProfiles.Count > 0 &&
+                       !IdsRetired;
             case InventoryCatalogue.Notes:
                 return NotesGranted(trustInventory);
             case InventoryCatalogue.CaseFolder:
@@ -841,12 +878,17 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         return false;
     }
 
+    /// <summary>The clients' IDs went onto the corkboard for good (or the side quest is done): no Client IDs item any more.</summary>
+    private static bool IdsRetired => CorkboardSideQuestManager.IdsOnBoard || LevelGate.SideQuestDone;
+
     /// <summary>Per frame: profiles collected, the Case Folder stored or returned (Notes arrive by event).</summary>
     private void SyncWorld()
     {
         CampaignInventoryRecord r = Inventory;
         if (WorldOwns(InventoryCatalogue.ProfileBinder) == true && !InventoryRules.Owns(r, InventoryCatalogue.ProfileBinder))
             AcquireWorld(InventoryCatalogue.ProfileBinder, null, Info(InventoryCatalogue.ProfileBinder), quiet: false);
+        else if (IdsRetired && InventoryRules.Owns(r, InventoryCatalogue.ProfileBinder))
+            RemoveWorld(InventoryCatalogue.ProfileBinder);
 
         bool folderCarried = FolderCarried();
         bool folderOwned = InventoryRules.Owns(r, InventoryCatalogue.CaseFolder);
@@ -983,6 +1025,33 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         {
             Refresh();
             SetNotesAvailable(true);
+            BounceBag();
+            if (result.Outcome == InventoryOutcome.NeedsRoom && screen != null) screen.OpenMakeRoom();
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Arthur's handover saves one required reference before its pickup flies. Continue keeps it;
+    /// a fresh/restarted attempt recollects it, like Notes, even if an earlier attempt claimed it.
+    /// Ownership makes repeated taps a no-change; a full inventory uses the existing Make room path.
+    /// </summary>
+    public InventoryResult CollectReviewedFile()
+    {
+        if (!ready) return InventoryResult.Reject("The inventory is still loading");
+        string itemId = InventoryCatalogue.ReviewedFile;
+        if (InventoryRules.Owns(Inventory, itemId)) return new InventoryResult { Outcome = InventoryOutcome.NoChange, ItemId = itemId };
+
+        string action = NewAction("acquire/reviewed-file");
+        var info = new InventoryItemRecord { itemId = itemId, source = "arthur" };
+        Func<CampaignInventoryRecord, InventoryResult> acquire = r => InventoryRules.Acquire(r, catalogue, itemId, 1, action, null, info);
+        InventoryResult result = Manager != null
+            ? Manager.CommitPickup(Manager.PickupClaimId(OfficeLevelCatalog.Level1Id, ReviewedFileRules.PickupId), false, acquire)
+            : Commit(acquire);
+        if (result != null && result.Changed)
+        {
+            dirty = true;
+            Refresh();
             BounceBag();
             if (result.Outcome == InventoryOutcome.NeedsRoom && screen != null) screen.OpenMakeRoom();
         }
@@ -1340,6 +1409,11 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
             case InventoryCatalogue.TaxCodeBook:
                 if (book == null || book.IsFloating) return false;
                 book.Toggle();
+                return true;
+            case InventoryCatalogue.ReviewedFile:
+                // T30: Arthur's file is a teal copy of the Case Folder: it flies out of its slot or the Bag (a second tap puts it away).
+                if (ReviewedFileViewer.Instance == null) return false;
+                ReviewedFileViewer.Instance.Toggle();
                 return true;
             case InventoryCatalogue.ReviewVoucher:
                 // T14: the voucher opens its own card (status, USE ON THIS CASE, the new cutoff).

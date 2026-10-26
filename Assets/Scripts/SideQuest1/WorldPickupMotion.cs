@@ -13,6 +13,22 @@ public static class WorldPickupMotion
 {
     public static float Smooth(float t) => t * t * (3f - 2f * t);
 
+    /// <summary>A stable folder-cover flight (its cover normal is +Y, unlike a profile's +Z).</summary>
+    public static void FlyFolder(Transform target, Camera camera, Vector2 fromScreen, Vector2 toScreen, float fromDepth, float toDepth,
+        Quaternion fromRotation, Vector3 fromScale, float progress)
+    {
+        float t = Mathf.Clamp01(progress);
+        float eased = t * t * t * (t * (t * 6f - 15f) + 10f);
+        Vector2 point = Vector2.Lerp(fromScreen, toScreen, eased);
+        point.y += 4f * eased * (1f - eased) * camera.pixelHeight * 0.04f;
+        float depth = Mathf.Lerp(fromDepth, toDepth, eased);
+        target.position = camera.ScreenToWorldPoint(new Vector3(point.x, point.y, depth));
+        float depthScale = camera.orthographic ? 1f : depth / Mathf.Max(0.001f, fromDepth);
+        target.localScale = fromScale * depthScale * Mathf.Lerp(1f, 0.14f, eased);
+        Quaternion coverFacingCamera = Quaternion.LookRotation(camera.transform.up, -camera.transform.forward);
+        target.rotation = Quaternion.Slerp(fromRotation, coverFacingCamera, eased);
+    }
+
     /// <summary>The idle hover: the rest position plus a gentle bob.</summary>
     public static Vector3 Hover(Vector3 rest, float time, float speed, float height) =>
         rest + Vector3.up * (Mathf.Sin(time * speed) * height);

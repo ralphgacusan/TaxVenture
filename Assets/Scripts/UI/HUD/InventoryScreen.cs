@@ -8,7 +8,7 @@ using UnityEngine.UI;
 /// <summary>
 /// PURPOSE:
 /// The Bag (Campaign Foundation T10): a navy-and-brass satchel panel with the
-/// bag grid on top (12 tiles; locked ones show a padlock), a copy of the
+/// bag grid on top (13 tiles since T30; locked ones show a padlock), a copy of the
 /// hotbar below (5 tiles) with the "Make room" hand in the last column, an
 /// action bar, and a details side panel on the right that always shows the
 /// chosen item (picture, name, category, count, what it is and where it
@@ -35,9 +35,11 @@ using UnityEngine.UI;
 public sealed class InventoryScreen : MonoBehaviour
 {
     private const int SortingOrder = 2550;
-    private const float TileSize = 132f;
-    private const float TileStep = 152f;
-    private const float GridLeft = 66f;
+    // T30: the Bag holds up to 13 (6 + upgrades), seven to a row; the bar copy uses the same tiles.
+    private const float TileSize = 120f;
+    private const float TileStep = 134f;
+    private const int BagColumns = 7;
+    private const float GridLeft = 52f;
     private const float ActionTop = 772f, ActionHeight = 84f, ActionLeft = 24f, ActionWidth = 976f, ActionGap = 12f;
     private const float SideLeft = 1024f, SideTop = 100f, SideWidth = 472f, SideHeight = 756f;
     private const string DefaultHelp = "Tap an item to see it, then tap a slot to move it";
@@ -164,11 +166,11 @@ public sealed class InventoryScreen : MonoBehaviour
         RectTransform rule = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Rule", body), 24f, 88f, 1468f, 2f);
         HudTheme.AddImage(rule, null, new Color(HudTheme.Brass.r, HudTheme.Brass.g, HudTheme.Brass.b, 0.35f));
 
-        // Bag grid: 12 tiles, 6 per row (names under the items).
+        // Bag grid: 13 tiles, 7 per row (names under the items).
         bagHeading = SectionLabel(body, "Bag Label", "BAG", GridLeft, 106f, 380f);
         for (int i = 0; i < CampaignInventoryRecord.MaxBag; i++)
         {
-            int col = i % 6, row = i / 6;
+            int col = i % BagColumns, row = i / BagColumns;
             bagTiles.Add(InventoryTile.Create(body, this, SlotRef.Bag(i), GridLeft + col * TileStep, 160f + row * 176f, TileSize));
         }
 
@@ -183,7 +185,7 @@ public sealed class InventoryScreen : MonoBehaviour
 
         help = HudTheme.CreateLabel("Help", body, DefaultHelp, 26f, HudTheme.TextPrimary, TextAlignmentOptions.Center);
         help.fontSizeMin = 18f;
-        HudTheme.PlaceTopLeft(help.rectTransform, GridLeft, 718f, 6 * TileStep - 20f, 38f);
+        HudTheme.PlaceTopLeft(help.rectTransform, GridLeft, 718f, BagColumns * TileStep - 20f, 38f);
 
         // Action bar: every action has a visible button (laid out to fill the row).
         readButton = MakeButton(body, "Read", 0f, ActionTop, 180f, ActionHeight, "READ", OnRead, out _);
@@ -211,7 +213,7 @@ public sealed class InventoryScreen : MonoBehaviour
     private void BuildPinStrip(RectTransform body)
     {
         const float width = 160f, gap = 12f;
-        float left = GridLeft + 6 * TileStep - 20f - (3 * width + 2 * gap);
+        float left = GridLeft + BagColumns * TileStep - 20f - (3 * width + 2 * gap);
         pinStrip = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Pinned Ribbons", body), left, 102f, 3 * width + 2 * gap, 48f);
         for (int i = 0; i < CampaignInventoryRecord.MaxPins; i++)
         {
@@ -500,7 +502,7 @@ public sealed class InventoryScreen : MonoBehaviour
         float slide = HudTheme.EaseOutBack(Mathf.Clamp01(t / 0.34f));
         panel.anchoredPosition = new Vector2(0f, Mathf.LerpUnclamped(-80f, 0f, slide));
         panel.localScale = Vector3.one * (panelScale * Mathf.LerpUnclamped(0.95f, 1f, slide));
-        for (int i = 0; i < bagTiles.Count; i++) bagTiles[i].Fan(t - 0.08f - (i % 6) * 0.03f - (i / 6) * 0.05f);
+        for (int i = 0; i < bagTiles.Count; i++) bagTiles[i].Fan(t - 0.08f - (i % BagColumns) * 0.03f - (i / BagColumns) * 0.05f);
         for (int i = 0; i < barTiles.Count; i++) barTiles[i].Fan(t - 0.16f - i * 0.03f);
         handTile.Fan(t - 0.2f);
         foreach (KeyValuePair<InventoryTile, float> punch in punches) punch.Key.Punch(now - punch.Value);
@@ -625,11 +627,14 @@ public sealed class InventoryScreen : MonoBehaviour
         string holds = "";
         InventoryItemRecord record = InventoryRules.Record(Inv, itemId);
         if (def.container && record != null && record.contents.Count > 0)
-            holds = itemId == InventoryCatalogue.ProfileBinder ? $"\n\nHolds {record.contents.Count} profile card{(record.contents.Count == 1 ? "" : "s")}." : "\n\nHolds the case papers" + (record.contents.Exists(c => c.EndsWith("/client-copy")) ? " and the client copy." : ".");
+            holds = itemId == InventoryCatalogue.ProfileBinder ? $"\n\nHolds {record.contents.Count} profile card{(record.contents.Count == 1 ? "" : "s")}."
+                : itemId == InventoryCatalogue.ReviewedFile ? "\n\nHolds his completed entries, his ID card and his background sheet."
+                : "\n\nHolds the case papers" + (record.contents.Exists(c => c.EndsWith("/client-copy")) ? " and the client copy." : ".");
         sheetBody.text = def.description + holds;
         string where = area == InventoryArea.Hotbar ? "In your bar: ready to use." :
             area == InventoryArea.Hand ? "In your hand: tap a slot to place it." : "In your bag.";
-        sheetPlace.text = def.required ? $"<color=#{ColorUtility.ToHtmlStringRGB(Needed)}>✔ Needed for your case: always carried.</color>\n{where}" : where;
+        sheetPlace.text = def.reference ? $"<color=#{ColorUtility.ToHtmlStringRGB(Needed)}>✔ Reference: read only, always kept.</color>\n{where}"
+            : def.required ? $"<color=#{ColorUtility.ToHtmlStringRGB(Needed)}>✔ Needed for your case: always carried.</color>\n{where}" : where;
     }
 
     private void SetHelp(string text, bool warn)

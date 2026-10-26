@@ -9,7 +9,8 @@ using UnityEngine;
 ///   settings  - a cream gear
 ///   notes     - a ruled notepad with a red binding and a yellow pencil
 ///   folder    - a manila case folder with a paper and a red case label
-///   profiles  - two stacked blue taxpayer ID cards
+///   reviewed  - Arthur's Reviewed File (T30): the Case Folder icon with its tan cover turned muted teal (ReviewedFileLook.Teal)
+///   profiles  - the clients' ID cards (2026-10-27): a cream ID card with its blue band and portrait, a second one turned over behind
 ///   papers    - the corrected annotated records collected in Level 2
 ///   bag       - a leather satchel with a brass buckle (T10 Bag icon)
 ///   slot      - an EMPTY hotbar slot: dim face, dashed rim and a "+" (T10)
@@ -30,7 +31,7 @@ public static class HudIconArt
     public const int Size = 160;
     private const int Samples = 3;
 
-    public static readonly string[] Icons = { "settings", "notes", "folder", "profiles", "papers", "book", "bag", "slot", "locked", "postcard", "voucher", "bookmarks", "pouch", "pencilcup", "islandprint", "stand", "computer" };
+    public static readonly string[] Icons = { "settings", "notes", "folder", "reviewed", "profiles", "papers", "book", "bag", "slot", "locked", "postcard", "voucher", "bookmarks", "pouch", "pencilcup", "islandprint", "stand", "computer" };
     private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
 
     public static Sprite Get(string icon)
@@ -110,7 +111,8 @@ public static class HudIconArt
         {
             case "settings": Gear(u, v, ref c); break;
             case "notes": Notepad(u, v, ref c); break;
-            case "folder": Folder(u, v, ref c); break;
+            case "folder": Folder(u, v, ref c, false); break;
+            case "reviewed": Folder(u, v, ref c, true); break;
             case "profiles": Cards(u, v, ref c); break;
             case "papers": Papers(u, v, ref c); break;
             case "book": Book(u, v, ref c); break;
@@ -402,12 +404,14 @@ public static class HudIconArt
             Over(ref c, along > -0.25f ? C(236, 206, 160) : C(60, 60, 70));                      // tip
     }
 
-    private static void Folder(float u, float v, ref Color c)
+    /// <summary>The Case Folder; reviewed: Arthur's Reviewed File, the same folder with only its tan cover turned teal (ReviewedFileLook.Teal).</summary>
+    private static void Folder(float u, float v, ref Color c, bool reviewed)
     {
+        Color Cover(Color tan) => reviewed ? ReviewedFileLook.Teal(tan) : tan;
         if (RoundRect(u + 0.012f, v + 0.018f, 0.2f, 0.24f, 0.8f, 0.72f, 0.04f, 0f, out _)) Over(ref c, new Color(0f, 0f, 0f, 0.35f));
         // Back with tab.
         if (RoundRect(u, v, 0.2f, 0.26f, 0.8f, 0.7f, 0.04f, 0f, out _) || RoundRect(u, v, 0.2f, 0.62f, 0.45f, 0.76f, 0.04f, 0f, out _))
-            Over(ref c, C(184, 138, 72));
+            Over(ref c, Cover(C(184, 138, 72)));
         // Paper peeking out.
         if (RoundRect(u, v, 0.27f, 0.36f, 0.72f, 0.7f, 0.02f, 0f, out _))
         {
@@ -417,7 +421,7 @@ public static class HudIconArt
         // Front flap, slightly lower and lighter.
         if (RoundRect(u, v, 0.18f, 0.24f, 0.82f, 0.56f, 0.05f, 0f, out _))
         {
-            Over(ref c, Color.Lerp(C(214, 166, 92), C(242, 200, 128), (v - 0.24f) / 0.32f));
+            Over(ref c, Color.Lerp(Cover(C(214, 166, 92)), Cover(C(242, 200, 128)), (v - 0.24f) / 0.32f));
             if (RoundRect(u, v, 0.4f, 0.33f, 0.6f, 0.43f, 0.02f, 0f, out _)) Over(ref c, C(206, 84, 72));  // case label
             if (v > 0.53f) Over(ref c, new Color(1f, 1f, 1f, 0.18f));                                       // edge highlight
         }
@@ -425,25 +429,39 @@ public static class HudIconArt
 
     private static void Cards(float u, float v, ref Color c)
     {
-        // Back card, tilted.
-        float bx = u - 0.54f, by = v - 0.57f;
-        float ca = Mathf.Cos(0.21f), sa = Mathf.Sin(0.21f);
+        // 2026-10-27: the clients' ID cards (IdCardModel's look): a second card turned over behind,
+        // showing its blue profile band, and the front card: cream stock, blue header band,
+        // a portrait box with the neutral bust, and printed lines.
+        float bx = u - 0.55f, by = v - 0.56f;
+        float ca = Mathf.Cos(0.24f), sa = Mathf.Sin(0.24f);
         float rx = bx * ca + by * sa, ry = -bx * sa + by * ca;
-        if (RoundRect(rx, ry, -0.24f, -0.16f, 0.24f, 0.16f, 0.05f, 0f, out _)) Over(ref c, C(120, 160, 205));
-        // Front card shadow + card.
-        if (RoundRect(u + 0.012f, v + 0.018f, 0.18f, 0.24f, 0.74f, 0.6f, 0.05f, 0f, out _)) Over(ref c, new Color(0f, 0f, 0f, 0.35f));
-        if (RoundRect(u, v, 0.18f, 0.24f, 0.74f, 0.6f, 0.05f, 0f, out _))
+        if (RoundRect(rx, ry, -0.25f, -0.16f, 0.25f, 0.16f, 0.05f, 0f, out _))
         {
-            Over(ref c, Color.Lerp(C(150, 200, 242), C(196, 228, 255), (v - 0.24f) / 0.36f));
-            if (v > 0.54f) Over(ref c, C(70, 130, 200));                                                     // header band
-            float hx = u - 0.32f, hy = v - 0.43f;
-            if (hx * hx + hy * hy < 0.055f * 0.055f) Over(ref c, C(30, 52, 84));                             // head
-            float ex = (u - 0.32f) / 0.085f, ey = (v - 0.3f) / 0.07f;
-            if (v < 0.35f && v > 0.27f && ex * ex + ey * ey < 1f) Over(ref c, C(30, 52, 84));                // shoulders
+            Over(ref c, C(222, 214, 196));
+            if (ry > 0.07f) Over(ref c, C(91, 127, 166));
+            for (int i = 0; i < 2; i++)
+                if (Mathf.Abs(ry - (0.0f - i * 0.07f)) < 0.012f && rx > -0.19f && rx < 0.17f) Over(ref c, C(150, 140, 120));
+        }
+        // Front card: a soft shadow, a darker edge (its thickness), then the card.
+        if (RoundRect(u + 0.014f, v + 0.02f, 0.16f, 0.22f, 0.76f, 0.6f, 0.055f, 0f, out _)) Over(ref c, new Color(0f, 0f, 0f, 0.38f));
+        if (RoundRect(u, v + 0.012f, 0.16f, 0.22f, 0.76f, 0.6f, 0.055f, 0f, out _)) Over(ref c, C(171, 181, 183));
+        if (RoundRect(u, v, 0.16f, 0.235f, 0.76f, 0.6f, 0.055f, 0f, out _))
+        {
+            Over(ref c, Color.Lerp(C(236, 231, 219), C(248, 245, 236), (v - 0.235f) / 0.365f));
+            if (v > 0.515f) Over(ref c, C(91, 127, 166));                                                     // header band
+            if (v > 0.53f && v < 0.575f && u > 0.27f && u < 0.56f && Mathf.Abs(v - 0.552f) < 0.012f) Over(ref c, C(255, 251, 240)); // title
+            if (RoundRect(u, v, 0.21f, 0.29f, 0.38f, 0.49f, 0.02f, 0f, out _))
+            {
+                Over(ref c, C(219, 227, 235));                                                               // portrait box
+                float hx = u - 0.295f, hy = v - 0.415f;
+                if (hx * hx + hy * hy < 0.04f * 0.04f) Over(ref c, C(138, 152, 168));                          // head
+                float ex = (u - 0.295f) / 0.07f, ey = (v - 0.3f) / 0.06f;
+                if (v < 0.36f && ex * ex + ey * ey < 1f) Over(ref c, C(138, 152, 168));                      // shoulders
+            }
             for (int i = 0; i < 3; i++)
             {
-                float ly = 0.47f - i * 0.07f;
-                if (Mathf.Abs(v - ly) < 0.012f && u > 0.44f && u < (i == 2 ? 0.58f : 0.68f)) Over(ref c, C(60, 96, 140));
+                float ly = 0.46f - i * 0.065f;
+                if (Mathf.Abs(v - ly) < 0.013f && u > 0.42f && u < (i == 0 ? 0.7f : i == 1 ? 0.64f : 0.56f)) Over(ref c, C(46, 40, 34));
             }
         }
     }

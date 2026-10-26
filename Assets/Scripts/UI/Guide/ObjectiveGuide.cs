@@ -106,7 +106,7 @@ public sealed class ObjectiveGuide : MonoBehaviour
     {
         float now = Time.unscaledTime;
         UpdateStep();
-        if (now >= nextPick)
+        if (now >= nextPick || (HasTarget && ReadingCarriedFile))
         {
             nextPick = now + PickInterval;
             PickTarget();
@@ -186,8 +186,22 @@ public sealed class ObjectiveGuide : MonoBehaviour
         if (beacon != null) beacon.Flash();
     }
 
+    private bool ReadingCarriedFile =>
+        stepKey == ObjectiveTriggers.EventKey(ObjectiveTriggers.ReviewedFileLookedOver) &&
+        HudHotbar.Instance != null && InventoryRules.Owns(HudHotbar.Instance.Inventory, InventoryCatalogue.ReviewedFile);
+
     private void PickTarget()
     {
+        // Once collected, this task is carried out in the file window. Its
+        // fallback Arthur marker must not keep sending the player back to him.
+        if (ReadingCarriedFile)
+        {
+            HasTarget = false;
+            target = null;
+            Label = null;
+            path.Clear();
+            return;
+        }
         Label = waypoint != null ? waypoint.label : null;
         if (areaTarget)
         {

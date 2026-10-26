@@ -6,13 +6,14 @@
     "  container (one slot holds them all: profiles in the binder, case papers and the Client Copy in the folder),",
     "  scope (the story level the item belongs to; a fresh run of that level clears it), returnsToWorld (closing Make room puts it back, e.g. the desk book).",
     "journal: neutral facts the evidence journal lists once learned; sourceItemId is the record it links to. Never an answer or a conclusion.",
-    "Content rule (checked by the regression suite): a level never needs more required items at once than the starting 3 + 5 slots.",
+    "Content rule (checked by the regression suite): a level never needs more required items at once than the starting 3 + 6 slots (T30: the Bag starts at 6).",
+    "reference (T30): a read-only reference kept for good (Arthur's Reviewed File): required (never discarded or sold), scope \"\", never edited or submitted.",
     "carryLimit (T11): at most this many carried in bar + bag together; more are refused (0 = no limit). scope \"\" = kept for the whole campaign."
   ],
   "items": [
     {
       "id": "profile_binder",
-      "label": "Profile Binder",
+      "label": "Client IDs",
       "category": "Profiles",
       "icon": "profiles",
       "description": "Every taxpayer profile you collect, kept together in one binder.",
@@ -96,27 +97,41 @@
       "scope": "",
       "returnsToWorld": false,
       "carryLimit": 0
+    },
+    {
+      "id": "arthur_reviewed_file",
+      "label": "Arthur's Reviewed File",
+      "category": "Case Files",
+      "icon": "reviewed",
+      "description": "A finished file Arthur reviewed for a former client: completed entries, then the ID and background behind them. Read only; yours to keep.",
+      "required": true,
+      "stackLimit": 1,
+      "container": true,
+      "scope": "",
+      "returnsToWorld": false,
+      "carryLimit": 0,
+      "reference": true
     }
   ],
   "journal": [
     {
       "id": "met-npc_marie",
-      "text": "You met Marie Bautista in the plaza and took her profile card.",
+      "text": "You met Marie Bautista in the plaza and took a copy of her ID.",
       "sourceItemId": "profile_binder"
     },
     {
       "id": "met-npc_jhunjhun",
-      "text": "You met Jhun-jhun in the plaza and took his profile card.",
+      "text": "You met Jhun-jhun in the plaza and took a copy of his ID.",
       "sourceItemId": "profile_binder"
     },
     {
       "id": "met-npc_milo",
-      "text": "You met Milo in the plaza and took his profile card.",
+      "text": "You met Milo in the plaza and took a copy of his ID.",
       "sourceItemId": "profile_binder"
     },
     {
       "id": "met-npc_zorbix",
-      "text": "You met Zorbix in the plaza and took his profile card.",
+      "text": "You met Zorbix in the plaza and took a copy of his ID.",
       "sourceItemId": "profile_binder"
     },
     {

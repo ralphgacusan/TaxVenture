@@ -35,6 +35,13 @@ using UnityEngine.SceneManagement;
 /// to the "case received" phase. A snapshot of another case or revision is
 /// kept aside, not applied, and the case starts again from the receptionist.
 ///
+/// ARTHUR'S OPENING (T30, replacing T24's first-client sleeve): his talk, which
+/// records of his reviewed file were shown and put back, page one seen again
+/// and the rounds opening (ArthurOpening), saved whenever they change. The
+/// file itself is a campaign item (the inventory). Resume floats the file
+/// beside him again if it was presented but not taken; a run saved before T30
+/// keeps its plaza route (nothing relocks, nothing is granted for old flags).
+///
 /// RESUME: puts the state back through each owner's quiet restore (no
 /// conversation, pickup, score, objective or guide event is raised and no
 /// toast plays): talked NPCs are retired, uncollected profiles lie beside
@@ -128,6 +135,8 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
         TownEvents.OnProfileCollected += HandleProfileCollected;
         TownEvents.OnTutorialIntroCompleted += SaveNow;
         TownEvents.OnSideQuestCompleted += SaveNow;
+        ArthurOpening.Changed += SaveNow;
+        CaseRecordsDesk.Changed += SaveNow;
         CorkboardSideQuestManager.DraftChanged += SaveNow;
         CorkboardSideQuestManager.BoardChecked += HandleBoardChecked;
         LevelScoreLedger.EntryAdded += HandleScoreEntry;
@@ -146,6 +155,8 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
         TownEvents.OnProfileCollected -= HandleProfileCollected;
         TownEvents.OnTutorialIntroCompleted -= SaveNow;
         TownEvents.OnSideQuestCompleted -= SaveNow;
+        ArthurOpening.Changed -= SaveNow;
+        CaseRecordsDesk.Changed -= SaveNow;
         CorkboardSideQuestManager.DraftChanged -= SaveNow;
         CorkboardSideQuestManager.BoardChecked -= HandleBoardChecked;
         LevelScoreLedger.EntryAdded -= HandleScoreEntry;
@@ -304,6 +315,7 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
         if (director != null) checkpoint.guideLessonsDone.AddRange(director.FinishedLessons());
         NotesOnboardingChest notesChest = FindAnyObjectByType<NotesOnboardingChest>(FindObjectsInactive.Include);
         checkpoint.notesChestOpened = notesChest != null && notesChest.IsOpen;
+        if (ArthurOpening.Active != null) ArthurOpening.Active.Capture(checkpoint);
 
         if (OfficeHours.Instance != null) OfficeHours.Instance.CaptureClock(checkpoint.clock);
         CaptureCase(checkpoint.caseRecord);
@@ -340,6 +352,8 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
             if (book.HasBeenOpenedOnce) into.taxCodeBookOpened = true;
         // T10: Level 1's book opens from the desk or a hotbar slot; the hotbar raised its first-open event.
         if (HudHotbar.BookOpenedOnce) into.taxCodeBookOpened = true;
+        // T25: the first-desk preparation, only once both work records were really shown and put back.
+        if (CaseRecordsDesk.Active != null && CaseRecordsDesk.Active.Prepared) into.workRecordsPrepared = true;
 
         CaseProgressionManager progression = CaseProgressionManager.Instance;
         if (progression != null)
@@ -404,6 +418,9 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
             if (owned != null && saved.talkedNpcIds.Contains(owned.NpcId) && !saved.collectedProfileIds.Contains(id))
                 saved.collectedProfileIds.Add(id);
         }
+        // T30: Arthur's opening milestones (the file's ownership comes from the campaign inventory).
+        bool fileOwned = Progress.Inventory != null && InventoryRules.Owns(Progress.Inventory, ReviewedFileRules.ItemId);
+        if (ArthurOpening.Active != null) ArthurOpening.Active.Restore(saved, fileOwned);
         var collected = new HashSet<string>(saved.collectedProfileIds);
         foreach (TaxpayerNpcInteractable npc in FindObjectsByType<TaxpayerNpcInteractable>(FindObjectsInactive.Include))
         {
@@ -436,6 +453,9 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
         if (rewarded && CollectedProfilesWorldPanel.Instance != null) CollectedProfilesWorldPanel.Instance.LockToSingleSurvivingProfile();
 
         RestoreScore(saved, rewarded);
+        // T30: a run past (or saved before) the opening steps never points back at them.
+        foreach (string key in ReviewedFileRules.ReachedSteps(ReviewedFileRules.StageOf(saved, fileOwned)))
+            if (!saved.objectiveTriggers.Contains(key)) saved.objectiveTriggers.Add(key);
         if (OfficeObjectives.Instance != null) OfficeObjectives.Instance.RestoreTriggers(saved.objectiveTriggers);
         RestoreGuideCounts(saved, allProfiles, solved || rewarded);
         if (OfficeHours.Instance != null)
@@ -515,6 +535,7 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
             foreach (TaxCodeBookInteractable book in FindObjectsByType<TaxCodeBookInteractable>(FindObjectsInactive.Include)) book.RestoreOpenedOnce();
             HudHotbar.RestoreBookOpened();
         }
+        if (record.workRecordsPrepared && CaseRecordsDesk.Active != null) CaseRecordsDesk.Active.RestorePrepared();
 
         if (CaseProgressionManager.Instance != null) CaseProgressionManager.Instance.RestoreAuditCounters(record.auditAttempts, record.auditMistakes);
         AuditorInteractable auditor = FindAnyObjectByType<AuditorInteractable>(FindObjectsInactive.Include);

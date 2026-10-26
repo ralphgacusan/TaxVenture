@@ -71,6 +71,14 @@ public struct HeldOnScreen
         return new Vector2(Axis(pointer.x, left, right, Screen.width), Axis(pointer.y, below, above, Screen.height));
     }
 
+    /// <summary>A held object within the gameplay viewport, including letterboxed views.</summary>
+    public Vector2 Clamp(Vector2 pointer, Rect viewport)
+    {
+        if (!IsSet) return pointer;
+        return new Vector2(viewport.x + Axis(pointer.x - viewport.x, left, right, viewport.width),
+            viewport.y + Axis(pointer.y - viewport.y, below, above, viewport.height));
+    }
+
     private static float Axis(float pointer, float before, float after, float size)
     {
         float min = Margin + before, max = size - Margin - after;

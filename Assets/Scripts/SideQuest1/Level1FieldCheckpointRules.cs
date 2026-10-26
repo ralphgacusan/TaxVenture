@@ -24,7 +24,9 @@ public enum Level1RestoreOutcome
 /// only for collected profiles; the board (any phase) needs every required
 /// profile, otherwise everything from the guide onward falls back to "talk to
 /// the guide"; an open board means the guide's intro happened; no board means
-/// no guide intro, pins or counters. Nothing here decides correctness: the
+/// no guide intro, pins or counters. T30: Arthur's opening follows
+/// ReviewedFileRules (a quiet Migrate of pre-T30 runs, then Repair). Nothing
+/// here decides correctness: the
 /// board recomputes it from the profiles when the pins are put back.
 /// </summary>
 public static class Level1FieldCheckpointRules
@@ -40,6 +42,8 @@ public static class Level1FieldCheckpointRules
             return Level1RestoreOutcome.Reset;
 
         bool changed = checkpoint.Repair();
+        // T30: T24's retired record ids go and begun rounds stay open, quietly (an upgrade, not a repair).
+        ReviewedFileRules.Migrate(checkpoint);
         var npcs = new HashSet<string>(profileNpc.Values, StringComparer.Ordinal);
 
         changed |= checkpoint.talkedNpcIds.RemoveAll(id => !npcs.Contains(id)) > 0;
@@ -53,6 +57,9 @@ public static class Level1FieldCheckpointRules
                 changed = true;
             }
         }
+
+        // T30: Arthur's file records only; a record put back was shown; a revisit needs both back.
+        changed |= ReviewedFileRules.Repair(checkpoint);
 
         var collected = new HashSet<string>(checkpoint.collectedProfileIds, StringComparer.Ordinal);
         changed |= checkpoint.placements.RemoveAll(p => !collected.Contains(p.profileId) || !slotIds.Contains(p.slotId)) > 0;

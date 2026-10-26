@@ -310,12 +310,17 @@ public class GuideLesson
     public bool duringResults;
     /// <summary>True: when "onlyIn" stops being true, the lesson ends instead of pausing (e.g. the card closed).</summary>
     public bool endIfGone;
+
+    /// <summary>Keep the current page pending while its context is hidden, then resume it when the context returns.</summary>
+    public bool preserveWhileHidden;
     public GuidePage[] pages;
 }
 
 [Serializable]
 public class GuidePage
 {
+    /// <summary>Optional reading time after typing finishes, even if the requested action already happened.</summary>
+    public float minimumReadSeconds;
     /// <summary>Visible hint duration; the gameplay wait continues after the bubble fades.</summary>
     public float hintSeconds;
     /// <summary>Optional chip above this page's text (defaults to the lesson title).</summary>
