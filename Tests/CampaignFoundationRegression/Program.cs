@@ -553,6 +553,8 @@ Level1FieldCheckpoint Field(string phase, int talked, int collected, bool intro)
     foreach (TaxpayerProfile p in TaxpayerProfileDatabase.All.Take(talked)) c.talkedNpcIds.Add(p.NpcId);
     foreach (TaxpayerProfile p in TaxpayerProfileDatabase.All.Take(collected)) c.collectedProfileIds.Add(p.ProfileId);
     c.objectiveTriggers.Add("event:ProfileCollected");
+    // T30: a run with talks or profiles had its plaza rounds open (Arthur's file looked over, or begun before T30).
+    c.roundsOpen = talked > 0 || collected > 0;
     return c;
 }
 Check(profileMap.Count == 4 && areaIds.Count == 4 && profileMap["profile_marie"] == "npc_marie", "content map: four profiles with their NPCs, four board areas");
@@ -704,7 +706,7 @@ string[] quietBodies =
 {
     Between(npcSrc, "public void RestoreHandover", "public bool IsInConversation"),
     Between(hudSrc, "public void RestoreCollected", "public bool TryGetCollectionScreenPoint"),
-    Between(guideSrc, "public void RestoreProgress", "private void Awake"),
+    Between(guideSrc, "public void RestoreProgress", "public static System.Func<TutorialNpcController, NpcAvailability?> OpeningAvailability;"),
     Between(cardSrc, "public void RestorePinned", "private void UpdateSway"),
     Between(boardSrc, "private void RestorePins", "private bool TryGetTrayView")
 };
@@ -948,8 +950,8 @@ Check(Between(folderIcon, "private void StoreFolder(bool restoring)", "private v
 Check(Between(cp5, "private static void CaptureCase(", "// RESUME").Contains("FindObjectsByType<FolderToHUDIcon>(FindObjectsInactive.Include)"),
     "either folder component (closed desk folder or open folder) counts as stored when saving");
 string npcFix = Between(Src("SideQuest1", "TaxpayerNpcInteractable.cs"), "public void RestoreHandover", "public void OnFocus");
-Check(Index(npcFix, "profilePickup.Initialize(data);") > 0 && Index(npcFix, "profilePickup.Initialize(data);") < Index(npcFix, "if (!profileCollected) profilePickup.gameObject.SetActive(true);"),
-    "a restored NPC's profile paper always knows its profile (Marie's 1/1 counter and viewer) and only lies in the world while uncollected");
+Check(Index(npcFix, "profilePickup.Initialize(data);") > 0 && Index(npcFix, "profilePickup.Initialize(data);") < Index(npcFix, "if (!profileCollected && !profileHeld) profilePickup.gameObject.SetActive(true);"),
+    "a restored NPC's profile paper always knows its profile (Marie's 1/1 counter and viewer) and only lies in the world while uncollected (T24: and not held for the records step)");
 
 string restoreStored = Between(Src("CaseFolder", "FolderToHUDIcon.cs"), "public void RestoreStored()", "private void StoreFolder(bool restoring)");
 Check(Index(restoreStored, "StoreFolder(restoring: true);") > 0 && Index(restoreStored, "openFolderReturnToDesk.HideClosedFolderForRestore();") > Index(restoreStored, "StoreFolder(restoring: true);") &&
@@ -978,9 +980,26 @@ Check(returnStored.Contains("FindObjectsByType<FolderToHUDIcon>(FindObjectsInact
 
 // ---------- pure rules ----------
 Check(ClassificationCheck.TierFor(4) == ClassificationCheck.Gold && ClassificationCheck.TierFor(3) == ClassificationCheck.Silver &&
-      ClassificationCheck.TierFor(2) == ClassificationCheck.Bronze && ClassificationCheck.TierFor(1) == ClassificationCheck.Bronze &&
+      ClassificationCheck.TierFor(2) == ClassificationCheck.Silver && ClassificationCheck.TierFor(1) == ClassificationCheck.Bronze &&
       ClassificationCheck.TierFor(0) == ClassificationCheck.Bronze,
-    "first-check tier: Gold 4/4, Silver 3/4, Bronze 0-2/4");
+    "first-check tier (2026-10-27): Gold 4/4, Silver 2/4, Bronze 0-1/4");
+// One card per corner: the first check's right count is a permutation's fixed points (4, 2, 1 or 0; never 3).
+var reachable27 = new HashSet<int>();
+int[] perm27 = { 0, 1, 2, 3 };
+void Permute27(int k)
+{
+    if (k == perm27.Length) { reachable27.Add(perm27.Select((v, i) => v == i ? 1 : 0).Sum()); return; }
+    for (int i = k; i < perm27.Length; i++)
+    {
+        (perm27[k], perm27[i]) = (perm27[i], perm27[k]);
+        Permute27(k + 1);
+        (perm27[k], perm27[i]) = (perm27[i], perm27[k]);
+    }
+}
+Permute27(0);
+Check(reachable27.SetEquals(new[] { 0, 1, 2, 4 }) &&
+      new[] { ClassificationCheck.Gold, ClassificationCheck.Silver, ClassificationCheck.Bronze }.All(t => reachable27.Any(c => ClassificationCheck.TierFor(c) == t)),
+    "every medal can actually be earned on a four-corner board (Silver used to need an impossible 3/4)");
 string scoringSource = Src("RewardsSystem", "LevelScoring.cs");
 Check(ClassificationCheck.Gold == 3 && ClassificationCheck.Silver == 2 && ClassificationCheck.Bronze == 1 &&
       scoringSource.Contains("Bronze = 1,") && scoringSource.Contains("Silver = 2,") && scoringSource.Contains("Gold = 3"),
@@ -1083,7 +1102,7 @@ Check(capture.Contains("into.checkSubmitted = checkSubmitted;") && capture.Conta
     "the board saves the frozen check");
 Check(Between(board, "if (checkSubmitted)\n            {\n                // The check already happened", "return;").Contains("MarkPlacedCards(raiseEvents: false);"),
     "a resumed check shows its marks quietly (no sound, reaction or event)");
-Check(board.Contains("slot.OccupyingCard.transform != card && slot.OccupyingCard.IsLockedCorrect") && card.Contains("if (IsLocked || lockedCorrect) return;"),
+Check(board.Contains("slot.OccupyingCard.transform != card && slot.OccupyingCard.IsLockedCorrect") && card.Contains("if (IsLocked || lockedCorrect) return false;"),
     "cards a check marked right stay pinned and their area takes no other card");
 // ---------- hint ladder and layout (user report 2026-10-23) ----------
 Check(!ClassificationCheck.RevealsAnswers(1) && !ClassificationCheck.RevealsAnswers(2) && ClassificationCheck.RevealsAnswers(3) && ClassificationCheck.RevealsAnswers(5),
@@ -1123,9 +1142,12 @@ Check(Occurrences(board, "SetProfilesOnBoard(true)") == 1 && Index(board, "SetPr
     "the icon empties when the cards fly into the tray and refills when the board closes or the quest ends");
 // Tray cards look like the HUD profile cards (user request 2026-10-24).
 string skin = Src("UI", "HUD", "ProfileCardSkin.cs");
-Check(skin.Contains("bool corkboard = face.GetComponentInParent<ProfileDragCard>(true) != null;") && skin.Contains("\"Drop Shadow\"") &&
-      skin.Contains("corkboard ? CorkboardTextBoost : TextBoost, corkboard, !corkboard);"),
-    "corkboard cards use the full HUD card (paperclip, header, Classification line) with a drop shadow and tilt; world papers unchanged");
+// 2026-10-27: the world drop and the corkboard cards are each client's 3D ID card (profile on its back).
+Check(skin.Contains("bool corkboard = face.GetComponentInParent<ProfileDragCard>(true) != null;") &&
+      skin.Contains("flip = IdCardModel.Build(transform, record, size, gameObject.layer, out _, out _);") &&
+      skin.Contains("CaseRecordRules.FromProfile(profile)") && skin.Contains("CorkboardTilts[") && skin.Contains("\"Result Frame\"") &&
+      !skin.Contains("ProfileCardFace.Build("),
+    "world drops and corkboard cards are the client's 3D ID card (front ID, profile on the back), tilted on the board, with a result frame");
 Check(board.Contains("LayoutFeedbackUnderBoard();") && Between(board, "private void LayoutFeedbackUnderBoard()", "// =====").Contains("feedbackPanel.anchorMin = new Vector2(minX, 0f);"),
     "the feedback line is centred under the board, spanning its width");
 string teaching = Src("SideQuest1", "CorkboardTeaching.cs") + File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Levels", "Level_01", "town.json")) + Src("SideQuest1", "SideQuestSplash.cs");
@@ -1834,24 +1856,24 @@ InventoryCatalogue Stack10()
 
 // ---------- record, capacities and save round trip ----------
 var fresh10 = new CampaignInventoryRecord();
-Check(fresh10.hotbarCapacity == 3 && fresh10.bagCapacity == 5 && fresh10.hotbar.Count == 3 && fresh10.bag.Count == 5 &&
+Check(fresh10.hotbarCapacity == 3 && fresh10.bagCapacity == 6 && fresh10.hotbar.Count == 3 && fresh10.bag.Count == 6 &&
       fresh10.hotbar.All(s => s.IsEmpty) && fresh10.bag.All(s => s.IsEmpty) && fresh10.hand.IsEmpty && fresh10.drawer.Count == 0 && !fresh10.Repair(),
-    "a fresh inventory has 3 empty bar slots, 5 empty bag slots, an empty drawer and needs no repair");
+    "a fresh inventory has 3 empty bar slots, 6 empty bag slots (T30: was 5), an empty drawer and needs no repair");
 PlayerProgressData camp10 = PlayerProgressData.CreateNewCampaign("t10", "");
 Check(camp10.campaign.inventory != null && camp10.campaign.inventory.hotbarCapacity == 3 && !camp10.Normalize(),
     "New Game starts with the empty starting inventory inside the v5 campaign record");
 var clamp10 = new CampaignInventoryRecord { hotbarCapacity = 9, bagCapacity = 40 };
 var low10 = new CampaignInventoryRecord { hotbarCapacity = 1, bagCapacity = 0 };
-Check(clamp10.Repair() && clamp10.hotbarCapacity == 5 && clamp10.bagCapacity == 12 && clamp10.hotbar.Count == 5 && clamp10.bag.Count == 12 &&
-      low10.Repair() && low10.hotbarCapacity == 3 && low10.bagCapacity == 5 && low10.hotbar.Count == 3 && low10.bag.Count == 5,
-    "capacities clamp to 3-5 (bar) and 5-12 (bag) and the slot lists follow");
+Check(clamp10.Repair() && clamp10.hotbarCapacity == 5 && clamp10.bagCapacity == 13 && clamp10.hotbar.Count == 5 && clamp10.bag.Count == 13 &&
+      low10.Repair() && low10.hotbarCapacity == 3 && low10.bagCapacity == 6 && low10.hotbar.Count == 3 && low10.bag.Count == 6,
+    "capacities clamp to 3-5 (bar) and 6-13 (bag; T30: was 5-12) and the slot lists follow");
 var over10 = new CampaignInventoryRecord();
-for (int i = 0; i < 5; i++) over10.bag[i] = new InventorySlot { itemId = "pencil", quantity = 1 };
+for (int i = 0; i < over10.bagCapacity; i++) over10.bag[i] = new InventorySlot { itemId = "pencil", quantity = 1 };
 over10.hotbar[0] = new InventorySlot { itemId = InventoryCatalogue.Notes, quantity = 1 };
 over10.hotbar.Add(new InventorySlot { itemId = "postcard", quantity = 1 });
 over10.bag.Add(new InventorySlot { itemId = "voucher", quantity = 2 });
 over10.Repair();
-Check(over10.hotbar.Count == 3 && over10.bag.Count == 5 && over10.hotbar.Count(s => s.itemId == "postcard" || s.itemId == "voucher") == 2 &&
+Check(over10.hotbar.Count == 3 && over10.bag.Count == 6 && over10.hotbar.Count(s => s.itemId == "postcard" || s.itemId == "voucher") == 2 &&
       over10.hotbar[0].itemId == InventoryCatalogue.Notes && over10.drawer.Count == 0 && clampSpill10(),
     "items in slots beyond capacity move to a free slot (or the record's overflow list when none is free); nothing is lost");
 var dirty10 = new CampaignInventoryRecord
@@ -1889,14 +1911,14 @@ Check(!back10.Normalize() && backInv10.bagCapacity == 8 && backInv10.bag.Count =
     "slot layout, capacities, journal state, selected slot and original/working identity round-trip through the save");
 var old10 = JsonSerializer.Deserialize<PlayerProgressData>("{\"saveVersion\":5,\"campaign\":{\"campaignId\":\"old\",\"currentChapterId\":\"Level_01\",\"publicTrust\":40}}", json);
 old10.Normalize();
-Check(old10.campaign.inventory != null && old10.campaign.inventory.hotbarCapacity == 3 && old10.campaign.inventory.bag.Count == 5,
+Check(old10.campaign.inventory != null && old10.campaign.inventory.hotbarCapacity == 3 && old10.campaign.inventory.bag.Count == 6,
     "a v5 save written before T10 loads with the empty starting inventory");
 
 // ---------- catalogue and content rule ----------
 Check(cat10.Problems().Count == 0 && cat10.items.Count(i => i.scope == "Level_01") == 4 && cat10.IsRequired(InventoryCatalogue.Notes) && cat10.IsRequired(InventoryCatalogue.CaseFolder) &&
       cat10.IsRequired(InventoryCatalogue.ProfileBinder) && !cat10.IsRequired(InventoryCatalogue.TaxCodeBook) &&
       cat10.Find(InventoryCatalogue.ProfileBinder).container && cat10.Find(InventoryCatalogue.CaseFolder).container &&
-      cat10.Find(InventoryCatalogue.TaxCodeBook).returnsToWorld && cat10.items.Where(i => i.required).All(i => i.scope == "Level_01"),
+      cat10.Find(InventoryCatalogue.TaxCodeBook).returnsToWorld && cat10.items.Where(i => i.required && !i.reference).All(i => i.scope == "Level_01"),
     "built-in catalogue: binder and folder are required containers, Notes required, the book optional and returnable");
 var file10 = JsonSerializer.Deserialize<InventoryCatalogue>(File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Campaign", "inventory.json")), json);
 bool sameCatalogue10 = file10 != null && file10.items.Count == cat10.items.Count && file10.journal.Count == cat10.journal.Count &&
@@ -1949,7 +1971,7 @@ var stack10 = Stack10();
 InventoryRules.Acquire(full10, stack10, InventoryCatalogue.Notes, 1, "f1");
 InventoryRules.Acquire(full10, stack10, InventoryCatalogue.CaseFolder, 1, "f2");
 InventoryRules.Acquire(full10, stack10, InventoryCatalogue.ProfileBinder, 1, "f3");
-for (int i = 0; i < 5; i++) full10.bag[i] = new InventorySlot { itemId = "pencil", quantity = 1 };
+for (int i = 0; i < full10.bagCapacity; i++) full10.bag[i] = new InventorySlot { itemId = "pencil", quantity = 1 };
 InventoryResult swapFull10 = InventoryRules.Acquire(Clone10(full10), stack10, InventoryCatalogue.TaxCodeBook, 1, "f4", SlotRef.Hotbar(1));
 InventoryResult handPick10 = InventoryRules.Acquire(full10, stack10, InventoryCatalogue.TaxCodeBook, 1, "f5");
 string fullSnap10 = Inv10(full10);
@@ -1963,11 +1985,11 @@ bool clampSpill10()
     // With every slot taken, items beyond capacity wait in the record's overflow list (save repair only).
     var spill = new CampaignInventoryRecord();
     for (int i = 0; i < 3; i++) spill.hotbar[i] = new InventorySlot { itemId = "pencil", quantity = 1 };
-    for (int i = 0; i < 5; i++) spill.bag[i] = new InventorySlot { itemId = "pencil", quantity = 1 };
+    for (int i = 0; i < spill.bagCapacity; i++) spill.bag[i] = new InventorySlot { itemId = "pencil", quantity = 1 };
     spill.hotbar.Add(new InventorySlot { itemId = "postcard", quantity = 1 });
     spill.bag.Add(new InventorySlot { itemId = "voucher", quantity = 2 });
     spill.Repair();
-    return spill.hotbar.Count == 3 && spill.bag.Count == 5 && InventoryRules.DrawerCount(spill, "postcard") == 1 && InventoryRules.DrawerCount(spill, "voucher") == 2;
+    return spill.hotbar.Count == 3 && spill.bag.Count == 6 && InventoryRules.DrawerCount(spill, "postcard") == 1 && InventoryRules.DrawerCount(spill, "voucher") == 2;
 }
 CampaignInventoryRecord Clone10(CampaignInventoryRecord r) => JsonSerializer.Deserialize<CampaignInventoryRecord>(Inv10(r), json);
 
@@ -1976,7 +1998,7 @@ var mv10 = Clone10(acq10);
 string mvBefore10 = Inv10(mv10);
 Check(InventoryRules.Move(mv10, cat10, SlotRef.Bag(3), SlotRef.Bag(1), "m0").Outcome == InventoryOutcome.Rejected &&
       InventoryRules.Move(mv10, cat10, SlotRef.Hotbar(0), SlotRef.Hotbar(3), "m1").Message == InventoryRules.ShopUpgrade &&
-      InventoryRules.Move(mv10, cat10, SlotRef.Hotbar(0), SlotRef.Bag(5), "m2").Message == InventoryRules.ShopUpgrade &&
+      InventoryRules.Move(mv10, cat10, SlotRef.Hotbar(0), SlotRef.Bag(6), "m2").Message == InventoryRules.ShopUpgrade &&
       InventoryRules.Move(mv10, cat10, SlotRef.Hotbar(0), SlotRef.Hotbar(0), "m3").Outcome == InventoryOutcome.NoChange && Inv10(mv10) == mvBefore10,
     "moving from an empty slot or into a locked slot (Shop upgrade) is refused; a move onto itself changes nothing");
 InventoryResult toBar10 = InventoryRules.Move(mv10, cat10, SlotRef.Bag(0), SlotRef.Hotbar(1), "m4");
@@ -1999,7 +2021,7 @@ var autoStack10 = Fresh10();
 autoStack10.hotbar[0] = new InventorySlot { itemId = "voucher", quantity = 1 };
 InventoryResult nextVoucher10 = InventoryRules.Acquire(autoStack10, stack10, "voucher", 1, "v1");
 for (int i = 1; i < 3; i++) autoStack10.hotbar[i] = new InventorySlot { itemId = "pencil", quantity = 1 };
-for (int i = 0; i < 5; i++) if (autoStack10.bag[i].IsEmpty) autoStack10.bag[i] = new InventorySlot { itemId = "postcard", quantity = 1 };
+for (int i = 0; i < autoStack10.bagCapacity; i++) if (autoStack10.bag[i].IsEmpty) autoStack10.bag[i] = new InventorySlot { itemId = "postcard", quantity = 1 };
 InventoryResult mergeVoucher10 = InventoryRules.Acquire(autoStack10, stack10, "voucher", 1, "v2");
 Check(nextVoucher10.Location == SlotRef.Hotbar(1) && mergeVoucher10.Location == SlotRef.Hotbar(0) && autoStack10.hotbar[0].quantity == 2,
     "ticket order for supplies: an empty bar slot, then an empty bag slot, then an existing stack with room");
@@ -2110,7 +2132,7 @@ Check(nmChanged10 && warnings10.Count == 1 && warnings10[0].Contains("mystery_bo
     "normalize: unknown ids empty with one warning, duplicates keep their first place, required items return from the old drawer list and the hand, stacks spill, records follow ownership");
 var crowd10 = Fresh10();
 for (int i = 0; i < 3; i++) crowd10.hotbar[i] = new InventorySlot { itemId = "voucher", quantity = 3 };
-for (int i = 0; i < 5; i++) crowd10.bag[i] = new InventorySlot { itemId = "voucher", quantity = 3 };
+for (int i = 0; i < crowd10.bagCapacity; i++) crowd10.bag[i] = new InventorySlot { itemId = "voucher", quantity = 3 };
 crowd10.hotbar[0] = new InventorySlot { itemId = InventoryCatalogue.Notes, quantity = 1 };
 crowd10.hand = new InventorySlot { itemId = InventoryCatalogue.CaseFolder, quantity = 1 };
 InventoryRules.Normalize(crowd10, stack10, new List<string>());
@@ -2124,7 +2146,7 @@ List<InventoryJournalFact> journal10 = InventoryRules.Journal(cat10, learned10);
 Check(journal10.Count == 2 && journal10[0].id == "met-npc_marie" && journal10[1].id == "case-received" && journal10.All(f => f.sourceItemId.Length > 0) &&
       InventoryRules.Journal(cat10, new HashSet<string>()).Count == 0 && learned10.Count == 3,
     "the journal lists only learned catalogue facts with their source record, and reading it creates none");
-Check(cat10.journal.All(f => !f.text.Contains("Resident") && !f.text.Contains("Citizen") && !f.text.Contains("Alien") && !f.text.Contains("₱")),
+Check(cat10.journal.All(f => !f.text.Contains("Resident") && !f.text.Contains("Citizen") && !f.text.Contains("Alien") && !f.text.Contains("Ã¢â€šÂ±")),
     "journal facts are neutral: no classification or amount");
 bool slotRefs10 = true;
 foreach (SlotRef r10 in new[] { SlotRef.Hotbar(0), SlotRef.Hotbar(4), SlotRef.Bag(11), SlotRef.Hand, SlotRef.Drawer })
@@ -2307,7 +2329,7 @@ Check(three11.Changed && InventoryRules.CarriedCount(split11, InventoryCatalogue
     "a bigger delivery fills the carry limit (one stack of two); the rest is not taken");
 var routeFull11 = Fresh11();
 for (int i = 0; i < 3; i++) routeFull11.hotbar[i] = new InventorySlot { itemId = InventoryCatalogue.Notes, quantity = 1 };
-for (int i = 0; i < 5; i++) routeFull11.bag[i] = new InventorySlot { itemId = InventoryCatalogue.ReviewVoucher, quantity = 1 };
+for (int i = 0; i < routeFull11.bagCapacity; i++) routeFull11.bag[i] = new InventorySlot { itemId = InventoryCatalogue.ReviewVoucher, quantity = 1 };
 routeFull11.hand = new InventorySlot { itemId = InventoryCatalogue.TaxCodeBook, quantity = 1 };
 string routeSnap11 = Inv11(routeFull11);
 InventoryResult routeBusy11 = InventoryRules.Acquire(routeFull11, cat11, InventoryCatalogue.Postcard, 1, "v5");
@@ -2347,7 +2369,7 @@ Check(down11.Changed && down11.Location.Area == InventoryArea.Hotbar && Inventor
     "taking it back puts it in the first free slot, once");
 var downFull11 = Fresh11();
 for (int i = 0; i < 3; i++) downFull11.hotbar[i] = new InventorySlot { itemId = InventoryCatalogue.Notes, quantity = 1 };
-for (int i = 0; i < 5; i++) downFull11.bag[i] = new InventorySlot { itemId = InventoryCatalogue.ReviewVoucher, quantity = 1 };
+for (int i = 0; i < downFull11.bagCapacity; i++) downFull11.bag[i] = new InventorySlot { itemId = InventoryCatalogue.ReviewVoucher, quantity = 1 };
 downFull11.displays.Add(new InventoryDisplay { anchorId = anchor11, itemId = InventoryCatalogue.Postcard });
 InventoryResult downFullResult11 = InventoryRules.TakeDown(downFull11, cat11, anchor11, "d11");
 Check(downFullResult11.Outcome == InventoryOutcome.Rejected && downFullResult11.Message == InventoryRules.BagFull &&
@@ -2415,7 +2437,7 @@ Check(badPickProblems11.Any(p => p.Contains("unknown item")) && badPickProblems1
       badPickProblems11.Any(p => p.Contains("no level")) && badPickProblems11.Any(p => p.Contains("needs a spot")) &&
       badPickProblems11.Any(p => p.Contains("objectives key")) && badPickProblems11.Any(p => p.Contains("unknown category")),
     "pickup problems: unknown or required items, duplicates, quantity, level, spot, waiting key, display category");
-string[] answerWords11 = { "Resident", "Citizen", "Alien", "Non-resident", "₱", "tax due", "TaxDue", "Gross" };
+string[] answerWords11 = { "Resident", "Citizen", "Alien", "Non-resident", "Ã¢â€šÂ±", "tax due", "TaxDue", "Gross" };
 Check(picks11.pickups.All(p => answerWords11.All(w => !p.title.Contains(w) && p.lines.All(l => !l.Contains(w)))) &&
       cat11.items.All(i => answerWords11.All(w => !i.description.Contains(w))),
     "pickup and item text is neutral lore: no classification, amount or case value");
@@ -2514,10 +2536,10 @@ PlayerProgressData Wallet12(int coins, bool introduced = true)
 ShopProduct bookmarks12 = shop12.Find(ShopCatalogue.BookmarkSet), satchel12 = shop12.Find(ShopCatalogue.Satchel), pouch12 = shop12.Find(ShopCatalogue.BeltPouch);
 ShopProduct big12 = shop12.Find(ShopCatalogue.BigSatchel), second12 = shop12.Find(ShopCatalogue.SecondPouch);
 Check(shop12.Problems(items12).Count == 0 && bookmarks12.price == 40 && bookmarks12.IsItem && bookmarks12.itemId == InventoryCatalogue.BookmarkSet &&
-      satchel12.price == 50 && satchel12.area == "Bag" && satchel12.capacity == 8 && pouch12.price == 60 && pouch12.area == "Hotbar" && pouch12.capacity == 4 &&
-      big12.requires == "chapter:Level_02" && big12.requiresLabel == "Requires corrected Level 2" && big12.capacity == 12 &&
+      satchel12.price == 50 && satchel12.area == "Bag" && satchel12.capacity == 9 && pouch12.price == 60 && pouch12.area == "Hotbar" && pouch12.capacity == 4 &&
+      big12.requires == "chapter:Level_02" && big12.requiresLabel == "Requires corrected Level 2" && big12.capacity == 13 &&
       second12.requires == "chapter:Level_02" && second12.capacity == 5 && second12.after == ShopCatalogue.BeltPouch,
-    "catalogue: Bookmark Set 40, Satchel 50 (bag 8), Belt Pouch 60 (bar 4); Large Satchel (12) and Second Pouch (5) are teasers needing corrected Level 2");
+    "catalogue: Bookmark Set 40, Satchel 50 (bag 9; T30: was 8), Belt Pouch 60 (bar 4); Large Satchel (13) and Second Pouch (5) are teasers needing corrected Level 2");
 var file12 = JsonSerializer.Deserialize<ShopCatalogue>(File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Campaign", "shop.json")), json);
 bool sameShop12 = file12 != null && file12.products.Count == shop12.products.Count &&
     file12.products.All(f => { var b = shop12.Find(f.id); return b != null && b.kind == f.kind && b.itemId == f.itemId && b.area == f.area && b.capacity == f.capacity &&
@@ -2563,10 +2585,10 @@ PlayerProgressData buy12 = Wallet12(120);
 int trust12 = buy12.campaign.publicTrust, exp12 = buy12.totalExp;
 PurchaseResult satchelBuy12 = ShopRules.Purchase(buy12, shop12, items12, ShopCatalogue.Satchel, "r1");
 Check(satchelBuy12.Outcome == InventoryOutcome.Applied && satchelBuy12.CoinsBefore == 120 && satchelBuy12.CoinsAfter == 70 && buy12.campaign.coins == 70 &&
-      buy12.campaign.inventory.bagCapacity == 8 && buy12.campaign.inventory.bag.Count == 8 && buy12.campaign.ownedUpgradeIds.Contains(ShopCatalogue.Satchel) &&
+      buy12.campaign.inventory.bagCapacity == 9 && buy12.campaign.inventory.bag.Count == 9 && buy12.campaign.ownedUpgradeIds.Contains(ShopCatalogue.Satchel) &&
       buy12.campaign.ledger.Last().amount == -50 && buy12.campaign.ledger.Last().balanceAfter == 70 && buy12.campaign.ledger.Last().reason == "Bought Satchel" &&
       buy12.campaign.rewardClaims.Contains(ShopRules.PurchaseClaimId("t12", "r1")),
-    "buying the Satchel debits 50 with a ledger line, records ownership and the receipt, and the bag has 8 slots in the same candidate");
+    "buying the Satchel debits 50 with a ledger line, records ownership and the receipt, and the bag has 9 slots in the same candidate");
 string afterSatchel12 = Save12(buy12);
 PurchaseResult again12 = ShopRules.Purchase(buy12, shop12, items12, ShopCatalogue.Satchel, "r2");
 PurchaseResult retry12 = ShopRules.Purchase(buy12, shop12, items12, ShopCatalogue.Satchel, "r1");
@@ -2586,7 +2608,7 @@ Check(setOk12.Outcome == InventoryOutcome.Applied && setOk12.Item != null && set
 PlayerProgressData full12 = Wallet12(100);
 CampaignInventoryRecord fullInv12 = full12.campaign.inventory;
 for (int i = 0; i < 3; i++) fullInv12.hotbar[i] = new InventorySlot { itemId = InventoryCatalogue.Notes, quantity = 1 };
-for (int i = 0; i < 5; i++) fullInv12.bag[i] = new InventorySlot { itemId = InventoryCatalogue.ReviewVoucher, quantity = 1 };
+for (int i = 0; i < fullInv12.bagCapacity; i++) fullInv12.bag[i] = new InventorySlot { itemId = InventoryCatalogue.ReviewVoucher, quantity = 1 };
 PlayerProgressData busy12 = JsonSerializer.Deserialize<PlayerProgressData>(Save12(full12), json);
 busy12.campaign.inventory.hand = new InventorySlot { itemId = InventoryCatalogue.TaxCodeBook, quantity = 1 };
 string busySnap12 = Save12(busy12);
@@ -2609,7 +2631,7 @@ Check(ShopRules.Purchase(closedBuy12, shop12, items12, ShopCatalogue.Satchel, "c
       ShopRules.Purchase(teaserBuy12, shop12, items12, ShopCatalogue.Satchel, " ").Outcome == InventoryOutcome.Rejected,
     "refusals change nothing: shop not introduced, teaser, too few coins, unknown product, no campaign, no request id");
 PlayerProgressData roundTrip12 = JsonSerializer.Deserialize<PlayerProgressData>(Save12(buy12), json);
-Check(!roundTrip12.Normalize() && roundTrip12.campaign.shopIntroduced && roundTrip12.campaign.inventory.bagCapacity == 8 &&
+Check(!roundTrip12.Normalize() && roundTrip12.campaign.shopIntroduced && roundTrip12.campaign.inventory.bagCapacity == 9 &&
       roundTrip12.campaign.inventory.hotbarCapacity == 4 && roundTrip12.campaign.coins == 10 && roundTrip12.campaign.ownedUpgradeIds.Count == 2,
     "the introduction, coins, ownership and upgraded capacities survive the save round trip");
 
@@ -3134,6 +3156,1003 @@ Check(t15Files.All(f => !File.Exists(Path.Combine(root, "Assets", "Scripts", f))
       !Src("UI", "Guide", "GuideScript.cs").Contains("public string demo;") && !Src("UI", "Guide", "GuideCoachView.cs").Contains("SKIP DEMO") &&
       !Src("FSM", "NPC", "NpcAnimationDriver.cs").Contains("SetAttention"),
     "the practice board, the guide's demonstrations, SKIP DEMO and the actor's point are gone");
+
+// =====================================================================
+// T30: Arthur's reviewed file and the opening route (replaces T24's
+// Jhun-jhun-first gate and bench sleeve; T24's checks retired with it)
+// =====================================================================
+
+// ---------- the route: stages, the four clients wait, either record order ----------
+var none30 = new List<string>();
+var idBack30 = new List<string> { ReviewedFileRules.IdentityId };
+var bgBack30 = new List<string> { ReviewedFileRules.BackgroundId };
+var idThenBg30 = new List<string> { ReviewedFileRules.IdentityId, ReviewedFileRules.BackgroundId };
+var bgThenId30 = new List<string> { ReviewedFileRules.BackgroundId, ReviewedFileRules.IdentityId };
+Check(ReviewedFileRules.StageOf(false, false, false, false) == ReviewedFileRules.Stage.Meet &&
+      ReviewedFileRules.StageOf(true, false, false, false) == ReviewedFileRules.Stage.Collect &&
+      ReviewedFileRules.StageOf(true, true, false, false) == ReviewedFileRules.Stage.Review &&
+      ReviewedFileRules.StageOf(true, true, true, true) == ReviewedFileRules.Stage.Open,
+    "route: meet Arthur, collect his file, look it over, then the rounds are open");
+Check(!ReviewedFileRules.LookedOver(idBack30, true) && !ReviewedFileRules.LookedOver(bgBack30, true) &&
+      !ReviewedFileRules.LookedOver(idThenBg30, false) &&
+      ReviewedFileRules.LookedOver(idThenBg30, true) && ReviewedFileRules.LookedOver(bgThenId30, true),
+    "looked over = both records put back (either order) AND page one seen again afterwards");
+Check(ReviewedFileRules.PlazaClients.SequenceEqual(new[] { "npc_marie", "npc_jhunjhun", "npc_milo", "npc_zorbix" }) &&
+      ReviewedFileRules.PlazaClients.All(id => ReviewedFileRules.IsWaiting(id, false) && !ReviewedFileRules.IsWaiting(id, true)) &&
+      !ReviewedFileRules.IsWaiting("npc_receptionist", false) && !ReviewedFileRules.IsWaiting(ReviewedFileRules.ClientId, false),
+    "all four plaza clients wait (no talk, no profile) until the rounds open, then none does; nobody else ever waits");
+Check(!ReviewedFileRules.OpeningAvailable(false, false) && ReviewedFileRules.OpeningAvailable(false, true) && !ReviewedFileRules.OpeningAvailable(true, true),
+    "Arthur's opening talk waits for the opening lessons (controls, Notes, Supply Counter) and happens once");
+Check(ReviewedFileRules.ReachedSteps(ReviewedFileRules.Stage.Meet).Count == 0 &&
+      ReviewedFileRules.ReachedSteps(ReviewedFileRules.Stage.Collect).SequenceEqual(new[] { "event:ArthurMet" }) &&
+      ReviewedFileRules.ReachedSteps(ReviewedFileRules.Stage.Review).SequenceEqual(new[] { "event:ArthurMet" }) &&
+      ReviewedFileRules.ReachedSteps(ReviewedFileRules.Stage.Open).SequenceEqual(new[] { "event:ArthurMet", "event:ReviewedFileLookedOver" }),
+    "the tracker steps already behind each stage (a resumed run never points back at them)");
+Check(ReviewedFileRules.ItemId == InventoryCatalogue.ReviewedFile && ReviewedFileRules.RecordIds.SequenceEqual(new[] { "reviewed-identity", "reviewed-background" }) &&
+      !ReviewedFileRules.RecordIds.Intersect(ReviewedFileRules.RetiredRecordIds).Any() &&
+      Array.IndexOf(ReviewedFileRules.PlazaClients, ReviewedFileRules.ClientId) < 0 && TaxpayerProfileDatabase.GetByNpcId(ReviewedFileRules.ClientId) == null,
+    "stable ids: the file's item and records are its own (never Jhun-jhun's T24 ids); its client is a former client, no plaza profile");
+
+// ---------- campaigns saved before T30 keep their progress (quiet migration) ----------
+string beforeT30 = JsonSerializer.Serialize(new Dictionary<string, object>
+{
+    ["version"] = 2, ["talkedNpcIds"] = new[] { "npc_jhunjhun" }, ["firstClientSleeve"] = true,
+    ["presentedRecordIds"] = new[] { "jhunjhun-identity", "jhunjhun-background" }, ["returnedRecordIds"] = new[] { "jhunjhun-identity" },
+    ["objectiveTriggers"] = new[] { "event:FirstClientMet" }
+});
+var older30 = JsonSerializer.Deserialize<Level1FieldCheckpoint>(beforeT30, json);
+Level1RestoreOutcome olderOutcome30 = Level1FieldCheckpointRules.Validate(older30, profileMap, areaIds, 4);
+Check(olderOutcome30 == Level1RestoreOutcome.Restored && older30.roundsOpen && !older30.arthurIntroDone &&
+      older30.presentedRecordIds.Count == 0 && older30.returnedRecordIds.Count == 0 && older30.talkedNpcIds.SequenceEqual(new[] { "npc_jhunjhun" }) &&
+      ReviewedFileRules.StageOf(older30, false) == ReviewedFileRules.Stage.Open && ReviewedFileRules.ReachedSteps(ReviewedFileRules.StageOf(older30, false)).Count == 2,
+    "a T24 run mid-records restores quietly (no repair notice): his old record ids go, his talk stays, the rounds stay open, no file granted for the old flags");
+string beforeT24For30 = JsonSerializer.Serialize(new Dictionary<string, object>
+{
+    ["version"] = 2, ["talkedNpcIds"] = new[] { "npc_milo", "npc_marie" }, ["collectedProfileIds"] = new[] { "profile_milo" }
+});
+var progressed30 = JsonSerializer.Deserialize<Level1FieldCheckpoint>(beforeT24For30, json);
+Check(Level1FieldCheckpointRules.Validate(progressed30, profileMap, areaIds, 4) == Level1RestoreOutcome.Restored && progressed30.roundsOpen &&
+      progressed30.collectedProfileIds.SequenceEqual(new[] { "profile_milo" }) && ReviewedFileRules.OpeningAvailable(progressed30.arthurIntroDone, true),
+    "an already progressed run keeps every talk and profile, nothing relocks, and Arthur's file is still offered as an option");
+var untouched30 = new Level1FieldCheckpoint { version = Level1FieldCheckpoint.CurrentVersion };
+Check(!ReviewedFileRules.Migrate(untouched30) && !untouched30.roundsOpen && ReviewedFileRules.StageOf(untouched30, false) == ReviewedFileRules.Stage.Meet &&
+      ReviewedFileRules.StageOf(untouched30, true) == ReviewedFileRules.Stage.Review,
+    "a run with no talks starts at Meet Arthur; a campaign already owning the file (replay) skips the talk, never the reading");
+
+// ---------- checkpoint: round trip through the signed save, repair ----------
+var mid30 = Field("", 0, 0, false);
+mid30.arthurIntroDone = true;
+mid30.presentedRecordIds.AddRange(new[] { ReviewedFileRules.BackgroundId, ReviewedFileRules.IdentityId });
+mid30.returnedRecordIds.Add(ReviewedFileRules.BackgroundId);
+mid30.objectiveTriggers.Add("event:ArthurMet");
+var open30 = Clone2(mid30);
+open30.returnedRecordIds.Add(ReviewedFileRules.IdentityId);
+open30.reviewedPageRevisited = true;
+open30.roundsOpen = true;
+open30.objectiveTriggers.Add("event:ReviewedFileLookedOver");
+var t30Dir = Path.Combine(root, "Temp", "CampaignFoundationRegression", "t30-" + Guid.NewGuid().ToString("N"));
+Directory.CreateDirectory(t30Dir);
+try
+{
+    foreach (var (name, cp) in new[] { ("mid review", mid30), ("looked over, rounds open", open30) })
+    {
+        var data = PlayerProgressData.CreateNewCampaign("t30-" + name.Length, "");
+        data.campaign.levelOne = Clone2(cp);
+        var store = new SaveFileStore(Path.Combine(t30Dir, "progress-" + name.Length + ".json"));
+        store.Write(EncodeSave(data));
+        PlayerProgressData loaded = DecodeSave(File.ReadAllText(store.FilePath));
+        bool repaired = loaded.Normalize();
+        Level1FieldCheckpoint back = loaded.campaign.levelOne;
+        Check(!repaired && Level1FieldCheckpointRules.Validate(back, profileMap, areaIds, 4) == Level1RestoreOutcome.Restored && L1(back) == L1(cp),
+            $"signed save round trip restores the opening milestones exactly: {name}");
+    }
+}
+finally { Directory.Delete(t30Dir, true); }
+Check(ReviewedFileRules.StageOf(mid30, true) == ReviewedFileRules.Stage.Review && ReviewedFileRules.StageOf(mid30, false) == ReviewedFileRules.Stage.Collect &&
+      ReviewedFileRules.StageOf(open30, true) == ReviewedFileRules.Stage.Open,
+    "resume: talk done but file not taken floats it again (Collect); owned and mid-reading resumes the reading; looked over stays open");
+var messy30 = Field("", 0, 0, false);
+messy30.presentedRecordIds.AddRange(new[] { "ghost-record", ReviewedFileRules.IdentityId, "jhunjhun-identity" });
+messy30.returnedRecordIds.Add(ReviewedFileRules.BackgroundId);
+messy30.reviewedPageRevisited = true;
+Check(Level1FieldCheckpointRules.Validate(messy30, profileMap, areaIds, 4) == Level1RestoreOutcome.Repaired &&
+      messy30.presentedRecordIds.SequenceEqual(new[] { ReviewedFileRules.IdentityId, ReviewedFileRules.BackgroundId }) &&
+      messy30.returnedRecordIds.SequenceEqual(new[] { ReviewedFileRules.BackgroundId }) && !messy30.reviewedPageRevisited &&
+      messy30.arthurIntroDone && !messy30.roundsOpen &&
+      Level1FieldCheckpointRules.Validate(Clone2(messy30), profileMap, areaIds, 4) == Level1RestoreOutcome.Restored,
+    "repair: unknown ids dropped, a record put back counts as shown, no revisit before both are back, shown records mean the talk happened; idempotent");
+var lookedNotOpen30 = Field("", 0, 0, false);
+lookedNotOpen30.arthurIntroDone = true;
+lookedNotOpen30.presentedRecordIds.AddRange(ReviewedFileRules.RecordIds);
+lookedNotOpen30.returnedRecordIds.AddRange(ReviewedFileRules.RecordIds);
+lookedNotOpen30.reviewedPageRevisited = true;
+Check(Level1FieldCheckpointRules.Validate(lookedNotOpen30, profileMap, areaIds, 4) == Level1RestoreOutcome.Repaired && lookedNotOpen30.roundsOpen,
+    "repair: a file looked over opens the rounds (a save cut between the two milestones never leaves the clients waiting)");
+Level1FieldCheckpoint fresh30 = PlayerProgressData.CreateNewCampaign("t30-fresh", "").campaign.levelOne;
+Check(!fresh30.arthurIntroDone && !fresh30.reviewedPageRevisited && !fresh30.roundsOpen && fresh30.presentedRecordIds.Count == 0 && fresh30.returnedRecordIds.Count == 0 &&
+      !PlayerProgressData.CreateNewCampaign("t30-fresh-inv", "").campaign.inventory.items.Any(i => i.itemId == InventoryCatalogue.ReviewedFile),
+    "New Game: nothing met, read or opened, and no file in the inventory");
+Check(typeof(Level1FieldCheckpoint).GetField("firstClientSleeve") == null &&
+      typeof(Level1FieldCheckpoint).GetFields().All(f => f.Name.IndexOf("pose", StringComparison.OrdinalIgnoreCase) < 0 &&
+          f.Name.IndexOf("frame", StringComparison.OrdinalIgnoreCase) < 0 && f.Name.IndexOf("offset", StringComparison.OrdinalIgnoreCase) < 0 &&
+          f.Name.IndexOf("transform", StringComparison.OrdinalIgnoreCase) < 0),
+    "the checkpoint keeps milestones and record ids only: no sleeve flag, camera pose, sentence offset, animation frame or paper transform");
+
+// ---------- inventory: one reference item, kept for good ----------
+InventoryCatalogue cat30 = InventoryCatalogue.BuiltIn();
+InventoryItemDefinition file30 = cat30.Find(InventoryCatalogue.ReviewedFile);
+Check(file30 != null && file30.reference && file30.required && file30.container && file30.category == InventoryCatalogue.CaseFiles &&
+      file30.scope == "" && file30.icon == "reviewed" && file30.label == "Arthur's Reviewed File" && cat30.Problems().Count == 0,
+    "catalogue: Arthur's Reviewed File is one campaign-long reference in Case Files (required: never discarded or sold), with the reviewed icon");
+var invFile30 = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Campaign", "inventory.json"))).RootElement
+    .GetProperty("items").EnumerateArray().First(i => i.GetProperty("id").GetString() == InventoryCatalogue.ReviewedFile);
+Check(invFile30.GetProperty("reference").GetBoolean() && invFile30.GetProperty("required").GetBoolean() && invFile30.GetProperty("icon").GetString() == "reviewed" &&
+      invFile30.GetProperty("label").GetString() == file30.label,
+    "inventory.json matches the built-in reference item");
+var inv30 = new CampaignInventoryRecord();
+InventoryResult got30 = InventoryRules.Acquire(inv30, cat30, InventoryCatalogue.ReviewedFile, 1, "t30-a", null, new InventoryItemRecord { itemId = InventoryCatalogue.ReviewedFile, source = "arthur" });
+InventoryResult again30 = InventoryRules.Acquire(inv30, cat30, InventoryCatalogue.ReviewedFile, 1, "t30-a");
+Check(got30.Changed && InventoryRules.Owns(inv30, InventoryCatalogue.ReviewedFile) && !again30.Changed &&
+      inv30.hotbar.Concat(inv30.bag).Count(s => s.itemId == InventoryCatalogue.ReviewedFile) == 1,
+    "collecting it is one slot, once (the same command id never adds a second copy); its records are contents, not slots");
+var full30 = new CampaignInventoryRecord();
+var catFull30 = InventoryCatalogue.BuiltIn();
+catFull30.items.Add(new InventoryItemDefinition { id = "pencil", label = "Pencil", category = InventoryCatalogue.ToolsAndSupplies, icon = "papers" });
+for (int i = 0; i < full30.hotbarCapacity; i++) full30.hotbar[i] = new InventorySlot { itemId = "pencil", quantity = 1 };
+for (int i = 0; i < full30.bagCapacity; i++) full30.bag[i] = new InventorySlot { itemId = "pencil", quantity = 1 };
+InventoryResult room30 = InventoryRules.Acquire(full30, catFull30, InventoryCatalogue.ReviewedFile, 1, "t30-full");
+Check(room30.Outcome == InventoryOutcome.NeedsRoom && full30.hand.itemId == InventoryCatalogue.ReviewedFile &&
+      InventoryRules.ReleaseHand(full30, catFull30, true, "t30-drop").Outcome == InventoryOutcome.Rejected && full30.hand.itemId == InventoryCatalogue.ReviewedFile,
+    "a full bar and Bag: the file waits in the hand (Make room) and can never be dropped or lost");
+
+// A restarted attempt recollects the file; merely reopening a save does not reset ownership.
+var fileResumeFix = JsonSerializer.Deserialize<CampaignInventoryRecord>(JsonSerializer.Serialize(inv30, json), json);
+Check(InventoryRules.Owns(fileResumeFix, InventoryCatalogue.ReviewedFile),
+    "Continue round-trips a collected reviewed file without another acquisition");
+int resetCapacityFix = fileResumeFix.bagCapacity;
+InventoryRules.Acquire(fileResumeFix, cat30, InventoryCatalogue.Notes, 1, "restart-fixture-notes");
+InventoryResult removedFileFix = InventoryRules.Remove(fileResumeFix, cat30, InventoryCatalogue.ReviewedFile, "restart-reviewed-file");
+Check(removedFileFix.Changed && !InventoryRules.Owns(fileResumeFix, InventoryCatalogue.ReviewedFile) &&
+      InventoryRules.Owns(fileResumeFix, InventoryCatalogue.Notes) && fileResumeFix.bagCapacity == resetCapacityFix,
+    "the fresh-attempt file reset removes only that item, preserving other ownership and bag capacity");
+InventoryResult retakenFileFix = InventoryRules.Acquire(fileResumeFix, cat30, InventoryCatalogue.ReviewedFile, 1, "new-attempt-handover");
+InventoryResult duplicateFileFix = InventoryRules.Acquire(fileResumeFix, cat30, InventoryCatalogue.ReviewedFile, 1, "duplicate-handover");
+Check(retakenFileFix.Changed && !duplicateFileFix.Changed &&
+      fileResumeFix.hotbar.Concat(fileResumeFix.bag).Count(s => s.itemId == InventoryCatalogue.ReviewedFile) == 1,
+    "a new handover after restart restores one file; repeated acquisition does not create another");
+
+// ---------- Bag capacity: one more slot at every tier, once ----------
+var fresh30Inv = new CampaignInventoryRecord();
+Check(fresh30Inv.hotbarCapacity == 3 && fresh30Inv.bagCapacity == 6 && fresh30Inv.bag.Count == 6 && CampaignInventoryRecord.MaxBag == 13 &&
+      CampaignInventoryRecord.MaxHotbar == 5 && fresh30Inv.version == CampaignInventoryRecord.CurrentVersion && !fresh30Inv.Repair(),
+    "a fresh Bag has 6 slots (was 5), the largest 13 (was 12); the bar stays 3-5");
+bool Upgraded30(int oldCapacity, int expected)
+{
+    var old = new CampaignInventoryRecord { version = 1, bagCapacity = oldCapacity, bag = CampaignInventoryRecord.Slots(oldCapacity) };
+    old.bag[oldCapacity - 1] = new InventorySlot { itemId = "pencil", quantity = 1 };
+    old.hotbar[1] = new InventorySlot { itemId = InventoryCatalogue.Notes, quantity = 1 };
+    bool first = old.Repair();
+    string once = JsonSerializer.Serialize(old, json);
+    var reloaded = JsonSerializer.Deserialize<CampaignInventoryRecord>(once, json);
+    bool second = reloaded.Repair() || old.Repair();
+    return first && !second && old.bagCapacity == expected && reloaded.bagCapacity == expected && old.bag.Count == expected &&
+           old.bag[oldCapacity - 1].itemId == "pencil" && old.hotbar[1].itemId == InventoryCatalogue.Notes && old.hotbarCapacity == 3 &&
+           old.version == CampaignInventoryRecord.CurrentVersion;
+}
+Check(Upgraded30(5, 6) && Upgraded30(8, 9) && Upgraded30(12, 13),
+    "an existing campaign gains its one slot exactly once at every tier (5->6, 8->9, 12->13); items keep their slots; reload never adds another");
+Check(ShopCatalogue.BuiltIn().products.Where(p => p.area == "Bag").Select(p => p.capacity).SequenceEqual(new[] { 9, 13 }) &&
+      ShopCatalogue.BuiltIn().products.Where(p => p.area == "Hotbar").Select(p => p.capacity).SequenceEqual(new[] { 4, 5 }) &&
+      ShopCatalogue.BuiltIn().Find(ShopCatalogue.Satchel).price == 50 && ShopCatalogue.BuiltIn().Find(ShopCatalogue.BigSatchel).price == 90 &&
+      ShopCatalogue.BuiltIn().Problems(InventoryCatalogue.BuiltIn()).Count == 0,
+    "shop: Satchel 9 and Large Satchel 13 (each +1, same +3/+4 gains), bar pouches and every price unchanged");
+var shopFile30 = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Campaign", "shop.json"))).RootElement.GetProperty("products");
+Check(shopFile30.EnumerateArray().Where(p => p.GetProperty("area").GetString() == "Bag").Select(p => p.GetProperty("capacity").GetInt32()).SequenceEqual(new[] { 9, 13 }),
+    "shop.json carries the same Bag tiers");
+
+// ---------- file content: a finished former-client example ----------
+ReviewedFileContent built30 = ReviewedFileRules.BuiltIn();
+ClientRecord identity30 = built30.records.First(r => r.id == ReviewedFileRules.IdentityId);
+ClientRecord background30 = built30.records.First(r => r.id == ReviewedFileRules.BackgroundId);
+Check(built30.entries.Select(e => e.key).SequenceEqual(ReviewedFileRules.EntryKeys) &&
+      built30.entries.Select(e => e.value).SequenceEqual(new[] { "NonResidentCitizen", "SelfEmployed", "BusinessIncome" }) &&
+      Src("Data", "CaseData.cs").Contains("NonResidentCitizen") && Src("Data", "CaseData.cs").Contains("SelfEmployed") && Src("Data", "CaseData.cs").Contains("BusinessIncome"),
+    "page one: three completed entries (classification, taxpayer type, income source) using the case folder's own values");
+Check(identity30.type == ClientRecord.Identity && identity30.citizenship == "Filipino" && background30.type == ClientRecord.Background &&
+      background30.living.Contains("Dubai") && background30.living.Contains("2 weeks/year") &&
+      background30.work.Contains("own", StringComparison.OrdinalIgnoreCase) && background30.income.Contains("shop") &&
+      built30.records.All(r => r.npcId == ReviewedFileRules.ClientId && r.name == built30.clientName),
+    "the records support the entries: Filipino ID, home abroad with short visits, his own shop and its profit; all his");
+string[] answer30 = { "resident", "alien", "classification", "corner", "self-employed", "business income" };
+Check(built30.records.All(r => new[] { r.name, r.citizenship, r.born, r.address, r.reference, r.period, r.living, r.work, r.income, r.footer }
+          .Where(v => v != null).All(v => answer30.All(w => v.IndexOf(w, StringComparison.OrdinalIgnoreCase) < 0) && !v.Contains("183"))),
+    "the records state facts only (the completed answers live on page one, never inside the evidence)");
+Check(built30.arthurIntro.Length <= 2 && built30.arthurIntro[0] == "There you are, Elijah! Before you meet today's clients, I want you to see a case I finished." &&
+      built30.notes.Length == 4 && built30.notes[0] == "The ID gives his citizenship, the background where he lives." &&
+      built30.notes[3] == "Keep it handy. Now go meet the four clients: each will hand you a copy of their ID." &&
+      built30.notes.Concat(built30.arthurIntro).All(l => l.Split(' ').Length <= 18),
+    "Arthur: two short opening lines at most, and exactly four short comments across the reading (one at a time)");
+var town30 = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Levels", "Level_01", "town.json"))).RootElement;
+var fileContent30 = JsonSerializer.Deserialize<ReviewedFileContent>(town30.GetProperty("reviewedFile").GetRawText(), json);
+ReviewedFileRules.SetOverrides(fileContent30);
+string fromFile30 = JsonSerializer.Serialize(ReviewedFileRules.Content(), json);
+ReviewedFileRules.ClearOverrides();
+Check(ReviewedFileRules.Problems(fileContent30).Count == 0 && fromFile30 == JsonSerializer.Serialize(ReviewedFileRules.BuiltIn(), json) &&
+      !town30.TryGetProperty("firstClientRecords", out _),
+    "town.json reviewedFile gives exactly the built-in file, has no problems, and T24's firstClientRecords is gone");
+var bad30 = new ReviewedFileContent
+{
+    entries = new[] { new ReviewedEntry { key = "TaxpayerType" }, new ReviewedEntry { key = "ResidencyStatus" }, new ReviewedEntry { key = "IncomeSource" } },
+    records = new[] { new ClientRecord { id = "ghost" }, new ClientRecord { id = ReviewedFileRules.IdentityId, type = ClientRecord.Background }, new ClientRecord { id = ReviewedFileRules.IdentityId }, null },
+    arthurIntro = new[] { "a", "b", "c" }, notes = new[] { "one" }
+};
+List<string> badProblems30 = ReviewedFileRules.Problems(bad30);
+Check(badProblems30.Any(p => p.Contains("entry 1")) && badProblems30.Any(p => p.Contains("unknown record id")) && badProblems30.Any(p => p.Contains("keeps its type")) &&
+      badProblems30.Any(p => p.Contains("duplicate")) && badProblems30.Any(p => p.Contains("empty")) && badProblems30.Any(p => p.Contains("arthurIntro")) &&
+      badProblems30.Any(p => p.Contains("four lines")),
+    "file problems: entry order, unknown id, changed type, duplicate, empty, too many opening lines, wrong comment count");
+ReviewedFileRules.SetOverrides(new ReviewedFileContent { records = new[] { new ClientRecord { id = ReviewedFileRules.BackgroundId, living = "Edited living.", work = "  " } } });
+Check(ReviewedFileRules.Record(ReviewedFileRules.BackgroundId).living == "Edited living." && ReviewedFileRules.Record(ReviewedFileRules.BackgroundId).work == background30.work &&
+      ReviewedFileRules.Content().entries[0].value == "NonResidentCitizen" && ReviewedFileRules.Content().notes.Length == 4,
+    "town.json edits apply by id; blank fields and missing parts keep the built-in text");
+ReviewedFileRules.ClearOverrides();
+
+// ---------- content files: objectives, guide, town ----------
+string objectives30 = File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Levels", "Level_01", "objectives.json"));
+string guide30 = File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Tutorials", "Level_01", "guide.json"));
+Check(Index(objectives30, "\"text\": \"Meet Arthur.\", \"trigger\": \"event:ArthurMet\"") > 0 &&
+      Index(objectives30, "\"text\": \"Meet Arthur.\"") < Index(objectives30, "\"text\": \"Look over Arthur's file.\", \"trigger\": \"event:ReviewedFileLookedOver\"") &&
+      Index(objectives30, "\"text\": \"Look over Arthur's file.\"") < Index(objectives30, "\"text\": \"Meet the four clients and collect all 4 IDs.\", \"trigger\": \"event:AllProfilesCollected\"") &&
+      !objectives30.Contains("FirstClient") && !objectives30.Contains("Jhun-jhun"),
+    "objectives: Meet Arthur, Look over Arthur's file, then the four clients in any order (T24's three steps are gone)");
+string tasks30 = Src("Data", "TaskListProvider.cs");
+Check(tasks30.Contains("\"Meet Arthur.\"") && tasks30.Contains("\"Look over Arthur's file.\"") && tasks30.Contains("\"Meet the four clients and collect all 4 IDs.\"") &&
+      !tasks30.Contains("FirstClient"),
+    "the built-in objectives copy matches objectives.json");
+Check(Src("Data", "ObjectiveTriggers.cs").Contains("ArthurMet = ReviewedFileRules.MetEvent") && Src("Data", "ObjectiveTriggers.cs").Contains("ArthurMet, ReviewedFileLookedOver,") &&
+      Src("UI", "HUD", "OfficeObjectives.cs").Contains("TownEvents.OnReviewedFileLookedOver += HandleReviewedFileLookedOver;") &&
+      Src("UI", "Guide", "GuideDirector.cs").Contains("TownEvents.OnArthurMet += HandleArthurMet;"),
+    "the two route events are objectives triggers the tracker and the guide both observe");
+string take30 = Between(guide30, "\"id\": \"reviewed-take\"", "\"id\": \"reviewed-open\"");
+string open30Lesson = Between(guide30, "\"id\": \"reviewed-open\"", "\"id\": \"pickup\"");
+Check(guide30.Contains("{ \"step\": \"event:ArthurMet\", \"target\": \"Environment/Outside/Plaza/NPCS/NPC_TutorialGuide\"") &&
+      take30.Contains("\"when\": \"cue:ReviewedFilePresented|owns:arthur_reviewed_file\"") && take30.Contains("\"waitFor\": \"cue:ReviewedFileCollected|owns:arthur_reviewed_file\"") &&
+      open30Lesson.Contains("\"point\": \"hud:reviewed\"") && open30Lesson.Contains("cue:ReviewedFileOpened|open:reviewed|flag:reviewed-complete") &&
+      !guide30.Contains("\"id\": \"records\"") && !guide30.Contains("ClientRecordSleeve") && !guide30.Contains("FirstClient") &&
+      Src("UI", "Guide", "GuideTargets.cs").Contains("case \"reviewed\": return HotbarTarget(InventoryCatalogue.ReviewedFile);"),
+    "guide: arrows to Arthur; the take page ends only on the committed collection, the open page only when the file really opened; T24's pages are gone");
+string[] framing30 = { "lesson", "teach", "learn", "quiz", "test", "assessment", "tutorial", "correct answer" };
+Check(framing30.All(w => (Text24(take30 + open30Lesson) + " " + string.Join(" ", built30.notes) + " " + string.Join(" ", built30.arthurIntro))
+          .IndexOf(w, StringComparison.OrdinalIgnoreCase) < 0),
+    "new copy is client/job wording (no lesson, quiz, test or assessment framing)");
+var jhunTalk30 = town30.GetProperty("taxpayers").EnumerateArray().First(t => t.GetProperty("npcId").GetString() == "npc_jhunjhun").GetProperty("talk");
+string library30 = Src("SideQuest1", "TownNpcDialogueLibrary.cs");
+Check(jhunTalk30.GetArrayLength() == 6 && !town30.GetRawText().Contains("bench") && !library30.Contains("bench") &&
+      ReviewedFileRules.PlazaClients.All(id => town30.GetProperty("taxpayers").EnumerateArray().First(t => t.GetProperty("npcId").GetString() == id).GetProperty("waiting").GetString() ==
+          library30.Split('\n').First(l => l.Contains("case \"" + id + "\": return")).Split(new[] { "return \"" }, StringSplitOptions.None)[1].TrimEnd('\r', ';', '"')),
+    "town.json: his talk is back to his six lines (no bench); all four waiting lines match the built-in copy");
+
+// ---------- wiring (source contracts; the motion, taps and rendering are Unity runtime paths) ----------
+string opening30 = Src("SideQuest1", "ArthurOpening.cs");
+string pickup30 = Src("SideQuest1", "ReviewedFilePickup.cs");
+Check(Src("SideQuest1", "ReviewedFileViewer.cs").Contains("ReturnToCompletedPage") &&
+      Src("SideQuest1", "AttachedRecordsPage.cs").Contains("IsGathering"),
+    "returning both inspected records advances the same open file to its completed page; closing cleanup cannot impersonate that return");
+Check(File.ReadAllText(Path.Combine(root, "Assets/Resources/Tutorials/Level_01/guide.json")).Contains("flag:reviewed-inspected") &&
+      Src("SideQuest1", "ArthurOpening.cs").Contains("GuideFlags.Source = ReadingFlag;"),
+    "the first-open guide follows actual inspection and return state rather than relying on another open event");
+Check(Src("SideQuest1", "IdCardModel.cs").Contains("face.localScale = Vector3.one *") &&
+      Src("UI", "HUD", "Doc3DLayer.cs").Contains("RefreshTextBeforeCapture") &&
+      Src("UI", "HUD", "Doc3DLayer.cs").Contains("ForceMeshUpdate()"),
+    "record SDF text has a uniform canvas scale and updates its actual glyph mesh before capture");
+Check(Src("UI", "Guide", "GuideDirector.cs").Contains("public bool IsSpeaking") &&
+      !Src("SideQuest1", "ArthurOpening.cs").Contains("new WaitForSecondsRealtime(NoteGap)"),
+    "Arthur's follow-up sentences wait for actual speech completion rather than a competing fixed timer");
+Check(Src("UI", "Guide", "ObjectiveGuide.cs").Contains("InventoryCatalogue.ReviewedFile") &&
+      pickup30.Contains("WorldPickupMotion.FlyFolder("),
+    "owned reference files stop attracting the world waypoint and use a folder-facing pickup flight");
+Check(Src("SideQuest1", "ReviewedFileArt.cs").Contains("materials[i] = SupportingDocumentMesh.Matte(CoverColor);"),
+    "closed reviewed folder uses the known lit teal material rather than unsupported properties on the Synty palette shader");
+string recordsRenderPolish = Src("SideQuest1", "ClientRecordPaper.cs");
+Check(recordsRenderPolish.Contains("windowLayer.PersistentRenderLayer = captureLayer;") &&
+      recordsRenderPolish.Contains("camera.cullingMask &= ~(1 << captureLayer);") && recordsRenderPolish.Contains("touchCanvas"),
+    "record models print once through their own capture while an ordinary-layer invisible canvas retains pointer input");
+Check(recordsRenderPolish.Contains("FitTargetPose();") && recordsRenderPolish.Contains("SmoothMotion(moveT)") && recordsRenderPolish.Contains("(t - 0.1f) / 0.9f"),
+    "record motion targets fit before animation and use an ease with gentle acceleration and landing");
+string guideRecordPolish = File.ReadAllText(Path.Combine(root, "Assets/Resources/Tutorials/Level_01/guide.json"));
+Check(guideRecordPolish.Contains("cue:ReviewedFileCollected|owns:arthur_reviewed_file") &&
+      guideRecordPolish.Contains("cue:ReviewedFileOpened|open:reviewed"),
+    "Arthur's collection/open prompts recover from actions completed before a guide page begins");
+string physicalFacePolish = Src("SideQuest1", "SupportingDocumentFace.cs");
+Check(physicalFacePolish.Contains("bool physical = false") && physicalFacePolish.Contains("if (!physical) Paperback") &&
+      physicalFacePolish.Contains("label.enableAutoSizing = false;"),
+    "physical records show their lit mesh instead of UI paper/shadow panels and keep fixed readable type");
+Check(Src("SideQuest1", "IdCardModel.cs").Contains("physical: true") &&
+      Src("SideQuest1", "ClientRecordPaper.cs").Contains("ResolutionScale = 2f") &&
+      Src("SideQuest1", "AttachedRecordsPage.cs").Contains("ReadingTilt"),
+    "records use physical printing, supersampled inspection and a readable tilted pose with visible edges");
+string closedBuildFix = Body(Src("SideQuest1", "ReviewedFileArt.cs"), "public static Transform BuildClosed(");
+string pickupArtFix = Src("SideQuest1", "ReviewedFileArt.cs");
+string pickupPrefabFix = File.ReadAllText(Path.Combine(root, "Assets/Resources/Campaign/ReviewedFile/ReviewedFileClosedModel.prefab"));
+Check(closedBuildFix.Contains("Resources.Load<GameObject>(ClosedModel)") && pickupPrefabFix.Contains("SM_Prop_Folder_Manila_02") &&
+      pickupPrefabFix.Contains("guid: 12bad390e72e045408dba6b9687ab2d3") && pickupPrefabFix.Contains("MeshRenderer:"),
+    "reviewed pickup references the existing Auditor model mesh in a clean prefab, never an empty transform or live desk hierarchy");
+Check(closedBuildFix.Contains("holder.SetActive(false);") &&
+      closedBuildFix.Contains("Object.Instantiate(desk.gameObject, holder.transform)") &&
+      closedBuildFix.Contains("Strip<MonoBehaviour>(copy);") && closedBuildFix.Contains("Strip<Rigidbody>(copy);"),
+    "closed reviewed pickup is built asleep and stripped before inherited desk behaviours can wake");
+Check(closedBuildFix.Contains("copy.SetActive(true);") && closedBuildFix.Contains("renderer.enabled = true;") &&
+      closedBuildFix.Contains("renderer.gameObject.SetActive(true);") && closedBuildFix.Contains("filter.sharedMesh.bounds") &&
+      !closedBuildFix.Contains("renderer.bounds"),
+    "hidden desk folder becomes a visible pickup with mesh-based bounds independent of desk renderer state");
+Check(pickup30.Contains("if (ReviewedFileLook.BuildClosed(root.transform, scene, out Vector3 size) == null)") &&
+      Between(pickup30, "if (ReviewedFileLook.BuildClosed", "var box =").Contains("return null;"),
+    "a missing folder model never creates an invisible pickup or announces a phantom tap target");
+string arthurPlaceFix = Src("SideQuest1", "ArthurStartPlacement.cs");
+Check(arthurPlaceFix.Contains("PlayerPlacement.Ground(") && arthurPlaceFix.Contains("guide.ModelRoot") &&
+      arthurPlaceFix.Contains("GetComponentsInChildren<MeshFilter>(true)") && arthurPlaceFix.Contains("groundY - feetY") &&
+      arthurPlaceFix.Contains("Physics.SyncTransforms();"),
+    "Arthur keeps the marker's horizontal position and yaw but grounds the actual model feet, including hidden startup meshes");
+string viewer30 = Src("SideQuest1", "ReviewedFileViewer.cs");
+string art30 = Src("SideQuest1", "ReviewedFileArt.cs");
+string rules30 = Src("SideQuest1", "ReviewedFileRules.cs");
+Check(Between(opening30, "private bool HandleOpeningTap(", "private void OnIntroCompleted()").Contains("TryStartOpeningTalk(builder.Build(), OnIntroCompleted, null)") &&
+      Between(opening30, "private void OnIntroCompleted()", "private void SpawnPickup(").Contains("SpawnPickup(animated: true);") &&
+      Regex24(opening30, "SpawnPickup(animated: true)") == 1,
+    "only a completed talk presents the file; a cancelled or refused talk grants nothing");
+string commit30 = Between(opening30, "private RectTransform CommitFromPickup()", "private void OnPickupLanded()");
+string take30Src = Between(pickup30, "private void TryTake(Camera inputCamera)", "\n}");
+Check(Index(take30Src, "RectTransform landing = commit();") < Index(take30Src, "flying = true;") && take30Src.Contains("if (landing == null) return;") &&
+      commit30.Contains("InventoryOutcome.SaveFailed") && commit30.Contains("return null;") && commit30.Contains("hotbar.CollectReviewedFile()"),
+    "the file flies only after its collection was saved; a failed or refused save leaves it hovering, tappable again");
+string collect30 = Between(Src("UI", "HUD", "HudHotbar.cs"), "public InventoryResult CollectReviewedFile()", "private void SetNotesAvailable(");
+Check(collect30.Contains("Manager.CommitPickup(Manager.PickupClaimId(OfficeLevelCatalog.Level1Id, ReviewedFileRules.PickupId), false, acquire)") &&
+      collect30.Contains("screen.OpenMakeRoom()") && collect30.Contains("InventoryOutcome.NoChange"),
+    "collection: each restarted run can collect the reference again in one save; an owned file is a no-change; a full Bag opens Make room");
+string Code30(string source) => string.Join("\n", source.Split('\n').Where(l => !l.TrimStart().StartsWith("//")));
+string[] caseWords30 = { "CaseManager", "ValueTransferManager", "ValueDragSource", "AuditorSubmissionTray", "CurrentCase", "Submit" };
+Check(caseWords30.All(w => new[] { viewer30, art30, rules30, pickup30, opening30 }.All(src => Code30(src).IndexOf(w, StringComparison.Ordinal) < 0)),
+    "isolation: the file never touches Marie's case, value transfers or the Auditor (it prints its own reference data)");
+string[] reward30 = { "publicTrust", "AddExp", "campaign.coins", "LevelScoreLedger", "AwardConversation", "CampaignRewards.Grant", "AddBonus", "CommitPickup" };
+Check(reward30.All(w => new[] { opening30, viewer30, pickup30, rules30 }.All(src => Code30(src).IndexOf(w, StringComparison.Ordinal) < 0)),
+    "the opening brings no trust, coins, XP or score (the only grant is the item, through the hotbar command)");
+
+// ---------- T30 revision (2026-10-26): a teal copy of the real Case Folder, not a custom folder UI ----------
+string cfui30 = Src("UI", "CaseFolderUI.cs");
+string view30 = Src("UI", "HUD", "CaseFolder3DView.cs");
+string doc30 = Src("UI", "HUD", "Doc3DLayer.cs");
+string buildOpen30 = Between(art30, "public static Transform BuildOpenCopy(Scene scene, int layer)", "private static void Strip<T>");
+Check(Index(buildOpen30, "holder.SetActive(false);") < Index(buildOpen30, "Object.Instantiate(desk.gameObject") &&
+      new[] { "FolderToHUDIcon", "OpenFolderReturnToDesk", "CaseFolderInteractable", "DeskItemHighlight", "FloatingModel3D" }.All(t => buildOpen30.Contains("Strip<" + t + ">(copy);")) &&
+      Index(buildOpen30, "copy.SetActive(false);") < Index(buildOpen30, "copy.transform.SetParent(null, true);") &&
+      art30.Contains("DeskOpenFolderPath = \"Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder\""),
+    "the file is a copy of the desk's open Case Folder, made inside an inactive holder without Marie's desk tap, desk stack, HUD store or desk drag (none of them ever wake)");
+Check(Between(viewer30, "private bool Ensure()", "private static Transform HudCanvasRoot()").Contains("pages.UseReference(BuildData()") &&
+      viewer30.Contains("CaseFolder3DView.CreateReference(gameObject, scene, copy, ItemPlace, layer)") &&
+      viewer30.Contains("layer.AlwaysReadOnly = true;") && viewer30.Contains("layer.AlwaysComposite = true;") &&
+      !viewer30.Contains("\"CLIENT INFO\"") && !viewer30.Contains("\"RECORDS\"") && !viewer30.Contains("\"CLOSE\"") && !viewer30.Contains("ViewerControls") &&
+      !viewer30.Contains("PUT BACK") && !Src("SideQuest1", "ClientRecordPaper.cs").Contains("PUT BACK"),
+    "reading reuses the folder completely: its own pages printed from the reference, the Case Folder's open/drag/layer/close driver; no extra buttons or PUT BACK overlay");
+Check(cfui30.Contains("public void UseReference(CaseData data, List<CaseFolderPageContent> extraPages)") &&
+      cfui30.Contains("referenceData ?? (CaseManager.Instance != null ? CaseManager.Instance.CurrentCase : null)") &&
+      Index(Body(cfui30, "private List<CaseFolderPageContent> BuildPages(CaseData data)"), "if (IsReference)") <
+          Index(Body(cfui30, "private List<CaseFolderPageContent> BuildPages(CaseData data)"), "AddReviewPages(list, data);") &&
+      cfui30.Contains("if (!IsReference) PageDecorator?.Invoke(index, new PageBuilder(this));") &&
+      cfui30.Contains("supportingDocumentsPageLink?.OnFolderPageChanged(!isReviewCase && !IsReference && page.Role == CaseFolderPageContent.DocumentLinksRole);") &&
+      Regex24(cfui30, "if (!hasOpenedBefore && !IsReference)") == 3 &&
+      !Body(cfui30, "private void RenderPage(int index)").Contains("CaseData data = CaseManager.Instance.CurrentCase;"),
+    "CaseFolderUI: a reference copy prints its own data with the same layout; Marie's instance keeps the active case, level hooks, review pages, document links and game-state step");
+string viewOpen30 = Between(view30, "public bool Open(Vector2? screenPosition)", "public void Close()");
+Check(viewOpen30.Contains("if (!reference && FolderToHUDIcon.GetStoredFolderCount() <= 0) return false;") &&
+      viewOpen30.Contains("!reference && !LevelGate.TryCase()") && viewOpen30.Contains("if (reference) Opened?.Invoke();\r\n        else GameplayEvents.RaiseCaseFolderOpened();") &&
+      view30.Contains("public static CaseFolder3DView CreateReference(") && view30.Contains("return Configure(host.AddComponent<CaseFolder3DView>(), scene, folder, caseFolderIcon, folderLayer);"),
+    "CaseFolder3DView: the copy opens, drags, layers and closes through the same code; only Marie's store, level gate and opened event are skipped");
+string blocks30 = Between(doc30, "public static bool BlocksValueTransfer(Transform t)", "public static Doc3DLayer For(Transform t)");
+Check(Index(blocks30, "if (owner != null && owner.AlwaysReadOnly) return true;") > 0 &&
+      Index(blocks30, "if (owner != null && owner.AlwaysReadOnly) return true;") < Index(blocks30, "CameraController.CameraMode.Workstation") &&
+      Src("Data", "DragDrop", "CaseFolderFieldRow.cs").Contains("Doc3DLayer.BlocksValueTransfer(transform)") &&
+      Src("Data", "DragDrop", "ValueDragSource.cs").Contains("Doc3DLayer.BlocksValueTransfer(transform)") &&
+      Src("Data", "DragDrop", "ValueTransferManager.cs").Contains("Doc3DLayer.BlocksValueTransfer(held.transform)"),
+    "read-only everywhere: the copy's document layer blocks every value give, take, select and placement through the existing seam, at the desk too");
+string data30 = Between(viewer30, "private static CaseData BuildData()", "// PAGE TWO");
+Check(data30.Contains("fullName = content.clientName, tin = content.tin") && data30.Contains("data.folderTransferredFields.Add(entry.key);") &&
+      viewer30.Contains("SupportingPageTitle = CaseFolderPageContent.SupportingRecordsHeading") &&
+      Src("UI", "CaseFolderPageContent.cs").Contains("SupportingRecordsHeading = \"Supporting Documents\"") && viewer30.Contains("new CaseFolderPageContent(SupportingPageTitle, \"\")"),
+    "page one prints Arthur's former client in the folder's own rows, completed; page two is \"Supporting Documents\" on the same paper");
+Check(art30.Contains("OpenTexture = \"Campaign/ReviewedFile/ReviewedFileOpen_BaseColor\"") && art30.Contains("ClosedTexture = \"Campaign/ReviewedFile/ReviewedFileClosed_BaseColor\"") &&
+      File.Exists(Path.Combine(root, "Assets", "Resources", "Campaign", "ReviewedFile", "ReviewedFileOpen_BaseColor.jpg.meta")) &&
+      File.Exists(Path.Combine(root, "Assets", "Resources", "Campaign", "ReviewedFile", "ReviewedFileClosed_BaseColor.png.meta")) &&
+      art30.Contains("closed ? renderer.sharedMaterials : renderer.materials") && art30.Contains("Color teal = CoverColor *") &&
+      pickup30.Contains("ReviewedFileLook.BuildClosed(root.transform, scene, out Vector3 size) == null") &&
+      Src("UI", "HUD", "HudIconArt.cs").Contains("case \"reviewed\": Folder(u, v, ref c, true); break;") &&
+      Src("UI", "HUD", "HudDragItem.cs").Contains("Color folderFront = reviewed ? ReviewedFileLook.Teal(FolderFront) : FolderFront;") &&
+      Src("UI", "HUD", "HudHotbar.cs").Contains("HudDragItem.BuildClosedFolder(root, size, reviewed: true)"),
+    "one teal identity: the real models get teal texture copies (own material instances), and the icon and drag ghost are the Case Folder's drawings with the same teal rule");
+string paper30 = Src("SideQuest1", "ClientRecordPaper.cs");
+string mesh30 = Src("SideQuest1", "SupportingDocumentFace.cs");
+// 2026-10-27: card and sheet share IdCardModel (bevelled both sides, darker core); the sheet keeps its clip.
+Check(Src("SideQuest1", "IdCardModel.cs").Contains("SupportingDocumentMesh.BeveledSlab(") && paper30.Contains("IdCardModel.Build(") &&
+      paper30.Contains("SupportingDocumentMesh.CornerWedge(") && paper30.Contains("\"Clip Plate\"") && paper30.Contains("\"Contact Shadow\"") &&
+      mesh30.Contains("public static Mesh BeveledSlab(") && mesh30.Contains("public static Mesh CornerWedge("),
+    "page two's records are physical: a bevelled card in photo corners, a bevelled sheet with visible depth under a modelled clip, contact shadows");
+string drag30 = Between(paper30, "public void OnDrag(PointerEventData eventData)", "public void OnEndDrag(");
+string end30 = Between(paper30, "public void OnEndDrag(PointerEventData eventData)", "private void OnDisable()");
+string recordsPage31 = Src("SideQuest1", "AttachedRecordsPage.cs");
+Check(paper30.Contains("held = HeldOnScreen.ForModel(transform, camera, eventData.position);") && drag30.Contains("held.Clamp(eventData.position, camera.pixelRect)") &&
+      !drag30.Contains("Lerp") && Index(end30, "holder.WantsReturn(this, eventData.position, PutBack)") > 0 &&
+      Between(paper30, "public void OnPointerClick(PointerEventData eventData)", "public void OnBeginDrag(").Contains("if (state == State.Attached) TakeOut();") &&
+      Between(recordsPage31, "public bool WantsReturn(", "private bool OverOwnPage(").Contains("pages.TurnToPage(pageIndex, () => ready?.Invoke());") &&
+      recordsPage31.Contains("pages.Closing += page.GatherAll;"),
+    "handling: tap or drag takes a record out, it tracks the finger exactly and stays on screen, a drop on the page puts it back (turning to that page first), closing gathers them");
+Check(Between(recordsPage31, "public void PaperSettled(ClientRecordPaper paper)", "public void PaperLanded(").Contains("Shown?.Invoke(paper.Record);") &&
+      Between(recordsPage31, "public void PaperLanded(ClientRecordPaper paper)", "public void BroughtToFront(").Contains("!shownOut.Contains(paper.Record.id)") &&
+      viewer30.Contains("records.Shown += record => { if (owner != null) owner.RecordShown(record.id); };") &&
+      viewer30.Contains("records.PutBack += HandleRecordReturned;") &&
+      Between(viewer30, "private void HandleRecordReturned(ClientRecord record)", "private IEnumerator ReturnToCompletedPage()").Contains("owner.RecordPutBack(record.id);") &&
+      Between(viewer30, "private void HandlePageRendered(int index)", "// OPEN / CLOSE").Contains("owner.PageShown(index)") &&
+      Between(opening30, "internal void PageShown(int page)", "private IEnumerator SendOff()").Contains("!ReviewedFileRules.AllReturned(returned)"),
+    "a record counts as shown once settled out of the folder and as put back only if it was shown; page one counts only after both are back");
+
+// =====================================================================
+// T31: physical record extraction and reattachment (completing what the T30 revision began)
+// =====================================================================
+
+// ---------- the optional two-second hold ----------
+Check(ClientRecordRules.GroupHoldSeconds == 2f &&
+      ClientRecordRules.Hold(0f, 0f, 10f, true, true) == ClientRecordRules.HoldPhase.None &&
+      ClientRecordRules.Hold(1.99f, 0f, 10f, true, true) == ClientRecordRules.HoldPhase.Holding &&
+      ClientRecordRules.Hold(2f, 0f, 10f, true, true) == ClientRecordRules.HoldPhase.Grouped &&
+      ClientRecordRules.Hold(2.5f, 9.9f, 10f, true, true) == ClientRecordRules.HoldPhase.Grouped,
+    "hold: grouping begins after two seconds of a still finger (small jitter under the drag threshold is still)");
+Check(ClientRecordRules.Hold(1.5f, 10.1f, 10f, true, true) == ClientRecordRules.HoldPhase.Cancelled &&
+      ClientRecordRules.Hold(3f, 11f, 10f, true, true) == ClientRecordRules.HoldPhase.Cancelled &&
+      ClientRecordRules.Hold(1.5f, 0f, 10f, false, true) == ClientRecordRules.HoldPhase.Cancelled &&
+      ClientRecordRules.Hold(1.5f, 0f, 10f, true, false) == ClientRecordRules.HoldPhase.Cancelled,
+    "hold cancels on moving past the drag threshold, lifting or cancelling the pointer, and losing focus");
+Check(ClientRecordRules.HoldProgress(0.2f) == 0f && ClientRecordRules.HoldProgress(ClientRecordRules.HoldCueDelay) == 0f &&
+      ClientRecordRules.HoldProgress(1.2f) > 0f && ClientRecordRules.HoldProgress(1.2f) < 1f && ClientRecordRules.HoldProgress(2f) == 1f &&
+      ClientRecordRules.HoldProgress(9f) == 1f,
+    "the progress cue stays hidden for an ordinary tap and fills to the two-second mark");
+
+// ---------- front order, grouping, return once, other folders ----------
+var order31 = ClientRecordRules.BringToFront(new[] { "a", "b", "c" }, "a");
+Check(order31.SequenceEqual(new[] { "b", "c", "a" }) && ClientRecordRules.BringToFront(order31, "a").SequenceEqual(order31) &&
+      ClientRecordRules.BringToFront(new[] { "a", "a", "b" }, "c").SequenceEqual(new[] { "a", "b", "c" }) &&
+      ClientRecordRules.BringToFront(order31, "b").SequenceEqual(new[] { "c", "a", "b" }),
+    "front order: the touched record comes in front, the others keep their order; repeated taps change nothing more; no duplicates");
+var canonical31 = new List<string> { ReviewedFileRules.IdentityId, ReviewedFileRules.BackgroundId, "marie-identity" };
+var owners31 = new Dictionary<string, string> { [ReviewedFileRules.IdentityId] = "arthur", [ReviewedFileRules.BackgroundId] = "arthur", ["marie-identity"] = "marie" };
+var allOut31 = new HashSet<string>(canonical31);
+Check(ClientRecordRules.GroupMembers(canonical31, owners31, allOut31, ReviewedFileRules.BackgroundId).SequenceEqual(new[] { ReviewedFileRules.IdentityId, ReviewedFileRules.BackgroundId }) &&
+      ClientRecordRules.GroupMembers(canonical31, owners31, allOut31, "marie-identity").Count == 0 &&
+      ClientRecordRules.GroupMembers(canonical31, owners31, new HashSet<string> { ReviewedFileRules.BackgroundId }, ReviewedFileRules.BackgroundId).Count == 0 &&
+      ClientRecordRules.GroupMembers(canonical31, owners31, allOut31, "ghost").Count == 0,
+    "grouping: only this folder's taken-out records, in the folder's own order (whichever was held); one record or a foreign one groups nothing");
+float[] stagger31 = ClientRecordRules.Stagger(3, 0.035f);
+Check(stagger31.Length == 3 && Math.Abs(stagger31[2]) < 1e-6f && stagger31[0] < stagger31[1] && stagger31[1] < stagger31[2] &&
+      Math.Abs(stagger31[1] - stagger31[0] - 0.035f) < 1e-6f,
+    "a slight, even stagger with the front record at the held place");
+float idScaleAtRead = 0.24f, idReadDepth = 2.8f, idStackDepth = 2.812f, idFrontDepth = 2.824f;
+float sheetScaleAtRead = 0.48f, sheetReadDepth = 2.8f, sheetStackDepth = 2.812f, sheetFrontDepth = 2.824f;
+float idStackScale = ClientRecordRules.PreserveApparentScale(idScaleAtRead, idReadDepth, idStackDepth);
+float sheetStackScale = ClientRecordRules.PreserveApparentScale(sheetScaleAtRead, sheetReadDepth, sheetStackDepth);
+float idFrontScale = ClientRecordRules.PreserveApparentScale(idStackScale, idStackDepth, idFrontDepth);
+float sheetFrontScale = ClientRecordRules.PreserveApparentScale(sheetStackScale, sheetStackDepth, sheetFrontDepth);
+Check(Math.Abs(idStackScale / idStackDepth - idScaleAtRead / idReadDepth) < 1e-6 &&
+      Math.Abs(sheetStackScale / sheetStackDepth - sheetScaleAtRead / sheetReadDepth) < 1e-6 &&
+      Math.Abs(idFrontScale / idFrontDepth - idScaleAtRead / idReadDepth) < 1e-6 &&
+      Math.Abs(sheetFrontScale / sheetFrontDepth - sheetScaleAtRead / sheetReadDepth) < 1e-6 &&
+      Math.Abs(idFrontScale - sheetFrontScale) > 0.1f,
+    "stacking and refocusing preserve each record's own apparent size across perspective depth changes");
+Check(ClientRecordRules.ReturnOnce(new[] { "a", "b", "a", "", null, "c" }, new HashSet<string> { "c" }).SequenceEqual(new[] { "a", "b" }),
+    "a dropped stack returns each record exactly once (already attached ones are skipped)");
+Check(ClientRecordRules.MayAttach("former_client_ramon", "former_client_ramon") && !ClientRecordRules.MayAttach("former_client_ramon", "OpenCaseFolder") &&
+      !ClientRecordRules.MayAttach("", "") && !ClientRecordRules.MayAttach(null, null),
+    "records never move to another client's folder");
+
+// ---------- small phones and the page layout ----------
+Check(ClientRecordRules.FocusOne(2340f, 1080f, 400f) && !ClientRecordRules.FocusOne(2560f, 1600f, 220f) && !ClientRecordRules.FocusOne(1920f, 1080f, 96f) &&
+      ClientRecordRules.FocusOne(800f, 1000f, 0f) && !ClientRecordRules.FocusOne(1920f, 1080f, 0f) && !ClientRecordRules.FocusOne(0f, 0f, 400f),
+    "small phone (under 3.2 inches tall) reads one face at a time; tablets and desktops show them side by side; no dpi: a narrow screen");
+List<RecordSlot> slots31 = ClientRecordRules.LayoutPage(0.2f, 0.36f, new[] { ClientRecord.Identity, ClientRecord.Background }, RecordPageLayout.Default);
+float top31 = 0.36f * (0.5f - 0.24f), bottom31 = 0.36f * (0.5f - 0.85f);
+Check(slots31.Count == 2 && Math.Abs(slots31[0].width / slots31[0].height - RecordPageLayout.CardAspect) < 1e-3f &&
+      Math.Abs(slots31[1].height / slots31[1].width - RecordPageLayout.SheetAspect) < 1e-3f &&
+      slots31[0].z > slots31[1].z && Math.Abs(slots31[0].z + slots31[0].height * 0.5f - top31) < 1e-4f &&
+      slots31[1].z - slots31[1].height * 0.5f >= bottom31 - 1e-4f && slots31.All(s => s.x == 0f && s.width < 0.2f),
+    "layout: the card above the sheet, below the heading and above the page number, centred with room either side");
+List<RecordSlot> marie31 = ClientRecordRules.LayoutPage(0.2f, 0.36f, new[] { ClientRecord.Identity, ClientRecord.Background, "form2316" }, RecordPageLayout.Default);
+Check(marie31.Count == 3 && marie31[0].z > marie31[1].z && marie31[1].z > marie31[2].z &&
+      marie31[2].z - marie31[2].height * 0.5f >= bottom31 - 1e-4f && marie31[0].z + marie31[0].height * 0.5f <= top31 + 1e-4f &&
+      Math.Abs(marie31[0].width / marie31[0].height - RecordPageLayout.CardAspect) < 1e-3f,
+    "the same layout fits three records (T25: Marie's ID, background and 2316) by scaling them together");
+
+// ---------- wiring (source contracts; touch feel, depth and lighting are Unity/USER checks) ----------
+string hold31 = Between(recordsPage31, "private void UpdateHold()", "private void CancelHold()");
+Check(hold31.Contains("ClientRecordRules.Hold(holdElapsed, 0f, threshold, holdDown, focused && holdPaper.IsSettledOut)") &&
+      hold31.Contains("EventSystem.current.pixelDragThreshold") && Index(hold31, "CancelHold();\r\n        Group(lead);") > 0 &&
+      Between(paper30, "public void OnBeginDrag(PointerEventData eventData)", "public void OnDrag(").Contains("holder.PointerMoved(this);") &&
+      paper30.Contains("public void OnPointerUp(PointerEventData eventData) => holder?.PointerUp(this, eventData);") &&
+      Between(recordsPage31, "private void OnApplicationFocus(bool hasFocus)", "// OUT OF THE FOLDER").Contains("CancelHold();"),
+    "the hold follows the rules at the real input seams: drag start, pointer up and focus loss cancel it; two still seconds group");
+Check(Between(recordsPage31, "public bool BroughtToFront(ClientRecordPaper paper)", "private void ArrangeSmallScreen(").Contains("if (paper == groupedByHold) { groupedByHold = null; return false; }"),
+    "the lift that ends a completed hold is not also a tap");
+string endGroup31 = Between(recordsPage31, "public void EndGroupDrag(PointerEventData eventData)", "private void ShowRing(");
+Check(endGroup31.Contains("ClientRecordRules.ReturnOnce(Ids(members), attached)") && endGroup31.Contains("pages.TurnToPage(pageIndex, returnAll)") &&
+      endGroup31.Contains("member.Refuse()") &&
+      Between(recordsPage31, "public void DragGroup(PointerEventData eventData)", "public void EndGroupDrag(").Contains("groupHeld.Clamp(eventData.position, camera.pixelRect)") &&
+      recordsPage31.Contains("groupHeld = any ? HeldOnScreen.FromScreenBox(box, eventData.position) : default;"),
+    "a stack drags as one, kept fully on screen, returns each record once to the page and is refused on another folder");
+Check(Between(recordsPage31, "private bool OverForeignFolder(Vector2 screen)", "private static bool InTriangle(").Contains("!ClientRecordRules.MayAttach(ownerId, layer.Source.name)") &&
+      Between(recordsPage31, "public bool WantsReturn(", "private bool OverOwnPage(").Contains("paper.Refuse();") &&
+      paper30.Contains("public void Refuse()") && !Between(recordsPage31, "public bool WantsReturn(", "private bool OverOwnPage(").Contains("SetParent"),
+    "a drop on another client's folder is a gentle refusal: a small shake, no transfer");
+Check(Between(recordsPage31, "private void LateUpdate()", "private void OnApplicationFocus(").Contains("DialogueUI.IsAnyDialogueActive || InGameSettings.IsOpen || HudRewardScreen.AnyOpen)) GatherAll();") &&
+      Between(recordsPage31, "private void OnApplicationFocus(bool hasFocus)", "// OUT OF THE FOLDER").Contains("paper.CancelDrag();") &&
+      Between(paper30, "private void OnDisable()", "/// <summary>Passes the record face").Contains("Gather();"),
+    "closing, a conversation, Settings, a result card, focus loss or the folder disappearing leave every record safe (back in its holder or still)");
+Check(Between(recordsPage31, "private void ArrangeSmallScreen(ClientRecordPaper front)", "public bool WantsReturn(").Contains("!FocusOne(camera)") &&
+      recordsPage31.Contains("ClientRecordRules.FocusOne(camera.pixelWidth, camera.pixelHeight, Screen.dpi)") &&
+      paper30.Contains("public void MoveTo(Vector3 position, Quaternion rotation, float worldScale, float seconds)"),
+    "on a small phone the front record is read large and the others wait small, a tap away");
+Check(recordsPage31.Contains("public static AttachedRecordsPage Create(GameObject host, Transform folderRoot, CaseFolderUI pages, int pageIndex, string ownerId,") &&
+      recordsPage31.Contains("ClientRecordRules.LayoutPage(width, height, types, layout)") &&
+      viewer30.Contains("AttachedRecordsPage.Create(gameObject, copy, pages, SupportingPageIndex, ReviewedFileRules.ClientId,") &&
+      !viewer30.Contains("IClientRecordHolder"),
+    "the attached-records page is folder-independent (folder, page, owner, records, layout): ready for Marie's page in T25");
+string[] save31 = { "SaveNow", "PlayerProgressManager", "Level1FieldCheckpoint", "CommitPickup", "CommitInventory" };
+Check(save31.All(w => Code30(recordsPage31).IndexOf(w, StringComparison.Ordinal) < 0 && Code30(paper30).IndexOf(w, StringComparison.Ordinal) < 0 &&
+                      Code30(Src("SideQuest1", "ClientRecordRules.cs")).IndexOf(w, StringComparison.Ordinal) < 0),
+    "detached positions, stack offsets and animation frames are never saved; only the owner saves reading milestones");
+Check(Between(opening30, "private void OnEnable()", "private void OnDisable()").Contains("if (practice) return;") &&
+      Between(opening30, "private bool IsWaiting(TaxpayerNpcInteractable npc)", "private void HandleWaitingTap(").Contains("!practice && !roundsOpen && !LevelGate.SideQuestDone") &&
+      Between(opening30, "private void HandleWaitingTap(TaxpayerNpcInteractable npc)", "private bool OpeningLessonsDone()").Contains("!waitingSaid.Add(npc.NpcId)"),
+    "practice keeps the free order; waiting clients each say their line once; with the side quest done nobody waits");
+string cp30 = Src("SideQuest1", "Level1FieldCheckpointer.cs");
+string restore30 = Body(cp30, "private void TryRestore()");
+Check(cp30.Contains("ArthurOpening.Changed += SaveNow;") && cp30.Contains("ArthurOpening.Active.Capture(checkpoint);") &&
+      restore30.Contains("ArthurOpening.Active.Restore(saved, fileOwned);") &&
+      Index(restore30, "ReviewedFileRules.ReachedSteps(ReviewedFileRules.StageOf(saved, fileOwned))") < Index(restore30, "OfficeObjectives.Instance.RestoreTriggers(") &&
+      !cp30.Contains("FirstClient") && Src("SideQuest1", "Level1FieldCheckpointRules.cs").Contains("ReviewedFileRules.Migrate(checkpoint);"),
+    "checkpoint: milestones saved whenever they change; resume restores them (file ownership from the inventory) and the tracker past finished steps");
+string scene30 = File.ReadAllText(Path.Combine(root, "Assets", "Scenes", "Office_Level1.unity"));
+string placementGuid30 = File.ReadAllLines(Path.Combine(root, "Assets", "Scripts", "SideQuest1", "ArthurStartPlacement.cs.meta"))[1].Substring(6).Trim();
+string marker30 = Between(scene30, "m_Name: Arthur Start Placement", "--- !u!1660057539");
+Check(marker30.Contains("guid: " + placementGuid30) && System.Text.RegularExpressions.Regex.IsMatch(marker30, @"m_LocalPosition: \{x: [-0-9.]+, y: [-0-9.]+, z: [-0-9.]+\}") &&
+      marker30.Contains("Assembly-CSharp::ArthurStartPlacement") && !scene30.Contains("Client Records Placement") &&
+      scene30.TrimEnd().EndsWith("- {fileID: 2147002502}") && opening30.Contains("placement.Apply(found.transform);"),
+    "scene: one editable Arthur Start Placement with a configured pose (scene root, gizmo), applied to the one guide actor at load; the bench marker is gone");
+string[] retired30 = { "FirstClientRound.cs", "FirstClientRules.cs", "ClientRecordPlacement.cs", "ClientRecordSleeve.cs" };
+Check(retired30.All(f => !File.Exists(Path.Combine(root, "Assets", "Scripts", "SideQuest1", f)) && !File.Exists(Path.Combine(root, "Assets", "Scripts", "SideQuest1", f + ".meta"))) &&
+      Directory.GetFiles(Path.Combine(root, "Assets", "Scripts"), "*.cs", SearchOption.AllDirectories).All(f => !File.ReadAllText(f).Contains("FirstClientRound.") && !File.ReadAllText(f).Contains("FirstClientRules.")),
+    "T24's bench sleeve, gate and marker are retired (no script still uses them)");
+
+// Restart and copied-folder input regressions (user report, 2026-10-26).
+string resetFileFix = Between(Src("UI", "HUD", "HudHotbar.cs"), "private void Reconcile()", "private bool? WorldOwns(");
+Check(resetFileFix.Contains("def.scope != levelId && def.id != InventoryCatalogue.ReviewedFile") && resetFileFix.Contains("!resumedRun"),
+    "restart removes the previous attempt's reviewed file before Arthur's new handover, while Continue preserves it");
+string startFileFix = Body(opening30, "private IEnumerator Start()");
+Check(startFileFix.Contains("HudHotbar.Instance.IsReady"),
+    "Arthur waits for inventory reconciliation before deciding whether his file was collected");
+string dimFileFix = Body(Src("UI", "HUD", "HudHotbar.cs"), "private void DimWhileOut(ItemView view)");
+Check(dimFileFix.Contains("InventoryCatalogue.ReviewedFile") && dimFileFix.Contains("ReviewedFileViewer.Instance.IsOut") &&
+      !dimFileFix.Contains("|| view.Generic"),
+    "the reviewed-file slot dims for the full open/return lifetime, including its generic icon");
+string referenceBindFix = Body(Src("UI", "CaseFolderUI.cs"), "public void UseReference(");
+Check(referenceBindFix.Contains("BindPageNavigation();"),
+    "reference copies bind their own page callbacks before first rendering even when built inactive");
+Check(Body(Src("UI", "HUD", "CaseFolder3DView.cs"), "public bool Open(").Contains("canvas.worldCamera = main"),
+    "floating folder page controls use the same camera as the folder's visible reading pose");
+
+// Follow-up: visibility must not depend on inventory startup; cover hits must yield to page UI.
+string guidePoseFix = Src("SideQuest1", "TutorialNpcController.cs");
+Check(Between(guidePoseFix, "private void Awake()", "private void OnEnable()").Contains("corkboardPose = new Pose(transform.position, transform.rotation);") &&
+      Between(guidePoseFix, "private void HandleAllProfilesCollected()", "public void OnPointerClick").Contains("ReturnToCorkboard();"),
+    "Arthur captures his original corkboard pose before opening placement and returns immediately after all profiles");
+Check(Between(guidePoseFix, "public void RestoreProgress", "public static System.Func").Contains("if (appeared) ReturnToCorkboard();") &&
+      Between(guidePoseFix, "private void ReturnToCorkboard()", "private void HandleAllProfilesCollected()").Contains("transform.SetPositionAndRotation(corkboardPose.position, corkboardPose.rotation);"),
+    "Continue restores Arthur at the corkboard without a travel animation or another appearance event");
+string actorStartFix = Between(Src("SideQuest1", "ArthurOpening.cs"), "private IEnumerator Start()", "private void LateUpdate()");
+Check(!actorStartFix.Contains("guide.ShowInPlaza()") && opening30.Contains("OpeningLessonsDone()") &&
+      Body(opening30, "private void LateUpdate()").Contains("guide.ShowInPlaza()"),
+    "Arthur appears after the stall route, rather than unconditionally at startup");
+string guideAwakeFix = Body(Src("SideQuest1", "TutorialNpcController.cs"), "private void Awake()");
+Check(!guideAwakeFix.Contains("OfficeLevelCatalog.Level1Id") && guideAwakeFix.Contains("visualRoot.SetActive(shownInPlaza"),
+    "Arthur's Awake respects his route-controlled visibility");
+Check(art30.Contains("Resources.Load<GameObject>(ClosedModel)") && art30.Contains("SupportingDocumentMesh.Matte(CoverColor)") &&
+      art30.Contains("CoverColor"), "closed pickup uses an unbatched model asset and the shared teal cover color");
+Check(opening30.Contains("HeldOnScreen.ActiveCamera(Camera.main)") && opening30.Contains("SpawnAfterTalk()") &&
+      !Between(opening30, "private void SpawnPickup(bool animated)", "private RectTransform CommitFromPickup()").Contains("if (animated && player != null)"),
+    "fresh and resumed handovers face the restored viewing camera");
+Check(Code30(Src("SideQuest1", "ClientRecordPaper.cs")).Contains("cullTransparentMesh = false;") &&
+      Code30(Src("SideQuest1", "ClientRecordPaper.cs")).Contains("Doc3DLayer.Create(") &&
+      Code30(Src("SideQuest1", "AttachedRecordsPage.cs")).Contains("detachedWorkspace"),
+    "record touch surfaces survive transparent culling and extracted physical objects join independent document layers");
+string pageSortingFix = Src("UI", "HUD", "Doc3DLayer.cs");
+Check(pageSortingFix.Contains("SyncPageSorting();") &&
+      pageSortingFix.Contains("canvas.sortingOrder = sortingOrder") &&
+      pageSortingFix.Contains("canvas.overrideSorting = true"),
+    "the rendered 3D document's page controls share its front layer and beat the cover collider's input order");
+
+// =====================================================================
+// T25: Marie's two-page case and supporting records
+// =====================================================================
+
+// ---------- her three existing documents, printed from the case JSON's own values ----------
+JsonElement case25 = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Levels", "Level_01", "cases", "case_001.json"))).RootElement;
+var source25 = new CaseRecordSource
+{
+    caseId = case25.GetProperty("caseId").GetString(), caseNumber = case25.GetProperty("caseNumber").GetString(),
+    taxYear = case25.GetProperty("taxYear").GetString(), birthdate = case25.GetProperty("birthdate").GetString()
+};
+foreach (JsonElement document in case25.GetProperty("documents").EnumerateArray())
+{
+    var copy = new CaseRecordDocument { documentName = document.GetProperty("documentName").GetString() };
+    foreach (JsonElement field in document.GetProperty("fields").EnumerateArray())
+        copy.fields.Add(new CaseRecordField { label = field.GetProperty("label").GetString(), value = field.GetProperty("displayValue").GetString(), key = field.GetProperty("semanticKey").GetString() });
+    source25.documents.Add(copy);
+}
+string DocValue25(string prefix, string key) => source25.documents.First(d => d.documentName.StartsWith(prefix, StringComparison.Ordinal)).Value(key);
+List<ClientRecord> records25 = CaseRecordRules.Build(source25);
+Check(source25.documents.Count == 2 && records25.Count == 2 &&
+      records25.Select(r => r.type).SequenceEqual(new[] { ClientRecord.Identity, ClientRecord.Background }) &&
+      records25.Select(r => r.id).SequenceEqual(new[] { "case_marie_001-identity", "case_marie_001-background" }) &&
+      records25.All(r => r.npcId == "case_marie_001") &&
+      records25.Select(r => r.source).OrderBy(s => s).SequenceEqual(source25.documents.Select(d => d.documentName).OrderBy(s => s)),
+    "page two holds exactly her two documents (ID, employment records) in page order, like Arthur's file; Level 1 has no BIR form");
+ClientRecord id25 = records25[0], background25 = records25[1];
+Check(id25.name == DocValue25("Valid Government ID", "FullName") && id25.citizenship == DocValue25("Valid Government ID", "Citizenship") &&
+      id25.address == DocValue25("Valid Government ID", "Address") && id25.born == "14 Mar 1997" && id25.reference == "•••• 0101" &&
+      id25.title == "IDENTITY CARD",
+    "ID card (Type 1): her name, citizenship and address from the ID, born from the case, masked case reference");
+Check(background25.name == "Marie Bautista" && background25.living == "Lifetime resident of the Philippines" &&
+      background25.work == DocValue25("Employment Records", "EmploymentType") && background25.income == "Employers this year: One" &&
+      background25.period == "Year 2026" && background25.footer == "Client interview notes" && background25.title == "CLIENT BACKGROUND",
+    "background sheet (Type 2): her residency, employment type and number of employers, one block each (Client interview notes)");
+string case25Text = File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Levels", "Level_01", "cases", "case_001.json"));
+Check(!case25Text.Contains("2316") && !case25Text.Contains("BIR Form") &&
+      !File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Tutorials", "Level_01", "guide.json")).Contains("2316") &&
+      !File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Levels", "Level_01", "town.json")).Contains("2316"),
+    "no BIR form anywhere in Level 1: not in Marie's case, her consultation, the guide or the town text (user revision 2026-10-27)");
+string[] answers25 = { "Resident Citizen", "ResidentCitizen", "Compensation Earner", "CompensationEarner", "Employment Income", "EmploymentIncome", "BIR1700", "Graduated" };
+var printed25 = records25.SelectMany(r => typeof(ClientRecord).GetFields().Where(f => f.FieldType == typeof(string)).Select(f => (string)f.GetValue(r) ?? "")).ToList();
+Check(answers25.All(a => printed25.All(p => p.IndexOf(a, StringComparison.OrdinalIgnoreCase) < 0)),
+    "no record prints one of her answers (classification, taxpayer type, income source, form, option)");
+Check(CaseRecordRules.ShortDate("March 14, 1997") == "14 Mar 1997" && CaseRecordRules.ShortDate("1997-03-14") == "1997-03-14" && CaseRecordRules.ShortDate(" ") == null &&
+      CaseRecordRules.Masked("ITR-2026-0101") == "•••• 0101" && CaseRecordRules.Masked("12") == null &&
+      CaseRecordRules.MaskedTin("789-012-345-000") == "•••-•••-345-000" && CaseRecordRules.MaskedTin("12345") == "12345" &&
+      CaseRecordRules.WithPlace("Lifetime resident", "Length of Residency in the Philippines") == "Lifetime resident of the Philippines" &&
+      CaseRecordRules.WithPlace("Lives in the Philippines", "Home in the Philippines") == "Lives in the Philippines" && CaseRecordRules.WithPlace("Here", "Home") == "Here",
+    "printing helpers: short dates, masked references and TINs, the residency place read from the record's own label");
+var partial25 = new CaseRecordSource { caseId = "c", documents = new List<CaseRecordDocument> { new CaseRecordDocument { documentName = "Bank Statement" }, source25.documents[0] } };
+Check(CaseRecordRules.Build(partial25).Count == 1 && CaseRecordRules.Build(partial25)[0].type == ClientRecord.Identity &&
+      CaseRecordRules.Build(null).Count == 0 && CaseRecordRules.TypeOf("Employment Records") == ClientRecord.Background &&
+      CaseRecordRules.TypeOf("Certificate of Compensation Payment/Tax Withheld (BIR Form 2316)") == ClientRecord.Compensation && CaseRecordRules.TypeOf("Other") == null,
+    "only the three Level 1 types are recognised; other documents are left alone (a missing source simply has no record)");
+
+// ---------- the first desk connection: only the two work papers ----------
+List<string> work25 = CaseRecordRules.WorkRecordIds(records25);
+var all25 = new HashSet<string>(records25.Select(r => r.id));
+Check(work25.SequenceEqual(new[] { id25.id, background25.id }) &&
+      !CaseRecordRules.Prepared(work25, all25, new HashSet<string>()) &&
+      !CaseRecordRules.Prepared(work25, all25, new HashSet<string> { background25.id }) &&
+      !CaseRecordRules.Prepared(work25, new HashSet<string> { background25.id }, all25) &&
+      CaseRecordRules.Prepared(work25, all25, all25) &&
+      !CaseRecordRules.Prepared(work25, new HashSet<string> { id25.id }, new HashSet<string> { id25.id }) &&
+      CaseRecordRules.AllShown(work25, all25) && !CaseRecordRules.AllShown(work25, new HashSet<string> { id25.id }) &&
+      !CaseRecordRules.Prepared(new List<string>(), all25, all25),
+    "preparation: her ID and her background both shown and put back, like Arthur's file; nothing counts without the real records");
+Check(!CaseRecordRules.AlreadyUnderWay(false, 0, 0, false) && CaseRecordRules.AlreadyUnderWay(true, 0, 0, false) &&
+      CaseRecordRules.AlreadyUnderWay(false, 1, 0, false) && CaseRecordRules.AlreadyUnderWay(false, 0, 1, false) && CaseRecordRules.AlreadyUnderWay(false, 0, 0, true),
+    "a case under way (saved preparation, an entry, an audit or approval) is never asked again: no relock, no reset");
+
+// ---------- the page: ID on top, the two work papers side by side ----------
+List<RecordSlot> page25 = ClientRecordRules.LayoutPage(0.2f, 0.26f, new[] { ClientRecord.Identity, ClientRecord.Background, ClientRecord.Compensation }, RecordPageLayout.CaseRecords);
+float top25 = 0.26f * (0.5f - 0.24f), bottom25 = 0.26f * (0.5f - 0.85f);
+Check(page25.Count == 3 && page25[0].x == 0f && Math.Abs(page25[1].z - page25[2].z) < 1e-6f && page25[0].z > page25[1].z &&
+      page25[1].x < 0f && page25[2].x > 0f && Math.Abs(page25[1].x + page25[2].x) < 1e-6f &&
+      page25[1].x + page25[1].width * 0.5f < page25[2].x - page25[2].width * 0.5f &&
+      page25.All(s => Math.Abs(s.x) + s.width * 0.5f <= 0.1f + 1e-6f) &&
+      page25[0].z + page25[0].height * 0.5f <= top25 + 1e-5f && page25[1].z - page25[1].height * 0.5f >= bottom25 - 1e-5f &&
+      Math.Abs(page25[0].width / page25[0].height - RecordPageLayout.CardAspect) < 1e-3f && Math.Abs(page25[2].height / page25[2].width - RecordPageLayout.SheetAspect) < 1e-3f &&
+      page25[1].width > slots31[1].width * 0.55f,
+    "side-by-side sheets layout (kept for later cases; Marie's page now uses Arthur's two-record layout): ID card on top, two sheets below (no overlap, inside the page under the heading and above the number), recognizable at rest");
+List<RecordSlot> arthur25 = ClientRecordRules.LayoutPage(0.2f, 0.36f, new[] { ClientRecord.Identity, ClientRecord.Background }, RecordPageLayout.Default);
+Check(arthur25.Count == slots31.Count && arthur25.Zip(slots31, (a, b) => a.x == b.x && a.z == b.z && a.width == b.width && a.height == b.height).All(x => x),
+    "Arthur's page layout is unchanged by the side-by-side option");
+
+// ---------- wiring (source contracts; Unity, touch and rendering are USER checks) ----------
+string cfui25 = Src("UI", "CaseFolderUI.cs");
+string build25 = Between(cfui25, "private List<CaseFolderPageContent> BuildPages(CaseData data)", "// LEVEL PAGES");
+Check(cfui25.Contains("[System.NonSerialized] public System.Func<CaseData, List<CaseFolderPageContent>> InstancePages;") &&
+      Index(build25, "if (IsReference)") < Index(build25, "InstancePages(data)") && Index(build25, "AddReviewPages(list, data);") < Index(build25, "InstancePages(data)") &&
+      Index(build25, "InstancePages(data)") < Index(build25, "ExtraPages(data)") &&
+      cfui25.Contains("public int FindPageIndexByRole(string role)") && Src("UI", "CaseFolderPageContent.cs").Contains("public string Role;"),
+    "CaseFolderUI: a page of THIS folder instance only (never on a reference copy), after the case's pages, found by its role");
+string link25 = Src("UI", "SupportingDocumentsPageLink.cs");
+Check(!link25.Contains("SUPPORTING_DOCUMENTS_PAGE_INDEX") && !System.Text.RegularExpressions.Regex.IsMatch(link25, @"PAGE_INDEX|==\s*5\b|= 5;") &&
+      link25.Contains("public void OnFolderPageChanged(\r\n        bool isDocumentsPage") &&
+      Src("SideQuest1", "CaseRecordsDesk.cs").IndexOf("TurnToPage(1", StringComparison.Ordinal) < 0,
+    "no hardcoded page-six document link remains: the buttons follow a page's role");
+string desk25 = Src("SideQuest1", "CaseRecordsDesk.cs");
+Check(desk25.Contains("sheets > 1 ? RecordPageLayout.CaseRecords : RecordPageLayout.Default"),
+    "Marie's two records use Arthur's layout (ID above background)");
+string deskCode25 = Code30(desk25);
+Check(desk25.Contains("OfficeLevelProfile.LevelIdFor(scene) != OfficeLevelCatalog.Level1Id) return;") &&
+      desk25.Contains("if (cases.CurrentDefinition.HasReview) { enabled = false; return true; }") &&
+      desk25.Contains("pages.InstancePages = SupportingPages;") &&
+      desk25.Contains("CaseFolderPageContent.SupportingRecordsRole);") && desk25.Contains("() => pages != null && pages.IsShowing,") &&
+      desk25.Contains("CaseFolderUI.MarkReviewDocumentRead(record.source);") &&
+      desk25.Contains("Role = CaseFolderPageContent.SupportingRecordsRole") && desk25.Contains("CaseFolderPageContent.SupportingRecordsHeading"),
+    "Level 1 desk only (a review case such as Level 2's keeps its pages): page two built on the desk folder, reading marks the document read");
+Check(new[] { "SaveNow", "PlayerProgressManager", "CommitPickup", "ValueTransfer", "answerKey", "ReviewedFileRules", "ReviewedFileViewer", "OfficeHours", "AddTrust", "Coins" }
+          .All(w => deskCode25.IndexOf(w, StringComparison.Ordinal) < 0) &&
+      new[] { "CaseRecordsDesk", "InstancePages" }.All(w => Code30(viewer30).IndexOf(w, StringComparison.Ordinal) < 0 && Code30(Src("SideQuest1", "ArthurOpening.cs")).IndexOf(w, StringComparison.Ordinal) < 0),
+    "isolation: Marie's records never touch saving directly, rewards, the clock, answers or value transfers, and Arthur's file never uses Marie's page");
+Check(!ClientRecordRules.MayAttach("case_marie_001", "OpenCaseFolder") && !ClientRecordRules.MayAttach("case_marie_001", ReviewedFileRules.ClientId) &&
+      !ClientRecordRules.MayAttach(ReviewedFileRules.ClientId, "case_marie_001") &&
+      art30.Contains("foreach (AttachedRecordsRoot records in copy.GetComponentsInChildren<AttachedRecordsRoot>(true))") &&
+      Index(Body(art30, "public static Transform BuildOpenCopy("), "AttachedRecordsRoot") < Index(Body(art30, "public static Transform BuildOpenCopy("), "Paint(copy.transform, OpenTexture);") &&
+      Src("SideQuest1", "AttachedRecordsPage.cs").Contains("recordsRoot.gameObject.AddComponent<AttachedRecordsRoot>();"),
+    "cross-folder drops are refused both ways, and Arthur's copy of the desk folder leaves Marie's records behind");
+string page25src = Src("SideQuest1", "AttachedRecordsPage.cs");
+Check(page25src.Contains("public int PageIndex => pageRole != null ? pages.FindPageIndexByRole(pageRole) : fixedPageIndex;") &&
+      Between(page25src, "private void LateUpdate()", "private void OnApplicationFocus(").Contains("bool onPage = pages.IsShowing && pages.CurrentPageIndex == PageIndex;") &&
+      Between(page25src, "public void ReadingPose(", "private int SheetOrdinal(").Contains("bool right = !card && SheetOrdinal(paper) % 2 == 1;") &&
+      page25src.Contains("pages.Closing += page.GatherAll;"),
+    "the same per-folder controls: page by role, records only on their open page, the 2316 read beside the background, closing gathers them");
+Check(Src("SideQuest1", "CaseRecordRules.cs").Contains("public const string PageRole = \"supporting-records\";") &&
+      Src("UI", "CaseFolderPageContent.cs").Contains("public const string SupportingRecordsRole = \"supporting-records\";") &&
+      viewer30.Contains("Role = CaseFolderPageContent.SupportingRecordsRole") &&
+      viewer30.Contains("public const string SupportingPageTitle = CaseFolderPageContent.SupportingRecordsHeading;"),
+    "one page identity and heading for both folders' supporting pages");
+string face25 = Src("SideQuest1", "SupportingDocumentFace.cs");
+Check(Between(face25, "private static void BuildCompensation(", "private static void Amount(").Contains("\"EMPLOYER\"") &&
+      face25.Contains("Amount(root, \"COMPENSATION PAID\", r.compensationAmount, 482f);") && face25.Contains("Amount(root, \"TAX WITHHELD\", r.withheldAmount, 640f);") &&
+      face25.Contains("else if (record.type == ClientRecord.Compensation) BuildCompensation(root, record, physical);") &&
+      paper30.Contains("StartMotion(State.Lifting, !Record.IsCard ? 0.44f : LiftSeconds);"),
+    "Type 3 face: blue header, employer block above two amount rows; it lifts and settles like the other sheet");
+string cp25 = Src("SideQuest1", "Level1FieldCheckpointer.cs");
+Check(cp25.Contains("CaseRecordsDesk.Changed += SaveNow;") && cp25.Contains("CaseRecordsDesk.Changed -= SaveNow;") &&
+      cp25.Contains("if (CaseRecordsDesk.Active != null && CaseRecordsDesk.Active.Prepared) into.workRecordsPrepared = true;") &&
+      Body(cp25, "private void RestoreCase(").Contains("if (record.workRecordsPrepared && CaseRecordsDesk.Active != null) CaseRecordsDesk.Active.RestorePrepared();") &&
+      Index(Between(desk25, "private void HandlePutBack(ClientRecord record)", "public void RestorePrepared()"), "prepared = true;") <
+          Index(Between(desk25, "private void HandlePutBack(ClientRecord record)", "public void RestorePrepared()"), "Changed?.Invoke();") &&
+      !Between(desk25, "public void RestorePrepared()", "private bool UnderWay()").Contains("Changed"),
+    "the preparation is saved through the case checkpoint only after both work records were shown and put back; a failed write is retried by the existing checkpointer");
+var caseRecord25 = new Level1CaseRecord();
+var json25 = new JsonSerializerOptions { IncludeFields = true };
+Check(!caseRecord25.workRecordsPrepared &&
+      JsonSerializer.Deserialize<Level1CaseRecord>(JsonSerializer.Serialize(new Level1CaseRecord { caseId = "case_marie_001", workRecordsPrepared = true }, json25), json25).workRecordsPrepared &&
+      !JsonSerializer.Deserialize<Level1CaseRecord>("{\"caseId\":\"case_marie_001\"}", json25).workRecordsPrepared,
+    "save default: not prepared; it round-trips, and an older case record without the field loads as not prepared");
+string triggers25 = Src("UI", "Guide", "GuideTriggers.cs");
+Check(triggers25.Contains("public static void Add(Func<string, bool> source)") && Between(triggers25, "public static bool Get(string name)", "\n}").Contains("foreach (Func<string, bool> source in extra)") &&
+      desk25.Contains("GuideFlags.Add(Flag);") && desk25.Contains("GuideFlags.Remove(Flag);") && Src("SideQuest1", "ArthurOpening.cs").Contains("GuideFlags.Source = ReadingFlag;"),
+    "guide flags: Marie's records add their own facts beside Arthur's opening (neither replaces the other)");
+
+// ---------- the desk guide: Arthur stays brief and never names her entries ----------
+string deskLesson25 = Between(guide30, "\"id\": \"case-folder\"", "\"id\": \"book-pages\"");
+string deskText25 = Text24(deskLesson25);
+Check(Regex24(deskLesson25, "\"text\":") == 5 && deskLesson25.Contains("\"waitFor\": \"flag:case-records-shown\"") && deskLesson25.Contains("\"waitFor\": \"flag:case-records-prepared\"") &&
+      deskLesson25.Contains("flag:case-id-flipped") && deskText25.Contains("background") && deskText25.Contains("ID") && !deskText25.Contains("2316") &&
+      !deskText25.Contains("See the three empty fields") && !deskText25.Contains("The answers come from what you know") &&
+      answers25.All(a => deskText25.IndexOf(a, StringComparison.OrdinalIgnoreCase) < 0) &&
+      new[] { "teach", "learn", "lesson", "quiz", "test", "assess" }.All(w => deskText25.IndexOf(w, StringComparison.OrdinalIgnoreCase) < 0) &&
+      deskLesson25.Contains("event:TaxCodeBookOpened"),
+    "desk guide (2026-10-27): one orientation line, short hands-on lines for her ID and background (take out, turn the ID over, put back) and the book; no answers, no BIR form");
+JsonElement consultation25 = case25.GetProperty("consultation");
+Check(consultation25.GetProperty("clues").EnumerateArray().Where(c => c.TryGetProperty("document", out _)).All(c => records25.Any(r => r.source == c.GetProperty("document").GetString())),
+    "every consultation clue about a document names one of the three records, so reading the record answers it (existing read mark)");
+string[] level2Sources25 = Directory.GetFiles(Path.Combine(root, "Assets", "Scripts", "Level2"), "*.cs");
+Check(level2Sources25.All(f => !File.ReadAllText(f).Contains("CaseRecordsDesk") && !File.ReadAllText(f).Contains("InstancePages")),
+    "Level 2 keeps its current page structure (no Level 2 code uses Marie's page)");
+
+// =====================================================================
+// T26: the corkboard follows naturally from the client rounds
+// =====================================================================
+
+JsonElement town26 = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Levels", "Level_01", "town.json"))).RootElement;
+string teaching26 = Src("SideQuest1", "CorkboardTeaching.cs");
+var intro26 = town26.GetProperty("arthurBoardIntro").EnumerateArray().ToList();
+Check(intro26.Count == 3 && intro26.All(l => l.GetProperty("who").GetString() == "npc") &&
+      intro26.All(l => teaching26.Contains("Npc(\"" + l.GetProperty("text").GetString() + "\")")) &&
+      teaching26.Contains("public const int MaxIntroLines = 3;") &&
+      Src("SideQuest1", "TownContentLoader.cs").Contains("intro.Count > CorkboardTeaching.MaxIntroLines"),
+    "Arthur's board introduction: three short lines, the same in town.json and the built-in copy; a longer edit is refused");
+string introText26 = string.Join(" ", intro26.Select(l => l.GetProperty("text").GetString()));
+Check(new[] { "Marie", "Jhun", "Milo", "Zorbix", "born Filipino", "overseas", "ticket home", "fell for this place", "Some " }.All(w => introText26.IndexOf(w, StringComparison.Ordinal) < 0),
+    "the four near-answer biographies are gone from the introduction (a reminder, not every client again)");
+var categories26 = town26.GetProperty("boardCategories").EnumerateArray().ToList();
+Check(categories26.Count == 4 && categories26.Select(c => c.GetProperty("category").GetString()).SequenceEqual(new[] { "ResidentCitizen", "NonResidentCitizen", "ResidentAlien", "NonResidentAlien" }) &&
+      categories26.All(c => teaching26.Contains("Meaning = \"" + c.GetProperty("meaning").GetString() + "\"")) &&
+      Src("SideQuest1", "TownContentLoader.cs").Contains("CorkboardTeaching.SetCategoryMeaning(category, c.meaning);"),
+    "the category meanings in town.json match the built-in copy, one per corner in the board's order");
+string reference26 = Src("SideQuest1", "BoardCategoryReference.cs");
+string referenceCode26 = Code30(reference26);
+Check(new[] { "TaxpayerProfile", "OccupyingCard", "CorrectClassification", "ProfileDragCard", "ExpectedClassification", "RequestCheck", "DraftChanged", "SaveNow", "PlayerProgressManager", "GrantRewards", "ScoreEntry" }
+          .All(w => referenceCode26.IndexOf(w, StringComparison.Ordinal) < 0) &&
+      reference26.Contains("foreach (CorkboardTeaching.CategoryMeaning category in CorkboardTeaching.Categories)"),
+    "the reference is static and client-independent: it never reads a profile, a placement or an answer, never checks, saves or rewards");
+Check(Between(reference26, "public void Open()", "public void Close()").Contains("if (IsOpen || board == null || !board.ReferenceMayOpen) return;") &&
+      reference26.Contains("shade.raycastTarget = true;") && reference26.Contains("outside.onClick.AddListener(Close);") &&
+      reference26.Contains("paperEdge.raycastTarget = true;") &&
+      Body(reference26, "private void LateUpdate()").Contains("DialogueUI.IsAnyDialogueActive || InGameSettings.IsOpen || HudRewardScreen.AnyOpen)) Close();") &&
+      !Between(reference26, "public void Close()", "private void LateUpdate()").Contains("board."),
+    "the reference never swallows a pending drag or check, blocks touches to the board and world while open, and closing moves no card");
+string board26 = Src("SideQuest1", "CorkboardSideQuestManager.cs");
+string mayOpen26 = Between(board26, "public bool ReferenceMayOpen", "public bool ReferenceOpen");
+Check(mayOpen26.Contains("if (!CanInteract || checking || autoCheckAt >= 0f || revealHeld) return false;") && mayOpen26.Contains("card.IsBeingMoved") &&
+      Between(board26, "private void Open(Level1FieldCheckpoint saved)", "private void OnCameraArrived()").Contains("ShowCategoryReference();") &&
+      Between(board26, "private System.Collections.IEnumerator Reveal()", "private static System.Collections.IEnumerator Wait(").Contains("ShowCategoryReference();") &&
+      Body(board26, "private void CompleteSideQuest()").Contains("HideCategoryReference();") &&
+      Between(board26, "private void ClearRuntimeObjects()", "private void DestroyDividers()").Contains("HideCategoryReference();"),
+    "available before and after the first check, back on resume without replaying guidance, gone when the board closes or is solved");
+Check(board26.Contains("private const float AutoCheckDelay = 0.45f;") && board26.Contains("GuideVoice.TrySay(ClassificationCheck.LastCardPrompt, null, 4.5f);") &&
+      Between(board26, "public void RequestCheck()", "private void MarkPlacedCards(").Contains("if (!checkSubmitted)") &&
+      Between(board26, "public void RequestCheck()", "private void MarkPlacedCards(").Contains("ClassificationCheck.RevealsAnswers(checkCount)") &&
+      !Between(board26, "public void RequestCheck()", "private void MarkPlacedCards(").Contains("categoryReference"),
+    "unchanged: neutral drafting, the 0.45 s full-board check, the frozen first result, the fourth-card heads-up and the correction hints");
+
+// ---------- the full Level 1 guide route ----------
+JsonElement guide26 = JsonDocument.Parse(guide30).RootElement;
+var lessons26 = guide26.GetProperty("lessons").EnumerateArray().ToList();
+int Pages26(string id) => lessons26.First(l => l.GetProperty("id").GetString() == id).GetProperty("pages").GetArrayLength();
+string LessonText26(string id) => string.Join(" ", lessons26.First(l => l.GetProperty("id").GetString() == id).GetProperty("pages").EnumerateArray()
+    .Select(p => p.TryGetProperty("text", out JsonElement t) ? t.GetString() : ""));
+// 2026-10-27 revision: 95 -> 94 (Arthur's file +4 hands-on steps, binder +1 flip, board +1 flip, desk +1 flip;
+// welcome -1, notes -2, office welcome -2, book pages -1, investigate -2, desk orientation merged).
+Check(lessons26.Sum(l => l.GetProperty("pages").GetArrayLength()) == 91 &&
+      Pages26("case-folder") == 5 && Pages26("profiles-icon") == 3 && Pages26("guide-appears") == 2 && Pages26("corkboard") == 4 &&
+      Pages26("investigate") == 1 && Pages26("reviewed-inspect") == 6,
+    "guide pages: 100 before T25/T26 -> 95 after T26 -> 94 after the 2026-10-27 revision -> 95 with the medal page -> 91 after the second polish (shorter, hands shown on the real records)");
+Check(Text24(Between(guide30, "\"id\": \"corkboard\"", "\"id\": \"sidequest-card\"")).Contains("Gold for all four right, Silver for two, Bronze for fewer") &&
+      Text24(Between(guide30, "\"id\": \"sidequest-card\"", "\"id\": \"to-office\"")).Contains("Gold, Silver or Bronze") &&
+      ClassificationCheck.LastCardPrompt.Contains("medal") && teaching26.Contains("that first check sets your medal"),
+    "the medals are introduced before the first check (and named again on the reward card), in the job's words");
+string corkLesson26 = lessons26.First(l => l.GetProperty("id").GetString() == "corkboard").GetRawText();
+Check(corkLesson26.Contains("\"point\": \"ui:Board Categories\"") && reference26.Contains("public const string ControlName = \"Board Categories\";") &&
+      corkLesson26.Contains("corkboard:placed|corkboard:wrong") && !LessonText26("corkboard").Contains("Welcome to the corkboard") &&
+      !LessonText26("corkboard").Contains("where are they from, and where do they spend their year"),
+    "board guidance: one target at a time (the categories, the first drag, how the check works); the reminder lives in Arthur's three lines");
+string allText26 = string.Join(" ", lessons26.Select(l => LessonText26(l.GetProperty("id").GetString())));
+Check(new[] { "teaching", "learning", "lesson", "quiz", "test", "assessment", "Good tax detectives" }.All(w =>
+          !System.Text.RegularExpressions.Regex.IsMatch(allText26, @"\b" + System.Text.RegularExpressions.Regex.Escape(w), System.Text.RegularExpressions.RegexOptions.IgnoreCase)) &&
+      new[] { "bench", "Jhun-jhun first", "jhunjhun" }.All(w => guide30.IndexOf(w, StringComparison.OrdinalIgnoreCase) < 0) &&
+      new[] { "reviewed-take", "reviewed-open", "reviewed-inspect", "reviewed-notes", "pickup", "dialogue-tip", "notes", "shop-intro", "move", "look" }.All(id => lessons26.Any(l => l.GetProperty("id").GetString() == id)),
+    "job language across the whole route (no teaching/lesson/quiz/test words); no Jhun-jhun-first or bench guidance; the opening, Notes, counter and file pages stay");
+Check(lessons26.Where(l => l.GetProperty("id").GetString() != "welcome").SelectMany(l => l.GetProperty("pages").EnumerateArray()).All(p => !p.TryGetProperty("show", out _)) &&
+      !guide30.Contains("\"card\": \"reward\"") && !guide30.Contains("chest-bonus"),
+    "no extra welcome panel, reward card or detour was added");
+string objectives26 = File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Levels", "Level_01", "objectives.json"));
+string tasks26 = Src("Data", "TaskListProvider.cs");
+string[] sq26 = { "Meet Arthur.", "Look over Arthur's file.", "Meet the four clients and collect all 4 IDs.", "Talk to Arthur in the plaza.", "Organize the four IDs on Arthur's corkboard." };
+Check(sq26.All(s => objectives26.Contains("\"text\": \"" + s + "\"") && tasks26.Contains("\"" + s + "\"")) && !objectives26.Contains("Finish Side Quest 1 at the corkboard."),
+    "objectives.json and its built-in copy agree on the side quest steps (same triggers, job wording)");
+string[] trainingDrills26 = Directory.GetFiles(Path.Combine(root, "Assets", "Resources", "Tutorials", "Training", "Drills"), "*.json");
+var lessonIds26 = new HashSet<string>(lessons26.Select(l => l.GetProperty("id").GetString()));
+Check(trainingDrills26.All(f => System.Text.RegularExpressions.Regex.Matches(File.ReadAllText(f), "\"use\": \"([^\"]+)\"").All(m => lessonIds26.Contains(m.Groups[1].Value))),
+    "every Tutorial Hub drill still finds the Level 1 lessons it reuses");
+
+// =====================================================================
+// 2026-10-27 revision (user request): no BIR form, IDs instead of profile papers, flips, 3D print
+// =====================================================================
+
+// ---------- each plaza client's ID card: the Type 1 front, the profile on its back ----------
+var ids27 = TaxpayerProfileDatabase.All.Select(CaseRecordRules.FromProfile).ToList();
+Check(ids27.Count == 4 && ids27.All(r => r.type == ClientRecord.Identity && r.HasBack && !string.IsNullOrWhiteSpace(r.citizenship) &&
+          !string.IsNullOrWhiteSpace(r.born) && !string.IsNullOrWhiteSpace(r.address) && r.reference.StartsWith("•••• ")) &&
+      ids27.Zip(TaxpayerProfileDatabase.All, (r, p) => r.name == p.TaxpayerName && r.profileText == p.Description && r.npcId == p.NpcId).All(x => x) &&
+      ids27.Select(r => r.profileNumber).SequenceEqual(new[] { "No. 01", "No. 02", "No. 03", "No. 04" }) && ids27.Select(r => r.id).Distinct().Count() == 4,
+    "every plaza client hands over an ID card: name, citizenship, born, address and masked reference on the front, their taxpayer profile on the back");
+ClientRecord marieId27 = ids27[0];
+Check(marieId27.citizenship == id25.citizenship && marieId27.address == id25.address && marieId27.born == id25.born && marieId27.reference == id25.reference &&
+      marieId27.name == id25.name,
+    "Marie's plaza ID and the ID in her case folder print the same facts");
+var source27 = new CaseRecordSource { caseId = source25.caseId, caseNumber = source25.caseNumber, taxYear = source25.taxYear, birthdate = source25.birthdate,
+    profileText = marieId27.profileText, profileNumber = marieId27.profileNumber, documents = source25.documents };
+ClientRecord folderId27 = CaseRecordRules.Build(source27)[0];
+Check(folderId27.HasBack && folderId27.profileText == TaxpayerProfileDatabase.GetByNpcId("npc_marie").Description && !CaseRecordRules.Build(source25)[0].HasBack &&
+      ReviewedFileRules.Record(ReviewedFileRules.IdentityId).HasBack && !ReviewedFileRules.Record(ReviewedFileRules.BackgroundId).HasBack &&
+      answers25.All(a => (ReviewedFileRules.Record(ReviewedFileRules.IdentityId).profileText ?? "").IndexOf(a, StringComparison.OrdinalIgnoreCase) < 0),
+    "Marie's folder ID carries her profile on its back (from the profile she handed over); Arthur's ID has Ramon's; sheets have no back; no answer printed");
+Check(Src("SideQuest1", "CaseRecordsDesk.cs").Contains("source.profileText = id.profileText;") &&
+      Src("SideQuest1", "CaseRecordsDesk.cs").Contains("profile.TaxpayerName == definition.fullName"),
+    "the desk binds Marie's profile to her ID by her name");
+
+// ---------- the ID card model and its flip (visual only) ----------
+string model27 = Src("SideQuest1", "IdCardModel.cs");
+Check(model27.Contains("public static readonly Quaternion TurnOver = Quaternion.AngleAxis(180f, Vector3.forward);") &&
+      model27.Contains("back.localScale = new Vector3(1f, -1f, 1f);") && model27.Contains("\"Laminate Core\"") &&
+      model27.Contains("SupportingDocumentFace.BuildIdentityBack(face, record);") && model27.Contains("if (!hasBack) return false;") &&
+      new[] { "SaveNow", "PlayerProgressManager", "Commit", "Reward", "CaseManager", "ValueTransfer" }.All(w => Code30(model27).IndexOf(w, StringComparison.Ordinal) < 0),
+    "one ID card model: bevelled both sides around a laminated core, the profile printed on its back, a half-turn flip that saves, rewards and transfers nothing");
+string paper27 = Src("SideQuest1", "ClientRecordPaper.cs");
+Check(paper27.Contains("CardFlip flip = IdCardModel.Build(root.transform, record, size, layer, out Canvas canvas, out _);") &&
+      paper27.Contains("else if (state == State.Out && holder.BroughtToFront(this)) Flip();") &&
+      Body(paper27, "public void PutBack()").Contains("if (flip != null && flip.ShowingBack) flip.Toggle();") &&
+      Body(paper27, "public void Gather()").Contains("flip?.ShowFront();") && paper27.Contains("windowLayer?.MarkDirty();") &&
+      Between(paper27, "public bool Flip()", "private void HandleFlipChanged()").Contains("state != State.Out"),
+    "records: the first tap takes a record out, a later tap turns an ID over (never attached, never the lift that ends a hold); it turns back on the way in; its window redraws while turning");
+// Follow-up 2026-10-27: the original print back, depth like the ID, an unlit print backing (never grey), a soft shadow.
+string face27 = Src("SideQuest1", "SupportingDocumentFace.cs");
+Check(!File.Exists(Path.Combine(root, "Assets", "Scripts", "SideQuest1", "RecordPrintBaker.cs")) && !face27.Contains("PrintedSheet(") &&
+      Between(face27, "private static void Block(", "// =========").Contains("Box(root, heading + \" Block\", 32f, y, 636f, height, Edge, 14f);") &&
+      paper27.Contains("CardFlip flip = IdCardModel.Build(root.transform, record, size, layer, out Canvas canvas, out _);") &&
+      model27.Contains("Mathf.Max(0.0016f, size.x * 0.02f)") && model27.Contains("SupportingDocumentMesh.Matte(card ? CoreColor : SheetCore)") &&
+      face27.Contains("else Backing(root, s, 40f, CardFace);") && face27.Contains("else Backing(root, s, 18f, Paper);") &&
+      Body(face27, "public static void BuildIdentityBack(").Contains("Backing(root, s, 40f, CardFace);"),
+    "the background sheet keeps its original print (no grain) with the ID's depth; every printed face sits on its own paper so shade never greys it");
+Check(model27.Contains("public static GameObject AddDropShadow(") && paper27.Contains("dropShadow.SetActive(false);") &&
+      Body(paper27, "private void Detach()").Contains("if (dropShadow != null) dropShadow.SetActive(true);") &&
+      Body(paper27, "public void Gather()").Contains("if (dropShadow != null) dropShadow.SetActive(false);") &&
+      Src("UI", "HUD", "ProfileCardSkin.cs").Contains("IdCardModel.AddDropShadow(transform, record, size, gameObject.layer);") &&
+      Src("UI", "HUD", "IdCardPortrait.cs").Contains("IdCardModel.AddDropShadow(card.transform, record, cardSize, Layer);") &&
+      model27.Contains("public static float FaceLift(Vector2 size) => Mathf.Max(0.00025f, size.x * 0.003f);"),
+    "a soft drop shadow follows a record out of its folder (the contact shadow stays on the page) and sits under every dropped, pinned and binder ID; faces sit clear of the body so they never flicker");
+
+// ---------- plaza IDs in the binder and on the board ----------
+string cards27 = Src("UI", "HUD", "HudProfileCards.cs");
+Check(cards27.Contains("IdCardPortrait.Create(film, CaseRecordRules.FromProfile(profile));") && !cards27.Contains("ProfileCardFace.Build(") &&
+      !cards27.Contains("BuildClose") && !cards27.Contains("CloseWindow);") && cards27.Contains("private const float CardWidth = 720f;") &&
+      Src("UI", "HUD", "IdCardPortrait.cs").Contains("card.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);") &&
+      cards27.Contains("internal void CardTapped(ProfileCardHold card)") && cards27.Contains("if (mode != Mode.Idle") &&
+      Src("UI", "HUD", "ProfileCardHold.cs").Contains("MobileInputGuard.IsDragOrCancelled(eventData)") &&
+      Src("UI", "HUD", "IdCardPortrait.cs").Contains("filmCamera.cullingMask = 1 << Layer;") &&
+      Src("UI", "HUD", "HudDragItem.cs").Contains("IdCardPortrait.Create(top, CaseRecordRules.FromProfile(first));"),
+    "the binder shows each client's 3D ID card in its window (a tap turns it over; drag, hold-to-gather and the icon drop are unchanged); the drag ghost is the card too");
+string boardCard27 = Src("SideQuest1", "ProfileDragCard.cs");
+Check(Body(boardCard27, "public void OnPointerDown(PointerEventData eventData)").Contains("pressPending = true;") &&
+      !Between(boardCard27, "public void OnPointerDown(PointerEventData eventData)", "private bool TryBeginDrag(").Contains("VacateCurrentSlot") &&
+      Between(boardCard27, "public void OnDrag(PointerEventData eventData)", "public void OnPointerUp(").Contains("if (!TryBeginDrag(eventData)) return;") &&
+      Between(boardCard27, "public void OnPointerUp(PointerEventData eventData)", "public void ReturnToOrigin()").Contains("ProfileCardSkin.Flip(this)") &&
+      Between(boardCard27, "private bool TryBeginDrag(", "public void OnDrag(").Contains("if (IsLocked || lockedCorrect) return false;"),
+    "board IDs: a tap turns the card over and never changes the draft; only a real drag picks it up (checked-right cards stay pinned but can still be read)");
+string board27 = Src("SideQuest1", "CorkboardSideQuestManager.cs");
+string hotbar27 = Src("UI", "HUD", "HudHotbar.cs");
+Check(board27.Contains("spawnedCards.TrueForAll(card => card != null && !card.IsBeingMoved))") && Body(board27, "private void CompleteSideQuest()").Contains("IdsOnBoard = true;") &&
+      Between(board27, "private void ClearRuntimeObjects()", "RestoreSlotLabels();").Contains("if (!sideQuestCompleted) IdsOnBoard = false;") &&
+      hotbar27.Contains("private static bool IdsRetired => CorkboardSideQuestManager.IdsOnBoard || LevelGate.SideQuestDone;") &&
+      hotbar27.Contains("else if (IdsRetired && InventoryRules.Owns(r, InventoryCatalogue.ProfileBinder))") &&
+      Between(hotbar27, "// 2026-10-27: once the IDs are on the corkboard", "case InventoryCatalogue.Notes:").Contains("!IdsRetired"),
+    "the Client IDs leave the bar and Bag once all four have flown into the tray, stay gone after the side quest (office included) and come back only if the board is closed unsolved");
+Check(InventoryCatalogue.BuiltIn().Find(InventoryCatalogue.ProfileBinder).label == "Client IDs" &&
+      File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Campaign", "inventory.json")).Contains("\"label\": \"Client IDs\"") &&
+      Src("UI", "HUD", "HudIconArt.cs").Contains("// 2026-10-27: the clients' ID cards (IdCardModel's look)"),
+    "the item is the Client IDs with a new ID-card icon (same id, so saves keep working)");
+
+// ---------- guide: hands-on file reading, flips, no BIR form ----------
+string inspect27 = Between(guide30, "\"id\": \"reviewed-inspect\"", "\"id\": \"reviewed-notes\"");
+string[] steps27 = { "flag:reviewed-page2", "flag:reviewed-one-out", "flag:reviewed-inspected", "flag:reviewed-flipped", "flag:reviewed-grouped", "flag:reviewed-returned" };
+bool ordered27 = true;
+for (int i = 1; i < steps27.Length; i++) if (!(Index(inspect27, steps27[i - 1]) >= 0 && Index(inspect27, steps27[i - 1]) < Index(inspect27, steps27[i]))) ordered27 = false;
+Check(ordered27 && Regex24(inspect27, "flag:reviewed-complete") == 7 && inspect27.Contains("\"point\": \"ui:RightEdgeIndicator\"") && inspect27.Contains("\"gesture\": \"hold\""),
+    "Arthur's file: turn the page, take one record out, the other, turn the ID over, hold to stack, drag the stack back; each step waits for the real action and none can strand the route");
+Check(inspect27.Contains("\"point\": \"record:attached\", \"to\": \"screen:0.22,0.5\", \"gesture\": \"drag\"") &&
+      inspect27.Contains("\"point\": \"record:out\", \"gesture\": \"hold\"") && inspect27.Contains("\"to\": \"record:page\"") &&
+      Src("UI", "Guide", "GuideTargets.cs").Contains("private Hit ResolveRecord(string name)") &&
+      guide30.Contains("\"waitFor\": \"move:8|near:4:world:Environment/Outside/Plaza/NPCS/NPC_TutorialGuide|dialogue:start\"") &&
+      !guide30.Contains("Your turn"),
+    "the hand shows each record step on the real papers (drag out, flip, two-second hold, drag back); the arrows step ends on reaching Arthur; no 'Your turn' drill wording");
+string opening27 = Src("SideQuest1", "ArthurOpening.cs");
+Check(opening27.Contains("case \"reviewed-flipped\": return cardFlipped || HasReturnedRecords || done;") &&
+      opening27.Contains("case \"reviewed-grouped\": return recordsGrouped || HasReturnedRecords || done;") &&
+      !Between(opening27, "public void Capture(Level1FieldCheckpoint into)", "public void Restore(").Contains("cardFlipped") &&
+      Src("SideQuest1", "ReviewedFileViewer.cs").Contains("records.Flipped +=") && Src("SideQuest1", "ReviewedFileViewer.cs").Contains("records.Grouped +=") &&
+      Index(Body(opening27, "internal void PageShown(int page)"), "pageTwoSeen = true;") < Index(Body(opening27, "internal void PageShown(int page)"), "if (practice"),
+    "the guided steps are hand-holding only (never saved; the route still opens on shown, put back and page one)");
+Check(Text24(Between(guide30, "\"id\": \"profiles-icon\"", "\"id\": \"guide-appears\"")).Contains("flip it") &&
+      guide30.Contains("flag:ids-flipped|not:open:profiles") && guide30.Contains("flag:board-flipped|corkboard:placed|corkboard:wrong") &&
+      cards27.Contains("GuideFlags.Add(view.Flag);") && board27.Contains("GuideFlags.Add(Flag);") &&
+      !Text24(Between(guide30, "\"id\": \"investigate\"", "\"id\": \"store-folder\"")).Contains("Profiles"),
+    "IDs are read by turning them over (binder, board, Marie's folder); the office no longer asks for a Profiles icon that is gone");
+string allText27 = string.Join(" ", lessons26.Select(l => LessonText26(l.GetProperty("id").GetString())));
+Check(new[] { "teaching", "learning", "lesson", "quiz", "test", "assessment", "tutorial", "2316", "BIR" }.All(w =>
+          !System.Text.RegularExpressions.Regex.IsMatch(allText27, @"\b" + System.Text.RegularExpressions.Regex.Escape(w), System.Text.RegularExpressions.RegexOptions.IgnoreCase)),
+    "the whole Level 1 route reads as a job (no teaching, test or tutorial words) and never mentions a BIR form");
+
+static int Regex24(string text, string token) => System.Text.RegularExpressions.Regex.Matches(text, System.Text.RegularExpressions.Regex.Escape(token)).Count;
+static string Text24(string lessonJson) => string.Join(" ", System.Text.RegularExpressions.Regex.Matches(lessonJson, "\"text\": \"([^\"]*)\"").Select(m => m.Groups[1].Value));
 
 Console.WriteLine();
 Console.WriteLine($"{checks - failures}/{checks} checks passed");

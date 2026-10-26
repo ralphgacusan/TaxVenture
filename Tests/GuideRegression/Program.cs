@@ -52,10 +52,44 @@ if (typeof(UnityEngine.ISerializationCallbackReceiver).IsAssignableFrom(typeof(G
     var baseline = (Dictionary<string, int>)typeof(GuideDirector).GetField("pageCounts", flags).GetValue(director);
     Check(baseline.GetValueOrDefault("lesson:notes") == 1,
         "a reloaded action page keeps its event baseline rather than counting an old action again");
+    observed["cue:ReviewedFileCollected"] = 1;
+    baseline["cue:ReviewedFileCollected"] = 1;
+    typeof(GuideDirector).GetField("pageWait", flags).SetValue(director, GuideTriggers.ParseAll("cue:ReviewedFileCollected"));
+    var wait = typeof(GuideDirector).GetMethod("WaitSatisfied", flags);
+    Check(!(bool)wait.Invoke(director, new object[] { 0f }),
+        "reproduces the early-pickup gap: an event already in the page baseline cannot satisfy an event-only wait");
+    observed["cue:ReviewedFileCollected"] = 2;
+    Check((bool)wait.Invoke(director, new object[] { 0f }), "event waits still accept a newly observed action");
 }
 
 // ================= Trigger parser =================
+var readingTimeMethod = typeof(GuideDirector).GetMethod("ReadingTimeSatisfied",
+    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+bool ReadHeld(bool typing, float at, float now, float minimum) =>
+    (bool)readingTimeMethod.Invoke(null, new object[] { typing, at, now, minimum });
+Check(!ReadHeld(true, -1f, 10f, 2.5f) && !ReadHeld(false, 10f, 12f, 2.5f) && ReadHeld(false, 10f, 12.5f, 2.5f),
+    "an already-completed action cannot skip an opted-in explanation before typing plus its reading time");
+Check(!ReadHeld(true, -1f, 0f, 0f) && ReadHeld(false, -1f, 0f, 0f),
+    "action pages never cut off text still typing, but need no extra hold once the line is readable");
 Check(GuideTriggers.SplitAlternatives("value:placed|value:rejected").Count == 2, "split two events");
+Check(GuideTriggers.TryParse("open:reviewed", out var reviewedWindowTrigger, out _) &&
+      reviewedWindowTrigger.Kind == GuideTriggers.Kind.Condition && reviewedWindowTrigger.Arg == "reviewed" &&
+      GuideTriggers.ParseAll("cue:ReviewedFileCollected|owns:arthur_reviewed_file").Count == 2,
+    "Arthur's window and saved-ownership alternatives parse as state checks alongside action cues");
+Check(GuideTriggers.TryParse("flag:reviewed-complete", out var reviewedCompleteTrigger, out _) &&
+      reviewedCompleteTrigger.Kind == GuideTriggers.Kind.Condition && reviewedCompleteTrigger.Arg == "reviewed-complete",
+    "the reviewed-file completion gate is a saved level flag, not the currently active objective step");
+var reviewedState = (ArthurOpening)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(ArthurOpening));
+var reviewedFlags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+var revisitedField = typeof(ArthurOpening).GetField("revisited", reviewedFlags);
+var roundsOpenField = typeof(ArthurOpening).GetField("roundsOpen", reviewedFlags);
+var readingFlag = typeof(ArthurOpening).GetMethod("ReadingFlag", reviewedFlags);
+revisitedField.SetValue(reviewedState, false);
+roundsOpenField.SetValue(reviewedState, false);
+bool IsReviewedComplete() => (bool)readingFlag.Invoke(reviewedState, new object[] { "reviewed-complete" });
+Check(!IsReviewedComplete(), "reviewed completion stays false before a full review");
+revisitedField.SetValue(reviewedState, true);
+Check(IsReviewedComplete(), "revisiting the first page sets the durable reviewed-complete flag");
 Check(GuideTriggers.SplitAlternatives("step:area:A/B|C/D").Count == 1, "area paths stay together");
 Check(GuideTriggers.SplitAlternatives("step:area:A/B|C/D|mode:Workstation").Count == 2, "path then new trigger");
 Check(GuideTriggers.SplitAlternatives("").Count == 0, "empty");
@@ -226,6 +260,58 @@ Check(!File.ReadAllText(Res("Tutorials/Level_01/guide.json")).Contains("value:pl
 
 // ================= town.json (Phase 1 teaching content) =================
 var town = JsonDocument.Parse(File.ReadAllText(Res("Levels/Level_01/town.json"))).RootElement;
+var reviewedNotes = town.GetProperty("reviewedFile").GetProperty("notes").EnumerateArray().ToArray();
+var reviewedLessons = guide.GetProperty("lessons").EnumerateArray().ToArray();
+var reviewedComments = reviewedLessons
+    .FirstOrDefault(l => Str(l, "id") == "reviewed-notes");
+var reviewedInspect = reviewedLessons.FirstOrDefault(l => Str(l, "id") == "reviewed-inspect");
+Check(reviewedComments.ValueKind == JsonValueKind.Object &&
+      // 2026-10-27: fewer taps: the authored comments 1-3 are read across two pages, in order.
+      reviewedComments.GetProperty("pages").GetArrayLength() == 2 &&
+      string.Join(" ", reviewedComments.GetProperty("pages").EnumerateArray().Select(p => Str(p, "text"))) ==
+          string.Join(" ", reviewedNotes.Skip(1).Select(n => n.GetString())),
+    "remaining Arthur file comments follow the first-open inspection guidance");
+if (reviewedComments.ValueKind == JsonValueKind.Object)
+{
+    var pages = reviewedComments.GetProperty("pages").EnumerateArray().ToArray();
+    Check(Str(reviewedComments, "after") == "reviewed-inspect" &&
+          Str(reviewedComments, "onlyIn") == "open:reviewed" &&
+          reviewedComments.GetProperty("preserveWhileHidden").GetBoolean() &&
+          GuideTriggers.SplitAlternatives(Str(reviewedComments, "when")).Contains("event:ReviewedFileLookedOver") &&
+          GuideTriggers.SplitAlternatives(Str(reviewedComments, "when")).Contains("flag:reviewed-complete"),
+        "file comments stay inside the open document and resume after it is reopened");
+    for (int i = 0; i < pages.Length; i++)
+        Check(!pages[i].TryGetProperty("waitFor", out _), "file comment page " + i + " has a Continue action");
+}
+var reviewedTake = reviewedLessons.FirstOrDefault(l => Str(l, "id") == "reviewed-take");
+var reviewedOpen = reviewedLessons.FirstOrDefault(l => Str(l, "id") == "reviewed-open");
+Check(reviewedTake.ValueKind == JsonValueKind.Object &&
+      GuideTriggers.SplitAlternatives(Str(reviewedTake, "when")).Contains("owns:arthur_reviewed_file") &&
+      GuideTriggers.SplitAlternatives(Str(reviewedTake, "onlyIn")).Contains("mode:FirstPerson") &&
+      GuideTriggers.SplitAlternatives(Str(reviewedTake, "onlyIn")).Contains("mode:ProfileViewer"),
+    "the pickup lesson can resolve in either the walking or file-viewer camera mode");
+Check(reviewedOpen.ValueKind == JsonValueKind.Object &&
+      GuideTriggers.SplitAlternatives(Str(reviewedOpen, "onlyIn")).Contains("mode:FirstPerson") &&
+      GuideTriggers.SplitAlternatives(Str(reviewedOpen, "onlyIn")).Contains("mode:ProfileViewer") &&
+      reviewedOpen.GetProperty("pages").GetArrayLength() == 1 &&
+      GuideTriggers.SplitAlternatives(Str(reviewedOpen.GetProperty("pages")[0], "waitFor")).Contains("cue:ReviewedFileOpened") &&
+      GuideTriggers.SplitAlternatives(Str(reviewedOpen.GetProperty("pages")[0], "waitFor")).Contains("open:reviewed") &&
+      GuideTriggers.SplitAlternatives(Str(reviewedOpen.GetProperty("pages")[0], "waitFor")).Contains("flag:reviewed-complete"),
+    "the open prompt remains available if the file enters its viewer before the lesson starts");
+Check(reviewedInspect.ValueKind == JsonValueKind.Object &&
+      Str(reviewedInspect, "after") == "reviewed-open" &&
+      Str(reviewedInspect, "onlyIn") == "open:reviewed" &&
+      reviewedInspect.GetProperty("preserveWhileHidden").GetBoolean() &&
+      // 2026-10-27: one hands-on step per page (turn the page, one out, the other, flip, hold to stack, back).
+      reviewedInspect.GetProperty("pages").GetArrayLength() == 6 &&
+      reviewedInspect.GetProperty("pages").EnumerateArray().Any(p => (Str(p, "text") ?? "").Contains(reviewedNotes[0].GetString())) &&
+      reviewedInspect.GetProperty("pages").EnumerateArray().Any(p => GuideTriggers.SplitAlternatives(Str(p, "waitFor")).Contains("flag:reviewed-inspected")) &&
+      GuideTriggers.SplitAlternatives(Str(reviewedInspect.GetProperty("pages")[5], "waitFor")).Contains("flag:reviewed-returned") &&
+      reviewedInspect.GetProperty("pages").EnumerateArray().All(p => GuideTriggers.SplitAlternatives(Str(p, "waitFor")).Contains("flag:reviewed-complete")),
+    "first-open inspection guidance stays on its current page while the file is closed");
+Check(reviewedComments.ValueKind == JsonValueKind.Object &&
+      GuideTriggers.SplitAlternatives(Str(reviewedComments, "when")).Contains("flag:reviewed-complete"),
+    "saved completion restores Arthur's comment lesson after an interrupted session");
 string[] labels = { "resident", "citizen", "alien", "classification" };
 bool Labelled(string t) { string l = (t ?? "").ToLowerInvariant(); return labels.Any(w => l.Contains(w)); }
 var townIds = new HashSet<string>();

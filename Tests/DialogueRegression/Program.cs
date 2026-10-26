@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 int checks = 0;
 
@@ -441,7 +442,8 @@ void CheckGuideConversation(List<DialogueLine> guideLines, string label, int exp
         $"{label} must run its success outcome exactly once.");
 }
 
-CheckGuideConversation(guideIntroLines, "The guide intro conversation", 8);
+// T26: the board talk is a three-line reminder (the four client biographies were removed).
+CheckGuideConversation(guideIntroLines, "The guide intro conversation", 3);
 CheckGuideConversation(guideCompletionLines, "The guide completion conversation", 3);
 
 // ---------------------------------------------------------------------
@@ -482,7 +484,44 @@ foreach (string npcId in townNpcIds)
 
 foreach (var line in CorkboardTeaching.IntroLines)
     Check(!NamesALabel(line.Value), $"Arthur's intro must stay indirect: \"{line.Value}\"");
-Check(CorkboardTeaching.IntroLines.Count >= 6, "Arthur's intro needs a line for each of the four corners.");
+// T26: a reminder with the Arthur already met, not one line per corner.
+Check(CorkboardTeaching.IntroLines.Count >= 1 && CorkboardTeaching.IntroLines.Count <= CorkboardTeaching.MaxIntroLines &&
+      CorkboardTeaching.MaxIntroLines == 3 && CorkboardTeaching.IntroLines.All(l => !l.Key),
+    "Arthur's board introduction is at most three of his own short lines.");
+string introText26 = string.Join(" ", CorkboardTeaching.IntroLines.Select(l => l.Value));
+string[] clients26 = { "Marie", "Jhun", "Milo", "Zorbix", "passport has never", "overseas", "ticket home", "fell for this place" };
+Check(clients26.All(c => introText26.IndexOf(c, StringComparison.OrdinalIgnoreCase) < 0) &&
+      introText26.Contains("nationality") && introText26.Contains("where they live") && introText26.Contains("whole board"),
+    "the introduction acknowledges the profiles, reminds the two details and says the whole board is checked, describing no client");
+var overlong26 = new List<KeyValuePair<bool, string>>();
+for (int i = 0; i < 4; i++) overlong26.Add(new KeyValuePair<bool, string>(false, "line " + i));
+CorkboardTeaching.SetIntro(overlong26);
+Check(CorkboardTeaching.IntroLines.Count <= 3 && CorkboardTeaching.IntroLines[0].Value != "line 0", "a town.json intro longer than three lines keeps the built-in one");
+CorkboardTeaching.ClearOverrides();
+
+// T26: the board's static category reference (vocabulary, never an answer).
+var categories26 = CorkboardTeaching.Categories;
+Check(categories26.Count == 4 && categories26.Select(c => c.Category).Distinct().Count() == 4 &&
+      categories26.Select(c => c.Category).SequenceEqual(new[] { TaxpayerClassification.ResidentCitizen, TaxpayerClassification.NonResidentCitizen,
+          TaxpayerClassification.ResidentAlien, TaxpayerClassification.NonResidentAlien }),
+    "the reference lists the four board categories once each, always in the same order");
+foreach (CorkboardTeaching.CategoryMeaning c in categories26)
+{
+    string m = c.Meaning ?? "";
+    int sentences = m.Count(ch => ch == '.' || ch == '!' || ch == '?');
+    bool saysFilipino = m.Contains("A Filipino citizen");
+    bool saysHomeHere = m.Contains("home is in the Philippines") || m.Contains("home is now in the Philippines");
+    Check(sentences == 1 && m.Split(' ').Length <= 14 && saysFilipino == CorkboardTeaching.IsFilipino(c.Category) &&
+          saysHomeHere == CorkboardTeaching.LivesHere(c.Category) && c.Name == string.Join(" ", System.Text.RegularExpressions.Regex.Split(c.Category.ToString(), "(?<!^)(?=[A-Z])")).Replace("Non Resident", "Non-Resident"),
+        $"{c.Category}: one short sentence from the board's two distinctions (Filipino or not, home here or not), under its formal name");
+    Check(clients26.All(n => m.IndexOf(n, StringComparison.OrdinalIgnoreCase) < 0) && !m.Contains("profile") && !m.Contains("corner"),
+        $"{c.Category}: names no client, profile or destination");
+}
+CorkboardTeaching.SetCategoryMeaning(TaxpayerClassification.ResidentAlien, "Edited meaning.");
+Check(CorkboardTeaching.Categories[2].Meaning == "Edited meaning." && CorkboardTeaching.Categories[0].Meaning == categories26[0].Meaning,
+    "a town.json meaning rewords only its own category");
+CorkboardTeaching.ClearOverrides();
+Check(CorkboardTeaching.Categories[2].Meaning == categories26[2].Meaning, "clearing restores the built-in meanings");
 
 // The two hidden questions.
 Check(CorkboardTeaching.Compare(TaxpayerClassification.ResidentCitizen, TaxpayerClassification.ResidentCitizen) == CorkboardTeaching.Miss.None, "same corner = no miss");

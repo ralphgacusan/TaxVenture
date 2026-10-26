@@ -12,6 +12,9 @@
     <Compile Include="../../Assets/Scripts/RewardsSystem/CareerProgress.cs" Link="CareerProgress.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignRun.cs" Link="CampaignRun.cs" />
     <Compile Include="../../Assets/Scripts/SideQuest1/Level1FieldCheckpointRules.cs" Link="Level1FieldCheckpointRules.cs" />
+    <Compile Include="../../Assets/Scripts/SideQuest1/ReviewedFileRules.cs" Link="ReviewedFileRules.cs" />
+    <Compile Include="../../Assets/Scripts/SideQuest1/ClientRecordRules.cs" Link="ClientRecordRules.cs" />
+    <Compile Include="../../Assets/Scripts/SideQuest1/CaseRecordRules.cs" Link="CaseRecordRules.cs" />
     <Compile Include="../../Assets/Scripts/SideQuest1/ClassificationCheck.cs" Link="ClassificationCheck.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/CaseResultRules.cs" Link="CaseResultRules.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/ClientCopyRules.cs" Link="ClientCopyRules.cs" />

@@ -34,7 +34,7 @@ CaseData FreshCase(CaseDefinition def)
 
 // ---------- identity ----------
 string print = Level1CaseCheckpoint.Fingerprint(marie);
-Check(marie.caseId == "case_marie_001" && marie.documents.Count == 3 && !string.IsNullOrEmpty(print) && print.Length == 16,
+Check(marie.caseId == "case_marie_001" && marie.documents.Count == 2 && !string.IsNullOrEmpty(print) && print.Length == 16,
     "Marie's real case loads and has a 16-hex fingerprint");
 Check(Level1CaseCheckpoint.Fingerprint(LoadCase("case_001.json")) == print, "the fingerprint is stable for the same definition");
 CaseDefinition edited = LoadCase("case_001.json");
@@ -86,7 +86,7 @@ Check(resumed.folderTransferredFields.SetEquals(played.folderTransferredFields) 
       !resumed.supportingDocuments[0].isReviewed && resumed.caseAssessment == CaseAssessment.ReadyForFiling && resumed.assessmentStamped &&
       resumed.computationStatus == ComputationStatus.Computed && resumed.hasPrintedReturn,
     "apply restores the filled-field marks, documents read and the case flags");
-Check(resumed.fullName == marie.fullName && resumed.supportingDocuments.Count == 3, "authored case data is untouched by apply");
+Check(resumed.fullName == marie.fullName && resumed.supportingDocuments.Count == 2, "authored case data is untouched by apply");
 
 var again = new Level1CaseRecord();
 Level1CaseCheckpoint.Capture(resumed, marie, again);

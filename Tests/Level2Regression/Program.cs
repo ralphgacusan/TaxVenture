@@ -2559,7 +2559,8 @@ Check(folderPointerSource.Contains("private bool CanUseIcon() => isAvailable && 
 Check(folderIconControl.Contains("GameplayEvents.OnCaseFolderReturned += RefreshFolderAvailability;") &&
       folderIconControl.Contains("GameplayEvents.OnCaseFolderReturned -= RefreshFolderAvailability;"),
     "returning the folder to the desk relocks its empty icon");
-Check(folderHudOpen.Contains("if (FolderToHUDIcon.GetStoredFolderCount() <= 0) return false;"),
+// T30 revision: the same driver also opens Arthur's reference copy, which has no folder store; the case folder keeps the guard.
+Check(folderHudOpen.Contains("if (!reference && FolderToHUDIcon.GetStoredFolderCount() <= 0) return false;"),
     "direct shared view opening also rejects an empty icon");
 
 // Drive production input dispatch with only managed fields and delegates.
@@ -2667,5 +2668,34 @@ Check(worldPaperSource.Contains("ReleaseDeskHold();") && !worldPaperSource.Conta
 Check(folderViewSrc.Split("internal Vector3 GrabOffset(PointerEventData data)")[1].Contains("ApplyPose(toPosition, toRotation, toScale);"),
     "grabbing during entrance settles the full-size model before calculating the drag offset");
 Console.WriteLine($"Folder regression: {checks - folderCheckStart} checks, {fails - folderFailStart} failures (source contracts and managed drag-state paths; Unity visual checks not run).");
+// Actual EventSystem sorting: a cover hit must not outrank a page drawn over it.
+var compareDocumentHitsFix = (Comparison<UnityEngine.EventSystems.RaycastResult>)
+    typeof(UnityEngine.EventSystems.EventSystem).GetField("s_RaycastComparer",
+        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).GetValue(null);
+var coverHitFix = new UnityEngine.EventSystems.RaycastResult { sortingOrder = 0, distance = 0.8f };
+var oldPageHitFix = new UnityEngine.EventSystems.RaycastResult { sortingOrder = 0, distance = 0.9f };
+var visiblePageHitFix = new UnityEngine.EventSystems.RaycastResult { sortingOrder = 1100, distance = 0.9f };
+Check(compareDocumentHitsFix(coverHitFix, oldPageHitFix) < 0,
+    "EventSystem reproduces the old conflict: at equal sorting order a nearer cover wins over page UI");
+Check(compareDocumentHitsFix(visiblePageHitFix, coverHitFix) < 0 &&
+      compareDocumentHitsFix(coverHitFix, visiblePageHitFix) > 0,
+    "EventSystem gives the page control priority when its input sorting matches the visible document layer");
+
+var attachedRecordHit = new UnityEngine.EventSystems.RaycastResult { sortingOrder = 1101, distance = 0.91f };
+Check(compareDocumentHitsFix(attachedRecordHit, visiblePageHitFix) < 0,
+    "record grab face takes priority over its page even when the page raycast reports a slightly nearer hit");
+var heldRecord = HeldOnScreen.FromScreenBox(new UnityEngine.Rect(200f, 150f, 100f, 80f), new UnityEngine.Vector2(250f, 190f));
+var letterbox = new UnityEngine.Rect(40f, 30f, 600f, 320f);
+var clampedRecord = heldRecord.Clamp(new UnityEngine.Vector2(-500f, 999f), letterbox);
+Check(clampedRecord.x == 102f && clampedRecord.y == 298f,
+    "record drag retains its complete bounds and margin inside an offset gameplay viewport");
+var smoothRecordMotion = typeof(ClientRecordPaper).GetMethod("SmoothMotion",
+    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+float RecordEase(float t) => (float)smoothRecordMotion.Invoke(null, new object[] { t });
+Check(RecordEase(0f) == 0f && RecordEase(1f) == 1f && RecordEase(0.5f) == 0.5f &&
+      RecordEase(0.01f) < 0.00002f && RecordEase(0.99f) > 0.99998f,
+    "record lift/landing ease reaches its exact endpoints with gentle start/stop acceleration");
+Check(Enumerable.Range(1, 100).All(i => RecordEase(i / 100f) >= RecordEase((i - 1) / 100f)),
+    "record motion ease stays monotone without an endpoint bounce");
 Console.WriteLine(fails == 0 ? $"Level2Regression: {checks} checks PASS" : $"Level2Regression: {fails} of {checks} checks FAILED");
 return fails == 0 ? 0 : 1;
