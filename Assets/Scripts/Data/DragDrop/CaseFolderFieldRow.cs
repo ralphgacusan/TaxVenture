@@ -39,6 +39,9 @@ public class CaseFolderFieldRow :
     /// </summary>
     public static bool ReadOnly;
 
+    /// <summary>Read-only now: the Client Copy (ReadOnly), or this folder opened away from the desk (2026-10-26).</summary>
+    private bool Locked => ReadOnly || Doc3DLayer.BlocksValueTransfer(transform);
+
     // ---------------------------------------------------------
     // Components
     // ---------------------------------------------------------
@@ -386,7 +389,7 @@ public class CaseFolderFieldRow :
     public void OnPointerClick(
         PointerEventData eventData)
     {
-        if (ReadOnly) return;
+        if (Locked) return;
         AudioManager.Instance?.QueueInteractionSFX("paper_place");
 
         if (ValueTransferManager.Instance == null)
@@ -512,7 +515,7 @@ public class CaseFolderFieldRow :
     public void OnDrop(
         PointerEventData eventData)
     {
-        if (ReadOnly) return;
+        if (Locked) return;
         DebugTrace.Log(
             $"[CaseFolder Drop] " +
             $"Dropped value on: {gameObject.name} " +
@@ -743,7 +746,7 @@ public class CaseFolderFieldRow :
     /// <summary>Same rule as CanAccept, without logging (safe to call every frame).</summary>
     public bool WouldAccept(DataValue value)
     {
-        return !ReadOnly && isDestination && value != null && value.Type == type &&
+        return !Locked && isDestination && value != null && value.Type == type &&
                string.Equals(value.SemanticKey?.Trim(), semanticKey?.Trim(), System.StringComparison.OrdinalIgnoreCase);
     }
 
@@ -754,7 +757,7 @@ public class CaseFolderFieldRow :
     public bool CanAccept(
         DataValue value)
     {
-        if (ReadOnly || !isDestination)
+        if (Locked || !isDestination)
             return false;
 
         if (value == null)

@@ -19,7 +19,7 @@ using UnityEngine;
 /// OBJECTIVES JSON:
 /// { "objectives": [
 ///     { "title": "Finish Side Quest 1",
-///       "steps": [ { "text": "Talk to Arthur, the tutorial guide.",
+///       "steps": [ { "text": "Talk to Arthur in the plaza.",
 ///                    "trigger": "event:TutorialGuideTalkedTo",
 ///                    "progress": "" } ] } ] }
 ///
@@ -216,7 +216,7 @@ public static class TaskListProvider
                 "Explore the plaza and talk to the 4 clients to get their taxpayer profiles.", false,
                 ObjectiveTriggers.ProfilesProgress),
             new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.TutorialGuideTalkedTo),
-                "Talk to Arthur, the tutorial guide.", false, null),
+                "Talk to Arthur in the plaza.", false, null),
             new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.SideQuestCompleted),
                 "Finish Side Quest 1 at the corkboard.", false, null),
 
@@ -231,7 +231,7 @@ public static class TaskListProvider
                 UndoneByKey = ObjectiveTriggers.EventKey(ObjectiveTriggers.CaseFolderReturned)
             },
             new TaskDefinition(ObjectiveTriggers.StatePrefix + nameof(CaseCompleteState),
-                "Submit the case folder to the Auditor in his office.", false, null),
+                "Talk to the Auditor in his office and hand him the case folder.", false, null),
 
             // T08: the Client Copy handover (story runs; replays end at the result card).
             new TaskDefinition(null, "Follow Through with Marie", true, null),

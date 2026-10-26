@@ -509,6 +509,30 @@ TownNpcDialogueLibrary.ClearOverrides();
 Check(TownNpcDialogueLibrary.GetDialogueFor("npc_marie", "Marie").Count == 6, "clearing restores the built-in talk");
 
 // T03 presentation contracts (terminal handoff, gesture gate, typewriter, shots).
+// 2026-10-26: a waiting line goes on with lines that depend on what just happened (the Auditor's hand-in).
+var inserting = new DialogueSession();
+var askLine = MakeLine("Hand me the Case Folder.");
+askLine.AwaitAction = "auditor-submit";
+int insertedDone = 0;
+Check(inserting.TryStart(new[] { MakeLine("Hi!", DialogueSpeaker.Player), askLine, MakeLine("Thanks.") }, () => insertedDone++),
+    "Insert: the hand-in conversation starts.");
+Check(inserting.TryAdvance(out bool insertEnded) && !insertEnded && inserting.AwaitingActionId == "auditor-submit",
+    "Insert: the second line waits for the folder.");
+Check(inserting.TryInsertAfterCurrent(new[] { MakeLine("Let me check."), MakeLine("Here's my summary.") }) == 2,
+    "Insert: new lines go right after the waiting line.");
+Check(inserting.TryInsertAfterCurrent(new DialogueLine[] { MakeLine("") }) == -1 && inserting.TryInsertAfterCurrent(null) == -1,
+    "Insert: empty or blank lines are refused.");
+Check(!inserting.TryAdvance(out _), "Insert: the waiting line still waits (taps do nothing).");
+Check(inserting.TryCompleteAction("auditor-submit") && !inserting.TryCompleteAction("auditor-submit"),
+    "Insert: the action completes once.");
+Check(inserting.TryAdvance(out insertEnded) && !insertEnded && inserting.CurrentLine.Text == "Let me check.",
+    "Insert: the conversation continues with the inserted line.");
+Check(inserting.TryAdvance(out insertEnded) && inserting.CurrentLine.Text == "Here's my summary." &&
+      inserting.TryAdvance(out insertEnded) && inserting.CurrentLine.Text == "Thanks." &&
+      inserting.TryAdvance(out insertEnded) && insertEnded,
+    "Insert: inserted lines come before the original rest of the conversation.");
+Check(new DialogueSession().TryInsertAfterCurrent(new[] { MakeLine("x") }) == -1, "Insert: nothing is inserted into an inactive session.");
+
 int beforePresentation = checks;
 PresentationTests.Run(Check);
 int presentationChecks = checks - beforePresentation;

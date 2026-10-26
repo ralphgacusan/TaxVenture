@@ -254,9 +254,10 @@ public class LevelCompleteUI : MonoBehaviour
         Level1CaseResult caseResult = career != null && career.HasCampaign ? career.campaign.levelOneCaseResult : null;
         bool known = saved && caseResult != null && caseResult.recorded;
         BadgeTier tier = known ? (BadgeTier)caseResult.tier : BadgeTier.None;
-        // T08: after the handover the level (Chapter 1, via the T16 bridge) is complete, not just the case.
+        // T08/T16: after the handover this is the Chapter 1 card; its Continue completes the chapter.
         bool delivered = saved && career != null &&
             CampaignRewards.IsActivityCompleted(career, CampaignRewards.Level1, CampaignRewards.FollowThrough);
+        if (delivered) return BuildChapterScreen(result, career, caseResult, rules);
 
         var data = new RewardScreenData
         {
@@ -289,6 +290,45 @@ public class LevelCompleteUI : MonoBehaviour
             data.Fact("Office hours", hours.BonusAwarded ? "On time ✓"
                 : hours.LateExpLost > 0 ? $"Late (day {hours.Day})  -{hours.LateExpLost} EXP" : $"Finished on day {hours.Day}");
         if (career != null) data.Footer = $"Career {career.totalExp} EXP";
+        return data;
+    }
+
+    /// <summary>
+    /// The Chapter 1 card (2026-10-26): the case card's style, bigger, with only
+    /// the important facts: EXP and medals, the chapter's coins and Public Trust
+    /// (from the committed ledger), the first board check and the time.
+    /// </summary>
+    private static RewardScreenData BuildChapterScreen(LevelTotalResult result, PlayerProgressData career,
+        Level1CaseResult caseResult, LevelRewardRules rules)
+    {
+        CaseProgressionManager progression = CaseProgressionManager.Instance;
+        BadgeTier tier = caseResult != null && caseResult.recorded ? (BadgeTier)caseResult.tier : BadgeTier.None;
+        CaseResultRules.ChapterSummary summary = CaseResultRules.BuildChapterSummary(career);
+        var data = new RewardScreenData
+        {
+            Title = CaseResultRules.CompletedTitle,
+            Subtitle = progression != null ? progression.CurrentLevelName : null,
+            Exp = result.TotalExp,
+            MaxExp = result.HasScore ? result.MaxExp : 0,
+            Hearts = 0,
+            MaxHearts = 0,
+            PassingPercent = 0,
+            HasStatus = true,
+            StatusGood = true,
+            StatusText = CaseResultRules.CompletedStatus,
+            StatusDetail = CaseResultRules.CompletedDetail,
+            Accent = HudBadgeArt.TierColor(tier == BadgeTier.None ? BadgeTier.Bronze : tier),
+            Summary = CaseResultRules.CompletedSummary,
+            ButtonLabel = "CONTINUE",
+            Large = true
+        };
+        for (int i = 0; i < result.BadgeTiers.Count; i++)
+            if (result.BadgeTiers[i] != BadgeTier.None) data.Medals.Add(HudBadgeArt.For(rules, result.BadgeTiers[i]));
+        data.Fact("Coins", $"+{summary.CoinsEarned}  ->  {summary.Wallet}");
+        data.Fact("Public Trust", $"+{summary.TrustEarned}  ->  {summary.TrustNow} / 100");
+        if (caseResult != null && caseResult.firstCheckCorrect >= 0)
+            data.Fact("Board first check", $"{caseResult.firstCheckCorrect}/4  ·  {tier}");
+        data.Fact("Time", result.FormattedCompletionTime);
         return data;
     }
 
@@ -389,12 +429,17 @@ public class LevelCompleteUI : MonoBehaviour
                 if (congratsText != null) congratsText.text = "The Client Copy is not ready yet. Press Continue to try again.";
                 return;
             }
-            if (manager.PendingLevelOneEndFlow && !manager.AcknowledgeLevelOneEndFlow())
+            if (manager.PendingLevelOneEndFlow)
             {
-                leaving = false;
-                Debug.LogWarning("[LevelCompleteUI] End-of-level result could not be acknowledged; stay on the card and allow retry.");
-                if (congratsText != null) congratsText.text = "Your result could not be saved. Press Continue to try again.";
-                return;
+                // T16: Chapter 1 completes here, in one write; only a saved wrap-up leaves for the career board.
+                if (!manager.CommitLevelOneWrapUp())
+                {
+                    leaving = false;
+                    Debug.LogWarning("[LevelCompleteUI] Chapter 1 wrap-up could not be saved; stay on the card and allow retry.");
+                    if (congratsText != null) congratsText.text = "Your result could not be saved. Press Continue to try again.";
+                    return;
+                }
+                // The card itself was the Chapter 1 card: straight to the career board.
             }
         }
         else if (PlayerProgressManager.Instance != null && currentResult != null)

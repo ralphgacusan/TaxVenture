@@ -8,13 +8,15 @@ Give the menu catalogue the same purchases and furniture ownership as the world 
 
 ## Visible accomplishment
 
-Before: shop state is only presented at the world counter and no office decor is installed. After: the main menu gains a shop entry backed by the same wallet and catalogue as the physical supply counter. Once introduced, the player can buy a brass pencil cup for 30 coins or a framed island print for 60 coins, then see the actual object installed in Marie's office. Each item has a physical preview and a real display position. The comparison stand teaser states “Requires ready Level 2” and the computer says “Requires corrected Level 3”; both remain visible but cannot be purchased before implementation.
+Before: shop state is only presented at the world counter and no office decor is installed. After: the main menu gains a shop entry backed by the same wallet and catalogue as the physical supply counter. Once introduced, the player can buy a brass pencil cup for 30 coins or a framed island print for 60 coins, then see the actual object installed in Marie's office. Each item has a physical preview and a real display position. The comparison stand teaser states “Requires ready Level 2” and the computer says “Requires corrected Level 3”; both remain visible but cannot be purchased before implementation. The T12 slot upgrades (Satchel, Belt Pouch and their locked second tiers) appear on the same shelf with identical prices and ownership, so an upgrade bought in either shop shows as owned in both.
 
 ## Work
 
 Add a 3D menu shop route using the existing menu camera/board interaction patterns. Keep its entry locked until the physical shop introduction has been acknowledged. The shop view is a small timber display shelf with a hand-lettered header and individual item cards pinned beside the real model; prices and locked requirements sit on cards in world space. Selecting an item turns or lifts its actual miniature preview to face the player and opens a compact confirmation prompt. This catalogue must present the same definitions, prices, purchase result and ownership snapshot as T12's counter; no separate menu wallet or mockup-only store state.
 
 The two Delivery A decor models are concrete: a squat brass mesh pencil cup with three coloured pencils, and a dark wood rectangular frame containing an island print. Provide distinct office display anchors: cup on the right corner of the desk, framed print on the wall above the filing shelf. Buying installs the model at its anchor with a visible snap-in motion and preserves ownership and placement after reload. If the anchor is occupied or the player moves the item, placement must have a deterministic, visible resolution rather than silently charging and hiding it. Include accessible item names/icons along with colour and shape cues.
+
+Revision 2026-10-25 (follows the "mix" design the user accepted for T12, see [PROGRESS](../PROGRESS.md) and KNOWN_ISSUES CF-74): the menu's SHOP opens the same catalogue book as the Supply Counter (one presenter, one catalogue, one wallet) instead of a timber display shelf with pinned leaflets. The physical preview is a live 3D miniature of each decor piece turning on a plinth in the book; bought decor is still installed as a real model at its office anchor with the 0.3-second lift-and-settle, shown the first time the player sees it.
 
 ### Source starting points
 
@@ -29,7 +31,7 @@ Purchase validates story mode, introduced shop, unlock prerequisites, price and 
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] Menu and counter use identical catalogue IDs/prices/unlock results and persist one purchase/placement.
+- [ ] Menu and counter use identical catalogue IDs/prices/unlock results and persist one purchase/placement, including the slot upgrades.
 - [ ] Tests cover both decor items, anchor occupancy/replacement, reload, duplicate/failed purchases and lock enforcement for comparison stand/computer.
 - [ ] Static inspection validates world-space card/model anchors, colliders, deterministic placement and text fit; compile plus relevant menu/shop/save checks pass.
 

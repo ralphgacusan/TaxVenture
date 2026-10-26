@@ -526,6 +526,11 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
             }
             case GuideTriggers.OpenPrefix:
                 return WindowOpen(t.Arg);
+            case GuideTriggers.OwnsPrefix:
+            {
+                HudHotbar hotbar = HudHotbar.Instance;
+                return hotbar != null && InventoryRules.Owns(hotbar.Inventory, t.Arg);
+            }
             case GuideTriggers.ActivePrefix:
                 return targets.Resolve(t.Arg).Found;
             case GuideTriggers.CardPrefix:
@@ -587,6 +592,8 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
             case "folder":
                 if (folderView == null) folderView = FindAnyObjectByType<CaseFolder3DView>(FindObjectsInactive.Include);
                 return folderView != null && folderView.IsOpen;
+            case "bag":
+                return HudHotbar.Instance != null && HudHotbar.Instance.Screen != null && HudHotbar.Instance.Screen.IsOpen;
         }
         return false;
     }
@@ -636,6 +643,12 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
     private void ShowPage()
     {
         if (page.revealArrows) RevealArrows();
+        // A page can turn the view smoothly toward what it talks about (T12: the Supply Counter, then the plaza).
+        if (!string.IsNullOrEmpty(page.face))
+        {
+            GuideTargets.Hit faced = targets.Resolve(page.face);
+            if (faced.HasWorld) ViewTurn.Toward(faced.World, 0.8f);
+        }
         collapsed = false;
         typedDoneAt = -1f;
         Sprite portrait = Portrait(page.mood);
@@ -733,7 +746,7 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
     }
 
     /// <summary>
-    /// A short line from Arthur in his top bubble (with portrait), e.g. his
+    /// A short line from the guide (Arthur) in his top bubble (with portrait), e.g. his
     /// reaction to a corkboard placement. Works even after the tutorial was
     /// skipped: it's gameplay feedback, not a lesson.
     /// </summary>

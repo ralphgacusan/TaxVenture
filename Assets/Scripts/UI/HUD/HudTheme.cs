@@ -325,6 +325,16 @@ public static class HudTheme
         return rect;
     }
 
+    /// <summary>Like PlaceTopLeft (same top-left coordinates), but pivoted on its centre so it scales and turns in place.</summary>
+    public static RectTransform PlaceCentered(RectTransform rect, float x, float y, float width, float height)
+    {
+        rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = new Vector2(x + width * 0.5f, -y - height * 0.5f);
+        rect.sizeDelta = new Vector2(width, height);
+        return rect;
+    }
+
     public static void Stretch(RectTransform rect, float inset = 0f)
     {
         rect.anchorMin = Vector2.zero;

@@ -14,6 +14,8 @@ Before: there is no saved campaign voucher with a case-specific clock effect. Af
 
 Use the T11 voucher and sell additional ones at T12's shared counter. The folded green ticket has a copper clock seal, “+180 REVIEW SECONDS”, “ONE PER CASE” and a 0/2 carry tab. Add a real two-drawer oak supply unit beside the office counter; label each drawer, use brass pulls, and show stored quantity. Tapping it opens the physical drawer and lists stored vouchers. If carry is below two, Retrieve moves one into carry; full carry gets a clear refusal with no quantity change. Thus overflow from T11 or purchases remains usable. Apply a carried voucher from the bag; retrieve drawer stock first. A desk action may call the same command. Read the existing review clock and change only the appointment window, never statutory date or assessment. Do not add another clock.
 
+Revision 2026-10-25 (implementation notes, see [PROGRESS](../PROGRESS.md) and KNOWN_ISSUES CF-84 to CF-86): the oak supply unit stands beside the player's desk, where the existing Desk Drawer storage lives; vouchers apply to Level 1's Office Hours clock (Level 2 follows with T18); the voucher card, opened from the bar or the Bag, is the one way to apply (no separate desk action). "+180 active review seconds" moves the cutoff at the clock's own rate (30 game minutes at 10x).
+
 ### Source starting points
 
 - **Existing:** the active signed save through `PlayerProgressData` / `PlayerProgressManager`; Level 1's office-hours rules and Level 2's `Level2ReviewClock`, `ReviewClockState` and existing checkpoint path; T12's catalogue interaction.
@@ -44,3 +46,5 @@ Next ticket: [T15](T15-quax-identity-and-demonstrations.md) establishes the guid
 ## Non-goals and references
 
 No extension after cutoff, statutory deadline change, arbitrary timer pause, additional time items, paid correct answers, grading bypass or required purchase. See [SPEC](../SPEC.md), [WORLD_AND_FEEDBACK](../WORLD_AND_FEEDBACK.md), [VERIFICATION](../VERIFICATION.md), and [PROGRESS](../PROGRESS.md).
+
+Revision 2026-10-25 (user request): the Desk Drawer unit was removed. A third voucher is refused at the pickup and the counter ("You can't carry more of these", no coins spent) instead of going to the drawer; nothing is retrieved from a drawer any more.

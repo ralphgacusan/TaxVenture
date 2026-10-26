@@ -39,7 +39,9 @@ public class TaxCodeBookFloatingModel3D :
 
     [Tooltip("Smoothly moves the book toward the pointer.")]
     [SerializeField]
+#pragma warning disable CS0414 // kept for scene data: drags now follow the finger exactly (2026-10-26)
     private bool animateDragging = true;
+#pragma warning restore CS0414
 
     [Tooltip("Higher values make the book follow the pointer faster.")]
     [SerializeField]
@@ -186,26 +188,9 @@ public class TaxCodeBookFloatingModel3D :
             return;
         }
 
-        if (animateDragging)
-        {
-            float interpolation =
-                1f - Mathf.Exp(
-                    -dragSmoothness *
-                    Time.deltaTime
-                );
-
-            taxCodeBook.position =
-                Vector3.Lerp(
-                    taxCodeBook.position,
-                    dragTargetPosition,
-                    interpolation
-                );
-        }
-        else
-        {
-            taxCodeBook.position =
-                dragTargetPosition;
-        }
+        // The open book sits exactly under the finger (2026-10-26: no easing behind it).
+        taxCodeBook.position =
+            dragTargetPosition;
 
         RestoreBookAppearance();
     }
@@ -228,15 +213,24 @@ public class TaxCodeBookFloatingModel3D :
                 ? eventData.pressEventCamera
                 : mainCamera;
 
+        // 2026-10-26: a running open animation lands first, and the book keeps the pose it has now
+        // (it was turned to read upright when it opened), so nothing but the finger moves it.
+        DeskDocumentAnimator.CompleteAll(taxCodeBook);
+        originalRotation = taxCodeBook.rotation;
+        originalScale = taxCodeBook.localScale;
+
         /*
          * Create a plane passing through the book's current position.
          * The book stays in its original position until the pointer
          * actually moves.
          */
+        // The plane runs through the printed page (not the model's pivot), so the page the finger
+        // holds moves exactly with it (2026-10-26).
+        RectTransform page = PageOf(taxCodeBook);
         dragPlane =
             new Plane(
                 mainCamera.transform.forward,
-                taxCodeBook.position
+                page != null ? page.TransformPoint(page.rect.center) : taxCodeBook.position
             );
 
         Ray ray =
@@ -285,6 +279,8 @@ public class TaxCodeBookFloatingModel3D :
 
         isDragging = true;
         hasDragTarget = true;
+        // The open book stops at the screen edge while it is held.
+        held = HeldOnScreen.ForModel(taxCodeBook, eventCamera, eventData.position);
         UpdateOutlineFocus();
 
         RestoreBookAppearance();
@@ -356,7 +352,7 @@ public class TaxCodeBookFloatingModel3D :
 
         Ray ray =
             eventCamera.ScreenPointToRay(
-                screenPosition
+                held.Clamp(screenPosition)
             );
 
         if (drawDebugRay)
@@ -398,6 +394,20 @@ public class TaxCodeBookFloatingModel3D :
     /// when the book was taken.
     /// </summary>
     public static System.Func<TaxCodeBookFloatingModel3D, Vector2, bool> TryStoreAt;
+
+    /// <summary>The printed page that lies on this book (its TaxCodeBookUI may sit elsewhere in the scene).</summary>
+    private static RectTransform PageOf(Transform book)
+    {
+        if (book == null) return null;
+        foreach (TaxCodeBookUI ui in FindObjectsByType<TaxCodeBookUI>(FindObjectsInactive.Include))
+        {
+            RectTransform paper = ui != null ? ui.PaperRoot as RectTransform : null;
+            if (paper != null && paper.IsChildOf(book)) return paper;
+        }
+        return null;
+    }
+
+    private HeldOnScreen held;
 
     public void OnPointerUp(PointerEventData eventData)
     {

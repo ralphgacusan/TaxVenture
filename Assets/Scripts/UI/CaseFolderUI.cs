@@ -85,6 +85,7 @@ public class CaseFolderUI : MonoBehaviour
     private bool hasPageTurnRest;
     private Quaternion pageTurnRestRotation;
     private Vector3 pageTurnRestScale;
+    private Vector3 pageTurnRestPosition;
 
     private List<CaseFolderFieldRow> page1Rows = new List<CaseFolderFieldRow>();
     private List<CaseFolderFieldRow> page2FixedRows = new List<CaseFolderFieldRow>();
@@ -159,7 +160,7 @@ public class CaseFolderUI : MonoBehaviour
 
     private System.Collections.IEnumerator LeafThrough(int target, System.Action done)
     {
-        const float flipSeconds = 0.24f;
+        const float flipSeconds = 0.32f;   // quicker than a single turn: several pages in a row
         while (currentPageIndex != target)
         {
             int direction = target < currentPageIndex ? -1 : 1;
@@ -716,7 +717,7 @@ public class CaseFolderUI : MonoBehaviour
 
         StopPageTurn();
         pageTurnRoutine = StartCoroutine(DeskMotion.TurnPage(root, pageTurnRestRotation,
-            pageTurnRestScale, direction, pageTurnDuration, () =>
+            pageTurnRestScale, direction, Mathf.Max(pageTurnDuration, DeskMotion.PageFlipSeconds), () =>
             {
                 RenderPage(currentPageIndex);
             }));
@@ -740,6 +741,7 @@ public class CaseFolderUI : MonoBehaviour
         {
             pageTurnRoot.localRotation = pageTurnRestRotation;
             pageTurnRoot.localScale = pageTurnRestScale;
+            pageTurnRoot.localPosition = pageTurnRestPosition;
         }
 
     }
@@ -753,6 +755,7 @@ public class CaseFolderUI : MonoBehaviour
         {
             pageTurnRestRotation = pageTurnRoot.localRotation;
             pageTurnRestScale = pageTurnRoot.localScale;
+            pageTurnRestPosition = pageTurnRoot.localPosition;
             hasPageTurnRest = true;
         }
 

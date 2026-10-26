@@ -266,8 +266,8 @@ public static class EmoteTests
 
         string reactions = Src("Scripts/UI/HUD/ConsequenceReactions.cs");
         check(reactions.Contains("correct ? Emotion.Happy : locked ? Emotion.Thinking : Emotion.Confused") &&
-              reactions.Contains("WorldEmote.Show(npc.transform, Emotion.Happy, 5f)") && !reactions.Contains("WorldEmote.Kind"),
-            "T22: corkboard and plaza reactions use the new emotion set with unchanged timing.");
+              !reactions.Contains("WorldEmote.Show(npc.transform") && !reactions.Contains("GuideVoice.TrySay") && !reactions.Contains("WorldEmote.Kind"),
+            "T22: corkboard reactions use the new emotion set; people show no icons outside a conversation (2026-10-26).");
     }
 
     // ------------------------------------------------------------------

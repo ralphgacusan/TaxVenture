@@ -72,6 +72,14 @@ public sealed class DeskDocumentAnimator : MonoBehaviour
     /// Grows the open document from <paramref name="fromPosition"/> up to the
     /// pose it currently has, which is treated as its final pose.
     /// </summary>
+    /// <summary>Lands any desk motion of this document at once, whichever desk animator runs it (a grab starts from its real pose).</summary>
+    public static void CompleteAll(Transform model)
+    {
+        if (model == null) return;
+        foreach (DeskDocumentAnimator animator in FindObjectsByType<DeskDocumentAnimator>(FindObjectsInactive.Exclude))
+            if (animator != null && animator.gameObject.scene == model.gameObject.scene) animator.Complete(model);
+    }
+
     public void PlayOpen(Transform model, Vector3 fromPosition)
     {
         if (model == null)
@@ -166,6 +174,46 @@ public sealed class DeskDocumentAnimator : MonoBehaviour
         {
             item.position = rest + up * (settleDropHeight * (1f - DeskMotion.EaseInQuad(t)));
         }, () => item.position = rest);
+    }
+
+    /// <summary>
+    /// A closed item put back on its stack (2026-10-26): it falls from a little
+    /// above its resting pose, tipped slightly, lands and makes one small bounce,
+    /// instead of just appearing there.
+    /// </summary>
+    public void PlayDrop(Transform item, float height = 0.12f, float tiltDegrees = 9f, float duration = 0.42f)
+    {
+        if (item == null)
+            return;
+
+        Complete(item);
+        if (duration <= 0f || !isActiveAndEnabled)
+            return;
+
+        Vector3 rest = item.position;
+        Quaternion restRotation = item.rotation;
+        Vector3 up = transform.up;
+        Vector3 axis = Vector3.Cross(up, item.forward).sqrMagnitude > 0.0001f ? Vector3.Cross(up, item.forward).normalized : transform.right;
+        item.SetPositionAndRotation(rest + up * height, Quaternion.AngleAxis(tiltDegrees, axis) * restRotation);
+        Run(item, duration, t =>
+        {
+            float lift, tilt;
+            if (t < 0.68f)
+            {
+                // The fall: speeds up like a real drop, and the tilt flattens as it lands.
+                float k = t / 0.68f;
+                lift = height * (1f - k * k);
+                tilt = tiltDegrees * (1f - DeskMotion.EaseOutCubic(k));
+            }
+            else
+            {
+                // One small bounce, then rest.
+                float k = (t - 0.68f) / 0.32f;
+                lift = height * 0.1f * Mathf.Sin(k * Mathf.PI);
+                tilt = -tiltDegrees * 0.12f * Mathf.Sin(k * Mathf.PI);
+            }
+            item.SetPositionAndRotation(rest + up * lift, Quaternion.AngleAxis(tilt, axis) * restRotation);
+        }, () => item.SetPositionAndRotation(rest, restRotation));
     }
 
     /// <summary>Carries a closed item along a low arc back to a resting pose.</summary>

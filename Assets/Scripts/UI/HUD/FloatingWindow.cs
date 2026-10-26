@@ -429,6 +429,9 @@ public class FloatingWindow :
                 localPointer;
         }
 
+        // The window stops at the screen edge while it is held.
+        held = HeldOnScreen.ForRect(window, eventData.position, eventCamera);
+
 
         // -----------------------------------------------------
         // Bring THIS document to front
@@ -623,7 +626,7 @@ public class FloatingWindow :
         if (!RectTransformUtility
             .ScreenPointToLocalPointInRectangle(
                 parentRect,
-                eventData.position,
+                held.Clamp(eventData.position),
                 eventCamera,
                 out Vector2 localPointer
             ))
@@ -633,7 +636,7 @@ public class FloatingWindow :
 
 
         // -----------------------------------------------------
-        // Move window with pointer
+        // Move window with pointer (kept inside the screen)
         // -----------------------------------------------------
 
         window.anchoredPosition =
@@ -653,6 +656,7 @@ public class FloatingWindow :
     }
 
     private const float HeldLift = 1.035f;
+    private HeldOnScreen held;
     private float dragLean;
     private bool heldMoved;
     private Coroutine settleRoutine;
@@ -880,6 +884,8 @@ public class FloatingWindow :
 
     public void OpenWindow()
     {
+        WakeForFirstOpen();
+
         if (window == null ||
             parentRect == null)
         {
@@ -935,6 +941,21 @@ public class FloatingWindow :
     }
 
 
+    /// <summary>
+    /// A window that started hidden has not run Awake yet (no parent
+    /// found), so its very first open used to be skipped and the window
+    /// was simply switched on with no paper motion. Switching it on here
+    /// runs Awake first; the open then animates like every later one.
+    /// </summary>
+    private void WakeForFirstOpen()
+    {
+        if (parentRect == null && !gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+        }
+    }
+
+
     // =========================================================
     // OPEN AT SCREEN POSITION
     // =========================================================
@@ -943,6 +964,8 @@ public class FloatingWindow :
         Vector2 screenPosition
     )
     {
+        WakeForFirstOpen();
+
         if (window == null ||
             parentRect == null)
         {
@@ -1309,6 +1332,25 @@ public class FloatingWindow :
     public bool UsesPaperMotion => paperMotion;
 
     /// <summary>
+    /// Optional: where the paper flies out of / back into right now (e.g. the
+    /// Level 1 hotbar slot holding Notes, or the Bag icon while it is in the
+    /// bag). Null or a null result falls back to the icon given to UsePaperMotion.
+    /// </summary>
+    public System.Func<RectTransform> PaperIconResolver { get; set; }
+
+    /// <summary>The paper has just left its icon (opening from it).</summary>
+    public event System.Action<RectTransform> PaperLeftIcon;
+
+    /// <summary>The paper has just landed in its icon (closing into it).</summary>
+    public event System.Action<RectTransform> PaperReachedIcon;
+
+    private RectTransform CurrentPaperIcon()
+    {
+        RectTransform resolved = PaperIconResolver != null ? PaperIconResolver() : null;
+        return resolved != null ? resolved : paperIcon;
+    }
+
+    /// <summary>
     /// Makes this window the top layer, with a small "pop" for paper windows
     /// so coming to the front is felt.
     /// </summary>
@@ -1445,13 +1487,14 @@ public class FloatingWindow :
     private bool TryGetIconPosition(out Vector2 position)
     {
         position = paperTarget;
-        if (paperIcon == null || parentRect == null || !paperIcon.gameObject.activeInHierarchy)
+        RectTransform icon = CurrentPaperIcon();
+        if (icon == null || parentRect == null || !icon.gameObject.activeInHierarchy)
         {
             return false;
         }
 
         Camera camera = GetCanvasEventCamera();
-        Vector2 screen = RectTransformUtility.WorldToScreenPoint(camera, paperIcon.TransformPoint(paperIcon.rect.center));
+        Vector2 screen = RectTransformUtility.WorldToScreenPoint(camera, icon.TransformPoint(icon.rect.center));
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, screen, camera, out Vector2 local))
         {
             return false;
@@ -1502,12 +1545,14 @@ public class FloatingWindow :
     {
         paperOpening = true;
         bool fromIcon;
+        bool fromDrop = false;
         Vector2 start;
         float startScale;
         if (paperOpenOrigin.HasValue && TryScreenToAnchored(paperOpenOrigin.Value, out start))
         {
             // Dropped item: grow out of the drop point.
             fromIcon = true;
+            fromDrop = true;
             startScale = paperRestScale * 0.35f;
         }
         else
@@ -1529,6 +1574,11 @@ public class FloatingWindow :
         {
             wait += Time.unscaledDeltaTime;
             yield return null;
+        }
+
+        if (fromIcon && !fromDrop)
+        {
+            PaperLeftIcon?.Invoke(CurrentPaperIcon());
         }
 
         float elapsed = 0f;
@@ -1580,6 +1630,10 @@ public class FloatingWindow :
 
         // Next open starts from the same resting spot (centre) as before.
         window.anchoredPosition = start;
+        if (toIcon)
+        {
+            PaperReachedIcon?.Invoke(CurrentPaperIcon());
+        }
         CloseWindowImmediate();
     }
 

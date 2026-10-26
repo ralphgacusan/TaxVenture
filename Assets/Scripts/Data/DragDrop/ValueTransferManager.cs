@@ -56,6 +56,9 @@ public class ValueTransferManager : MonoBehaviour
         object sourceComponent
     )
     {
+        // Away from the desk an open folder or book is read-only: its values cannot be picked up.
+        if (sourceComponent is Component held && Doc3DLayer.BlocksValueTransfer(held.transform)) return;
+
         if (SelectedSourceComponent == sourceComponent)
         {
             ClearSelection();

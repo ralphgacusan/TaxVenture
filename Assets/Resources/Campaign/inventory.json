@@ -1,0 +1,133 @@
+{
+  "_readme": [
+    "Campaign inventory catalogue (Campaign Foundation T10). Loaded by InventoryCatalogueAsset; InventoryCatalogue.BuiltIn() holds the same data as a fallback.",
+    "items: id (stable, saved), label, category (Profiles | Case Files | Tools & Supplies | Keepsakes), icon (HudIconArt picture: notes, folder, profiles, book),",
+    "  description (press-and-hold details card), required (never in the drawer, never left behind), stackLimit (1 = one per slot),",
+    "  container (one slot holds them all: profiles in the binder, case papers and the Client Copy in the folder),",
+    "  scope (the story level the item belongs to; a fresh run of that level clears it), returnsToWorld (closing Make room puts it back, e.g. the desk book).",
+    "journal: neutral facts the evidence journal lists once learned; sourceItemId is the record it links to. Never an answer or a conclusion.",
+    "Content rule (checked by the regression suite): a level never needs more required items at once than the starting 3 + 5 slots.",
+    "carryLimit (T11): at most this many carried in bar + bag together; more are refused (0 = no limit). scope \"\" = kept for the whole campaign."
+  ],
+  "items": [
+    {
+      "id": "profile_binder",
+      "label": "Profile Binder",
+      "category": "Profiles",
+      "icon": "profiles",
+      "description": "Every taxpayer profile you collect, kept together in one binder.",
+      "required": true,
+      "stackLimit": 1,
+      "container": true,
+      "scope": "Level_01",
+      "returnsToWorld": false
+    },
+    {
+      "id": "notes",
+      "label": "Notes",
+      "category": "Tools & Supplies",
+      "icon": "notes",
+      "description": "Today's objectives and every step, ticked off as you go.",
+      "required": true,
+      "stackLimit": 1,
+      "container": false,
+      "scope": "Level_01",
+      "returnsToWorld": false
+    },
+    {
+      "id": "case_folder",
+      "label": "Case Folder",
+      "category": "Case Files",
+      "icon": "folder",
+      "description": "Your client's case papers. Hand it to the Auditor from your bar.",
+      "required": true,
+      "stackLimit": 1,
+      "container": true,
+      "scope": "Level_01",
+      "returnsToWorld": false
+    },
+    {
+      "id": "tax_code_book",
+      "label": "Tax Code Book",
+      "category": "Tools & Supplies",
+      "icon": "book",
+      "description": "The rules, section by section. Read it anywhere; it can go back on its desk stand.",
+      "required": false,
+      "stackLimit": 1,
+      "container": false,
+      "scope": "Level_01",
+      "returnsToWorld": true
+    },
+    {
+      "id": "coast_postcard",
+      "label": "Coast Tales Postcard",
+      "category": "Keepsakes",
+      "icon": "postcard",
+      "description": "A postcard of the island coast with a short note on the back. Display it on the stand at your desk.",
+      "required": false,
+      "stackLimit": 1,
+      "container": false,
+      "scope": "",
+      "returnsToWorld": false,
+      "carryLimit": 0
+    },
+    {
+      "id": "review_voucher",
+      "label": "Review Voucher",
+      "category": "Tools & Supplies",
+      "icon": "voucher",
+      "description": "A folded green ticket with a copper clock seal: +180 REVIEW SECONDS on one case, before the Auditor leaves. One per case; you can carry two.",
+      "required": false,
+      "stackLimit": 2,
+      "container": false,
+      "scope": "",
+      "returnsToWorld": false,
+      "carryLimit": 2
+    },
+    {
+      "id": "bookmark_set",
+      "label": "Bookmark Set",
+      "category": "Tools & Supplies",
+      "icon": "bookmarks",
+      "description": "Three leather ribbon pins. Pin up to three records to the top of your Bag; every record stays free to read.",
+      "required": false,
+      "stackLimit": 1,
+      "container": false,
+      "scope": "",
+      "returnsToWorld": false,
+      "carryLimit": 0
+    }
+  ],
+  "journal": [
+    {
+      "id": "met-npc_marie",
+      "text": "You met Marie Bautista in the plaza and took her profile card.",
+      "sourceItemId": "profile_binder"
+    },
+    {
+      "id": "met-npc_jhunjhun",
+      "text": "You met Jhun-jhun in the plaza and took his profile card.",
+      "sourceItemId": "profile_binder"
+    },
+    {
+      "id": "met-npc_milo",
+      "text": "You met Milo in the plaza and took his profile card.",
+      "sourceItemId": "profile_binder"
+    },
+    {
+      "id": "met-npc_zorbix",
+      "text": "You met Zorbix in the plaza and took his profile card.",
+      "sourceItemId": "profile_binder"
+    },
+    {
+      "id": "case-received",
+      "text": "The receptionist handed you Marie's case for the day.",
+      "sourceItemId": "case_folder"
+    },
+    {
+      "id": "client-copy",
+      "text": "The Auditor gave you Marie's client copy to deliver.",
+      "sourceItemId": "case_folder"
+    }
+  ]
+}

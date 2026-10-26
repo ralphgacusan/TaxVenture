@@ -58,6 +58,33 @@ public sealed class DialogueSession
         return true;
     }
 
+    /// <summary>
+    /// Inserts lines right after the current one (a conversation that goes on
+    /// with what just happened, e.g. the Auditor's findings once he has the
+    /// folder). Same validation as TryStart. Returns the index of the first
+    /// inserted line, or -1 when nothing was inserted.
+    /// </summary>
+    public int TryInsertAfterCurrent(IReadOnlyList<DialogueLine> source)
+    {
+        if (!IsActive || source == null || source.Count == 0) return -1;
+        for (int i = 0; i < source.Count; i++)
+            if (source[i] == null || string.IsNullOrWhiteSpace(source[i].Text)) return -1;
+        int at = LineIndex + 1;
+        for (int i = 0; i < source.Count; i++)
+        {
+            DialogueLine line = source[i];
+            lines.Insert(at + i, new DialogueLine(line.Speaker, line.Text, line.PortraitId, line.SpeakerName)
+            {
+                CameraHint = line.CameraHint,
+                Emote = line.Emote,
+                EmoteBurst = line.EmoteBurst,
+                AwaitAction = string.IsNullOrWhiteSpace(line.AwaitAction) ? null : line.AwaitAction.Trim(),
+                ActionPrompt = line.ActionPrompt
+            });
+        }
+        return at;
+    }
+
     public bool TryAdvance(out bool completed)
     {
         completed = false;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// PURPOSE:
@@ -17,9 +18,10 @@ using System;
 /// - Callers apply this to a CANDIDATE copy of the save, write it, and only
 ///   then make it live (PlayerProgressManager.CommitLevelOneCaseResult), so a
 ///   failed write leaves the old state and shows no success.
-/// - Next step: Marie's follow-through (T08, CompleteFollowThrough). Until
-///   T16 adds the chapter wrap-up, finishing the follow-through also
-///   completes Chapter 1 (a temporary wrap-up bridge).
+/// - Next step: Marie's follow-through (T08, CompleteFollowThrough), then
+///   the Chapter 1 wrap-up (T16, CompleteWrapUp): only the wrap-up completes
+///   the chapter, after the follow-through, in one write with the end of the
+///   Level 1 checkpoint. A result-card click or a shop visit never does.
 /// </summary>
 public static class CaseResultRules
 {
@@ -29,13 +31,17 @@ public static class CaseResultRules
     public const string NextStepText = "Next: Marie's follow-through.";
 
     /// <summary>
-    /// The card after Marie has her copy: the follow-through also completed
-    /// Chapter 1 (T16 bridge, CF-41), so it reads Level Complete.
+    /// The card after Marie has her copy (T16, revised 2026-10-26): it is the
+    /// Chapter 1 card. Its Continue completes Chapter 1 (CompleteWrapUp, one
+    /// write) and goes to the career board.
     /// </summary>
-    public const string CompletedTitle = "Level Complete";
-    public const string CompletedStatus = "LEVEL COMPLETE";
-    public const string CompletedDetail = "Marie's return approved  ·  Client copy delivered";
-    public const string CompletedSummary = "Chapter 1 is done. Your career board shows what's next.";
+    public const string CompletedTitle = "Chapter 1 Complete";
+    public const string CompletedStatus = "CHAPTER 1 COMPLETE";
+    public const string CompletedDetail = "Marie's return approved  ·  Her copy delivered";
+    public const string CompletedSummary = "Your career board shows what's next.";
+
+    /// <summary>The story activity the Chapter 1 wrap-up records (T16; no grant of its own).</summary>
+    public const string WrapUpActivity = "chapter-wrap-up";
 
     /// <summary>The stable once-only id for a chapter's case result.</summary>
     public static string ActionId(string chapterId, string caseId) =>
@@ -115,11 +121,11 @@ public static class CaseResultRules
 
     /// <summary>
     /// Marie's follow-through (T08), on a candidate save: the activity, its
-    /// Public Trust +4 (claimed once) and, as the TEMPORARY wrap-up bridge
-    /// until T16, Chapter 1's completion, the "follow-through done" checkpoint
-    /// phase and a pending finale/card marker, all in one write. The checkpoint
-    /// remains until that end flow is acknowledged. Never without a recorded
-    /// case result. Returns the trust change (Rejected when nothing was pending).
+    /// Public Trust +4 (claimed once), the "follow-through done" checkpoint
+    /// phase and a pending finale/card marker, all in one write. It does NOT
+    /// complete Chapter 1 (T16: the wrap-up does, CompleteWrapUp). Never
+    /// without a recorded case result. Returns the trust change (Rejected
+    /// when nothing was pending).
     /// </summary>
     public static CampaignRewards.Change CompleteFollowThrough(PlayerProgressData candidate)
     {
@@ -127,12 +133,83 @@ public static class CaseResultRules
             return new CampaignRewards.Change { Outcome = CampaignRewards.Outcome.Rejected, Kind = CampaignRewards.TrustKind };
         CampaignRewards.CompleteActivity(candidate, CampaignRewards.Level1, CampaignRewards.FollowThrough);
         CampaignRewards.Change trust = CampaignRewards.Grant(candidate, CampaignRewards.Level1, CampaignRewards.FollowThrough, CampaignRewards.TrustKind);
-        // T16 bridge: the chapter wrap-up does not exist yet, so the follow-through completes Chapter 1.
-        candidate.campaign.MarkChapterCompleted(CampaignRecord.FirstChapterId);
         if (candidate.campaign.levelOne == null) candidate.campaign.levelOne = new Level1FieldCheckpoint();
         candidate.campaign.levelOne.handoverPhase = Level1FieldCheckpoint.HandoverDone;
         candidate.campaign.levelOneEndFlowPending = true;
         candidate.ClearCheckpoint(CampaignRecord.FirstChapterId);
         return trust;
+    }
+
+    /// <summary>The wrap-up is next: Marie's follow-through is done and its finale/card end flow is still pending.</summary>
+    public static bool WrapUpPending(PlayerProgressData data) =>
+        data != null && data.HasCampaign && data.campaign.levelOneEndFlowPending &&
+        CampaignRewards.IsActivityCompleted(data, CampaignRewards.Level1, CampaignRewards.FollowThrough);
+
+    /// <summary>
+    /// The Chapter 1 wrap-up (T16), on a candidate save: the wrap-up activity,
+    /// Chapter 1's completion, the end of the pending end flow and of the
+    /// Level 1 checkpoint, in one write. Only after the follow-through; a
+    /// second call changes nothing. True when it applied.
+    /// </summary>
+    public static bool CompleteWrapUp(PlayerProgressData candidate)
+    {
+        if (!WrapUpPending(candidate)) return false;
+        CampaignRewards.CompleteActivity(candidate, CampaignRewards.Level1, WrapUpActivity);
+        candidate.campaign.MarkChapterCompleted(CampaignRecord.FirstChapterId);
+        candidate.campaign.levelOneEndFlowPending = false;
+        candidate.campaign.levelOne = new Level1FieldCheckpoint();
+        candidate.ClearCheckpoint(CampaignRecord.FirstChapterId);
+        return true;
+    }
+
+    /// <summary>One earned line on the wrap-up sheet.</summary>
+    public sealed class SummaryLine
+    {
+        public string Kind = "";
+        public string Reason = "";
+        public int Amount;
+    }
+
+    /// <summary>What the Chapter 1 wrap-up sheet shows, read from the committed save (never from presentation).</summary>
+    public sealed class ChapterSummary
+    {
+        public readonly List<SummaryLine> Coins = new List<SummaryLine>();
+        public readonly List<SummaryLine> Trust = new List<SummaryLine>();
+        public int CoinsEarned;
+        public int Wallet;
+        public int TrustEarned;
+        public int TrustNow;
+        public int TrustTarget = CampaignRewards.SupportTarget;
+        public int Tier;
+        public int FirstCheckCorrect = -1;
+    }
+
+    /// <summary>
+    /// The chapter's earned coins and trust (this level's ledger lines, in
+    /// order; purchases and repairs are not earnings), the live wallet and
+    /// trust, and the frozen first-check tier (mastery, optional).
+    /// </summary>
+    public static ChapterSummary BuildChapterSummary(PlayerProgressData data, string levelId = CampaignRewards.Level1)
+    {
+        var summary = new ChapterSummary();
+        if (data == null || !data.HasCampaign) return summary;
+        CampaignRecord campaign = data.campaign;
+        string prefix = (campaign.campaignId ?? "").Trim() + "/" + (levelId ?? "").Trim() + "/";
+        if (campaign.ledger != null)
+            foreach (CampaignLedgerEntry entry in campaign.ledger)
+            {
+                if (entry == null || entry.amount <= 0 || entry.claimId == null || !entry.claimId.StartsWith(prefix, StringComparison.Ordinal)) continue;
+                var line = new SummaryLine { Kind = entry.kind, Reason = entry.reason ?? "", Amount = entry.amount };
+                if (entry.kind == CampaignRewards.CoinsKind) { summary.Coins.Add(line); summary.CoinsEarned += entry.amount; }
+                else if (entry.kind == CampaignRewards.TrustKind) { summary.Trust.Add(line); summary.TrustEarned += entry.amount; }
+            }
+        summary.Wallet = campaign.coins;
+        summary.TrustNow = campaign.publicTrust;
+        if (campaign.levelOneCaseResult != null && campaign.levelOneCaseResult.recorded)
+        {
+            summary.Tier = campaign.levelOneCaseResult.tier;
+            summary.FirstCheckCorrect = campaign.levelOneCaseResult.firstCheckCorrect;
+        }
+        return summary;
     }
 }

@@ -14,6 +14,7 @@ public class DocumentWindowDrag : MonoBehaviour,
     private Vector2 dragOffset;
     private Vector2 originalPosition;
     private Vector2 startPointerPosition;
+    private HeldOnScreen held;
 
     private void Awake()
     {
@@ -52,6 +53,8 @@ public class DocumentWindowDrag : MonoBehaviour,
             out Vector2 pointerLocalPosition);
 
         dragOffset = window.anchoredPosition - pointerLocalPosition;
+        // The window stops at the screen edge while it is held.
+        held = HeldOnScreen.ForRect(window, eventData.position, cam);
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -68,7 +71,7 @@ public class DocumentWindowDrag : MonoBehaviour,
 
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             parentRect,
-            eventData.position,
+            held.Clamp(eventData.position),
             cam,
             out Vector2 pointerLocalPosition);
 

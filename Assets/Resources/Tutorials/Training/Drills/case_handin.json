@@ -46,14 +46,15 @@
       { "use": "exit-desk" },
       { "use": "auditor" },
       { "use": "submit" },
-      { "use": "audit-card" },
+      { "use": "submit-drag" },
+      { "use": "audit-approved" },
       { "id": "done", "title": "DRILL COMPLETE", "when": "event:CaseCompleted", "duringResults": true, "pages": [
         { "mood": "wow", "box": "bottom", "text": "Approved and filed! That's a whole case, start to finish. Try the mastery run next." }
       ] }
     ],
     "hints": [
-      { "id": "send-back", "when": "event:CaseFolderReturned", "onlyIn": "mode:FirstPerson", "delay": 0.8, "pages": [
-        { "mood": "sad", "text": "The Auditor sent it back. No sweat! Fix what's wrong at your desk, store the folder again, then hand it in." }
+      { "id": "send-back", "when": "cue:AuditFolderHandedBack", "onlyIn": "mode:FirstPerson", "delay": 0.8, "pages": [
+        { "mood": "sad", "text": "The Auditor handed it back. No sweat! Fix what he marked at your desk, keep the folder with you, then talk to him again." }
       ] }
     ]
   },
@@ -70,10 +71,10 @@
         { "style": "hint", "waitFor": "case:filled", "text": "Fill all three fields at your desk." }
       ] },
       { "id": "store", "title": "GOAL", "pages": [
-        { "style": "hint", "waitFor": "event:CaseFolderStored", "text": "Keep the folder with you: drag it onto your folder icon." }
+        { "style": "hint", "waitFor": "event:CaseFolderStored", "text": "Keep the folder with you: drag it onto a slot in your bar." }
       ] },
       { "id": "submit", "title": "GOAL", "pages": [
-        { "style": "hint", "waitFor": "state:AuditSubmittedState", "text": "Hand it to the Auditor: drag your folder icon onto him." }
+        { "style": "hint", "waitFor": "state:AuditSubmittedState", "text": "Talk to the Auditor, then drag your folder icon onto him when he asks for it." }
       ] },
       { "id": "done", "title": "MASTERED", "when": "event:CaseCompleted", "duringResults": true, "pages": [
         { "mood": "wow", "box": "bottom", "text": "Approved! Filed, handed in and done. That's how a pro closes a case." }

@@ -112,6 +112,9 @@ public class TaxCodeBook3DDrag :
     private bool hasDragTarget;
     private bool hasMovedDuringDrag;
 
+    /// <summary>The closed book is being carried by the finger (T10: the hotbar lights the slot under it).</summary>
+    public bool IsCarrying => isDragging && hasMovedDuringDrag;
+
     private bool isPointerOver;
 
     private Vector2 pointerPosition;
@@ -180,6 +183,9 @@ public class TaxCodeBook3DDrag :
 
         ApplyRedCover(closedTaxCodeBook);
         ApplyRedCover(openTaxCodeBook);
+        // The open book's slim, stylized hardcover (matches the Case Folder; replaces the thick model's look).
+        if (openTaxCodeBook != null && taxCodeBookUI != null)
+            TaxCodeBookOpenLook.Apply(openTaxCodeBook, taxCodeBookUI.PaperRoot as RectTransform);
 
         if (openTaxCodeBook != null)
         {
@@ -568,17 +574,21 @@ public class TaxCodeBook3DDrag :
 
         closedTaxCodeBook.SetActive(false);
 
-        if (positionOpenBookAtDropPoint && mainCamera != null)
+        Camera view = HeldOnScreen.ActiveCamera(mainCamera);
+        if (positionOpenBookAtDropPoint && view != null)
         {
-            // Model pivots differ (the open mesh is hinged at its spine).
-            // Align the visible centres, preserving the open book's reading depth.
-            Vector2 centre = mainCamera.WorldToScreenPoint(VisualCentre(closedTaxCodeBook));
+            // The printed page opens exactly where the finger let go (2026-10-26), at the open
+            // book's reading depth; a shortcut open (no finger) uses where the closed book lay.
+            Vector2 target = dropScreenPosition != Vector2.zero
+                ? dropScreenPosition
+                : (Vector2)view.WorldToScreenPoint(VisualCentre(closedTaxCodeBook));
             openTaxCodeBook.transform.SetPositionAndRotation(originalOpenPosition, originalOpenRotation);
             openTaxCodeBook.transform.localScale = originalOpenScale;
-            Vector3 openCentre = VisualCentre(openTaxCodeBook);
-            Plane plane = new Plane(mainCamera.transform.forward, openCentre);
-            if (plane.Raycast(mainCamera.ScreenPointToRay(centre), out float enter))
-                openTaxCodeBook.transform.position += mainCamera.ScreenPointToRay(centre).GetPoint(enter) - openCentre;
+            Transform page = taxCodeBookUI != null ? taxCodeBookUI.PaperRoot : null;
+            UprightToCamera(openTaxCodeBook.transform, page, view);
+            RectTransform pageRect = page as RectTransform;
+            Vector3 anchor = pageRect != null ? pageRect.TransformPoint(pageRect.rect.center) : VisualCentre(openTaxCodeBook);
+            HeldOnScreen.CentreUnder(openTaxCodeBook.transform, anchor, view, target);
 
             DebugLog(
                 $"Open book positioned at drop point: " +
@@ -587,6 +597,9 @@ public class TaxCodeBook3DDrag :
         }
 
         openTaxCodeBook.SetActive(true);
+        // The whole open book shows: a drop near an edge is moved in (same depth, never off screen).
+        if (view != null)
+            openTaxCodeBook.transform.position = HeldOnScreen.FitOnScreen(openTaxCodeBook.transform, view);
 
         if (deskAnimator != null)
             deskAnimator.PlayOpen(openTaxCodeBook.transform, closedTaxCodeBook.transform.position);
@@ -618,6 +631,27 @@ public class TaxCodeBook3DDrag :
         }
     }
 
+
+    /// <summary>
+    /// Turns a document about its printed page's own normal so the page reads
+    /// upright for this camera (and turns it round first if the page faces
+    /// away). The desk tilt is kept; an already upright page is unchanged.
+    /// </summary>
+    public static void UprightToCamera(Transform model, Transform page, Camera camera)
+    {
+        if (model == null || page == null || camera == null) return;
+        Vector3 normal = page.forward;   // a UI page is read looking along its +z
+        Vector3 toPage = page.position - camera.transform.position;
+        if (Vector3.Dot(normal, toPage) < 0f)
+        {
+            model.RotateAround(page.position, page.up, 180f);
+            normal = page.forward;
+        }
+        Vector3 wantedUp = Vector3.ProjectOnPlane(camera.transform.up, normal);
+        if (wantedUp.sqrMagnitude < 1e-6f) return;
+        float roll = Vector3.SignedAngle(page.up, wantedUp, normal);
+        if (Mathf.Abs(roll) > 0.5f) model.RotateAround(page.position, normal, roll);
+    }
 
     /// <summary>The open book model (shown while the book is read).</summary>
     public GameObject OpenBook => openTaxCodeBook;
@@ -703,7 +737,8 @@ public class TaxCodeBook3DDrag :
         PlaceClosedBookAtOrigin();
         closedTaxCodeBook.SetActive(true);
         ApplyRedCover(closedTaxCodeBook);
-        if (deskAnimator != null) deskAnimator.PlaySettle(closedTaxCodeBook.transform);
+        // Back from the bar: it drops onto its stack (2026-10-26), like the folder.
+        if (deskAnimator != null) deskAnimator.PlayDrop(closedTaxCodeBook.transform);
     }
 
     /// <summary>Puts the closed book back on its desk spot, hidden (it is now carried in the HUD icon).</summary>
@@ -773,7 +808,7 @@ public class TaxCodeBook3DDrag :
         bool any = false;
         foreach (Renderer renderer in model.GetComponentsInChildren<Renderer>(true))
         {
-            if (!(renderer is MeshRenderer) || renderer.GetComponentInParent<Canvas>() != null ||
+            if (!(renderer is MeshRenderer) || !renderer.enabled || renderer.GetComponentInParent<Canvas>() != null ||
                 renderer.GetComponentInParent<TMPro.TMP_Text>() != null) continue;
             if (!any) { bounds = renderer.bounds; any = true; }
             else bounds.Encapsulate(renderer.bounds);

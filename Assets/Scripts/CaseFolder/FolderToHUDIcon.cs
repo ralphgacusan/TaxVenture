@@ -193,12 +193,7 @@ public class FolderToHUDIcon :
             return;
         }
 
-        bool pointerInsideIcon =
-            RectTransformUtility.RectangleContainsScreenPoint(
-                folderHUDIcon,
-                eventData.position,
-                null
-            );
+        bool pointerInsideIcon = IsOverDropTarget(eventData.position);
 
         DebugLog(
             $"Pointer screen position: {eventData.position}"
@@ -218,6 +213,7 @@ public class FolderToHUDIcon :
 
         if (pointerInsideIcon)
         {
+            HudSlotDrop.Note(InventoryCatalogue.CaseFolder, eventData.position);
             StoreFolder();
         }
         else
@@ -345,6 +341,17 @@ public class FolderToHUDIcon :
     /// <summary>True while the folder belongs to the HUD icon, including while it is out for a quick view (T05 checkpoint).</summary>
     public bool IsStoredOrViewing => folderStored;
 
+    /// <summary>
+    /// The Case Folder belongs to the HUD now (stored, or out of it for a quick
+    /// view): the desk must not put it back on its stack (2026-10-26).
+    /// </summary>
+    public static bool AnyStoredOrViewing()
+    {
+        foreach (FolderToHUDIcon folder in FindObjectsByType<FolderToHUDIcon>(FindObjectsInactive.Include))
+            if (folder != null && folder.folderStored) return true;
+        return false;
+    }
+
     public bool IsFolderStored()
     {
         return folderStored && !outForView;
@@ -409,6 +416,18 @@ public class FolderToHUDIcon :
     public RectTransform GetHUDIcon()
     {
         return folderHUDIcon;
+    }
+
+    /// <summary>
+    /// T10: the shared drop test for carried world items. When the level uses
+    /// the HUD hotbar, any slot (or the row) takes the folder; otherwise only
+    /// this folder's own icon, as before.
+    /// </summary>
+    public bool IsOverDropTarget(Vector2 screenPosition)
+    {
+        if (HudSlotDrop.Active) return HudSlotDrop.IsOver(screenPosition);
+        return folderHUDIcon != null &&
+               RectTransformUtility.RectangleContainsScreenPoint(folderHUDIcon, screenPosition, null);
     }
 
     /// <summary>

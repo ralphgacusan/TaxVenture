@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// PURPOSE:
@@ -152,6 +153,72 @@ public sealed class Doc3DLayer : MonoBehaviour
     // =========================================================
     // RENDER
     // =========================================================
+
+    // =========================================================
+    // THE TOUCHED DOCUMENT COMES TO THE FRONT (2026-10-26)
+    // =========================================================
+
+    /// <summary>
+    /// Level 1 (2026-10-26): away from the desk an open Case Folder or Tax Code Book is read-only.
+    /// It reads and turns pages as usual, but none of its values can be held, dragged or placed.
+    /// </summary>
+    public static bool BlocksValueTransfer(Transform t)
+    {
+        CameraController cc = CameraController.Instance;
+        if (HudHotbar.Instance == null || cc == null || cc.CurrentMode == CameraController.CameraMode.Workstation) return false;
+        return For(t) != null;
+    }
+
+    /// <summary>The visible document layer whose document contains t (null when t is not part of one).</summary>
+    public static Doc3DLayer For(Transform t)
+    {
+        if (t == null) return null;
+        for (int i = 0; i < All.Count; i++)
+        {
+            Doc3DLayer layer = All[i];
+            if (layer != null && layer.source != null && layer.IsVisible && t.IsChildOf(layer.source)) return layer;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// True when the document itself is drawn at this screen point: the ray from the camera passes
+    /// through one of its meshes (each tested in its own oriented box) or one of its page canvases.
+    /// known is false when the document has nothing to test (e.g. a tool drawn by HUD UI only).
+    /// 2026-10-26: touch-to-front used raycast hits, and a world canvas's hits sort ahead of a nearer
+    /// book, so touching the Tax Code Book kept bringing the Case Folder forward.
+    /// </summary>
+    public bool ShowsAt(Vector2 screen, out bool known)
+    {
+        known = false;
+        Camera main = CameraController.Instance != null ? CameraController.Instance.MainCamera : Camera.main;
+        if (!IsVisible || main == null) return false;
+        Ray ray = main.ScreenPointToRay(screen);
+
+        renderers.Clear();
+        source.GetComponentsInChildren(false, renderers);
+        for (int i = 0; i < renderers.Count; i++)
+        {
+            Renderer r = renderers[i];
+            if (r == null || !r.enabled || r is ParticleSystemRenderer) continue;
+            known = true;
+            Matrix4x4 toLocal = r.transform.worldToLocalMatrix;
+            var local = new Ray(toLocal.MultiplyPoint3x4(ray.origin), toLocal.MultiplyVector(ray.direction));
+            if (r.localBounds.IntersectRay(local)) return true;
+        }
+
+        foreach (Canvas c in source.GetComponentsInChildren<Canvas>(false))
+        {
+            var rect = (RectTransform)c.transform;
+            if (c.renderMode != RenderMode.WorldSpace) continue;
+            known = true;
+            var plane = new Plane(rect.forward, rect.position);
+            if (!plane.Raycast(ray, out float distance)) continue;
+            Vector3 onCanvas = rect.InverseTransformPoint(ray.GetPoint(distance));
+            if (rect.rect.Contains(new Vector2(onCanvas.x, onCanvas.y))) return true;
+        }
+        return false;
+    }
 
     private void LateUpdate()
     {

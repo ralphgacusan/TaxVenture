@@ -91,6 +91,8 @@ public sealed class CareerBoardPresenter : MonoBehaviour
     // Shop entry (T03, moved here from the main menu): top edge beside BACK, above the CAREER board.
     private CareerBoardButton shopButton;
     private Transform shopLock;
+    // T13: the same catalogue book as the Supply Counter, opened over this view.
+    private SupplyShopScreen menuShop;
     private TextMeshPro shopNotice;
     private float shopNoticeTime;
     private CareerChapterSheet sheet;
@@ -163,7 +165,10 @@ public sealed class CareerBoardPresenter : MonoBehaviour
     private void OnDestroy()
     {
         foreach (Material material in materials) CareerBoardKit.Dispose(material);
+        if (menuShop != null) Destroy(menuShop.gameObject);
     }
+
+    private bool ShopOpen => menuShop != null && menuShop.IsOpen;
 
     private void HandleProgressChanged(PlayerProgressData _) => progressDirty = true;
 
@@ -177,11 +182,12 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         bool visible = IsBoardVisible();
         bool ready = visible && CanInteractNow();
         if (visible && !wasVisible) ShowBoard(animate: true);
-        if (!visible && wasVisible) sheet.HideNow();
+        if (!visible && wasVisible) { sheet.HideNow(); if (ShopOpen) menuShop.Close(); }
         if (!ready) ClearPointer();
         wasVisible = visible;
 
-        if (progressDirty && ready)
+        // A purchase changes the save: the board catches up (and celebrates) once the catalogue is closed.
+        if (progressDirty && ready && !ShopOpen)
         {
             progressDirty = false;
             CareerSnapshot fresh = CareerProgressService.Current();
@@ -190,12 +196,14 @@ public sealed class CareerBoardPresenter : MonoBehaviour
             CareerProgressService.SaveSeen(fresh);
         }
 
-        ApplyInputGate(ready);
-        if (ready && !launchStarted)
+        // While the catalogue is open it owns taps and Back (it closes itself), and the board waits behind it.
+        ApplyInputGate(ready && !ShopOpen);
+        if (ready && !launchStarted && !ShopOpen)
         {
             HandlePointer();
             if (BackPressed()) GoBack();
         }
+        else if (ShopOpen) ClearPointer();
         TickCounters(Time.unscaledDeltaTime);
         TickShopNotice(Time.unscaledDeltaTime);
     }
@@ -226,18 +234,26 @@ public sealed class CareerBoardPresenter : MonoBehaviour
     }
 
     /// <summary>
-    /// Locked (not yet introduced in the story): says when it opens. The shop
-    /// itself (catalogue, prices, ownership) arrives with T12/T13; opening the
-    /// entry never unlocks or changes anything.
+    /// Locked (not yet introduced in the story): says when it opens; tapping
+    /// never unlocks or changes anything. Unlocked (T13): opens the same
+    /// catalogue book as the Supply Counter (one catalogue, one wallet) over
+    /// this view; closing it returns to the board exactly as it was. The
+    /// book's own opening sound is the one cue.
     /// </summary>
     private void OpenShop()
     {
-        if (!Application.isPlaying || launchStarted || !CanInteractNow()) return;
+        if (!Application.isPlaying || launchStarted || !CanInteractNow() || ShopOpen) return;
         RefreshShopEntry();
         PlayerProgressManager manager = PlayerProgressManager.Instance;
-        bool unlocked = CampaignMenu.ShopUnlocked(manager != null ? manager.CurrentProgress : null);
-        ShowShopNotice(unlocked ? "The shop is not ready yet." : CampaignMenu.ShopLockedMessage);
-        PlaySelectSound();
+        if (!CampaignMenu.ShopUnlocked(manager != null ? manager.CurrentProgress : null))
+        {
+            ShowShopNotice(CampaignMenu.ShopLockedMessage);
+            PlaySelectSound();
+            return;
+        }
+        ClearPointer();
+        if (menuShop == null) menuShop = SupplyShopScreen.CreateStandalone();
+        menuShop.Open(firstVisit: false);
     }
 
     private void ShowShopNotice(string text)

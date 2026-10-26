@@ -103,6 +103,14 @@ public class TaxpayerProfileCollectionHUD : MonoBehaviour
     {
         screenPoint = default;
 
+        // T10: the binder's hotbar slot, the slot it will take, or the Bag icon.
+        Vector2? landing = CollectionPointOverride != null ? CollectionPointOverride() : null;
+        if (landing.HasValue)
+        {
+            screenPoint = landing.Value;
+            return true;
+        }
+
         RectTransform icon = transform as RectTransform;
         if (!isActiveAndEnabled || !gameObject.activeInHierarchy || icon == null || !icon.gameObject.activeInHierarchy)
         {
@@ -202,6 +210,13 @@ public class TaxpayerProfileCollectionHUD : MonoBehaviour
     /// Returns true when it handled the tap.
     /// </summary>
     public static System.Func<bool> IconClickOverride;
+
+    /// <summary>
+    /// Optional landing point for profiles flying in (set by the Level 1 HUD
+    /// hotbar, T10): the Profile Binder's slot, the slot it will take, or the
+    /// Bag icon. Null result = this icon, as before.
+    /// </summary>
+    public static System.Func<Vector2?> CollectionPointOverride;
 
     public bool AllProfilesCollected => collectedProfiles.Count >= totalProfilesRequired;
 

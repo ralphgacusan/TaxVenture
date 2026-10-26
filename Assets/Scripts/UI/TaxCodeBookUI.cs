@@ -67,6 +67,7 @@ public class TaxCodeBookUI : MonoBehaviour
     private bool hasPageTurnRest;
     private Quaternion pageTurnRestRotation;
     private Vector3 pageTurnRestScale;
+    private Vector3 pageTurnRestPosition;
 
     private int currentSectionIndex = 0;
 
@@ -253,7 +254,7 @@ public class TaxCodeBookUI : MonoBehaviour
 
         StopPageTurn();
         pageTurnRoutine = StartCoroutine(DeskMotion.TurnPage(root, pageTurnRestRotation,
-            pageTurnRestScale, direction, pageTurnDuration, () =>
+            pageTurnRestScale, direction, Mathf.Max(pageTurnDuration, DeskMotion.PageFlipSeconds), () =>
             {
                 RenderSection(currentSectionIndex);
             }));
@@ -272,6 +273,7 @@ public class TaxCodeBookUI : MonoBehaviour
         {
             pageTurnRoot.localRotation = pageTurnRestRotation;
             pageTurnRoot.localScale = pageTurnRestScale;
+            pageTurnRoot.localPosition = pageTurnRestPosition;
         }
 
     }
@@ -285,6 +287,7 @@ public class TaxCodeBookUI : MonoBehaviour
         {
             pageTurnRestRotation = pageTurnRoot.localRotation;
             pageTurnRestScale = pageTurnRoot.localScale;
+            pageTurnRestPosition = pageTurnRoot.localPosition;
             hasPageTurnRest = true;
         }
 

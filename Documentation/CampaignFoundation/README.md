@@ -4,7 +4,7 @@ A detailed implementation ticket pack for the approved TaxVenture campaign syste
 
 ## Overall want
 
-The player is Elijah, a new arrival helping Coast Tales with income-tax work. Mayor Quax replaces Arthur as guide and teaches in person. The game should reward corrected learning, earn public trust through responsible follow-through, give collected records an organized home, and let first-completion coins visibly improve Elijah's office. Later reputation-driven endings must be supportable without converting mastery hearts into social trust or creating separate competing save/UI frameworks.
+The player is Elijah, a new arrival helping Coast Tales with income-tax work. Arthur, Senior Tax Consultant, is the guide and teaches in person (the Mayor Quax guide planned in T15 was reverted by user decision on 2026-10-25). The game should reward corrected learning, earn public trust through responsible follow-through, give collected records an organized home, and let first-completion coins visibly improve Elijah's office. Later reputation-driven endings must be supportable without converting mastery hearts into social trust or creating separate competing save/UI frameworks.
 
 **Delivery A:** existing main menu and L1 become a coherent fresh campaign with New Game/Continue, safe campaign initialization, persistent L1 progress, first-check mastery, public trust, once-only currency, bag/collectibles, physical/menu shop, bookmarks/decor and review vouchers. **Delivery B:** integrate the existing one-case Rosa L2, add its knowing-choice consequences and functional comparison stand, then enable campaign continuation. Future computer benefits unlock after L3; future cases and endings are not implemented now.
 

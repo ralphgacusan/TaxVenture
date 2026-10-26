@@ -191,7 +191,7 @@ public class PlayerProgressManager : MonoBehaviour
 
         // Story runs record the campaign's first completion of the chapter (Continue then opens the career).
         // T07: never Level 1 here: its story moves on only through the recorded case result
-        // (CommitLevelOneCaseResult) and the follow-through (CompleteChapterBridge until T08/T16).
+        // (CommitLevelOneCaseResult), Marie's follow-through and the chapter wrap-up (T16, CommitLevelOneWrapUp).
         if (CampaignRun.AllowsStoryWrites(mode) && progress.HasCampaign && levelTotal.LevelId != CampaignRecord.FirstChapterId &&
             progress.campaign.MarkChapterCompleted(levelTotal.LevelId))
             Debug.Log($"[PlayerProgressManager] Story chapter {levelTotal.LevelId} completed.");
@@ -330,8 +330,8 @@ public class PlayerProgressManager : MonoBehaviour
 
     /// <summary>
     /// Marie's follow-through (T08): Public Trust +4 (claimed once), the
-    /// activity and, until T16's wrap-up, Chapter 1's completion, in one
-    /// candidate write. Called once the Client Copy is handed to Marie
+    /// activity and the pending end-flow marker, in one candidate write
+    /// (Chapter 1 completes later, at its wrap-up: CommitLevelOneWrapUp). Called once the Client Copy is handed to Marie
     /// (ClientCopyHandover); only a recorded story case result makes it pending.
     /// </summary>
     public StoryGrants CommitFollowThrough()
@@ -349,27 +349,32 @@ public class PlayerProgressManager : MonoBehaviour
         grants.Trust = CaseResultRules.CompleteFollowThrough(candidate);
         grants.Saved = TryWriteCandidate(candidate);
         if (grants.Saved)
-            Debug.Log($"[PlayerProgressManager] Marie's follow-through done: trust {grants.Trust.After}/100; Chapter 1 completed (T16 bridge).");
+            Debug.Log($"[PlayerProgressManager] Marie's follow-through done: trust {grants.Trust.After}/100; the Chapter 1 wrap-up is next.");
         return grants;
     }
 
     /// <summary>
-    /// Acknowledges the finale/result card after it has been presented. The
-    /// marker and Level 1 checkpoint are cleared together; a failed write
-    /// leaves both available for the player to resume and retry.
+    /// The Chapter 1 wrap-up (T16), after the finale/result card: the chapter's
+    /// completion, the wrap-up activity and the end of the pending marker and
+    /// Level 1 checkpoint, in one candidate write. Story runs only, after Marie's
+    /// follow-through. A failed write leaves everything for the player to resume
+    /// and retry (no success sheet is shown).
     /// </summary>
-    public bool AcknowledgeLevelOneEndFlow()
+    public bool CommitLevelOneWrapUp()
     {
         if (progress == null || !progress.HasCampaign || !CampaignSave.CanContinue(campaignState) ||
-            !CampaignRun.AllowsStoryWrites(CurrentRunMode) || !progress.campaign.levelOneEndFlowPending ||
-            CaseResultRules.FollowThroughPending(progress)) return false;
+            !CampaignRun.AllowsStoryWrites(CurrentRunMode) || TrainingSession.IsPracticing ||
+            !CaseResultRules.WrapUpPending(progress)) return false;
 
         PlayerProgressData candidate = CloneProgress();
-        candidate.campaign.levelOneEndFlowPending = false;
-        candidate.campaign.levelOne = new Level1FieldCheckpoint();
-        candidate.ClearCheckpoint(CampaignRecord.FirstChapterId);
-        return TryWriteCandidate(candidate);
+        if (!CaseResultRules.CompleteWrapUp(candidate)) return false;
+        bool saved = TryWriteCandidate(candidate);
+        if (saved) Debug.Log("[PlayerProgressManager] Chapter 1 wrap-up: chapter completed.");
+        return saved;
     }
+
+    /// <summary>The wrap-up sheet's committed facts (earned coins and trust, wallet, tier).</summary>
+    public CaseResultRules.ChapterSummary LevelOneSummary() => CaseResultRules.BuildChapterSummary(progress);
 
     /// <summary>The ledger line of a claim as a Change (Amount 0 when it is not there).</summary>
     private CampaignRewards.Change LastLedger(string claimId)
@@ -385,6 +390,296 @@ public class PlayerProgressManager : MonoBehaviour
         change.Before = entry.balanceAfter - entry.amount;
         change.Reason = entry.reason;
         return change;
+    }
+
+    // =========================================================
+    // INVENTORY (T10): hotbar and bag
+    // =========================================================
+
+    /// <summary>Raised after an inventory change is committed (story: written; other runs: kept in memory).</summary>
+    public static event Action InventoryChanged;
+
+    private CampaignInventoryRecord sessionInventory;
+    private UnityEngine.SceneManagement.Scene sessionInventoryScene;
+
+    /// <summary>Story runs of a committed campaign use the saved inventory; practice, replays and Editor runs get a temporary one per scene.</summary>
+    public bool UsesStoryInventory => progress != null && progress.HasCampaign && CampaignSave.CanContinue(campaignState) &&
+                                      CampaignRun.AllowsStoryWrites(CurrentRunMode) && !TrainingSession.IsPracticing;
+
+    /// <summary>
+    /// T13: the 3D Menu between runs may spend the campaign's coins in the
+    /// same catalogue (no run is chosen, nothing is launching, no drill).
+    /// Level scenes still need a story run (UsesStoryInventory).
+    /// </summary>
+    public bool CanShopFromMenu => progress != null && progress.HasCampaign && CampaignSave.CanContinue(campaignState) &&
+                                   CampaignRun.Chosen == CampaignRunMode.None && !TrainingSession.IsPracticing && !MenuEntry.IsStoryLaunching &&
+                                   UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == MenuEntry.MenuSceneName;
+
+    /// <summary>Purchases may spend real coins: a story run, or the menu between runs (T13). Anything else only browses.</summary>
+    public bool CanSpendCoins => UsesStoryInventory || CanShopFromMenu;
+
+    /// <summary>The live inventory for this run. Observers only read it; changes go through CommitInventory.</summary>
+    public CampaignInventoryRecord Inventory
+    {
+        get
+        {
+            if (UsesStoryInventory) return progress.campaign.inventory;
+            UnityEngine.SceneManagement.Scene scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (sessionInventory == null || sessionInventoryScene != scene)
+            {
+                // A temporary run never sees or spends the story's items.
+                sessionInventory = new CampaignInventoryRecord();
+                sessionInventoryScene = scene;
+            }
+            return sessionInventory;
+        }
+    }
+
+    /// <summary>
+    /// Runs one inventory command (InventoryRules) on a candidate copy. A
+    /// refusal or no-change returns at once; a change is written first in a
+    /// story run (SaveFailed on a failed write, nothing changes) and only then
+    /// becomes the live inventory and raises InventoryChanged.
+    /// </summary>
+    public InventoryResult CommitInventory(Func<CampaignInventoryRecord, InventoryResult> command)
+    {
+        if (command == null) return InventoryResult.Reject("No command");
+        CampaignInventoryRecord candidate = JsonUtility.FromJson<CampaignInventoryRecord>(JsonUtility.ToJson(Inventory));
+        InventoryResult result = command(candidate) ?? InventoryResult.Reject("No result");
+        if (!result.Changed) return result;
+        candidate.Repair();
+        if (UsesStoryInventory)
+        {
+            PlayerProgressData next = CloneProgress();
+            next.campaign.inventory = candidate;
+            if (!TryWriteCandidate(next))
+            {
+                Debug.LogWarning($"[PlayerProgressManager] Inventory change for '{result.ItemId}' not saved; nothing changed.");
+                result.Outcome = InventoryOutcome.SaveFailed;
+                return result;
+            }
+        }
+        else sessionInventory = candidate;
+        try { InventoryChanged?.Invoke(); }
+        catch (Exception e) { Debug.LogException(e); }
+        return result;
+    }
+
+    // ---------- world pickups (T11) ----------
+
+    private readonly System.Collections.Generic.HashSet<string> sessionClaims =
+        new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+    private UnityEngine.SceneManagement.Scene sessionClaimsScene;
+
+    private System.Collections.Generic.HashSet<string> SessionClaims
+    {
+        get
+        {
+            UnityEngine.SceneManagement.Scene scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (sessionClaimsScene != scene)
+            {
+                sessionClaims.Clear();
+                sessionClaimsScene = scene;
+            }
+            return sessionClaims;
+        }
+    }
+
+    private string ClaimCampaignId => UsesStoryInventory ? progress.campaign.campaignId : "temporary";
+
+    /// <summary>The once-per-campaign claim id of a world pickup (PickupRules format).</summary>
+    public string PickupClaimId(string levelId, string pickupId) => PickupRules.ClaimId(ClaimCampaignId, levelId, pickupId);
+
+    /// <summary>The claim id of a collected taxpayer profile card.</summary>
+    public string ProfileClaimId(string levelId, string profileId) => PickupRules.ProfileClaimId(ClaimCampaignId, levelId, profileId);
+
+    /// <summary>Story: claimed in this campaign. Other runs: claimed in this temporary run.</summary>
+    public bool IsPickupClaimed(string claimId) =>
+        !string.IsNullOrEmpty(claimId) &&
+        (UsesStoryInventory ? progress.campaign.rewardClaims.Contains(claimId) : SessionClaims.Contains(claimId));
+
+    /// <summary>
+    /// T11: one world pickup as one transaction: the inventory command and its
+    /// claim are applied to a candidate and written together before anything
+    /// is published (a failed write changes neither, SaveFailed). onceOnly: an
+    /// existing claim refuses (AlreadyApplied) and nothing is minted again.
+    /// Optional pickups grant no coins, trust, XP or badge.
+    /// </summary>
+    public InventoryResult CommitPickup(string claimId, bool onceOnly, Func<CampaignInventoryRecord, InventoryResult> command)
+    {
+        if (command == null || string.IsNullOrEmpty(claimId)) return InventoryResult.Reject("No pickup");
+        bool claimed = IsPickupClaimed(claimId);
+        if (claimed && onceOnly) return new InventoryResult { Outcome = InventoryOutcome.AlreadyApplied };
+        CampaignInventoryRecord inventory = JsonUtility.FromJson<CampaignInventoryRecord>(JsonUtility.ToJson(Inventory));
+        InventoryResult result = command(inventory) ?? InventoryResult.Reject("No result");
+        if (!result.Ok && !result.Changed) return result;
+        if (!result.Changed && claimed) return result;
+        inventory.Repair();
+        if (UsesStoryInventory)
+        {
+            PlayerProgressData candidate = CloneProgress();
+            candidate.campaign.inventory = inventory;
+            if (!claimed) candidate.campaign.rewardClaims.Add(claimId);
+            if (!TryWriteCandidate(candidate))
+            {
+                Debug.LogWarning($"[PlayerProgressManager] Pickup '{claimId}' not saved; nothing changed.");
+                result.Outcome = InventoryOutcome.SaveFailed;
+                return result;
+            }
+        }
+        else
+        {
+            sessionInventory = inventory;
+            SessionClaims.Add(claimId);
+        }
+        try { InventoryChanged?.Invoke(); }
+        catch (Exception e) { Debug.LogException(e); }
+        return result;
+    }
+
+    // ---------- Supply Counter (T12) ----------
+
+    /// <summary>Raised after a purchase is written (the wallet and the inventory changed together).</summary>
+    public static event Action<PurchaseResult> PurchaseCommitted;
+
+    /// <summary>The story's shop is open (the Supply Counter was introduced).</summary>
+    public bool ShopIntroduced => progress != null && progress.HasCampaign && progress.campaign.shopIntroduced;
+
+    /// <summary>
+    /// The first visit to the Supply Counter in a story run introduces the
+    /// shop (one write; nothing else changes). Temporary runs never write it.
+    /// </summary>
+    public bool MarkShopIntroduced()
+    {
+        if (!UsesStoryInventory) return false;
+        if (progress.campaign.shopIntroduced) return true;
+        PlayerProgressData candidate = CloneProgress();
+        candidate.campaign.shopIntroduced = true;
+        return TryWriteCandidate(candidate);
+    }
+
+    /// <summary>
+    /// One purchase as one transaction (ShopRules.Purchase on a candidate):
+    /// the debit, the ledger line, ownership, the receipt claim and the new
+    /// capacity or item are written together before anything is shown.
+    /// Practice, replays and Editor runs only browse (refused, nothing spent).
+    /// The menu between runs spends too (T13); with no hand to hold an item
+    /// there, a full bar and bag refuse the purchase.
+    /// A failed write changes nothing (SaveFailed); retrying with the same
+    /// request id after success is AlreadyApplied (never a second charge).
+    /// </summary>
+    public PurchaseResult CommitPurchase(ShopCatalogue catalogue, InventoryCatalogue items, string productId, string requestId)
+    {
+        if (!CanSpendCoins)
+            return new PurchaseResult { ProductId = productId ?? "", Message = ShopRules.ReasonFor(ShopStatus.BrowseOnly, null, null, null) };
+        PlayerProgressData candidate = CloneProgress();
+        PurchaseResult result = ShopRules.Purchase(candidate, catalogue, items, productId, requestId, noHand: !UsesStoryInventory);
+        if (result.Outcome != InventoryOutcome.Applied) return result;
+        if (!TryWriteCandidate(candidate))
+        {
+            Debug.LogWarning($"[PlayerProgressManager] Purchase of '{productId}' not saved; nothing spent.");
+            return new PurchaseResult
+            {
+                Outcome = InventoryOutcome.SaveFailed, ProductId = productId, Message = "Purchase not saved; nothing spent. Try again.",
+                CoinsBefore = result.CoinsBefore, CoinsAfter = result.CoinsBefore
+            };
+        }
+        Debug.Log($"[PlayerProgressManager] Bought '{productId}': coins {result.CoinsBefore} -> {result.CoinsAfter}.");
+        try { InventoryChanged?.Invoke(); PurchaseCommitted?.Invoke(result); }
+        catch (Exception e) { Debug.LogException(e); }
+        return result;
+    }
+
+    // ---------- review vouchers (T14) ----------
+
+    /// <summary>The once-per-case claim of a voucher use (VoucherRules format; "temporary" outside the story).</summary>
+    public string VoucherClaimId(string levelId, string caseId) => VoucherRules.UseClaimId(ClaimCampaignId, levelId, caseId);
+
+    /// <summary>Story: used on this case in this campaign. Other runs: used in this temporary run.</summary>
+    public bool IsVoucherUsed(string levelId, string caseId) => IsPickupClaimed(VoucherClaimId(levelId, caseId));
+
+    /// <summary>
+    /// T14: one voucher use as one transaction. Story: one carried voucher
+    /// out, the per-case claim in and the Level 1 checkpoint with the extended
+    /// clock, written together before anything is shown (a failed write
+    /// changes nothing: SaveFailed, safe to retry; a repeat finds the claim).
+    /// Practice, replays and Editor runs use their temporary supplies and a
+    /// claim for this visit only. No coins, trust, XP or tax date change.
+    /// </summary>
+    public VoucherUseResult CommitVoucherUse(InventoryCatalogue items, string levelId, string caseId, Level1FieldCheckpoint checkpoint, string actionId)
+    {
+        if (UsesStoryInventory)
+        {
+            PlayerProgressData candidate = CloneProgress();
+            VoucherUseResult result = VoucherRules.Use(candidate.campaign, items, levelId, caseId, actionId);
+            if (result.Outcome != InventoryOutcome.Applied) return result;
+            if (checkpoint != null && UsesLevelOneCheckpoint)
+            {
+                Level1FieldCheckpoint previous = candidate.campaign.levelOne;
+                checkpoint.version = Level1FieldCheckpoint.CurrentVersion;
+                checkpoint.writes = (previous != null && previous.IsSet ? previous.writes : 0) + 1;
+                candidate.campaign.levelOne = checkpoint;
+            }
+            if (!TryWriteCandidate(candidate))
+            {
+                Debug.LogWarning($"[PlayerProgressManager] Voucher use on '{caseId}' not saved; nothing changed.");
+                return new VoucherUseResult
+                {
+                    Outcome = InventoryOutcome.SaveFailed, ClaimId = result.ClaimId,
+                    Message = "The voucher was not used: that could not be saved. Nothing changed; try again."
+                };
+            }
+            try { InventoryChanged?.Invoke(); }
+            catch (Exception e) { Debug.LogException(e); }
+            return result;
+        }
+
+        string claim = VoucherClaimId(levelId, caseId);
+        if (SessionClaims.Contains(claim))
+            return new VoucherUseResult { Outcome = InventoryOutcome.AlreadyApplied, ClaimId = claim, Message = VoucherRules.ReasonFor(VoucherUseStatus.AlreadyUsed) };
+        CampaignInventoryRecord inventory = JsonUtility.FromJson<CampaignInventoryRecord>(JsonUtility.ToJson(Inventory));
+        InventoryResult used = InventoryRules.ConsumeCarried(inventory, items, InventoryCatalogue.ReviewVoucher, actionId);
+        if (used.Outcome != InventoryOutcome.Applied)
+            return new VoucherUseResult { ClaimId = claim, Message = VoucherRules.ReasonFor(VoucherUseStatus.NoVoucher) };
+        sessionInventory = inventory;
+        SessionClaims.Add(claim);
+        try { InventoryChanged?.Invoke(); }
+        catch (Exception e) { Debug.LogException(e); }
+        return new VoucherUseResult { Outcome = InventoryOutcome.Applied, ClaimId = claim, From = used.Location };
+    }
+
+    /// <summary>
+    /// T13: the office has shown a decor piece's arrival (its lift-and-settle),
+    /// so later visits show it in place. Presentation only; story runs only.
+    /// </summary>
+    public bool MarkDecorArrived(string itemId)
+    {
+        if (!UsesStoryInventory) return false;
+        PlayerProgressData candidate = CloneProgress();
+        if (!DecorRules.MarkArrived(candidate.campaign, itemId)) return true;
+        return TryWriteCandidate(candidate);
+    }
+
+    /// <summary>The profile ids the campaign's Profile Binder holds (story runs; empty otherwise).</summary>
+    public System.Collections.Generic.List<string> CollectedProfileIds()
+    {
+        var ids = new System.Collections.Generic.List<string>();
+        if (!UsesStoryInventory) return ids;
+        InventoryItemRecord binder = InventoryRules.Record(progress.campaign.inventory, InventoryCatalogue.ProfileBinder);
+        if (binder != null && InventoryRules.Owns(progress.campaign.inventory, InventoryCatalogue.ProfileBinder)) ids.AddRange(binder.contents);
+        return ids;
+    }
+
+    /// <summary>Applies the item catalogue to the loaded inventory once per run (unknown ids, stacks, required items).</summary>
+    public bool NormalizeInventory(InventoryCatalogue catalogue)
+    {
+        var warnings = new System.Collections.Generic.List<string>();
+        InventoryResult result = CommitInventory(r => new InventoryResult
+        {
+            Outcome = InventoryRules.Normalize(r, catalogue, warnings) ? InventoryOutcome.Applied : InventoryOutcome.NoChange
+        });
+        foreach (string warning in warnings) Debug.LogWarning("[PlayerProgressManager] " + warning);
+        return result.Outcome != InventoryOutcome.SaveFailed;
     }
 
     private PlayerProgressData CloneProgress() => JsonUtility.FromJson<PlayerProgressData>(JsonUtility.ToJson(progress));

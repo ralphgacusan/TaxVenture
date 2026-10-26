@@ -96,6 +96,9 @@ public class CaseFolder3DDrag :
     private bool isOpening;
     private bool hasMovedDuringDrag;
 
+    /// <summary>The closed folder is being carried by the finger (T10: the hotbar lights the slot under it).</summary>
+    public bool IsCarrying => isDragging && hasMovedDuringDrag;
+
     private bool isPointerOver;
 
     private Vector2 pointerPosition;
@@ -526,9 +529,9 @@ public class CaseFolder3DDrag :
                 "Closed folder was dropped onto the HUD icon."
             );
 
-            if (folderToHUDIcon != null)
+            if (Icon != null)
             {
-                folderToHUDIcon.StoreFolderFromExternalSource();
+                if (!flyingIntoBar) StartCoroutine(FlyClosedIntoBar(eventData.position));
             }
             else
             {
@@ -550,24 +553,62 @@ public class CaseFolder3DDrag :
         PointerEventData eventData
     )
     {
-        if (folderToHUDIcon == null)
+        if (Icon == null)
         {
             return false;
         }
 
-        RectTransform hudIcon =
-            folderToHUDIcon.GetHUDIcon();
+        // T10: the same drop test as the open folder (any hotbar slot when the level uses the hotbar).
+        return Icon.IsOverDropTarget(eventData.position);
+    }
 
-        if (hudIcon == null)
+    /// <summary>
+    /// The folder's HUD store. The scene leaves this component's link empty, so it is the open
+    /// folder's own (2026-10-26: a closed folder dropped on the bar was opened instead of stored).
+    /// </summary>
+    private FolderToHUDIcon Icon
+    {
+        get
         {
-            return false;
+            if (folderToHUDIcon == null && openFolder != null) folderToHUDIcon = openFolder.GetComponent<FolderToHUDIcon>();
+            return folderToHUDIcon;
         }
+    }
 
-        return RectTransformUtility.RectangleContainsScreenPoint(
-            hudIcon,
-            eventData.position,
-            null
-        );
+    private bool flyingIntoBar;
+
+    /// <summary>
+    /// The closed folder dropped on the bar: it flies toward the finger, shrinking into the slot,
+    /// then it is stored there (the same store as the open folder). It never opens on the way.
+    /// </summary>
+    private System.Collections.IEnumerator FlyClosedIntoBar(Vector2 drop)
+    {
+        flyingIntoBar = true;
+        Transform folder = closedFolder.transform;
+        Camera view = HeldOnScreen.ActiveCamera(mainCamera);
+        Vector3 from = folder.position;
+        Quaternion fromRotation = folder.rotation;
+        Vector3 restScale = folder.localScale;
+        float depth = view != null ? Vector3.Dot(from - view.transform.position, view.transform.forward) : 0.6f;
+        const float seconds = 0.3f;
+        for (float elapsed = 0f; elapsed < seconds; elapsed += Time.unscaledDeltaTime)
+        {
+            float t = Mathf.Clamp01(elapsed / seconds);
+            float ease = t * t * (3f - 2f * t);
+            Vector3 target = view != null
+                ? view.ScreenToWorldPoint(new Vector3(drop.x, drop.y, Mathf.Max(view.nearClipPlane + 0.05f, depth * (1f - 0.5f * ease))))
+                : from;
+            folder.position = Vector3.Lerp(from, target, ease);
+            folder.rotation = fromRotation * Quaternion.Euler(0f, 0f, 25f * ease);
+            folder.localScale = restScale * Mathf.Lerp(1f, 0.12f, ease * ease);
+            yield return null;
+        }
+        folder.localScale = restScale;
+        PlaceClosedFolderAtOrigin();
+        closedFolder.SetActive(false);
+        flyingIntoBar = false;
+        HudSlotDrop.Note(InventoryCatalogue.CaseFolder, drop);
+        if (Icon != null) Icon.StoreFolderFromExternalSource();
     }
 
     private void UpdateDragTarget(Vector2 screenPosition)
@@ -700,10 +741,18 @@ public class CaseFolder3DDrag :
     /// while keeping its original distance from the camera
     /// (depth is never changed).
     /// </summary>
+    /// <summary>The open folder's resting pose on the desk (the HUD folder view copies it).</summary>
+    public Vector3 OpenRestPosition => originalOpenPosition;
+    public Quaternion OpenRestRotation => originalOpenRotation;
+
+    /// <summary>Where the desk opens the folder for a screen point (its root, on the open folder's depth plane).</summary>
+    public Vector3 OpenPositionFor(Vector2 screenPosition) => GetOpenFolderPositionForScreenPoint(screenPosition);
+
     private Vector3 GetOpenFolderPositionForScreenPoint(
         Vector2 screenPosition
     )
     {
+        Camera mainCamera = HeldOnScreen.ActiveCamera(this.mainCamera);
         if (mainCamera == null)
         {
             return originalOpenPosition;
@@ -774,9 +823,17 @@ public class CaseFolder3DDrag :
 
         openFolder.SetActive(true);
 
+        Camera view = HeldOnScreen.ActiveCamera(mainCamera);
         if (centrePaper && caseFolderUI != null && caseFolderUI.PaperRect != null)
-            openFolder.transform.position = DeskMotion.CentrePaper(mainCamera, openFolder.transform.position,
+            openFolder.transform.position = DeskMotion.CentrePaper(view, openFolder.transform.position,
                 caseFolderUI.PaperRect.TransformPoint(caseFolderUI.PaperRect.rect.center));
+        else if (positionOpenFolderAtDropPoint && caseFolderUI != null && caseFolderUI.PaperRect != null)
+            // The printed page opens exactly where the finger let go (2026-10-26), not the folder's corner.
+            HeldOnScreen.CentreUnder(openFolder.transform,
+                caseFolderUI.PaperRect.TransformPoint(caseFolderUI.PaperRect.rect.center), view, dropScreenPosition);
+
+        // The whole open folder shows: a drop near an edge is moved in (same depth, never off screen).
+        openFolder.transform.position = HeldOnScreen.FitOnScreen(openFolder.transform, view);
 
         if (deskAnimator != null)
             deskAnimator.PlayOpen(openFolder.transform, closedFolder.transform.position);
@@ -1050,6 +1107,11 @@ public class CaseFolder3DDrag :
     public void ReturnToOriginalPlace(bool animate)
     {
         if (!enabled || !allowDragging || closedFolder == null)
+            return;
+        // A folder that belongs to the HUD (stored, or opened from its icon) goes back to the icon, never
+        // to the desk stack: that left it in both places at once (2026-10-26).
+        if (FolderToHUDIcon.AnyStoredOrViewing() ||
+            (OfficeHudRuntime.Instance != null && OfficeHudRuntime.Instance.CaseFolderViewOut))
             return;
 
         CompleteDeskMotion();

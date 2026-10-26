@@ -11,6 +11,17 @@ using UnityEngine;
 ///   folder    - a manila case folder with a paper and a red case label
 ///   profiles  - two stacked blue taxpayer ID cards
 ///   papers    - the corrected annotated records collected in Level 2
+///   bag       - a leather satchel with a brass buckle (T10 Bag icon)
+///   slot      - an EMPTY hotbar slot: dim face, dashed rim and a "+" (T10)
+///   locked    - a locked slot: dim face, plain grey rim (a padlock is drawn over it)
+///   postcard  - a blue-bordered postcard with sea, sand and a palm (T11 keepsake)
+///   voucher   - a folded green ticket with a clock badge (T11 review voucher)
+///   bookmarks - three leather ribbons on a brass bar (T12 bookmark set)
+///   pouch     - a small leather belt pouch with a brass stud (T12 Belt Pouch)
+///   pencilcup - a squat brass mesh cup with red, blue and green pencils (T13 decor)
+///   islandprint - a dark wood frame around an island print (T13 decor)
+///   stand     - two records held upright on a wooden stand (T13 teaser)
+///   computer  - a desk monitor and keyboard (T13 teaser)
 /// Render() is pure (no Unity objects) for tests and previews; Get() caches
 /// the sprite.
 /// </summary>
@@ -19,7 +30,7 @@ public static class HudIconArt
     public const int Size = 160;
     private const int Samples = 3;
 
-    public static readonly string[] Icons = { "settings", "notes", "folder", "profiles", "papers", "book" };
+    public static readonly string[] Icons = { "settings", "notes", "folder", "profiles", "papers", "book", "bag", "slot", "locked", "postcard", "voucher", "bookmarks", "pouch", "pencilcup", "islandprint", "stand", "computer" };
     private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
 
     public static Sprite Get(string icon)
@@ -76,6 +87,7 @@ public static class HudIconArt
     private static Color Shade(float u, float v, string icon)
     {
         Color c = new Color(0, 0, 0, 0);
+        if (icon == "slot" || icon == "locked") return EmptyTile(u, v, icon == "slot");
 
         // Soft drop shadow under the tile.
         if (RoundRect(u, v - (-0.03f), 0.08f, 0.06f, 0.92f, 0.92f, 0.22f, 0.04f, out float sh))
@@ -102,8 +114,235 @@ public static class HudIconArt
             case "profiles": Cards(u, v, ref c); break;
             case "papers": Papers(u, v, ref c); break;
             case "book": Book(u, v, ref c); break;
+            case "bag": Satchel(u, v, ref c); break;
+            case "postcard": Postcard(u, v, ref c); break;
+            case "voucher": Voucher(u, v, ref c); break;
+            case "bookmarks": Bookmarks(u, v, ref c); break;
+            case "pouch": Pouch(u, v, ref c); break;
+            case "pencilcup": PencilCup(u, v, ref c); break;
+            case "islandprint": IslandPrint(u, v, ref c); break;
+            case "stand": ComparisonStand(u, v, ref c); break;
+            case "computer": Computer(u, v, ref c); break;
         }
         return c;
+    }
+
+    /// <summary>An empty slot (dashed rim and "+") or a locked one (plain rim): the dim face of a locked icon, no picture.</summary>
+    private static Color EmptyTile(float u, float v, bool dashed)
+    {
+        Color c = new Color(0, 0, 0, 0);
+        if (RoundRect(u, v - (-0.03f), 0.08f, 0.06f, 0.92f, 0.92f, 0.22f, 0.04f, out float sh))
+            Over(ref c, new Color(0f, 0f, 0f, 0.18f * sh));
+        bool outer = RoundRect(u, v, 0.06f, 0.08f, 0.94f, 0.94f, 0.22f, 0f, out _);
+        bool inner = RoundRect(u, v, 0.1f, 0.12f, 0.9f, 0.9f, 0.18f, 0f, out _);
+        if (inner) Over(ref c, new Color(14f / 255f, 22f / 255f, 34f / 255f, 0.42f));
+        if (outer && !inner)
+        {
+            if (!dashed) Over(ref c, new Color(0.55f, 0.6f, 0.66f, 0.55f));
+            else
+            {
+                // Dashes along each edge (the coordinate running along that edge).
+                bool horizontal = v < 0.16f || v > 0.86f;
+                float along = horizontal ? u : v;
+                if (Mathf.Repeat(along * 7f, 1f) < 0.55f) Over(ref c, new Color(236f / 255f, 206f / 255f, 140f / 255f, 0.75f));
+            }
+        }
+        if (dashed && ((Mathf.Abs(u - 0.5f) < 0.028f && Mathf.Abs(v - 0.51f) < 0.13f) || (Mathf.Abs(v - 0.51f) < 0.028f && Mathf.Abs(u - 0.5f) < 0.13f)))
+            Over(ref c, new Color(245f / 255f, 240f / 255f, 226f / 255f, 0.6f));
+        return c;
+    }
+
+    private static void Postcard(float u, float v, ref Color c)
+    {
+        // Tilted card: coastal blue border, sky, sea, sand and one palm.
+        float x = u - 0.5f, y = v - 0.5f;
+        float ca = Mathf.Cos(-0.12f), sa = Mathf.Sin(-0.12f);
+        float px = x * ca - y * sa + 0.5f, py = x * sa + y * ca + 0.5f;
+        if (RoundRect(px + 0.014f, py + 0.02f, 0.2f, 0.26f, 0.8f, 0.72f, 0.03f, 0f, out _)) Over(ref c, new Color(0f, 0f, 0f, 0.35f));
+        if (!RoundRect(px, py, 0.2f, 0.26f, 0.8f, 0.72f, 0.03f, 0f, out _)) return;
+        Over(ref c, C(58, 132, 196));                                                               // border
+        if (!RoundRect(px, py, 0.24f, 0.3f, 0.76f, 0.68f, 0.015f, 0f, out _)) return;
+        if (py > 0.48f) Over(ref c, Color.Lerp(C(170, 220, 246), C(120, 190, 236), (py - 0.48f) / 0.2f));   // sky
+        else if (py > 0.4f) Over(ref c, C(38, 124, 186));                                           // sea
+        else Over(ref c, C(236, 210, 150));                                                          // sand
+        float sx = px - 0.64f, sy = py - 0.6f;
+        if (sx * sx + sy * sy < 0.035f * 0.035f) Over(ref c, C(255, 214, 90));                      // sun
+        if (Mathf.Abs(px - 0.36f - (py - 0.32f) * 0.15f) < 0.012f && py > 0.32f && py < 0.56f) Over(ref c, C(120, 84, 48)); // trunk
+        float lx = px - 0.39f, ly = py - 0.57f;
+        if (Mathf.Abs(ly + lx * lx * 3f) < 0.012f && Mathf.Abs(lx) < 0.09f) Over(ref c, C(46, 140, 82)); // leaves
+    }
+
+    private static void Voucher(float u, float v, ref Color c)
+    {
+        // A folded green ticket with notched ends and a clock badge.
+        if (RoundRect(u + 0.014f, v + 0.02f, 0.18f, 0.3f, 0.82f, 0.66f, 0.03f, 0f, out _)) Over(ref c, new Color(0f, 0f, 0f, 0.35f));
+        bool body = RoundRect(u, v, 0.18f, 0.3f, 0.82f, 0.66f, 0.03f, 0f, out _);
+        float nl = (u - 0.18f) * (u - 0.18f) + (v - 0.48f) * (v - 0.48f);
+        float nr = (u - 0.82f) * (u - 0.82f) + (v - 0.48f) * (v - 0.48f);
+        if (!body || nl < 0.05f * 0.05f || nr < 0.05f * 0.05f) return;
+        Over(ref c, Color.Lerp(C(46, 140, 84), C(96, 190, 118), (v - 0.3f) / 0.36f));
+        if (Mathf.Abs(u - 0.6f) < 0.006f && Mathf.Repeat(v * 30f, 1f) < 0.5f) Over(ref c, C(220, 240, 220));     // perforation
+        if (Mathf.Abs(v - 0.4f) < 0.01f && u > 0.25f && u < 0.54f) Over(ref c, C(220, 240, 220));
+        float cx = u - 0.4f, cy = v - 0.53f;
+        float r = Mathf.Sqrt(cx * cx + cy * cy);
+        if (r < 0.075f) Over(ref c, C(250, 248, 236));                                                            // clock face
+        if (r < 0.075f && ((Mathf.Abs(cx) < 0.008f && cy > 0f && cy < 0.055f) || (Mathf.Abs(cy) < 0.008f && cx > 0f && cx < 0.04f)))
+            Over(ref c, C(40, 70, 50));                                                                            // hands
+        if (u > 0.64f && u < 0.76f && Mathf.Abs(v - 0.48f) < 0.012f) Over(ref c, C(250, 248, 236));              // "+"
+        if (Mathf.Abs(u - 0.7f) < 0.012f && v > 0.42f && v < 0.54f) Over(ref c, C(250, 248, 236));
+    }
+
+    private static void Bookmarks(float u, float v, ref Color c)
+    {
+        // Three leather ribbons with V-notched tails hanging from a brass bar.
+        Color[] leather = { C(150, 40, 46), C(46, 112, 74), C(44, 70, 128) };
+        for (int i = 0; i < 3; i++)
+        {
+            float cx = 0.36f + i * 0.14f, half = 0.045f;
+            float bottom = 0.24f + i * 0.05f;
+            if (u + 0.012f > cx - half && u + 0.012f < cx + half && v + 0.018f > bottom && v + 0.018f < 0.72f) Over(ref c, new Color(0f, 0f, 0f, 0.3f));
+            bool inStrip = u > cx - half && u < cx + half && v > bottom && v < 0.72f;
+            bool notch = v < bottom + 0.06f && Mathf.Abs(u - cx) < (bottom + 0.06f - v) * 0.8f;
+            if (!inStrip || notch) continue;
+            Over(ref c, Color.Lerp(leather[i] * 0.8f, leather[i], (v - bottom) / (0.72f - bottom)));
+            if (Mathf.Abs(u - (cx - half + 0.012f)) < 0.004f || Mathf.Abs(u - (cx + half - 0.012f)) < 0.004f)
+                Over(ref c, new Color(1f, 0.92f, 0.8f, 0.45f));                                        // stitching
+        }
+        if (RoundRect(u, v, 0.26f, 0.68f, 0.74f, 0.78f, 0.04f, 0f, out _))
+        {
+            Over(ref c, Color.Lerp(C(150, 116, 58), C(236, 206, 140), (v - 0.68f) / 0.1f));            // brass bar
+            if (v > 0.75f) Over(ref c, new Color(1f, 1f, 1f, 0.2f));
+        }
+    }
+
+    private static void Pouch(float u, float v, ref Color c)
+    {
+        // Belt strap behind, the pouch body, its flap and a brass stud.
+        if (v > 0.6f && v < 0.68f && u > 0.14f && u < 0.86f) Over(ref c, C(70, 46, 28));
+        if (RoundRect(u + 0.012f, v + 0.018f, 0.28f, 0.2f, 0.72f, 0.66f, 0.1f, 0f, out _)) Over(ref c, new Color(0f, 0f, 0f, 0.35f));
+        if (RoundRect(u, v, 0.28f, 0.2f, 0.72f, 0.66f, 0.1f, 0f, out _))
+        {
+            Over(ref c, Color.Lerp(C(132, 82, 44), C(176, 116, 64), (v - 0.2f) / 0.46f));
+            if (Mathf.Abs(v - 0.26f) < 0.007f && u > 0.33f && u < 0.67f) Over(ref c, new Color(1f, 0.9f, 0.7f, 0.35f));   // stitching
+        }
+        if (RoundRect(u, v, 0.26f, 0.44f, 0.74f, 0.7f, 0.08f, 0f, out _))
+        {
+            Over(ref c, Color.Lerp(C(102, 60, 30), C(146, 92, 50), (v - 0.44f) / 0.26f));            // flap
+            if (v > 0.66f) Over(ref c, new Color(1f, 1f, 1f, 0.12f));
+        }
+        float sx = u - 0.5f, sy = v - 0.47f;
+        if (sx * sx + sy * sy < 0.035f * 0.035f) Over(ref c, C(236, 206, 140));                        // stud
+        if (sx * sx + sy * sy < 0.016f * 0.016f) Over(ref c, C(150, 116, 58));
+    }
+
+    private static void PencilCup(float u, float v, ref Color c)
+    {
+        // Three pencils behind the rim (red, blue, green) with wood tips and dark leads.
+        Color[] colours = { C(196, 46, 42), C(42, 92, 184), C(46, 142, 78) };
+        float[] tops = { 0.8f, 0.74f, 0.78f };
+        for (int i = 0; i < 3; i++)
+        {
+            float cx = 0.4f + i * 0.1f, lean = (i - 1) * 0.12f;
+            float x = u - cx - (v - 0.5f) * lean;
+            if (Mathf.Abs(x) < 0.028f && v > 0.5f && v < tops[i] - 0.06f) Over(ref c, Color.Lerp(colours[i] * 0.8f, colours[i], 0.5f + x * 10f));
+            float tipBase = tops[i] - 0.06f;
+            if (v >= tipBase && v < tops[i] && Mathf.Abs(x) < 0.028f * (tops[i] - v) / 0.06f)
+                Over(ref c, v > tops[i] - 0.02f ? C(44, 44, 48) : C(232, 204, 152));
+        }
+        // The squat brass mesh cup: shadow, body with a soft side shade, dark mesh bands and slats, bright rim.
+        if (RoundRect(u + 0.012f, v + 0.018f, 0.28f, 0.2f, 0.72f, 0.56f, 0.05f, 0f, out _)) Over(ref c, new Color(0f, 0f, 0f, 0.35f));
+        if (RoundRect(u, v, 0.28f, 0.2f, 0.72f, 0.56f, 0.05f, 0f, out _))
+        {
+            Over(ref c, Color.Lerp(C(176, 132, 58), C(236, 196, 112), 1f - Mathf.Abs(u - 0.44f) * 2.4f));
+            bool band = Mathf.Abs(v - 0.3f) < 0.012f || Mathf.Abs(v - 0.4f) < 0.012f || Mathf.Abs(v - 0.48f) < 0.012f;
+            bool slat = Mathf.Abs(Mathf.Repeat(u * 22f, 1f) - 0.5f) < 0.12f && v > 0.24f && v < 0.52f;
+            if (band || slat) Over(ref c, new Color(0.36f, 0.26f, 0.12f, 0.55f));
+        }
+        if (RoundRect(u, v, 0.26f, 0.53f, 0.74f, 0.59f, 0.03f, 0f, out _)) Over(ref c, C(244, 214, 140));
+    }
+
+    private static void IslandPrint(float u, float v, ref Color c)
+    {
+        // Dark wood frame, cream mat and a small island scene.
+        if (RoundRect(u + 0.012f, v + 0.018f, 0.2f, 0.24f, 0.8f, 0.76f, 0.02f, 0f, out _)) Over(ref c, new Color(0f, 0f, 0f, 0.35f));
+        if (!RoundRect(u, v, 0.2f, 0.24f, 0.8f, 0.76f, 0.02f, 0f, out _)) return;
+        Over(ref c, Color.Lerp(C(54, 32, 18), C(92, 60, 36), (v - 0.24f) / 0.52f));                // frame
+        if (!RoundRect(u, v, 0.25f, 0.29f, 0.75f, 0.71f, 0.01f, 0f, out _)) return;
+        Over(ref c, C(240, 232, 212));                                                              // mat
+        if (!RoundRect(u, v, 0.29f, 0.33f, 0.71f, 0.67f, 0f, 0f, out _)) return;
+        if (v > 0.47f) Over(ref c, Color.Lerp(C(186, 222, 244), C(126, 192, 236), (v - 0.47f) / 0.2f)); // sky
+        else Over(ref c, C(34, 118, 178));                                                          // sea
+        float ix = (u - 0.47f) / 0.14f, iy = (v - 0.45f) / 0.06f;
+        if (ix * ix + iy * iy < 1f && v > 0.43f) Over(ref c, C(234, 206, 142));                      // island
+        float hx = (u - 0.47f) / 0.07f, hy = (v - 0.48f) / 0.05f;
+        if (hx * hx + hy * hy < 1f && v > 0.47f) Over(ref c, C(70, 150, 86));                        // hill
+        float sx = u - 0.64f, sy = v - 0.6f;
+        if (sx * sx + sy * sy < 0.028f * 0.028f) Over(ref c, C(255, 212, 96));                       // sun
+        if (Mathf.Abs(u - 0.53f - (v - 0.47f) * 0.2f) < 0.008f && v > 0.47f && v < 0.6f) Over(ref c, C(116, 80, 46)); // palm
+        float lx = u - 0.555f, ly = v - 0.6f;
+        if (Mathf.Abs(ly + lx * lx * 4f) < 0.01f && Mathf.Abs(lx) < 0.06f) Over(ref c, C(40, 132, 74));
+    }
+
+    private static void ComparisonStand(float u, float v, ref Color c)
+    {
+        // A wooden base with two upright records side by side.
+        if (RoundRect(u + 0.012f, v + 0.018f, 0.2f, 0.22f, 0.8f, 0.3f, 0.03f, 0f, out _)) Over(ref c, new Color(0f, 0f, 0f, 0.35f));
+        for (int i = 0; i < 2; i++)
+        {
+            float x0 = 0.25f + i * 0.27f;
+            if (RoundRect(u + 0.01f, v + 0.014f, x0, 0.3f, x0 + 0.23f, 0.76f, 0.02f, 0f, out _)) Over(ref c, new Color(0f, 0f, 0f, 0.3f));
+            if (!RoundRect(u, v, x0, 0.3f, x0 + 0.23f, 0.76f, 0.02f, 0f, out _)) continue;
+            Over(ref c, C(250, 246, 234));
+            for (int line = 0; line < 5; line++)
+                if (Mathf.Abs(v - (0.68f - line * 0.07f)) < 0.008f && u > x0 + 0.03f && u < x0 + 0.2f - (line % 2) * 0.05f) Over(ref c, C(150, 160, 176));
+        }
+        if (RoundRect(u, v, 0.2f, 0.22f, 0.8f, 0.31f, 0.03f, 0f, out _)) Over(ref c, Color.Lerp(C(110, 70, 40), C(156, 104, 62), (v - 0.22f) / 0.09f));
+    }
+
+    private static void Computer(float u, float v, ref Color c)
+    {
+        // A monitor on a short neck and a keyboard in front.
+        if (RoundRect(u + 0.012f, v + 0.018f, 0.22f, 0.4f, 0.78f, 0.78f, 0.04f, 0f, out _)) Over(ref c, new Color(0f, 0f, 0f, 0.35f));
+        if (RoundRect(u, v, 0.22f, 0.4f, 0.78f, 0.78f, 0.04f, 0f, out _))
+        {
+            Over(ref c, C(48, 54, 64));                                                             // bezel
+            if (RoundRect(u, v, 0.26f, 0.44f, 0.74f, 0.74f, 0.02f, 0f, out _))
+                Over(ref c, Color.Lerp(C(56, 120, 168), C(120, 190, 226), (v - 0.44f) / 0.3f));     // screen
+        }
+        if (u > 0.46f && u < 0.54f && v > 0.32f && v < 0.4f) Over(ref c, C(70, 76, 88));             // neck
+        if (RoundRect(u, v, 0.36f, 0.3f, 0.64f, 0.34f, 0.015f, 0f, out _)) Over(ref c, C(70, 76, 88)); // foot
+        if (RoundRect(u, v, 0.24f, 0.17f, 0.76f, 0.26f, 0.02f, 0f, out _))
+        {
+            Over(ref c, C(214, 216, 222));                                                          // keyboard
+            if (Mathf.Repeat(u * 18f, 1f) < 0.18f || Mathf.Abs(v - 0.215f) < 0.006f) Over(ref c, new Color(0.45f, 0.47f, 0.52f, 0.6f));
+        }
+    }
+
+    private static void Satchel(float u, float v, ref Color c)
+    {
+        // Strap arc over the bag.
+        float sx = u - 0.5f, sy = v - 0.6f;
+        float sr = Mathf.Sqrt(sx * sx + sy * sy);
+        if (sy > 0f && sr > 0.19f && sr < 0.235f) Over(ref c, C(120, 72, 38));
+        // Shadow + body.
+        if (RoundRect(u + 0.012f, v + 0.018f, 0.2f, 0.2f, 0.8f, 0.6f, 0.07f, 0f, out _)) Over(ref c, new Color(0f, 0f, 0f, 0.35f));
+        if (RoundRect(u, v, 0.2f, 0.2f, 0.8f, 0.6f, 0.07f, 0f, out _))
+        {
+            Over(ref c, Color.Lerp(C(140, 86, 44), C(186, 122, 66), (v - 0.2f) / 0.4f));
+            if (Mathf.Abs(v - 0.27f) < 0.008f && u > 0.25f && u < 0.75f) Over(ref c, new Color(1f, 0.9f, 0.7f, 0.35f));   // stitching
+        }
+        // Flap with a rounded lower edge.
+        if (RoundRect(u, v, 0.18f, 0.4f, 0.82f, 0.64f, 0.08f, 0f, out _))
+        {
+            Over(ref c, Color.Lerp(C(110, 64, 32), C(156, 98, 52), (v - 0.4f) / 0.24f));
+            if (v > 0.6f) Over(ref c, new Color(1f, 1f, 1f, 0.12f));
+        }
+        // Brass buckle on the flap.
+        if (RoundRect(u, v, 0.44f, 0.36f, 0.56f, 0.47f, 0.02f, 0f, out _))
+        {
+            Over(ref c, C(236, 206, 140));
+            if (RoundRect(u, v, 0.475f, 0.39f, 0.525f, 0.44f, 0.01f, 0f, out _)) Over(ref c, C(120, 92, 44));
+        }
     }
 
     // ---------------- glyphs ----------------

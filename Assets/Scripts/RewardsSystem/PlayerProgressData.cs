@@ -229,7 +229,7 @@ public class Level1ConsultationRecord
 [Serializable]
 public class Level1FieldCheckpoint
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
     public const string PhaseNone = "";
     public const string PhaseActive = "active";
     public const string PhaseSolved = "solved";
@@ -253,6 +253,8 @@ public class Level1FieldCheckpoint
     public List<string> objectiveTriggers = new List<string>();
     /// <summary>Guide lessons already finished in this run (welcome card, HUD tour...), so a resume does not replay them.</summary>
     public List<string> guideLessonsDone = new List<string>();
+    /// <summary>T16: the Notes chest lid stays open after a quiet Continue restore.</summary>
+    public bool notesChestOpened;
 
     /// <summary>Marie's case (T05); empty until the office part begins.</summary>
     public Level1CaseRecord caseRecord = new Level1CaseRecord();
@@ -455,6 +457,294 @@ public class CampaignLedgerEntry
 }
 
 /// <summary>
+/// One installed piece of office decor (T13): the product id and the display
+/// anchor it was installed at when bought. arrived records that the office
+/// has shown its arrival (presentation only; never a reward or a fact).
+/// </summary>
+[Serializable]
+public class DecorPlacement
+{
+    public string itemId = "";
+    public string anchorId = "";
+    public bool arrived;
+}
+
+/// <summary>One inventory slot (T10): a stable item id and its quantity. Empty = id "" and 0.</summary>
+[Serializable]
+public class InventorySlot
+{
+    public string itemId = "";
+    public int quantity;
+
+    public bool IsEmpty => string.IsNullOrEmpty(itemId) || quantity <= 0;
+
+    public void Clear()
+    {
+        itemId = "";
+        quantity = 0;
+    }
+
+    /// <summary>Trimmed id, no negative quantity, and an id only with a quantity. True when anything changed.</summary>
+    public bool Repair()
+    {
+        bool changed = false;
+        if (itemId == null) { itemId = ""; changed = true; }
+        string id = itemId.Trim();
+        if (id != itemId) { itemId = id; changed = true; }
+        if (quantity < 0) { quantity = 0; changed = true; }
+        if (itemId.Length > 0 && quantity == 0) { itemId = ""; changed = true; }
+        if (itemId.Length == 0 && quantity != 0) { quantity = 0; changed = true; }
+        return changed;
+    }
+}
+
+/// <summary>An item held outside the slots (the old Desk Drawer, T10): save-repair overflow only since the drawer left play; Normalize puts it back in a slot.</summary>
+[Serializable]
+public class InventoryDrawerEntry
+{
+    public string itemId = "";
+    public int quantity;
+}
+
+/// <summary>A keepsake on an office display anchor (T11): owned, shown in the world, not carried.</summary>
+[Serializable]
+public class InventoryDisplay
+{
+    public string anchorId = "";
+    public string itemId = "";
+}
+
+/// <summary>
+/// What the campaign knows about one owned item (T10): where it came from,
+/// which document it stands for (an original and a working copy keep
+/// distinct ids and revisions), what a container holds (profile ids, case
+/// papers, the Client Copy) and neutral story-fact links. Plain ids only:
+/// never a scene reference or an answer.
+/// </summary>
+[Serializable]
+public class InventoryItemRecord
+{
+    public string itemId = "";
+    /// <summary>How it was acquired ("receptionist", "desk", "plaza", "auditor").</summary>
+    public string source = "";
+    public string originalDocumentId = "";
+    public string workingDocumentId = "";
+    public int revision;
+    public List<string> contents = new List<string>();
+    public List<string> factIds = new List<string>();
+}
+
+/// <summary>
+/// The campaign inventory (T10): a hotbar (the HUD icon row, 3 slots,
+/// upgradable to 5), a bag (5 slots, upgradable to 12), a "hand" that only
+/// holds an item while "Make room" is open, and the drawer list (save-repair
+/// overflow only: the Desk Drawer was removed from play on 2026-10-25).
+/// Slots hold stable item ids and quantities; container items (Profile
+/// Binder, Case Folder) list what they hold in their item record. Repair()
+/// is structural (no catalogue); InventoryRules.Normalize applies the item
+/// catalogue (unknown ids, stack limits, required items).
+/// </summary>
+[Serializable]
+public class CampaignInventoryRecord
+{
+    public const int CurrentVersion = 1;
+    public const int StartHotbar = 3;
+    public const int MaxHotbar = 5;
+    public const int StartBag = 5;
+    public const int MaxBag = 12;
+    /// <summary>How many recent command action ids are kept for idempotency.</summary>
+    public const int MaxActionIds = 64;
+
+    public int version = CurrentVersion;
+    public int hotbarCapacity = StartHotbar;
+    public int bagCapacity = StartBag;
+    public List<InventorySlot> hotbar = Slots(StartHotbar);
+    public List<InventorySlot> bag = Slots(StartBag);
+    /// <summary>The item held while "Make room" is open (empty otherwise).</summary>
+    public InventorySlot hand = new InventorySlot();
+    /// <summary>"pickup" (new, can go back to its world source) or "displaced" (already owned).</summary>
+    public string handSource = "";
+    public List<InventoryDrawerEntry> drawer = new List<InventoryDrawerEntry>();
+    /// <summary>Keepsakes shown on office display anchors (T11); one item per anchor, owned but not carried.</summary>
+    public List<InventoryDisplay> displays = new List<InventoryDisplay>();
+    /// <summary>T12 bookmark pins: up to three owned record ids kept at the top of the Bag (display preference only).</summary>
+    public List<string> pins = new List<string>();
+    public const int MaxPins = 3;
+    public List<InventoryItemRecord> items = new List<InventoryItemRecord>();
+    public List<string> appliedActionIds = new List<string>();
+    /// <summary>Journal facts the player has already seen (new ones are marked).</summary>
+    public List<string> journalSeenFactIds = new List<string>();
+    /// <summary>The inventory cursor ("hotbar:0", "bag:3"), restored when the inventory reopens.</summary>
+    public string selectedSlot = "";
+    public bool bagIconUsed;
+    public bool bagLessonShown;
+
+    public static List<InventorySlot> Slots(int count)
+    {
+        var slots = new List<InventorySlot>(count);
+        for (int i = 0; i < count; i++) slots.Add(new InventorySlot());
+        return slots;
+    }
+
+    /// <summary>
+    /// Capacities clamp to 3-5 / 5-12, slot lists match their capacity (items
+    /// in slots beyond it move to a free slot or the drawer, never lost), no
+    /// negative quantities, one drawer entry and one record per item, clean
+    /// id lists. True when anything changed.
+    /// </summary>
+    public bool Repair()
+    {
+        bool changed = false;
+        if (version <= 0) { version = CurrentVersion; changed = true; }
+        int hotbarCap = Math.Max(StartHotbar, Math.Min(MaxHotbar, hotbarCapacity));
+        if (hotbarCap != hotbarCapacity) { hotbarCapacity = hotbarCap; changed = true; }
+        int bagCap = Math.Max(StartBag, Math.Min(MaxBag, bagCapacity));
+        if (bagCap != bagCapacity) { bagCapacity = bagCap; changed = true; }
+        if (hotbar == null) { hotbar = new List<InventorySlot>(); changed = true; }
+        if (bag == null) { bag = new List<InventorySlot>(); changed = true; }
+        if (hand == null) { hand = new InventorySlot(); changed = true; }
+        if (handSource == null) { handSource = ""; changed = true; }
+        if (drawer == null) { drawer = new List<InventoryDrawerEntry>(); changed = true; }
+        if (displays == null) { displays = new List<InventoryDisplay>(); changed = true; }
+        if (pins == null) { pins = new List<string>(); changed = true; }
+        if (items == null) { items = new List<InventoryItemRecord>(); changed = true; }
+        if (appliedActionIds == null) { appliedActionIds = new List<string>(); changed = true; }
+        if (journalSeenFactIds == null) { journalSeenFactIds = new List<string>(); changed = true; }
+        if (selectedSlot == null) { selectedSlot = ""; changed = true; }
+
+        changed |= RepairSlots(hotbar);
+        changed |= RepairSlots(bag);
+        changed |= hand.Repair();
+        if (hand.IsEmpty && handSource.Length > 0) { handSource = ""; changed = true; }
+
+        var overflow = new List<InventorySlot>();
+        changed |= FitSlots(hotbar, hotbarCapacity, overflow);
+        changed |= FitSlots(bag, bagCapacity, overflow);
+        foreach (InventorySlot moved in overflow)
+        {
+            InventorySlot free = bag.Find(s => s.IsEmpty) ?? hotbar.Find(s => s.IsEmpty);
+            if (free != null) { free.itemId = moved.itemId; free.quantity = moved.quantity; }
+            else AddToDrawer(moved.itemId, moved.quantity);
+        }
+
+        var drawerById = new Dictionary<string, InventoryDrawerEntry>(StringComparer.Ordinal);
+        var keptDrawer = new List<InventoryDrawerEntry>(drawer.Count);
+        foreach (InventoryDrawerEntry entry in drawer)
+        {
+            if (entry == null || string.IsNullOrWhiteSpace(entry.itemId) || entry.quantity <= 0) { changed = true; continue; }
+            string id = entry.itemId.Trim();
+            if (id != entry.itemId) { entry.itemId = id; changed = true; }
+            if (drawerById.TryGetValue(id, out InventoryDrawerEntry first))
+            {
+                first.quantity = (int)Math.Min(int.MaxValue, (long)first.quantity + entry.quantity);
+                changed = true;
+                continue;
+            }
+            drawerById[id] = entry;
+            keptDrawer.Add(entry);
+        }
+        drawer = keptDrawer;
+
+        // One keepsake per anchor and one anchor per keepsake.
+        var anchors = new HashSet<string>(StringComparer.Ordinal);
+        var shown = new HashSet<string>(StringComparer.Ordinal);
+        var keptDisplays = new List<InventoryDisplay>(displays.Count);
+        foreach (InventoryDisplay display in displays)
+        {
+            if (display == null || string.IsNullOrWhiteSpace(display.anchorId) || string.IsNullOrWhiteSpace(display.itemId)) { changed = true; continue; }
+            string anchor = display.anchorId.Trim(), item = display.itemId.Trim();
+            if (anchor != display.anchorId || item != display.itemId) { display.anchorId = anchor; display.itemId = item; changed = true; }
+            if (!anchors.Add(anchor) || !shown.Add(item)) { changed = true; continue; }
+            keptDisplays.Add(display);
+        }
+        displays = keptDisplays;
+
+        var recordIds = new HashSet<string>(StringComparer.Ordinal);
+        var keptItems = new List<InventoryItemRecord>(items.Count);
+        foreach (InventoryItemRecord item in items)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(item.itemId)) { changed = true; continue; }
+            string id = item.itemId.Trim();
+            if (id != item.itemId) { item.itemId = id; changed = true; }
+            if (!recordIds.Add(id)) { changed = true; continue; }
+            if (item.source == null) { item.source = ""; changed = true; }
+            if (item.originalDocumentId == null) { item.originalDocumentId = ""; changed = true; }
+            if (item.workingDocumentId == null) { item.workingDocumentId = ""; changed = true; }
+            if (item.revision < 0) { item.revision = 0; changed = true; }
+            if (item.contents == null) { item.contents = new List<string>(); changed = true; }
+            if (item.factIds == null) { item.factIds = new List<string>(); changed = true; }
+            item.contents = Clean(item.contents, ref changed);
+            item.factIds = Clean(item.factIds, ref changed);
+            keptItems.Add(item);
+        }
+        items = keptItems;
+
+        appliedActionIds = Clean(appliedActionIds, ref changed);
+        if (appliedActionIds.Count > MaxActionIds)
+        {
+            appliedActionIds.RemoveRange(0, appliedActionIds.Count - MaxActionIds);
+            changed = true;
+        }
+        journalSeenFactIds = Clean(journalSeenFactIds, ref changed);
+        pins = Clean(pins, ref changed);
+        if (pins.Count > MaxPins) { pins.RemoveRange(MaxPins, pins.Count - MaxPins); changed = true; }
+        string selected = selectedSlot.Trim();
+        if (selected != selectedSlot) { selectedSlot = selected; changed = true; }
+        return changed;
+    }
+
+    /// <summary>Adds to the drawer (one entry per item, no overflow past int.MaxValue).</summary>
+    public void AddToDrawer(string itemId, int quantity)
+    {
+        if (string.IsNullOrWhiteSpace(itemId) || quantity <= 0) return;
+        if (drawer == null) drawer = new List<InventoryDrawerEntry>();
+        InventoryDrawerEntry entry = drawer.Find(e => e != null && e.itemId == itemId);
+        if (entry == null) drawer.Add(new InventoryDrawerEntry { itemId = itemId, quantity = quantity });
+        else entry.quantity = (int)Math.Min(int.MaxValue, (long)entry.quantity + quantity);
+    }
+
+    private static bool RepairSlots(List<InventorySlot> slots)
+    {
+        bool changed = false;
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (slots[i] == null) { slots[i] = new InventorySlot(); changed = true; }
+            changed |= slots[i].Repair();
+        }
+        return changed;
+    }
+
+    /// <summary>Pads or trims a slot list to its capacity; items in trimmed slots go to overflow.</summary>
+    private static bool FitSlots(List<InventorySlot> slots, int capacity, List<InventorySlot> overflow)
+    {
+        bool changed = false;
+        while (slots.Count < capacity) { slots.Add(new InventorySlot()); changed = true; }
+        for (int i = slots.Count - 1; i >= capacity; i--)
+        {
+            if (!slots[i].IsEmpty) overflow.Insert(0, slots[i]);
+            slots.RemoveAt(i);
+            changed = true;
+        }
+        return changed;
+    }
+
+    private static List<string> Clean(List<string> ids, ref bool changed)
+    {
+        var kept = new List<string>(ids.Count);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (string raw in ids)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) { changed = true; continue; }
+            string id = raw.Trim();
+            if (id != raw) changed = true;
+            if (!seen.Add(id)) { changed = true; continue; }
+            kept.Add(id);
+        }
+        return kept;
+    }
+}
+
+/// <summary>
 /// The first story result of Level 1's case (T07): recorded once, when the
 /// corrected classification quest and Marie's approved case are both done,
 /// in the same write as its mastery result. Replays and later runs never
@@ -550,6 +840,12 @@ public class CampaignRecord
     public List<string> completedActivityIds = new List<string>();
     /// <summary>Every applied trust/coin grant and balance repair, with its reason (T08/T09).</summary>
     public List<CampaignLedgerEntry> ledger = new List<CampaignLedgerEntry>();
+    /// <summary>Hotbar, bag and journal state (T10). The older items list stays for save compatibility.</summary>
+    public CampaignInventoryRecord inventory = new CampaignInventoryRecord();
+    /// <summary>T12: the Supply Counter was introduced (opened once in the story); the shop is open from then on.</summary>
+    public bool shopIntroduced;
+    /// <summary>T13: office decor installed at its display anchors (one entry per owned decor product).</summary>
+    public List<DecorPlacement> decor = new List<DecorPlacement>();
 
     public bool IsSet => !string.IsNullOrWhiteSpace(campaignId);
 
@@ -954,6 +1250,9 @@ public class PlayerProgressData
         c.completedActivityIds = CleanIds(c.completedActivityIds, ref changed);
         if (c.ledger == null) { c.ledger = new List<CampaignLedgerEntry>(); changed = true; }
         changed |= c.ledger.RemoveAll(e => e == null || string.IsNullOrWhiteSpace(e.kind)) > 0;
+        if (c.inventory == null) { c.inventory = new CampaignInventoryRecord(); changed = true; }
+        changed |= c.inventory.Repair();
+        changed |= RepairDecor(c);
         c.completedChapterIds = CleanIds(c.completedChapterIds, ref changed);
         c.rewardClaims = CleanIds(c.rewardClaims, ref changed);
         c.ownedUpgradeIds = CleanIds(c.ownedUpgradeIds, ref changed);
@@ -989,6 +1288,27 @@ public class PlayerProgressData
             kept.Add(item);
         }
         c.items = kept;
+        return changed;
+    }
+
+    /// <summary>T13: one placement per decor item, trimmed ids; anchors are checked against the catalogue later (DecorRules.Resolve).</summary>
+    private static bool RepairDecor(CampaignRecord c)
+    {
+        bool changed = false;
+        if (c.decor == null) { c.decor = new List<DecorPlacement>(); return true; }
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var kept = new List<DecorPlacement>(c.decor.Count);
+        foreach (DecorPlacement placement in c.decor)
+        {
+            if (placement == null || string.IsNullOrWhiteSpace(placement.itemId)) { changed = true; continue; }
+            string id = placement.itemId.Trim();
+            if (id != placement.itemId) { placement.itemId = id; changed = true; }
+            string anchor = (placement.anchorId ?? "").Trim();
+            if (anchor != placement.anchorId) { placement.anchorId = anchor; changed = true; }
+            if (!seen.Add(id)) { changed = true; continue; }
+            kept.Add(placement);
+        }
+        c.decor = kept;
         return changed;
     }
 

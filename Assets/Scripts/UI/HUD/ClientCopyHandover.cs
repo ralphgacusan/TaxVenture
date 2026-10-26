@@ -76,7 +76,10 @@ public sealed class ClientCopyHandover : MonoBehaviour
     public static bool InProgress => Instance != null &&
         (Instance.phase == ClientCopyPhase.AtAuditor || Instance.phase == ClientCopyPhase.Carried);
     /// <summary>True while only the folder icon should respond during the handover prompt.</summary>
-    public static bool AwaitingHandoverAction => Instance != null && Instance.AwaitingHandover();
+    public static bool AwaitingHandoverAction => (Instance != null && Instance.AwaitingHandover()) || AuditorInteractable.AwaitingFolder;
+
+    /// <summary>Marie's step only (the Auditor's folder hand-in is AuditorInteractable.AwaitingFolder).</summary>
+    public static bool AwaitingClientCopy => Instance != null && Instance.AwaitingHandover();
     /// <summary>Case editing and submission stay disabled after approval, through the result-card acknowledgement.</summary>
     public static bool CaseActionsBlocked => InProgress || (Instance != null && Instance.phase == ClientCopyPhase.Done) ||
         (PlayerProgressManager.Instance != null &&
@@ -237,6 +240,9 @@ public sealed class ClientCopyHandover : MonoBehaviour
     private IEnumerator AuditorApproves()
     {
         AuditorInteractable auditor = FindAnyObjectByType<AuditorInteractable>(FindObjectsInactive.Exclude);
+        // 2026-10-26: his hand-in conversation is still open (waiting to sign off): the approval and the
+        // drop continue it, the copy dropping on his hand-over line.
+        if (auditor != null && auditor.TryContinueApproval(ApprovalLines(), DropCopy)) yield break;
         float until = Time.unscaledTime + AuditorLineWait;
         while (auditor != null && CopyNotDropped && Time.unscaledTime < until)
         {
@@ -409,10 +415,13 @@ public sealed class ClientCopyHandover : MonoBehaviour
         if (iconTag != null) iconTag.gameObject.SetActive(shown);
     }
 
+    /// <summary>
+    /// 2026-10-26 (user request): no icon over Marie while she waits (people show
+    /// emotes only on dialogue lines); her NPC marker still shows she has
+    /// something to say. Kept as a no-op so the call sites stay unchanged.
+    /// </summary>
     private void HoldClientAlert()
     {
-        if (clientAlert != 0 || !Relocated || clientRoot == null || phase != ClientCopyPhase.Carried) return;
-        clientAlert = WorldEmote.Hold(clientRoot, Emotion.Surprise);
     }
 
     private void ReleaseClientAlert()

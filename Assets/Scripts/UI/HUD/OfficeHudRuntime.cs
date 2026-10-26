@@ -201,6 +201,13 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         ApplyIcon(canvasRoot, "PermanentHUD/IconButtons/NotesIconButton", "notes");
         ApplyIcon(canvasRoot, "PermanentHUD/IconButtons/CaseFolderIconButton", "folder");
         ApplyIcon(canvasRoot, "PermanentHUD/IconButtons/TaxpayerProfileIcon", "profiles");
+
+        // T10: Level 1's icon row becomes a hotbar (same places) with a Bag icon; items keep their icons' behaviour.
+        if (HudHotbar.UsesHotbar(OfficeLevelProfile.LevelIdFor(this)))
+        {
+            HudHotbar hotbar = HudHotbar.Create(gameObject, canvasRoot);
+            if (hotbar != null) addedComponents.Add(hotbar);
+        }
     }
 
     /// <summary>The prompt pill sits where the plain PromptPanel was (same layer, never inside the fading HUD).</summary>
@@ -214,11 +221,19 @@ public sealed class OfficeHudRuntime : MonoBehaviour
     }
 
     /// <summary>"Exit Desk" / "Exit Corkboard": navy pill, brass rim, cream capitals (same button and click).</summary>
+    /// <summary>The EXIT DESK button's own sorting order: over every desk document layer.</summary>
+    public const int ExitDeskSortingOrder = 2400;
+
     private static void SkinExitButton()
     {
         WorkstationUI ui = FindAnyObjectByType<WorkstationUI>(FindObjectsInactive.Include);
         UnityEngine.UI.Button button = ui != null ? ui.GetComponentInChildren<UnityEngine.UI.Button>(true) : null;
         if (button == null) return;
+        // Always above the open desk documents (their layers sort 1101-1900), below the Bag (2550) (2026-10-26).
+        // A nested canvas added while hidden loses overrideSorting when it is shown, so the order is
+        // re-applied every time the button appears (HudSortingKeeper).
+        if (button.GetComponent<HudSortingKeeper>() == null)
+            button.gameObject.AddComponent<HudSortingKeeper>().Order = ExitDeskSortingOrder;
         if (button.targetGraphic is UnityEngine.UI.Image image)
         {
             float h = Mathf.Max(40f, ((RectTransform)button.transform).rect.height);
@@ -374,8 +389,10 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         Transform openBook = FindInScene(scene, "Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenTaxCodeBook");
         Doc3DLayer folderLayer = Doc3DLayer.Create(canvasRoot, openFolder, "Case Folder");
         Doc3DLayer bookLayer = Doc3DLayer.Create(canvasRoot, openBook, "Tax Code Book");
-        if (folderLayer != null) addedObjects.Add(folderLayer.gameObject);
-        if (bookLayer != null) addedObjects.Add(bookLayer.gameObject);
+        // One look for each document (2026-10-26): opened on the desk or from the bar, it is drawn the same way,
+        // through its own document layer (the warm manila folder of the bar view), never by the room's lighting.
+        if (folderLayer != null) { folderLayer.AlwaysComposite = true; addedObjects.Add(folderLayer.gameObject); }
+        if (bookLayer != null) { bookLayer.AlwaysComposite = true; addedObjects.Add(bookLayer.gameObject); }
 
         // Case Folder icon: the REAL desk folder (3D model with its pages),
         // tapped open anywhere or dragged out (closed) and dropped to open.
@@ -386,12 +403,13 @@ public sealed class OfficeHudRuntime : MonoBehaviour
             CaseFolder3DView view = caseFolder3D;
             folderIcon.ClickOverride = () =>
             {
+                if (AuditorInteractable.Current != null && AuditorInteractable.Current.TryIconHandIn()) return true;
                 if (ClientCopyHandover.Instance != null && ClientCopyHandover.Instance.TryIconTap()) return true;
                 view.Toggle();
                 return true;
             };
-            folderIcon.DropResolver = screen => ClientCopyHandover.Instance != null
-                ? ClientCopyHandover.Instance.ResolveDrop(screen) : null;
+            folderIcon.DropResolver = screen => AuditorInteractable.ResolveFolderDrop(screen) ??
+                (ClientCopyHandover.Instance != null ? ClientCopyHandover.Instance.ResolveDrop(screen) : null);
             folderIcon.DropOpenOverride = screen =>
             {
                 view.Open(screen);
@@ -502,7 +520,9 @@ public sealed class OfficeHudRuntime : MonoBehaviour
             {
                 foreach (Transform sibling in iconButtons.transform)
                 {
-                    if (sibling == caseFolderIcon || IsCaseFolderControl(sibling)) continue;
+                    // T10: the folder may sit inside a hotbar slot wrapper; that wrapper stays visible too.
+                    if (sibling == caseFolderIcon || IsCaseFolderControl(sibling) ||
+                        (caseFolderIcon != null && caseFolderIcon.IsChildOf(sibling))) continue;
                     CanvasGroup siblingGroup = sibling.GetComponent<CanvasGroup>();
                     if (siblingGroup == null)
                     {
@@ -646,6 +666,12 @@ public sealed class OfficeHudRuntime : MonoBehaviour
 
     /// <summary>Closes the floating, read-only 3D view before starting Marie's handover conversation.</summary>
     public void CloseCaseFolderView() => caseFolder3D?.Close();
+
+    /// <summary>The floating Case Folder is out of its icon (the hotbar dims the icon meanwhile).</summary>
+    public bool CaseFolderViewOut => caseFolder3D != null && caseFolder3D.IsOut;
+
+    /// <summary>T10: reading the carried Case Folder from the bag opens the same floating 3D view as its icon.</summary>
+    public bool OpenCaseFolderView() => caseFolder3D != null && caseFolder3D.Open(null);
 
     private void ResolveSceneDependencies()
     {

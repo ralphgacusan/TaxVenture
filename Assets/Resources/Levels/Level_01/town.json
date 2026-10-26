@@ -1,6 +1,6 @@
 {
   "_readme": [
-    "LEVEL 1 TOWN TEXT: what the 4 plaza clients say, their profile notes, and what Arthur says at the corkboard.",
+    "LEVEL 1 TOWN TEXT: what the 4 plaza clients say, their profile notes, and what Arthur (the guide) says at the corkboard.",
     "Edit freely; changes apply on the next Play. Fields starting with '_' are notes and are ignored.",
     "GOLDEN RULE: never name a classification (resident, non-resident, citizen, alien). Tell the STORY; the player works it out.",
     "Every corner answers two questions: is the person Filipino? and do they live here most of the year?",
@@ -9,7 +9,7 @@
     "description: the profile card. A short summary of what they said (about 12-13 words) - clues, never the answer.",
     "placedRight: Arthur when the card lands in the right corner (say WHY, without the label).",
     "hintCitizenship / hintResidence / hintBoth: Arthur when the card is wrong because of where they're FROM / where they LIVE / both. Hint, never the answer.",
-    "arthurBoardIntro / arthurBoardDone: Arthur's talk when the corkboard opens, and when every card is right.",
+    "arthurBoardIntro / arthurBoardDone: the guide's talk when the corkboard opens, and when every card is right.",
     "Marie is also the office client: her talk and profile hint how she earns her money (for the Case Folder) without naming the answer.",
     "Invalid entries are skipped with a Console warning and the built-in text is used instead."
   ],

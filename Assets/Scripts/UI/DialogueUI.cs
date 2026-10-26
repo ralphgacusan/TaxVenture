@@ -354,6 +354,20 @@ public class DialogueUI : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// Completes the awaited action and goes on with new lines inserted right
+    /// after the waiting one (the conversation continues with what just
+    /// happened). extra may be null or empty (then it just continues). Returns
+    /// the index of the first inserted line (-1 when none), or -2 when the
+    /// current line does not wait for this action (nothing changes).
+    /// </summary>
+    public int ContinueWith(string actionId, List<DialogueLine> extra)
+    {
+        if (!session.IsActive || session.AwaitingActionId != (actionId ?? "").Trim()) return -2;
+        int first = extra != null && extra.Count > 0 ? session.TryInsertAfterCurrent(extra) : -1;
+        return CompleteAwaitedAction(actionId) ? first : -2;
+    }
+
     /// <summary>Replaces the waiting line's prompt (e.g. a retry message after a failed save); null restores the line's own.</summary>
     public void SetActionPrompt(string text)
     {

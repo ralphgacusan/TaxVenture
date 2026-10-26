@@ -8,7 +8,7 @@
     "  lessons = the in-game lessons this card covers, as Level_01/<guide.json lesson id>. A card that is not in an alwaysOpen tab opens",
     "  once the player has FINISHED one of these lessons in the level (or already completed that chapter). A lesson belongs to one card only.",
     "  drill = the practice file in Resources/Tutorials/Training/Drills (without .json). lockedNote = the note on a locked card (no spoilers).",
-    "greetings: Arthur's line on the left page; one is picked at random."
+    "greetings: the guide's line on the left page; one is picked at random."
   ],
 
   "title": "TUTORIAL BINDER",
@@ -17,7 +17,7 @@
     "Back for a refresher, rookie? Pick a drill and show me what you've got!",
     "Practice here is free. Nobody's watching the clock but you.",
     "Do it once with my help, then once on your own. That's how it sticks!",
-    "Every senior consultant was a rookie once. Pick a drill!"
+    "Everyone on this island was a rookie once. Pick a drill!"
   ],
 
   "tabs": [
@@ -90,7 +90,7 @@
       "number": 3,
       "title": "Hand It In",
       "skills": ["Store the folder", "Beat office hours", "Give it to the Auditor"],
-      "lessons": ["Level_01/office-hours", "Level_01/store-folder", "Level_01/exit-desk", "Level_01/auditor", "Level_01/submit", "Level_01/audit-card"],
+      "lessons": ["Level_01/office-hours", "Level_01/store-folder", "Level_01/exit-desk", "Level_01/auditor", "Level_01/submit", "Level_01/submit-drag", "Level_01/audit-approved"],
       "drill": "case_handin",
       "lockedNote": "You'll meet the Auditor in Chapter 1."
     }

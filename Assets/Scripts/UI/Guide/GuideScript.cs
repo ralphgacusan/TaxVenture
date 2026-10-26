@@ -149,6 +149,11 @@ public class GuideScript
                         page.waitFor = null;
                     }
                 }
+                if (!string.IsNullOrEmpty(page.face) && GuideTargets.Validate(page.face) != null)
+                {
+                    report.AppendLine($"- {name} page {p + 1}: face: {GuideTargets.Validate(page.face)}; ignored.");
+                    page.face = null;
+                }
                 if (!string.IsNullOrEmpty(page.gesture) && Array.IndexOf(GuideTriggers.Gestures, page.gesture) < 0)
                 {
                     report.AppendLine($"- {name} page {p + 1}: unknown gesture \"{page.gesture}\"; using tap.");
@@ -340,6 +345,8 @@ public class GuidePage
     public string onlyOn;
     /// <summary>True: the objective arrows, goal marker and minimap pin appear from this page on.</summary>
     public bool revealArrows;
+    /// <summary>Optional target (same names as point): the player's view turns smoothly toward it when the page appears (first person).</summary>
+    public string face;
 
     public bool IsWelcomeCard => string.Equals(show, "welcome", StringComparison.OrdinalIgnoreCase);
     public bool IsHint => string.Equals(style, "hint", StringComparison.OrdinalIgnoreCase);

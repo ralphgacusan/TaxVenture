@@ -34,7 +34,7 @@ public sealed class NotesPaperView : MonoBehaviour
     private const float ContentTop = 190f;
     private const float RightPadding = 60f;
     private const float BottomPadding = 80f;
-    private const float LineSpacing = 56f;
+    private const float LineSpacing = 64f;   // 2026-10-26: bigger, more readable rows
 
     private NotesPanelUI notes;
     private OfficeObjectives objectives;
@@ -105,6 +105,38 @@ public sealed class NotesPaperView : MonoBehaviour
         float width = panel.rect.width > 0f ? panel.rect.width : 900f;
         float height = panel.rect.height > 0f ? panel.rect.height : 950f;
 
+        BuildPage(root, width, height);
+
+        // Subtitle and close button.
+        subtitle = InkLabel("Subtitle", root, string.Empty, 26f, InkFaded, FontStyles.Normal);
+        HudTheme.PlaceTopLeft((RectTransform)subtitle.transform, ContentLeft, 116f, 560f, 36f);
+        BuildCloseButton(root, width);
+
+        // Footer hint.
+        TextMeshProUGUI hint = InkLabel("Hint", root, "Tap X or the notes icon to close", 22f, InkFaded, FontStyles.Italic);
+        hint.alignment = TextAlignmentOptions.Center;
+        HudTheme.PlaceTopLeft((RectTransform)hint.transform, 0f, height - 52f, width, 32f);
+
+        chapterNavigation = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Chapter navigation", root),
+            ContentLeft, height - 115f, width - ContentLeft - RightPadding, 54f);
+        previousChapter = ChapterButton(chapterNavigation, "Previous", "<", 0f, -1);
+        nextChapter = ChapterButton(chapterNavigation, "Next", ">", chapterNavigation.sizeDelta.x - 64f, 1);
+        chapterLabel = InkLabel("Chapter", chapterNavigation, "", 26f, Ink, FontStyles.Bold);
+        chapterLabel.alignment = TextAlignmentOptions.Center;
+        HudTheme.PlaceTopLeft(chapterLabel.rectTransform, 70f, 8f, chapterNavigation.sizeDelta.x - 140f, 40f);
+        chapterNavigation.gameObject.SetActive(false);
+
+        content = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Objectives", root), ContentLeft, ContentTop,
+            width - ContentLeft - RightPadding, height - ContentTop - BottomPadding);
+    }
+
+    /// <summary>
+    /// The blank Notes page: the paper stack, ruled lines, red margin, tape
+    /// and the handwritten "Objectives" title. Shared by this panel and the
+    /// Level 1 chest paper, so both read as the same sheet.
+    /// </summary>
+    public static void BuildPage(RectTransform root, float width, float height)
+    {
         BuildPaperStack(root, PaperBack, Paper);
 
         // Ruled lines and the red margin.
@@ -127,29 +159,35 @@ public sealed class NotesPaperView : MonoBehaviour
         tape.localRotation = Quaternion.Euler(0f, 0f, -3f);
         HudTheme.AddImage(tape, null, Tape);
 
-        // Title, subtitle and close button.
         TextMeshProUGUI title = InkLabel("Title", root, "Objectives", 58f, Ink, FontStyles.Bold);
         HudTheme.PlaceTopLeft((RectTransform)title.transform, ContentLeft, 44f, 520f, 72f);
-        subtitle = InkLabel("Subtitle", root, string.Empty, 26f, InkFaded, FontStyles.Normal);
-        HudTheme.PlaceTopLeft((RectTransform)subtitle.transform, ContentLeft, 116f, 560f, 36f);
-        BuildCloseButton(root, width);
+    }
 
-        // Footer hint.
-        TextMeshProUGUI hint = InkLabel("Hint", root, "Tap X or the notes icon to close", 22f, InkFaded, FontStyles.Italic);
-        hint.alignment = TextAlignmentOptions.Center;
-        HudTheme.PlaceTopLeft((RectTransform)hint.transform, 0f, height - 52f, width, 32f);
-
-        chapterNavigation = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Chapter navigation", root),
-            ContentLeft, height - 115f, width - ContentLeft - RightPadding, 54f);
-        previousChapter = ChapterButton(chapterNavigation, "Previous", "<", 0f, -1);
-        nextChapter = ChapterButton(chapterNavigation, "Next", ">", chapterNavigation.sizeDelta.x - 64f, 1);
-        chapterLabel = InkLabel("Chapter", chapterNavigation, "", 26f, Ink, FontStyles.Bold);
-        chapterLabel.alignment = TextAlignmentOptions.Center;
-        HudTheme.PlaceTopLeft(chapterLabel.rectTransform, 70f, 8f, chapterNavigation.sizeDelta.x - 140f, 40f);
-        chapterNavigation.gameObject.SetActive(false);
-
-        content = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Objectives", root), ContentLeft, ContentTop,
-            width - ContentLeft - RightPadding, height - ContentTop - BottomPadding);
+    /// <summary>
+    /// A Notes page for the world (the chest paper): the same page with the
+    /// main objectives as empty checkbox headings. Nothing on it is live.
+    /// </summary>
+    public static void BuildSheet(RectTransform root, float width, float height, IList<string> headings)
+    {
+        BuildPage(root, width, height);
+        if (headings == null) return;
+        float rowWidth = width - ContentLeft - RightPadding;
+        float y = ContentTop;
+        for (int i = 0; i < headings.Count && y + LineSpacing < height - BottomPadding; i++)
+        {
+            const float size = 38f;
+            BuildCheckbox(root, ContentLeft, y + LineSpacing - BaselineGap - 40f, 40f, false);
+            TextMeshProUGUI heading = InkLabel("Objective", root, headings[i], size, Ink, FontStyles.Bold);
+            heading.textWrappingMode = TextWrappingModes.NoWrap;
+            heading.enableAutoSizing = true;
+            heading.fontSizeMin = 24f;
+            heading.fontSizeMax = size;
+            HudTheme.PlaceTopLeft((RectTransform)heading.transform, ContentLeft + 58f, y + TextTop(heading, size), rowWidth - 58f, size * 1.3f);
+            RectTransform underline = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Underline", root), ContentLeft + 58f,
+                y + LineSpacing - 2f, rowWidth - 58f, 3f);
+            HudTheme.AddImage(underline, null, Ink);
+            y += LineSpacing * 2f;
+        }
     }
 
     private Button ChapterButton(RectTransform parent, string name, string caption, float x, int direction)
@@ -264,7 +302,8 @@ public sealed class NotesPaperView : MonoBehaviour
             : $"{snapshot.DoneCount} of {snapshot.StepCount} done";
 
         IReadOnlyList<TaskDefinition> tasks = objectives.Tasks;
-        bool chapters = manager != null && manager.CurrentLevelId == OfficeLevelCatalog.Level2Id;
+        // Every level pages by its headings (the Level 2 page turn, 2026-10-26): each page fits at full size.
+        bool chapters = manager != null;
         chapterStarts.Clear();
         if (chapters)
             for (int i = 0; i < tasks.Count; i++)
@@ -313,7 +352,7 @@ public sealed class NotesPaperView : MonoBehaviour
 
     private float BuildHeaderRow(TaskDefinition task, TaskRowStatus status, float y, float width)
     {
-        const float size = 38f;
+        const float size = 46f;
         bool done = status == TaskRowStatus.Done;
         BuildCheckbox(content, 0f, y + LineSpacing - BaselineGap - 40f, 40f, done);
 
@@ -343,7 +382,7 @@ public sealed class NotesPaperView : MonoBehaviour
 
     private float BuildStepRow(TaskDefinition task, TaskRowStatus status, float y, float width)
     {
-        const float size = 28f;
+        const float size = 34f;
         const float indent = 40f;
         const float textX = indent + 46f;
         float textWidth = width - textX;

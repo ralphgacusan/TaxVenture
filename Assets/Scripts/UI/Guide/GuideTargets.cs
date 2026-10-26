@@ -36,7 +36,7 @@ public sealed class GuideTargets
     public static readonly string[] HudNames =
     {
         "objective", "progress", "timer", "minimap", "notes", "folder", "profiles", "settings", "icons",
-        "joystick", "look", "prompt", "exit", "card", "continue"
+        "joystick", "look", "prompt", "exit", "card", "continue", "bag", "slot", "book"
     };
 
     private const float CacheSeconds = 0.4f;
@@ -241,8 +241,11 @@ public sealed class GuideTargets
         return true;
     }
 
-    private Hit Best(List<Component> components, bool preferPlayer)
+    private Hit Best(List<Component> components, bool preferPlayer) => Best(components, preferPlayer, out _);
+
+    private Hit Best(List<Component> components, bool preferPlayer, out Component chosen)
     {
+        chosen = null;
         Hit best = new Hit();
         float bestScore = float.MaxValue;
         bool bestUseful = false;
@@ -267,6 +270,7 @@ public sealed class GuideTargets
             // Useful candidates always beat finished ones.
             if ((useful && !bestUseful) || (useful == bestUseful && score < bestScore))
             {
+                chosen = c;
                 best = hit;
                 bestScore = score;
                 bestUseful = useful;
@@ -367,9 +371,13 @@ public sealed class GuideTargets
                 return HudRewardScreen.Top != null ? HudRewardScreen.Top.Card : null;
             case "continue":
                 return HudRewardScreen.Top != null ? HudRewardScreen.Top.ContinueButton : null;
-            case "notes": return HudPath("PermanentHUD/IconButtons/NotesIconButton");
-            case "folder": return HudPath("PermanentHUD/IconButtons/CaseFolderIconButton");
-            case "profiles": return HudPath("PermanentHUD/IconButtons/TaxpayerProfileIcon");
+            // T10: with the Level 1 hotbar an item is pointed at in its slot, or at the Bag / the slot it will take.
+            case "notes": return HotbarTarget(InventoryCatalogue.Notes) ?? HudPath("PermanentHUD/IconButtons/NotesIconButton");
+            case "folder": return HotbarTarget(InventoryCatalogue.CaseFolder) ?? HudPath("PermanentHUD/IconButtons/CaseFolderIconButton");
+            case "profiles": return HotbarTarget(InventoryCatalogue.ProfileBinder) ?? HudPath("PermanentHUD/IconButtons/TaxpayerProfileIcon");
+            case "book": return HotbarTarget(InventoryCatalogue.TaxCodeBook);
+            case "bag": return HudHotbar.Instance != null ? HudHotbar.Instance.BagIcon : null;
+            case "slot": return HudHotbar.Instance != null ? HudHotbar.Instance.LandingSlot : HudPath("PermanentHUD/IconButtons/CaseFolderIconButton");
             case "settings": return HudPath("PermanentHUD/Settings/SettingsButton");
             case "icons": return HudPath("PermanentHUD/IconButtons");
             case "joystick": return HudPath("MobileControls/Joystick");
@@ -395,6 +403,9 @@ public sealed class GuideTargets
         }
         return null;
     }
+
+    private static RectTransform HotbarTarget(string itemId) =>
+        HudHotbar.Instance != null ? HudHotbar.Instance.ItemTarget(itemId) : null;
 
     private RectTransform HudPath(string path)
     {

@@ -31,7 +31,7 @@
       "title": "Finish Side Quest 1",
       "steps": [
         { "text": "Explore the plaza and talk to the 4 clients to get their taxpayer profiles.", "trigger": "event:AllProfilesCollected", "progress": "profiles" },
-        { "text": "Talk to Arthur, the tutorial guide.", "trigger": "event:TutorialGuideTalkedTo" },
+        { "text": "Talk to Arthur in the plaza.", "trigger": "event:TutorialGuideTalkedTo" },
         { "text": "Finish Side Quest 1 at the corkboard.", "trigger": "event:SideQuestCompleted" }
       ]
     },
@@ -40,8 +40,8 @@
       "steps": [
         { "text": "Go to the office.", "trigger": "area:Environment/OfficeBuilding/Rooms/Reception/Floor|Environment/OfficeBuilding/Rooms/Reception/Doors" },
         { "text": "Talk to the receptionist.", "trigger": "event:ReceptionistTalkedTo" },
-        { "text": "Go to the main office room, finish the tax case and drag the case folder to your folder icon.", "trigger": "event:CaseFolderStored", "undoneBy": "event:CaseFolderReturned" },
-        { "text": "Submit the case folder to the Auditor in his office.", "trigger": "state:CaseCompleteState" }
+        { "text": "Go to the main office room, finish the tax case and drag the case folder onto a slot in your bar.", "trigger": "event:CaseFolderStored", "undoneBy": "event:CaseFolderReturned" },
+        { "text": "Talk to the Auditor in his office and hand him the case folder.", "trigger": "state:CaseCompleteState" }
       ]
     },
     {

@@ -65,7 +65,7 @@ public class HudIconButton : MonoBehaviour
 
     private void Awake()
     {
-        if (unlockTrigger == UnlockTrigger.CaseFolderOpened)
+        if (unlockTrigger == UnlockTrigger.CaseFolderOpened || unlockTrigger == UnlockTrigger.NotesUnlockRequested)
             SetLocked();
         else
             Unlock();

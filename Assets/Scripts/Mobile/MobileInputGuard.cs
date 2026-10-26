@@ -53,6 +53,7 @@ public static class MobileInputGuard
     public static bool BlocksWorldInput()
     {
         if (InGameSettings.IsOpen) return true; // the settings board owns every touch
+        if (CameraController.Instance != null && CameraController.Instance.InputHeld) return true; // the camera is moving
         if (VirtualJoystick.BlocksWorldInput) return true;
         if (Touchscreen.current != null)
             foreach (var touch in Touchscreen.current.touches)
@@ -67,6 +68,7 @@ public static class MobileInputGuard
     {
         position = default;
         if (suppressedFrame == Time.frameCount || InGameSettings.IsOpen) return false;
+        if (CameraController.Instance != null && CameraController.Instance.InputHeld) return false; // the camera is moving
         if (Touchscreen.current != null)
         {
             foreach (var touch in Touchscreen.current.touches)

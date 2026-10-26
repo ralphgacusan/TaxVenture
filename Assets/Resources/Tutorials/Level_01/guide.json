@@ -12,7 +12,8 @@
     "Portraits: put images (Texture Type: Sprite) in Assets/Resources/Tutorials/Portraits and list them in guide.portraits by mood."
   ],
   "_targets": [
-    "hud:objective hud:progress hud:timer hud:minimap hud:notes hud:folder hud:profiles hud:settings hud:icons",
+    "face (page): the same target names; the view turns smoothly toward it when the page appears (first person), e.g. the Supply Counter or the next waypoint.",
+    "hud:objective hud:progress hud:timer hud:minimap hud:notes hud:folder hud:profiles hud:settings hud:icons hud:bag hud:slot hud:book",
     "hud:joystick hud:look hud:prompt hud:exit hud:card hud:continue (the open reward card and its button)",
     "world:<scene path>   type:<ComponentName>   ui:<UI object name>   screen:x,y[,w,h] (0..1)   waypoint",
     "chip = a Tax Code value that an empty case-folder field accepts;  field = the field that takes the value in hand (never Name/TIN)",
@@ -23,7 +24,7 @@
     "EVENTS (add #n to need n times): start, lesson:<id>, event:<objective event>, state:<GameState>,",
     "  dialogue:start, dialogue:end, value:selected, value:placed, value:rejected, corkboard:placed, corkboard:wrong",
     "CONDITIONS: mode:<FirstPerson|Workstation|CorkboardSideQuest|ProfileViewer|Interview>, step:<objectives.json trigger>,",
-    "  near:<metres>:<target>, visible:<target>, profiles:<n>, case:filled, dialogue:active, open:<notes|profiles|folder>,",
+    "  near:<metres>:<target>, visible:<target>, profiles:<n>, case:filled, dialogue:active, open:<notes|profiles|folder|bag>, owns:<item id>,",
     "  card:<audit|sidequest|level|result|any> (that reward/summary card is open; use duringResults + endIfGone on the lesson),",
     "  active:<target> (object is switched on, e.g. the open case folder), not:<condition> (e.g. not:open:notes)",
     "WAIT ONLY: tap, move:<metres>, look:<degrees>, seconds:<n>.   Join with | for 'any of'."
@@ -113,33 +114,17 @@
       "when": "lesson:welcome",
       "after": "welcome",
       "pages": [
-        { "point": "hud:objective", "gesture": "tap", "text": "See this up top? That's your Objective Tracker. It shows the ONE thing to do next. Lost? Just peek up here!" },
-        { "point": "hud:objective", "gesture": "none", "text": "The little clock on it keeps time. No rush though! Take it nice and easy on your first day." },
-        { "point": "hud:progress", "gesture": "tap", "text": "This card is your progress. Do good work and the gold EXP bar fills up. The hearts show how much people trust you. The note by the level name says how much you need to unlock the next level." },
+        { "point": "hud:progress", "gesture": "tap", "text": "This card is your progress. EXP records mastery, and hearts show Public Trust. The town's future support goal is 65; neither one locks the story." },
         { "point": "hud:minimap", "gesture": "tap", "text": "Your minimap! The blue arrow is you, and the yellow diamonds are people. The time of day is on top. It's 7:30 in the morning, bright and early!" },
-        { "point": "hud:profiles", "gesture": "tap", "text": "Taxpayer Profiles. Empty for now, but you'll fill these up in the plaza very soon." },
-        { "point": "hud:folder", "gesture": "tap", "text": "And the Case Folder. Your tax case will live in here later on." },
+        { "point": "hud:icons", "gesture": "none", "text": "These squares down the side are your carry slots. Empty for now, but whatever you pick up today lands in them, ready to use." },
         { "point": "hud:settings", "gesture": "tap", "text": "Settings, in case you want to change the sound or controls." }
-      ]
-    },
-    {
-      "id": "notes",
-      "title": "YOUR NOTES",
-      "when": "lesson:hud-tour",
-      "after": "hud-tour",
-      "pages": [
-        { "point": "hud:notes", "gesture": "none", "text": "Now the most useful one: your Notes! The tracker shows just the next step, but your Notes list ALL of today's objectives and every step." },
-        { "point": "hud:notes", "gesture": "tap", "waitFor": "open:notes", "text": "Your turn: tap the Notes icon to open it!" },
-        { "point": "ui:NotesPanel", "gesture": "none", "text": "There it is: every main objective with its steps. A check mark appears as you finish each one, so you always know how far you've come." },
-        { "point": "hud:notes", "gesture": "tap", "waitFor": "not:open:notes", "text": "Tap the Notes icon again to put it away. You can open it any time you need it!" },
-        { "mood": "wow", "text": "Perfect! Alright, enough looking around. Let's get you moving!" }
       ]
     },
     {
       "id": "move",
       "title": "WALKING",
-      "when": "lesson:notes",
-      "after": "notes",
+      "when": "lesson:hud-tour",
+      "after": "hud-tour",
       "pages": [
         { "point": "hud:joystick", "gesture": "joystick", "waitFor": "move:4", "text": "Your turn: put your left thumb on the joystick and push it to walk around. Go on, give it a try!" },
         { "mood": "wow", "text": "Nice moves! You're a natural." }
@@ -156,12 +141,64 @@
       ]
     },
     {
-      "id": "follow",
-      "title": "FOLLOW THE ARROWS",
+      "id": "bag-empty",
+      "title": "YOUR BAG",
       "when": "lesson:look",
       "after": "look",
       "pages": [
-        { "point": "waypoint", "gesture": "none", "revealArrows": true, "mood": "wow", "text": "Ta-da! See the glowing arrows on the ground, and the pin floating over your goal? They always lead to your next objective." },
+        { "point": "hud:bag", "gesture": "tap", "waitFor": "open:bag", "text": "Before we head out, let's try your Bag. Tap it to open it." },
+        { "point": "ui:Inventory Back", "gesture": "tap", "waitFor": "not:open:bag", "text": "It's empty for now. Your things will be kept here when your slots are full. Tap BACK to close it." }
+      ]
+    },
+    {
+      "id": "chest-find",
+      "title": "A LITTLE EXPLORING",
+      "when": "lesson:bag-empty",
+      "after": "bag-empty",
+      "pages": [
+        { "gesture": "none", "waitFor": "active:type:NotesChestPaperPickup|owns:notes", "text": "Look around for a small chest near the trees. Open it when you find it." }
+      ]
+    },
+    {
+      "id": "notes",
+      "title": "YOUR NOTES",
+      "_note": "T16 chest revision: the physical paper is collected before the store and before the town route. Existing receptionist grants stay independent and still establish case-received.",
+      "when": "lesson:chest-find|owns:notes",
+      "onlyIn": "mode:FirstPerson|mode:ProfileViewer",
+      "after": "chest-find",
+      "delay": 0.4,
+      "pages": [
+        { "point": "type:NotesChestPaperPickup", "gesture": "tap", "waitFor": "not:active:type:NotesChestPaperPickup", "text": "There it is! Tap the paper to pick it up and send it to your Notes slot." },
+        { "point": "hud:notes", "gesture": "none", "text": "Whoosh! Today's Notes flew into your slot. They list every main objective and step." },
+        { "point": "hud:notes", "gesture": "tap", "waitFor": "open:notes", "text": "Your turn: tap the Notes icon to open them." },
+        { "point": "ui:NotesPanel", "gesture": "none", "text": "There it is: every main objective with its steps. A check mark appears as you finish each one." },
+        { "point": "hud:notes", "gesture": "tap", "waitFor": "not:open:notes", "text": "Tap your Notes again to put them away. You can open them any time you need them!" },
+        { "mood": "wow", "text": "Perfect! Now let's see what the Supply Counter has to offer." }
+      ]
+    },
+    {
+      "id": "shop-intro",
+      "title": "SUPPLY COUNTER",
+      "_note": "T16 chest revision (user decision): after the Notes paper is opened and closed, the store is introduced before the town route. Without a counter (no clear spot), follow continues.",
+      "when": "lesson:notes",
+      "after": "notes",
+      "onlyIn": "active:type:SupplyCounter",
+      "delay": 0.4,
+      "pages": [
+        { "point": "type:SupplyCounter", "face": "type:SupplyCounter", "gesture": "none", "mood": "wow", "text": "Before you meet the townsfolk, look over there! That's the Supply Counter, right beside the office." },
+        { "point": "type:SupplyCounter", "gesture": "none", "text": "Finish jobs and you earn coins. Spend them here on handy gear, like a bigger bag or a set of bookmarks." },
+        { "point": "type:SupplyCounter", "gesture": "tap", "waitFor": "cue:ShopOpened", "text": "Your turn: walk over and tap the counter to take a look." },
+        { "point": "ui:Shop Wallet", "gesture": "none", "text": "This is the catalogue. Prices are in coins, and your coins show up right here. You don't have any yet, but you will soon!" },
+        { "style": "hint", "gesture": "none", "waitFor": "cue:ShopClosed", "text": "Browse as long as you like, then tap BACK." }
+      ]
+    },
+    {
+      "id": "follow",
+      "title": "FOLLOW THE ARROWS",
+      "when": "lesson:shop-intro|not:active:type:SupplyCounter",
+      "after": "notes",
+      "pages": [
+        { "point": "waypoint", "face": "waypoint", "gesture": "none", "revealArrows": true, "mood": "wow", "text": "Ta-da! See the glowing arrows on the ground, and the pin floating over your goal? They always lead to your next objective." },
         { "point": "hud:minimap", "gesture": "none", "text": "Your goal pulses on the minimap too, with little dots showing the way." },
         { "point": "hud:joystick", "gesture": "joystick", "waitFor": "move:8", "text": "Your turn: follow the arrows! They're taking you to the townsfolk in the plaza." }
       ]
@@ -201,10 +238,10 @@
       "after": "follow",
       "delay": 0.8,
       "pages": [
-        { "point": "hud:profiles", "gesture": "none", "text": "Whoosh! It flew right into your Profiles." },
-        { "point": "hud:profiles", "gesture": "tap", "waitFor": "open:profiles", "text": "Your turn: tap the Profiles icon to read it." },
+        { "point": "hud:profiles", "gesture": "none", "text": "Whoosh! It flew right into your Profile Binder, in your slots." },
+        { "point": "hud:profiles", "gesture": "tap", "waitFor": "open:profiles", "text": "Your turn: tap the Profile Binder to read it." },
         { "text": "This is everything you learned about them. You can drag a card around to read it better." },
-        { "point": "hud:profiles", "gesture": "tap", "waitFor": "not:open:profiles", "text": "Tap the Profiles icon again to put the cards away." },
+        { "point": "hud:profiles", "gesture": "tap", "waitFor": "not:open:profiles", "text": "Tap the binder again to put the cards away." },
         { "point": "hud:objective", "gesture": "none", "text": "One down, three to go! The tracker keeps count for you. Follow the arrows to the next person." }
       ]
     },
@@ -216,7 +253,8 @@
       "delay": 1.0,
       "pages": [
         { "mood": "wow", "text": "That's all four profiles! Great job." },
-        { "point": "waypoint", "gesture": "tap", "waitFor": "dialogue:start", "text": "Your turn: follow the arrows to me in the plaza and tap me to talk." }
+        { "point": "waypoint", "gesture": "tap", "waitFor": "near:4:world:Environment/Outside/Plaza/NPCS/NPC_TutorialGuide|dialogue:start", "text": "Your turn: follow the arrows back to me in the plaza." },
+        { "point": "world:Environment/Outside/Plaza/NPCS/NPC_TutorialGuide", "gesture": "tap", "waitFor": "dialogue:start", "text": "Your turn: tap me to talk, and we'll sort them on my corkboard." }
       ]
     },
     {
@@ -388,7 +426,7 @@
       "delay": 0.8,
       "pages": [
         { "mood": "wow", "text": "All three fields are filled in. Looking sharp!" },
-        { "point": "world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder", "to": "hud:folder", "gesture": "drag", "waitFor": "event:CaseFolderStored", "text": "When you're happy with your answers, your turn: drag the open folder onto your Case Folder icon to keep it with you." }
+        { "point": "world:Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder", "to": "hud:slot", "gesture": "drag", "waitFor": "event:CaseFolderStored", "text": "When you're happy with your answers, your turn: drag the open folder onto an empty slot to keep it with you." }
       ]
     },
     {
@@ -418,34 +456,92 @@
       "onlyIn": "mode:FirstPerson",
       "after": "auditor",
       "pages": [
-        { "point": "world:Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "gesture": "none", "text": "This is the Auditor. He checks every case before it's done. Talking to him only gets you a reminder..." },
-        { "point": "hud:folder", "to": "world:Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "gesture": "drag", "text": "...to hand in your case, you GIVE him the folder: press and hold your Case Folder icon, then drag it onto the Auditor." },
-        { "point": "hud:folder", "to": "world:Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "gesture": "drag", "waitFor": "state:AuditSubmittedState", "text": "Your turn: drag the Case Folder icon onto the Auditor. Fingers crossed!" }
+        { "point": "world:Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "gesture": "tap", "waitFor": "dialogue:start", "text": "This is the Auditor. He checks every case before it's done. Your turn: tap him to start your hand-in." }
       ]
     },
     {
-      "id": "audit-card",
+      "id": "submit-drag",
+      "title": "GIVE HIM THE FOLDER",
+      "when": "cue:AuditorAsksForFolder",
+      "after": "submit",
+      "duringDialogue": true,
+      "pages": [
+        { "point": "hud:folder", "to": "world:Environment/OfficeBuilding/Rooms/AuditOffice/Auditor", "gesture": "drag", "box": "top", "waitFor": "state:AuditSubmittedState", "text": "He's asking for your case. Your turn: press and hold your Case Folder icon, then drag it onto the Auditor." }
+      ]
+    },
+    {
+      "id": "audit-approved",
       "title": "AUDIT SUMMARY",
-      "when": "card:audit",
+      "when": "cue:AuditApproved",
       "onlyIn": "card:audit",
+      "duringDialogue": true,
       "duringResults": true,
       "endIfGone": true,
       "delay": 0.5,
       "pages": [
-        { "point": "hud:card", "gesture": "none", "box": "bottom", "text": "The Auditor's report: APPROVED means you're done. If something needs fixing, it tells you where to look. Read it, then tap the button." }
+        { "point": "hud:card", "gesture": "none", "box": "bottom", "mood": "wow", "text": "APPROVED! Every answer checks out. Tap the button, and the Auditor will finish up with you." }
+      ]
+    },
+    {
+      "id": "audit-fix",
+      "title": "AUDIT SUMMARY",
+      "when": "cue:AuditNeedsFix",
+      "onlyIn": "card:audit",
+      "duringDialogue": true,
+      "duringResults": true,
+      "endIfGone": true,
+      "delay": 0.5,
+      "pages": [
+        { "point": "hud:card", "gesture": "none", "box": "bottom", "text": "NEEDS ANOTHER LOOK. Each red line tells you where to look again, not the answer. Read them, then tap the button." }
+      ]
+    },
+    {
+      "id": "audit-fix-again",
+      "title": "AUDIT SUMMARY",
+      "when": "cue:AuditNeedsFixAgain",
+      "onlyIn": "card:audit",
+      "duringDialogue": true,
+      "duringResults": true,
+      "endIfGone": true,
+      "delay": 0.5,
+      "pages": [
+        { "point": "hud:card", "gesture": "none", "box": "bottom", "mood": "confused", "text": "Still something to fix. Look only at the lines he marked this time, then tap the button." }
       ]
     },
     {
       "id": "audit-retry",
       "title": "TRY AGAIN",
-      "when": "event:CaseFolderReturned",
+      "when": "cue:AuditFolderHandedBack",
       "onlyIn": "mode:FirstPerson",
       "delay": 0.8,
       "pages": [
         { "mood": "sad", "text": "Ah, the Auditor found a mistake or two. Happens to everyone, even me!" },
-        { "text": "Marie looks worried. Pop into the conference room and talk to her again. She might remind you of something important." },
-        { "mood": "confused", "text": "And remember: the Auditor won't re-check the exact same answers. Change what's wrong, store the folder again, then hand it in." },
+        { "text": "Marie is in the conference room. Talk to her again. She might remind you of something important." },
+        { "mood": "confused", "text": "And remember: the Auditor won't re-check the exact same answers. Change what he marked, keep the folder with you, then talk to him again." },
         { "point": "hud:notes", "gesture": "tap", "text": "Your folder is back on your desk. You've got this!" }
+      ]
+    },
+    {
+      "id": "bag-full",
+      "title": "YOUR BAG",
+      "_note": "T10: HudHotbar raises cue:BagOverflow once, the first time an item lands in the bag because the bar is full (Bag icon never used yet). Completes on the real move (cue:BagItemToBar).",
+      "when": "cue:BagOverflow",
+      "onlyIn": "mode:FirstPerson|mode:Workstation|mode:ProfileViewer",
+      "delay": 0.3,
+      "pages": [
+        { "point": "hud:bag", "gesture": "tap", "waitFor": "cue:BagItemToBar", "text": "Your bar is full, so it went in your bag. Tap the bag and drag it to your bar." },
+        { "mood": "wow", "text": "That's it! Everything in your bar is ready to use. Your bag keeps the rest safe." }
+      ]
+    },
+    {
+      "id": "bag-full-known",
+      "title": "YOUR BAG",
+      "_note": "Same moment when the Bag icon was already used: no arrow (cue:BagOverflowKnown).",
+      "when": "cue:BagOverflowKnown",
+      "onlyIn": "mode:FirstPerson|mode:Workstation|mode:ProfileViewer",
+      "delay": 0.3,
+      "pages": [
+        { "gesture": "none", "waitFor": "cue:BagItemToBar", "text": "Your bar is full, so it went in your bag. Tap the bag and drag it to your bar." }
       ]
     },
     {

@@ -1,7 +1,7 @@
 {
   "_readme": [
     "LEVEL 1 OFFICE HOURS: the in-game clock and the Auditor's deadline. Edit freely; applies on the next Play.",
-    "The day starts at startTime. The clock runs only while the player can play (it waits for Arthur's tap pages, reward cards and pause).",
+    "The day starts at startTime. The clock runs only while the player can play (it waits for the guide's tap pages, reward cards and pause).",
     "gameSecondsPerRealSecond: clock speed. 10 = one real minute is 10 in-game minutes.",
     "When the player first talks to the receptionist, she reveals the Auditor leaves at a set time (receptionistLines; {deadline} = that time).",
     "Time allowed (REAL seconds) = baseSeconds + factor x (side-quest time - typicalSideQuestSeconds), kept between minSeconds and maxSeconds.",
@@ -9,7 +9,7 @@
     "Missing it is never a fail: the Auditor goes home, it's next morning at nextMorningTime with all progress kept",
     "  (the side quest stays done); the player starts outside the office front door, ready to walk in,",
     "  and a new deadline of (time allowed x nextMorningExtraFactor). Only the on-time bonus is lost.",
-    "warnMinutes: Arthur warns when this many in-game minutes are left. amberRealSeconds / redRealSeconds: when the countdown turns amber / red.",
+    "warnMinutes: the guide (Arthur) warns when this many in-game minutes are left. amberRealSeconds / redRealSeconds: when the countdown turns amber / red.",
     "onTimeBonusExp / onTimeBonusHearts: extra reward for handing the case in before the first deadline. It can win back points lost elsewhere, but the level score never goes above its maximum (a perfect run is already full).",
     "arthur...: what Arthur says ({minutes} = minutes left, {deadline} = leaving time). Fields starting with '_' are notes."
   ],

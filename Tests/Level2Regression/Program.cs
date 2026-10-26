@@ -2109,9 +2109,9 @@ Check(bookIconSrc.Contains("iconDrag.CanDrag = () => Stored &&") && bookIconSrc.
     "an empty icon cannot be dragged out and a tap explains; there is no on-screen drag prompt");
 Check(File.ReadAllText(Res("Tutorials/Level_02/guide.json")).Contains("drag it onto the red book icon so it travels with you"),
     "Arthur mentions carrying the book as a clue, not an order");
-Check(bookIconSrc.Contains("class FloatingBookGrab") && bookIconSrc.Contains("book.gameObject.AddComponent<FloatingBookGrab>()") && bookIconSrc.Contains("if (OverIcon(screen)) CloseFloating();") &&
+Check(bookIconSrc.Contains("class FloatingBookGrab") && bookIconSrc.Contains("book.gameObject.AddComponent<FloatingBookGrab>()") && bookIconSrc.Contains("if (OverStoreTarget(screen)) CloseFloating();") &&
       bookIconSrc.Contains("bookLayer.AlwaysComposite = true"),
-    "the open book can be dragged by its page and dropped into its icon, and always draws in front while out");
+    "the open book can be dragged by its page and dropped into its icon (any hotbar slot or the Bag in Level 1), and always draws in front while out");
 Check(Src("Scripts/TaxCodeBook/TaxCodeBook3DDrag.cs").Contains("public static void SetHeldTint(") &&
       Src("Scripts/TaxCodeBook/TaxCodeBook3DDrag.cs").Contains("bool tint = isDragging && hasMovedDuringDrag;") && bookIconSrc.Contains("TaxCodeBook3DDrag.SetHeldTint("),
     "the desk book and the floating book are red-tinted while held, and the tint is cleared afterwards");
@@ -2235,10 +2235,10 @@ Check(leaves.Any(l => Str(l, "heading") == "Section 7 \u2013 Finding Reasons") &
       !officeSrc.Contains("from Review Notes in your book"),
     "the book's reasons page is titled Finding Reasons, and the hints that point to it say so");
 string bookIconSrcR = Src("Scripts/Level2/Level2TaxCodeBookIcon.cs");
-Check(bookIconSrcR.Contains("if (screenPosition.HasValue && phase == Phase.Closed && OverOfficeDesk(screenPosition.Value))") &&
-      bookIconSrcR.Contains("else if (OverOfficeDesk(screen))") && bookIconSrcR.Contains("review.taxBookStored = false;") &&
+Check(!bookIconSrcR.Contains("OverOfficeDesk(") && bookIconSrcR.Contains("else if (OverDeskStack(screen))") &&
+      bookIconSrcR.Contains("Vector2.Distance(screen, spot) < Screen.height * DeskStackRadius") && bookIconSrcR.Contains("review.taxBookStored = false;") &&
       bookIconSrcR.Contains("desk.UnparkClosedBook();") && Src("Scripts/TaxCodeBook/TaxCodeBook3DDrag.cs").Contains("public void UnparkClosedBook()"),
-    "the carried book can go back onto its desk stack: dropped from the icon or released from the floating view over the office desk");
+    "the carried book always opens first when dragged out of its icon; the open book goes back onto its desk stack only when released over its own stack spot (2026-10-26)");
 string auditWaitSrc = Src("Scripts/Level2/Level2Audit.cs");
 Check(auditWaitSrc.Contains("instance.StartCoroutine(AfterDialogueCloses(conclude))") &&
       auditWaitSrc.Contains("if (!DialogueUI.IsAnyDialogueActive && !AnyDialoguePanelShowing()) break;") &&

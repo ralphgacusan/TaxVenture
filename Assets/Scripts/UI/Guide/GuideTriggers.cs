@@ -28,7 +28,8 @@ using System.Globalization;
 ///   case:filled                 the three case-folder answers are filled in
 ///   case:correct                every graded case-folder field holds the right answer (Tutorial Hub mastery)
 ///   dialogue:active             a conversation is on screen right now
-///   open:&lt;notes|profiles|folder&gt;  that HUD window is open right now
+///   open:&lt;notes|profiles|folder|bag&gt;  that HUD window is open right now
+///   owns:&lt;item id&gt;             that item is in the live run's inventory
 ///   active:&lt;target&gt;             the target object exists and is switched on
 ///   card:&lt;audit|sidequest|level|result|any&gt;  that reward/summary card is open
 ///   not:&lt;condition&gt;             the condition is false (e.g. not:open:notes)
@@ -80,13 +81,14 @@ public static class GuideTriggers
     public const string CaseCorrect = "case:correct";
     public const string DialogueActive = "dialogue:active";
     public const string OpenPrefix = "open:";
+    public const string OwnsPrefix = "owns:";
     public const string ActivePrefix = "active:";
     public const string CardPrefix = "card:";
     public static readonly string[] Cards = { "audit", "sidequest", "level", "result", "any" };
     public const string NotPrefix = "not:";
     /// <summary>A level fact the level provides through GuideFlags (e.g. flag:bookStored).</summary>
     public const string FlagPrefix = "flag:";
-    public static readonly string[] Windows = { "notes", "profiles", "folder" };
+    public static readonly string[] Windows = { "notes", "profiles", "folder", "bag" };
 
     public const string MovePrefix = "move:";
     public const string LookPrefix = "look:";
@@ -107,7 +109,7 @@ public static class GuideTriggers
     private static readonly string[] Prefixes =
     {
         Tap, Start, LessonPrefix, ObjectiveTriggers.EventPrefix, ObjectiveTriggers.StatePrefix, "dialogue:", "value:",
-        "corkboard:", CuePrefix, FlagPrefix, OpenPrefix, ActivePrefix, CardPrefix, NotPrefix, ModePrefix, StepPrefix, NearPrefix, VisiblePrefix, ProfilesPrefix, "case:", MovePrefix,
+        "corkboard:", CuePrefix, FlagPrefix, OpenPrefix, OwnsPrefix, ActivePrefix, CardPrefix, NotPrefix, ModePrefix, StepPrefix, NearPrefix, VisiblePrefix, ProfilesPrefix, "case:", MovePrefix,
         LookPrefix, SecondsPrefix
     };
 
@@ -325,6 +327,19 @@ public static class GuideTriggers
             trigger.Kind = Kind.Condition;
             trigger.Key = OpenPrefix;
             trigger.Arg = window;
+            return true;
+        }
+        if (text.StartsWith(OwnsPrefix, StringComparison.Ordinal))
+        {
+            string item = text.Substring(OwnsPrefix.Length).Trim();
+            if (item.Length == 0)
+            {
+                problem = "owns: needs an inventory item id, e.g. owns:notes";
+                return false;
+            }
+            trigger.Kind = Kind.Condition;
+            trigger.Key = OwnsPrefix;
+            trigger.Arg = item;
             return true;
         }
         if (text.StartsWith(FlagPrefix, StringComparison.Ordinal))

@@ -208,6 +208,8 @@ public sealed class OfficeHours : MonoBehaviour
     private bool Paused()
     {
         if (Time.timeScale <= 0f || HudRewardScreen.AnyOpen || nextMorning != null || SideQuestSplash.IsShowing) return true;
+        // T12: browsing the Supply Counter catalogue pauses the clock like other shop menus (the Bag does not).
+        if (SupplyShopScreen.PausesClock) return true;
         if (GameStateMachine.Instance != null && GameStateMachine.Instance.IsPaused) return true;
         GuideRuntime guide = GuideRuntime.Instance;
         return guide != null && guide.Director != null && guide.Director.IsBlocking;
@@ -312,6 +314,53 @@ public sealed class OfficeHours : MonoBehaviour
         ExtensionSeconds = Mathf.Clamp(saved.extensionSeconds, 0, Level1ClockRecord.MaxExtensionSeconds);
         previousMinutesLeft = int.MaxValue;
         shownClock = null;
+        Changed?.Invoke();
+    }
+
+    // =========================================================
+    // REVIEW VOUCHER (T14): the same clock, a later cutoff
+    // =========================================================
+
+    /// <summary>The clock is on in this scene (Office Hours enabled).</summary>
+    public bool Running => enabled && Config != null && Config.enabled;
+
+    /// <summary>The clock as the voucher rules read it.</summary>
+    public VoucherClockView VoucherView => new VoucherClockView
+    {
+        HasDeadline = HasDeadline,
+        Announced = Announced,
+        CaseDone = CaseDone,
+        DayClosing = nextMorning != null,
+        GameSeconds = GameSeconds,
+        DeadlineSeconds = DeadlineSeconds,
+        ExtensionSeconds = ExtensionSeconds
+    };
+
+    /// <summary>The cutoff one voucher would give (this clock's own rate: 180 active seconds of play).</summary>
+    public int ExtendedDeadlineSeconds => DeadlineSeconds + VoucherRules.CutoffShift(Config.gameSecondsPerRealSecond);
+
+    /// <summary>This clock as it would be after one voucher (a captured copy; nothing changes yet).</summary>
+    public Level1ClockRecord ExtendedClock()
+    {
+        var now = new Level1ClockRecord();
+        CaptureClock(now);
+        return VoucherRules.Extend(now, Config.gameSecondsPerRealSecond);
+    }
+
+    /// <summary>
+    /// After a voucher use is saved: the live clock takes the extended cutoff.
+    /// Only the cutoff (and the first-day cutoff on day 1) and the recorded
+    /// extension change; time, day and warnings carry on (a warning can come
+    /// again as the new cutoff nears).
+    /// </summary>
+    public void ApplyExtension(Level1ClockRecord extended)
+    {
+        if (extended == null || CaseDone || nextMorning != null) return;
+        DeadlineSeconds = extended.deadlineSeconds;
+        deadlineFirstDay = extended.deadlineFirstDay;
+        ExtensionSeconds = Mathf.Clamp(extended.extensionSeconds, 0, Level1ClockRecord.MaxExtensionSeconds);
+        previousMinutesLeft = int.MaxValue;
+        if (chip != null) chip.Pop();
         Changed?.Invoke();
     }
 

@@ -43,6 +43,9 @@ public sealed class HudObjectiveTracker : MonoBehaviour
     private OfficeObjectives objectives;
     private HudTimer clockSource;
     private RectTransform frame;
+    private CanvasGroup availabilityGroup;
+    private bool notesAvailable;
+    private const float RevealSeconds = 0.35f;
 
     private TextMeshProUGUI captionText;
     private TextMeshProUGUI caseText;
@@ -92,8 +95,27 @@ public sealed class HudObjectiveTracker : MonoBehaviour
         tracker.objectives = objectives;
         tracker.clockSource = clockSource;
         tracker.frame = frame;
+        tracker.availabilityGroup = frame.gameObject.AddComponent<CanvasGroup>();
+        bool levelOne = OfficeLevelProfile.LevelIdFor(host) == OfficeLevelCatalog.Level1Id;
+        tracker.notesAvailable = !levelOne;
+        tracker.availabilityGroup.alpha = levelOne ? 0f : 1f;
+        tracker.availabilityGroup.interactable = false;
+        tracker.availabilityGroup.blocksRaycasts = false;
         tracker.BuildContents(body);
         return tracker;
+    }
+
+    /// <summary>Level 1 reveals its existing tracker only after the Notes item is owned.</summary>
+    public void SetNotesAvailable(bool available)
+    {
+        if (notesAvailable == available)
+        {
+            if (!available && availabilityGroup != null) availabilityGroup.alpha = 0f;
+            return;
+        }
+        notesAvailable = available;
+        if (availabilityGroup != null) availabilityGroup.alpha = 0f;
+        if (available && objectives != null) ShowImmediately(objectives.Snapshot);
     }
 
     private void BuildContents(RectTransform body)
@@ -208,6 +230,11 @@ public sealed class HudObjectiveTracker : MonoBehaviour
     private void HandleChanged()
     {
         RefreshCase();
+        if (!notesAvailable)
+        {
+            ShowImmediately(objectives.Snapshot);
+            return;
+        }
         if (phase != Phase.Idle)
         {
             pendingChange = true; // picked up when the running animation finishes
@@ -356,6 +383,10 @@ public sealed class HudObjectiveTracker : MonoBehaviour
     private void Update()
     {
         TickClock();
+        if (notesAvailable && availabilityGroup != null && availabilityGroup.alpha < 1f)
+            availabilityGroup.alpha = Mathf.MoveTowards(availabilityGroup.alpha, 1f,
+                Time.unscaledDeltaTime / RevealSeconds);
+        if (!notesAvailable) return;
 
         bool visible = host == null || host.IsShown;
         if (phase != Phase.Idle && visible)

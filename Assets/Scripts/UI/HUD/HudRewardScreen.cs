@@ -36,6 +36,13 @@ public sealed class RewardScreenData
     public string Footer;
     /// <summary>Text of the screen's own button (null keeps the scene's label).</summary>
     public string ButtonLabel;
+
+    /// <summary>
+    /// A chapter's closing card (2026-10-26): on the right 60% of the screen over
+    /// the client scene (light backdrop), drawn up to LargeScale bigger when that
+    /// area has room, and it waits for the finale scene like the Level Complete card.
+    /// </summary>
+    public bool Large;
     /// <summary>&gt; 0: the button presses itself this long after the entrance (a strip drains on it).</summary>
     public float AutoContinueSeconds;
     /// <summary>Colour of the light rays and glow behind the hero (tier / verdict colour).</summary>
@@ -113,7 +120,13 @@ public sealed class HudRewardScreen : MonoBehaviour
     private GameObject backdropObject;
 
     private bool IsLevelCompleteCard =>
-        (shownTitle ?? "").IndexOf("Level Complete", System.StringComparison.OrdinalIgnoreCase) >= 0;
+        shownLarge || (shownTitle ?? "").IndexOf("Level Complete", System.StringComparison.OrdinalIgnoreCase) >= 0;
+
+    /// <summary>The most a Large card is scaled up when its area has room.</summary>
+    public const float LargeScale = 1.3f;
+    /// <summary>How much of the screen width (on the right) a Large card's side layout uses.</summary>
+    public const float LargeSideShare = 0.6f;
+    private bool shownLarge;
 
     /// <summary>True once this card is actually on screen (not waiting for a scene to fade in).</summary>
     public bool IsRevealed => !revealHeld && group != null && group.alpha > 0.5f;
@@ -280,8 +293,8 @@ public sealed class HudRewardScreen : MonoBehaviour
     }
 
     /// <summary>Card scale that fits a card of this height on a canvas of this size (layout checks).</summary>
-    public static float FitScale(float canvasWidth, float canvasHeight, float height) =>
-        Mathf.Clamp(Mathf.Min((canvasWidth - ScreenMarginX) / CardWidth, (canvasHeight - ScreenMarginY) / height), 0.5f, 1f);
+    public static float FitScale(float canvasWidth, float canvasHeight, float height, float max = 1f) =>
+        Mathf.Clamp(Mathf.Min((canvasWidth - ScreenMarginX) / CardWidth, (canvasHeight - ScreenMarginY) / height), 0.5f, max);
 
     private void OnEnable() { if (!Open.Contains(this)) Open.Add(this); }
 
@@ -532,11 +545,13 @@ public sealed class HudRewardScreen : MonoBehaviour
         for (int i = 0; i < built.Count; i++) if (built[i] != null) Destroy(built[i]);
         built.Clear();
         shownTitle = data.Title;
+        shownLarge = data.Large;
         // The Level Complete card waits for the client scene even if this
         // card is built before the finale has started.
         bool finaleCard = (shownTitle ?? "").IndexOf("Level Complete", System.StringComparison.OrdinalIgnoreCase) >= 0 &&
                           CaseFinale.WillStage;
-        sideLayout = PreferSideLayout || finaleCard;
+        // A Large (chapter) card sits on the right 60% over the client scene, like the Level Complete card (2026-10-26).
+        sideLayout = shownLarge || PreferSideLayout || finaleCard;
         if (backdropImage != null) backdropImage.color = new Color(0.02f, 0.03f, 0.05f, sideLayout ? 0.18f : 0.76f);
         laidOutFor = Vector2.zero;
         hearts.Clear();
@@ -1019,13 +1034,15 @@ public sealed class HudRewardScreen : MonoBehaviour
         laidOutFor = size;
         if (sideLayout)
         {
-            // Right half of the screen; the card keeps its own look.
-            fitScale = FitScale(size.x * 0.5f + ScreenMarginX * 0.5f, size.y, cardHeight);
-            card.anchoredPosition = new Vector2(size.x * 0.25f - ScreenMarginX * 0.25f, 25f);
+            // Right half of the screen (the right 60% for a Large chapter card, which may grow to fill it);
+            // the card keeps its own look and the client scene stays visible on the left.
+            float share = shownLarge ? LargeSideShare : 0.5f;
+            fitScale = FitScale(size.x * share + ScreenMarginX * 0.5f, size.y, cardHeight, shownLarge ? LargeScale : 1f);
+            card.anchoredPosition = new Vector2(size.x * (0.5f - share * 0.5f) - ScreenMarginX * 0.25f, 25f);
         }
         else
         {
-            fitScale = FitScale(size.x, size.y, cardHeight);
+            fitScale = FitScale(size.x, size.y, cardHeight, shownLarge ? LargeScale : 1f);
             card.anchoredPosition = new Vector2(0f, 25f);
         }
     }

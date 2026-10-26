@@ -138,7 +138,7 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
             return;
         }
 
-        // Arthur's wrap-up (CorkboardTeaching; editable in town.json).
+        // The guide's wrap-up (CorkboardTeaching; editable in town.json).
         var lines = CorkboardTeaching.BuildDone("Arthur");
 
         if (dialogueUI.TryStartDialogue(lines, ShowSideQuestCompletePanel,
@@ -263,7 +263,7 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
             return;
         }
 
-        // Arthur explains each corner indirectly, one line per kind of
+        // The guide explains each corner indirectly, one line per kind of
         // taxpayer, without naming any (CorkboardTeaching; town.json).
         var lines = CorkboardTeaching.BuildIntro("Arthur");
 

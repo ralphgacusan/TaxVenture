@@ -3,26 +3,19 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// PURPOSE:
-/// People react to what the player does (Level 1 Phase 3):
-/// - Corkboard: every placed card gets a bubble: sparkles when it's right,
-///   a "?" when it's wrong, a "..." while it's locked after repeated misses.
-/// - Plaza: once the side quest is solved and the player is back on their
-///   feet, the four plaza clients show sparkles.
-/// (T22: the WorldEmote emotion set; the old Cheer/Shrug/Wait kinds map to
-/// Happy/Confused/Thinking, so timing and meaning are unchanged.)
-/// - The case client (Marie): after a failed audit, a worried bubble with
-///   her sad portrait (her NPC marker then shows she has something to say
-///   again in the conference room); after approval, a thank-you with her
-///   happy portrait.
+/// The corkboard's cards react to the board's check (Level 1 Phase 3):
+/// sparkles when a card is right, a "?" when it's wrong, a "..." while it's
+/// locked. (T22: the WorldEmote emotion set.)
+///
+/// 2026-10-26 (user request): people show no icons outside a conversation.
+/// The plaza clients' sparkles after the side quest, Marie's worried bubble
+/// after a failed audit and her thank-you bubble over the closing cards are
+/// removed; emotes now only appear on dialogue lines.
 /// Observation only: listens to events, shows bubbles; changes nothing.
 /// </summary>
 public sealed class ConsequenceReactions : MonoBehaviour
 {
     private const string TargetSceneName = "Office_Level1";
-
-    private bool plazaCheerPending;
-    private bool clientWorryPending;
-    private bool clientThanksPending;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void InitializeForLoadedScenes()
@@ -48,17 +41,11 @@ public sealed class ConsequenceReactions : MonoBehaviour
     private void OnEnable()
     {
         CorkboardSideQuestManager.CardPlaced += HandleCardPlaced;
-        TownEvents.OnSideQuestCompleted += HandleSideQuestCompleted;
-        CaseProgressionManager.OnAuditFailed += HandleAuditFailed;
-        GameplayEvents.OnCaseCompleted += HandleCaseCompleted;
     }
 
     private void OnDisable()
     {
         CorkboardSideQuestManager.CardPlaced -= HandleCardPlaced;
-        TownEvents.OnSideQuestCompleted -= HandleSideQuestCompleted;
-        CaseProgressionManager.OnAuditFailed -= HandleAuditFailed;
-        GameplayEvents.OnCaseCompleted -= HandleCaseCompleted;
     }
 
     private void HandleCardPlaced(ProfileDragCard card, bool correct, bool locked)
@@ -67,55 +54,4 @@ public sealed class ConsequenceReactions : MonoBehaviour
         Emotion emotion = correct ? Emotion.Happy : locked ? Emotion.Thinking : Emotion.Confused;
         WorldEmote.Show(card.transform, emotion, locked ? CorkboardSideQuestManager.LockSeconds : 2.2f);
     }
-
-    private void HandleSideQuestCompleted() => plazaCheerPending = true;
-    private void HandleAuditFailed(int mistakes, LevelScoring.Award cost) => clientWorryPending = true;
-
-    private void HandleCaseCompleted()
-    {
-        clientWorryPending = false;
-        clientThanksPending = true;
-    }
-
-    private static bool PlayerFree()
-    {
-        CameraController controller = CameraController.Instance;
-        return controller != null && controller.CurrentMode == CameraController.CameraMode.FirstPerson &&
-               !DialogueUI.IsAnyDialogueActive && !HudRewardScreen.AnyOpen;
-    }
-
-    private void Update()
-    {
-        // The plaza cheers once the board is closed and the player is walking again.
-        if (plazaCheerPending && PlayerFree())
-        {
-            plazaCheerPending = false;
-            foreach (TaxpayerNpcInteractable npc in FindObjectsByType<TaxpayerNpcInteractable>(FindObjectsInactive.Exclude))
-                if (npc.gameObject.scene == gameObject.scene) WorldEmote.Show(npc.transform, Emotion.Happy, 5f);
-        }
-
-        CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
-
-        // Marie hears about the failed audit once the Audit Summary closes.
-        if (clientWorryPending && !DialogueUI.IsAnyDialogueActive && !HudRewardScreen.AnyOpen)
-        {
-            clientWorryPending = false;
-            if (def != null && !string.IsNullOrWhiteSpace(def.clientFailedBubble))
-                GuideVoice.TrySay(def.clientFailedBubble, "portrait:" + Portrait(def.clientFailedPortrait, "Client1_Marie_Sad"), 6f);
-        }
-
-        // Approved: her thanks shows over the closing cards.
-        if (clientThanksPending && !DialogueUI.IsAnyDialogueActive)
-        {
-            clientThanksPending = false;
-            // The end-of-level scene, or the Client Copy handover (T08), has her say it in person instead.
-            if (CaseFinale.Instance != null && CaseFinale.Instance.Running) return;
-            if (ClientCopyHandover.Defers || ClientCopyHandover.InProgress) return;
-            if (def != null && !string.IsNullOrWhiteSpace(def.clientApprovedBubble))
-                GuideVoice.TrySay(def.clientApprovedBubble, "portrait:" + Portrait(def.clientApprovedPortrait, "Client1_Marie_Happy"), 6f);
-        }
-    }
-
-    private static string Portrait(string configured, string fallback) =>
-        string.IsNullOrWhiteSpace(configured) ? fallback : configured;
 }

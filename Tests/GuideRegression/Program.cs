@@ -196,15 +196,16 @@ foreach (var lesson in guide.GetProperty("lessons").EnumerateArray())
     }
 Check(allIds.Contains("notes"), "Notes lesson exists");
 Check(allIds.Contains("submit"), "Auditor hand-in lesson exists");
-foreach (string id in new[] { "book-pages", "investigate", "sidequest-card", "audit-card", "level-complete" })
+foreach (string id in new[] { "book-pages", "investigate", "sidequest-card", "audit-approved", "audit-fix", "level-complete", "submit-drag" })
     Check(allIds.Contains(id), "lesson exists: " + id);
 foreach (var lesson in guide.GetProperty("lessons").EnumerateArray())
 {
     string when = Str(lesson, "when") ?? "";
-    if (when.StartsWith("card:"))
+    bool onCard = when.StartsWith("card:") || (Str(lesson, "onlyIn") ?? "").StartsWith("card:");
+    if (onCard)
         Check(lesson.TryGetProperty("duringResults", out var dr) && dr.GetBoolean() && lesson.TryGetProperty("endIfGone", out var eg) && eg.GetBoolean(),
             Str(lesson, "id") + ": card lessons need duringResults and endIfGone");
-    if (when.StartsWith("card:"))
+    if (onCard)
         Check(lesson.GetProperty("pages").GetArrayLength() == 1 && !lesson.GetProperty("pages")[0].TryGetProperty("waitFor", out _),
             Str(lesson, "id") + ": a result-card lesson is one tap-to-continue page");
 }

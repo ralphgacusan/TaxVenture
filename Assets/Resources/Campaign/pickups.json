@@ -1,0 +1,62 @@
+{
+  "_readme": [
+    "World pickups and keepsake displays (Campaign Foundation T11). Loaded by PickupCatalogueAsset; PickupCatalogue.BuiltIn() holds the same data as a fallback.",
+    "pickups: id (stable; its claim campaignId/levelId/id/pickup is saved once per campaign), itemId (inventory.json), levelId, quantity,",
+    "  availableAfter (\"\" or an objectives key the introduction raises, e.g. event:ReceptionistTalkedTo), title, lines (short neutral text, never an answer),",
+    "  plaque (the label on its tray), spot (parent scene path, surface object name, optional near prop to tell same-named surfaces apart).",
+    "  The tray rests on the surface's top at the spot with the most room (PickupRules.BestSpot), the same on every load.",
+    "displays: id (the anchor saved with a displayed keepsake), levelId, category accepted, title, spot.",
+    "Optional pickups never give coins, trust, XP, a badge or an answer, and required records always come from their own handover."
+  ],
+  "pickups": [
+    {
+      "id": "coast_tales_postcard",
+      "itemId": "coast_postcard",
+      "levelId": "Level_01",
+      "quantity": 1,
+      "availableAfter": "",
+      "title": "COAST TALES",
+      "lines": [
+        "The ferry horn still sounds at six, and the fish market opens before the sun is up.",
+        "Someone from the Coast Tales club left this here to welcome you to the island."
+      ],
+      "plaque": "COAST TALES - TAKE ONE",
+      "spot": {
+        "parent": "Environment/OfficeBuilding/Rooms/Reception/WaitingArea",
+        "surface": "SM_Prop_CoffeeTable_01",
+        "near": "SM_Prop_Plant_Flowers_01"
+      }
+    },
+    {
+      "id": "level1_review_voucher",
+      "itemId": "review_voucher",
+      "levelId": "Level_01",
+      "quantity": 1,
+      "availableAfter": "event:ReceptionistTalkedTo",
+      "title": "REVIEW VOUCHER",
+      "lines": [
+        "+180 active review seconds on one case, before the Auditor leaves. One per case.",
+        "Free for new consultants: one per person."
+      ],
+      "plaque": "CONSULTATION SUPPLIES",
+      "spot": {
+        "parent": "Environment/OfficeBuilding/Rooms/Reception/WaitingArea",
+        "surface": "SM_Prop_CoffeeTable_01",
+        "near": "SM_Prop_Book_Magazine_01"
+      }
+    }
+  ],
+  "displays": [
+    {
+      "id": "desk_keepsake_stand",
+      "levelId": "Level_01",
+      "category": "Keepsakes",
+      "title": "KEEPSAKE",
+      "spot": {
+        "parent": "Environment/OfficeBuilding/Rooms/ConsultantOffice",
+        "surface": "Desk",
+        "near": ""
+      }
+    }
+  ]
+}

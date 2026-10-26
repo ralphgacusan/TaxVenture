@@ -2,6 +2,8 @@
 
 Status: Planned. Blocked by: T06, T10.
 
+Revision 2026-10-25 (REVERTED): at the user's request the whole T15 implementation was removed; the Level 1 guide stays Arthur and there is no practice board or demonstration seam. See PROGRESS 'T15 reverted'.
+
 ## Goal
 
 Give the existing guide a consistent Quax identity and bounded demonstrations.
@@ -20,6 +22,8 @@ Choose bounded demonstrations that use this ticket's built prerequisites: presen
 
 - **Existing:** current configured guide/town interaction code in `Assets/Scripts/SideQuest1/TutorialNpcController.cs`, `TownNpcDialogueLibrary.cs`, `CorkboardTeaching.cs`, existing dialogue/presentation pause flow, and Level 2's reusable physical paper/tool presentation.
 - **Proposed:** a small authored demonstration-state/trigger seam tied to those existing interactions. No new dialogue framework, pathfinding controller, autonomous movement system or Quax art asset is assumed.
+
+Revision 2026-10-25 (implementation notes, see [PROGRESS](../PROGRESS.md) and KNOWN_ISSUES CF-04, CF-92 to CF-99): the configured actor is `NPC_TutorialGuide` showing the unrigged `npc_tutorial_static1` mesh, which has no arm, so the 0.3 s raise becomes a forward lean plus a short trail of brass dots from his chest to the object (the camera-safe point this ticket allows); a gold MAYOR badge is pinned on his vest; the existing guide portraits stay as the provisional look. The practice board's areas ask one clue only ("lives here most of the year" or "away"), so a right practice check settles no real card. Both demonstrations happen at his plaza spot after the four profiles, before the corkboard talk (he is not visible earlier; T16 owns the first approach). There is no CHECK action to press since the T06 revision: the practice board checks itself, like the real one. The Side Quest drill does not reuse the demonstrations, because its fixed lesson chain would depend on where the board can stand.
 
 Use the current model's simplest supported idle/gesture motion. For a demonstration, Quax turns head/body toward the named object over 0.25 s, raises one arm for 0.3 s, holds 0.5 s, and lowers it over 0.25 s; the highlighted object performs its own short physical nudge/flip. Restore the actor's original pose and release modal/player-control ownership on skip, exit, scene unload or failure. An existing friendly-select one-shot may play on the object highlight; route it through the effects-volume setting, at most once per demo, never as a loop. No facial expression or body motion may be claimed until the target manual visual check confirms it renders on the chosen actor.
 

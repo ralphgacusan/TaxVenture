@@ -30,6 +30,13 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
     private const float PinImpactLift = 0.015f;
     private const float PinImpactAngle = 4f;
     private const float PinHeadDiameter = 0.04f;
+    // The pin-in (2026-10-26): the same for every card (no hint of right or wrong before the check).
+    private const float SettleSeconds = 1.1f;     // damped swing on the pin
+    private const float SettleSwingDegrees = 7f;
+    private const float SquashSeconds = 0.32f;    // the card squashes and springs back
+    private const float SquashAmount = 0.06f;
+    private const float PinPopSeconds = 0.3f;     // the pin head pops in from in front
+    private const float PinPopDrop = 0.05f;
 
     private enum MotionState { Idle, Dragging, Arriving, Pinning, Returning, Placed }
 
@@ -59,6 +66,9 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
     private Vector3 transitionFromPosition, transitionTargetPosition, pinnedPosition;
     private Quaternion transitionFromRotation, transitionTargetRotation, pinnedRotation;
     private float transitionStartedAt, transitionDuration, placedAt;
+    private Vector3 placedScale = Vector3.one;
+    private Vector3 pinMarkerScale, pinMarkerRest;
+    private bool settleAnimated;
     private Vector2 arrivalScreenPoint;
     private float arrivalElapsed, arrivalDelay, arrivalDuration;
     private float arrivalStartDepth, arrivalTargetDepth, arrivalStartScale;
@@ -213,6 +223,8 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
         Ray ray = mainCamera.ScreenPointToRay(eventData.position);
         if (!dragPlane.Raycast(ray, out float enter)) return;
 
+        // Picked up mid pin-in: back to its own size at once.
+        if (state == MotionState.Placed) transform.localScale = placedScale;
         activeCard = this;
         activePointerId = eventData.pointerId;
         dragOffset = transform.position - ray.GetPoint(enter);
@@ -425,7 +437,8 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
     private void UpdateTransition()
     {
         float t = Mathf.Clamp01((Time.unscaledTime - transitionStartedAt) / transitionDuration);
-        float eased = t * t * (3f - 2f * t);
+        // Pinning speeds up into the board (a push), other moves ease in and out.
+        float eased = state == MotionState.Pinning ? t * t * (1.6f - 0.6f * t) : t * t * (3f - 2f * t);
         float impact = Mathf.Sin(t * Mathf.PI);
         transform.position = Vector3.Lerp(transitionFromPosition, transitionTargetPosition, eased);
         if (state == MotionState.Pinning && mainCamera != null)
@@ -457,6 +470,8 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
         pinnedPosition = transitionTargetPosition;
         pinnedRotation = transitionTargetRotation;
         placedAt = Time.unscaledTime;
+        placedScale = transform.localScale;
+        settleAnimated = true;
         state = MotionState.Placed;
         SetColor(neutralColor);
         ShowPinMarker();
@@ -482,17 +497,50 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
         pinnedPosition = position;
         pinnedRotation = rotation;
         placedAt = Time.unscaledTime;
+        placedScale = transform.localScale;
+        settleAnimated = false;   // a restore appears already settled (no pin-in motion)
         state = MotionState.Placed;
         SetColor(neutralColor);
         ShowPinMarker();
     }
 
+    /// <summary>
+    /// Pinned: the gentle idle sway, and just after a pin-in a short squash
+    /// and spring, a damped swing on the pin and the pin head popping in.
+    /// </summary>
     private void UpdateSway()
     {
-        float sway = Mathf.Sin((Time.unscaledTime - placedAt) * (2f * Mathf.PI / 3.5f)) * 0.7f;
-        Quaternion rotation = pinnedRotation * Quaternion.AngleAxis(sway, Vector3.forward);
+        float t = Time.unscaledTime - placedAt;
+        float sway = Mathf.Sin(t * (2f * Mathf.PI / 3.5f)) * 0.7f;
+        float swing = settleAnimated && t < SettleSeconds
+            ? Mathf.Sin(t * 15f) * SettleSwingDegrees * Mathf.Exp(-t * 4.5f) * (1f - t / SettleSeconds) : 0f;
+        float squash = 1f;
+        if (settleAnimated && t < SquashSeconds)
+        {
+            float k = t / SquashSeconds;
+            squash = 1f - Mathf.Sin(k * Mathf.PI * 2f) * SquashAmount * (1f - k);
+        }
+        Quaternion rotation = pinnedRotation * Quaternion.AngleAxis(sway + swing, Vector3.forward);
         Vector3 pin = pinnedPosition + pinnedRotation * pinPivotOffset;
-        transform.SetPositionAndRotation(pin - rotation * pinPivotOffset, rotation);
+        transform.localScale = placedScale * squash;
+        transform.SetPositionAndRotation(pin - rotation * (pinPivotOffset * squash), rotation);
+        AnimatePinHead(t);
+    }
+
+    private void AnimatePinHead(float t)
+    {
+        if (pinMarker == null || !pinMarker.activeSelf) return;
+        if (!settleAnimated || t >= PinPopSeconds)
+        {
+            pinMarker.transform.localScale = pinMarkerScale;
+            pinMarker.transform.localPosition = pinMarkerRest;
+            return;
+        }
+        float k = Mathf.Clamp01(t / PinPopSeconds);
+        float pop = DeskMotion.EaseOutBack(k, 2.2f);
+        pinMarker.transform.localScale = pinMarkerScale * Mathf.Max(0f, pop);
+        Vector3 towardCamera = mainCamera != null ? -mainCamera.transform.forward : -transform.forward;
+        pinMarker.transform.localPosition = pinMarkerRest + transform.InverseTransformVector(towardCamera * PinPopDrop * (1f - DeskMotion.EaseOutCubic(k)));
     }
 
     private void VacateCurrentSlot()
@@ -554,6 +602,8 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
         pinMarker.transform.localPosition = pinPivotLocal +
             transform.InverseTransformVector(towardCamera * 0.008f);
         pinMarker.transform.localRotation = Quaternion.identity;
+        pinMarkerRest = pinMarker.transform.localPosition;
+        pinMarkerScale = pinMarker.transform.localScale;
         pinMarker.SetActive(true);
     }
 

@@ -35,7 +35,7 @@ public static class CampaignMenu
     public const string ConfirmButton = "Start New Game";
     public const string CancelButton = "Cancel";
     public const string NewGameFailed = "Your new game could not be saved. Your current story is unchanged. Tap Start New Game to try again.";
-    public const string ShopLockedMessage = "The shop opens after your first client case.";
+    public const string ShopLockedMessage = "Visit the Supply Counter beside the office in Chapter 1 to open the shop.";
 
     public static CampaignMenuModel Build(CampaignSaveState state, PlayerProgressData data, bool? savedCompletion = null) => new CampaignMenuModel
     {
@@ -53,9 +53,9 @@ public static class CampaignMenu
         CampaignSave.CanContinue(state) && data != null && data.HasCampaign;
 
     /// <summary>
-    /// The shop is unlocked once it has been introduced in the story. The
-    /// introduction (after the first client case) and the shop itself arrive
-    /// with T12/T13; until then the entry is always locked.
+    /// The shop is unlocked once it has been introduced in the story: the
+    /// first visit to the Supply Counter early in Chapter 1 (T12, user
+    /// decision 2026-10-25). The menu catalogue itself arrives with T13.
     /// </summary>
-    public static bool ShopUnlocked(PlayerProgressData data) => false;
+    public static bool ShopUnlocked(PlayerProgressData data) => data != null && data.HasCampaign && data.campaign.shopIntroduced;
 }

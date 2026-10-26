@@ -55,6 +55,9 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
 
     private bool ready;
     private bool settingsExit;
+
+    /// <summary>The saved run has been restored (or there was none): observers such as the HUD hotbar may reconcile now (T10).</summary>
+    public bool IsReady => ready;
     /// <summary>A case snapshot that did not match this case, carried in every later save (T05).</summary>
     private Level1CaseRecord setAsideCase;
     private OfficeHours watchedClock;
@@ -77,7 +80,26 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
     {
         if (levelId != OfficeLevelCatalog.Level1Id || !InUse) return null;
         Level1FieldCheckpoint saved = Progress.GetLevelOneCheckpoint();
-        return saved != null && saved.version <= Level1FieldCheckpoint.CurrentVersion ? saved.guideLessonsDone : null;
+        if (saved == null || saved.version > Level1FieldCheckpoint.CurrentVersion) return null;
+        var lessons = new List<string>(saved.guideLessonsDone);
+        // T16: opening is saved before its animation. On Continue the durable
+        // open flag is enough to resume at the paper lesson, even if the guide
+        // cue was interrupted by quitting during the drop.
+        if (saved.notesChestOpened)
+        {
+            if (!lessons.Contains("bag-empty")) lessons.Add("bag-empty");
+            if (!lessons.Contains("chest-find")) lessons.Add("chest-find");
+        }
+        // T12: a run saved before the Supply Counter lesson existed is past it (the counter introduces itself on its first tap).
+        if (lessons.Contains("follow") && !lessons.Contains("shop-intro")) lessons.Add("shop-intro");
+        // T16: runs that already reached town before the Notes-chest revision keep the old route.
+        if (lessons.Contains("follow"))
+        {
+            if (!lessons.Contains("bag-empty")) lessons.Add("bag-empty");
+            if (!lessons.Contains("chest-find")) lessons.Add("chest-find");
+            if (!lessons.Contains("notes")) lessons.Add("notes");
+        }
+        return lessons;
     }
 
     private static void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -248,6 +270,13 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// T14: the complete current field state for a command that writes it in
+    /// its own single transaction (a voucher use with its extended clock).
+    /// Null when this run keeps no Level 1 checkpoint.
+    /// </summary>
+    public Level1FieldCheckpoint CaptureForCommit() => settingsExit || !InUse || !ready ? null : Capture();
+
     /// <summary>The complete field state as stable ids and counters (never scene objects or answers).</summary>
     private Level1FieldCheckpoint Capture()
     {
@@ -273,6 +302,8 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
         if (OfficeObjectives.Instance != null) checkpoint.objectiveTriggers.AddRange(OfficeObjectives.Instance.ReachedKeys());
         GuideDirector director = GuideRuntime.Instance != null ? GuideRuntime.Instance.Director : null;
         if (director != null) checkpoint.guideLessonsDone.AddRange(director.FinishedLessons());
+        NotesOnboardingChest notesChest = FindAnyObjectByType<NotesOnboardingChest>(FindObjectsInactive.Include);
+        checkpoint.notesChestOpened = notesChest != null && notesChest.IsOpen;
 
         if (OfficeHours.Instance != null) OfficeHours.Instance.CaptureClock(checkpoint.clock);
         CaptureCase(checkpoint.caseRecord);
@@ -307,6 +338,8 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
         into.encodedFormJson = data.encodedForm != null ? JsonUtility.ToJson(data.encodedForm) : null;
         foreach (TaxCodeBookInteractable book in FindObjectsByType<TaxCodeBookInteractable>(FindObjectsInactive.Include))
             if (book.HasBeenOpenedOnce) into.taxCodeBookOpened = true;
+        // T10: Level 1's book opens from the desk or a hotbar slot; the hotbar raised its first-open event.
+        if (HudHotbar.BookOpenedOnce) into.taxCodeBookOpened = true;
 
         CaseProgressionManager progression = CaseProgressionManager.Instance;
         if (progression != null)
@@ -356,9 +389,21 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
             return;
         }
 
+        // T16: restore the physical chest before HudHotbar's ready gate syncs ownership.
+        NotesOnboardingChest notesChest = FindAnyObjectByType<NotesOnboardingChest>(FindObjectsInactive.Include);
+        if (notesChest != null) notesChest.RestoreOpen(saved.notesChestOpened);
+
         Level1RestoreOutcome handover = Level1FieldCheckpointRules.ValidateHandover(saved, caseResultRecorded, followThroughDone);
         if (handover == Level1RestoreOutcome.Repaired) outcome = Level1RestoreOutcome.Repaired;
 
+        // T11: the campaign's Profile Binder also owns collected cards; one committed just before a quit
+        // (after its talk was saved) comes back collected instead of lying there as a second copy.
+        foreach (string id in Progress.CollectedProfileIds())
+        {
+            TaxpayerProfile owned = TaxpayerProfileDatabase.GetById(id);
+            if (owned != null && saved.talkedNpcIds.Contains(owned.NpcId) && !saved.collectedProfileIds.Contains(id))
+                saved.collectedProfileIds.Add(id);
+        }
         var collected = new HashSet<string>(saved.collectedProfileIds);
         foreach (TaxpayerNpcInteractable npc in FindObjectsByType<TaxpayerNpcInteractable>(FindObjectsInactive.Include))
         {
@@ -466,7 +511,10 @@ public sealed class Level1FieldCheckpointer : MonoBehaviour
             foreach (HudIconButton icon in FindObjectsByType<HudIconButton>(FindObjectsInactive.Include)) icon.RefreshFolderState();
         }
         if (record.taxCodeBookOpened)
+        {
             foreach (TaxCodeBookInteractable book in FindObjectsByType<TaxCodeBookInteractable>(FindObjectsInactive.Include)) book.RestoreOpenedOnce();
+            HudHotbar.RestoreBookOpened();
+        }
 
         if (CaseProgressionManager.Instance != null) CaseProgressionManager.Instance.RestoreAuditCounters(record.auditAttempts, record.auditMistakes);
         AuditorInteractable auditor = FindAnyObjectByType<AuditorInteractable>(FindObjectsInactive.Include);

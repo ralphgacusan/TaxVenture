@@ -76,6 +76,13 @@ public class ValueDragSource : MonoBehaviour,
         PointerEventData eventData
     )
     {
+        // Away from the desk an open folder or book is read-only: no value leaves it (no floating value).
+        if (Doc3DLayer.BlocksValueTransfer(transform))
+        {
+            eventData.pointerDrag = null;
+            return;
+        }
+
         // -----------------------------------------------------
         // Validate Source
         // -----------------------------------------------------

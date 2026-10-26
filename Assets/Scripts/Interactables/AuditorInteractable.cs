@@ -17,6 +17,12 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     private void Awake()
     {
         npcState = GetComponent<NpcStateMachine>();
+        Current = this;
+    }
+
+    private void OnDestroy()
+    {
+        if (Current == this) Current = null;
     }
 
     private void OnDisable()
@@ -46,6 +52,12 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     /// </summary>
     /// <summary>T08: the Client Copy handover may answer a tap on the Auditor (true = handled).</summary>
     public static System.Func<AuditorInteractable, bool> TalkOverride;
+
+    /// <summary>
+    /// T10 (Level 1 hotbar): asked before the hand-in reminder. True = the
+    /// Case Folder is only in the bag and the "Take it out" prompt was shown.
+    /// </summary>
+    public static System.Func<bool> BagReminder;
 
     /// <summary>T08: the Client Copy handover's marker state for the Auditor (null = the case state).</summary>
     public static System.Func<NpcAvailability?> AvailabilityOverride;
@@ -92,8 +104,22 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
             return; // audit already happened, nothing further to say here
         }
 
+        // T10: the Case Folder is carried but only in the bag: offer "Take it out" instead of the reminder.
+        if (BagReminder != null && BagReminder())
+        {
+            return;
+        }
+
+        // Level 1 (2026-10-26): with the folder in hand, the hand-in is a conversation.
+        if (TalkFirst && !requiresTaxReturn && FolderInHand() != null)
+        {
+            StartHandInConversation();
+            return;
+        }
+
         string reminder = requiresTaxReturn
             ? "Please submit both the Case Folder and the Tax Return when you're ready."
+            : TalkFirst ? "Bring me the Case Folder when your case is ready, and we'll go through it together."
             : "Please submit the Case Folder when you're ready.";
 
         var builder = new DialogueBuilder("Auditor")
@@ -355,9 +381,19 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
 
     private void OnDialogueConcluded(SubmissionResult result)
     {
+        dialogueSessionActive = false;
+        RecordAuditOutcome(result);
+
+        // The Audit Summary card always shows the outcome: an APPROVED card
+        // that continues by itself (tap to skip), or the findings to fix.
+        summaryPopupUI.Show(result.MissedIssues, () => OnSummaryClosed(result));
+    }
+
+    /// <summary>The audit's result becomes the case's (sound, retry guard, counts); then the summary card shows it.</summary>
+    private void RecordAuditOutcome(SubmissionResult result)
+    {
         if (AudioManager.Instance != null)
             AudioManager.Instance.PlayEffect(result.MissedIssues.Count == 0 ? "sfx_audit_approved_01" : "sfx_audit_returned_01");
-        dialogueSessionActive = false;
         auditPending = false;
         pendingAuditCase = null;
 
@@ -372,10 +408,8 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
         data.auditPassed = result.VerdictWasCorrect;
         data.finalVerdictWasCorrect = result.VerdictWasCorrect;
         data.finalMissedIssueCount = result.MissedIssues.Count;
-
-        // The Audit Summary card always shows the outcome: an APPROVED card
-        // that continues by itself (tap to skip), or the findings to fix.
-        summaryPopupUI.Show(result.MissedIssues, () => OnSummaryClosed(result));
+        // The guide explains the card that is actually showing (2026-10-26).
+        GameplayEvents.RaiseGuideCue(result.MissedIssues.Count == 0 ? CueApproved : failedAudits > 1 ? CueNeedsFixAgain : CueNeedsFix);
     }
 
     private void OnAuditCancelled(
@@ -487,5 +521,304 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
         }
     }
 
-    public string GetPromptText() => auditPending ? "Click to resume the audit" : "Click to talk to the Auditor";
+    public string GetPromptText() => auditPending ? "Tap to resume the audit" : "Tap to talk to the Auditor";
+
+    // =========================================================
+    // LEVEL 1 HAND-IN CONVERSATION (2026-10-26)
+    // =========================================================
+    //
+    // Talk first: one line from the player, one from the Auditor asking for
+    // the folder, and the conversation waits (like Marie's Client Copy step)
+    // until the Case Folder icon is dragged onto him (or tapped). The icon
+    // empties (he has the folder). He goes through it, the conversation waits
+    // while the Audit Summary card is open, then goes on: approved, he signs
+    // it off and drops Marie's Client Copy while still talking (the
+    // ClientCopyHandover fills that part in); otherwise he hands the folder
+    // back (to the desk, for another go).
+
+    public const string SubmitAction = "auditor-submit";
+    public const string SummaryAction = "audit-summary";
+    public const string ApprovalAction = "auditor-approval";
+    public const string CueApproved = "AuditApproved";
+    public const string CueNeedsFix = "AuditNeedsFix";
+    public const string CueNeedsFixAgain = "AuditNeedsFixAgain";
+    public const string CueFolderBack = "AuditFolderHandedBack";
+    public const string CueAsksForFolder = "AuditorAsksForFolder";
+
+    /// <summary>The Auditor of the loaded office (one per scene).</summary>
+    public static AuditorInteractable Current { get; private set; }
+
+    /// <summary>Level 1 with the hotbar: the folder is handed over in the conversation (Level 2 keeps its own hand-in).</summary>
+    public static bool TalkFirst => LevelAudit == null && HudHotbar.Instance != null;
+
+    /// <summary>The Auditor's conversation is waiting for the Case Folder.</summary>
+    public static bool AwaitingFolder =>
+        Current != null && Current.handInConversation && DialogueUI.ActiveAwaitingAction == SubmitAction;
+
+    private bool handInConversation;
+    private bool folderTaken;
+    private bool summaryOpened;
+    private bool summaryClosed;
+    private bool sameAnswers;
+    private SubmissionResult handInResult;
+    private FolderToHUDIcon handedFolder;
+    private IGameState handInPriorState;
+    private AuditSubmittedState handInSubmittedState;
+    private int dropLineIndex = -1;
+    private System.Action dropAction;
+
+    private static FolderToHUDIcon FolderInHand()
+    {
+        foreach (FolderToHUDIcon folder in FindObjectsByType<FolderToHUDIcon>(FindObjectsInactive.Include))
+            if (folder != null && folder.IsFolderStored()) return folder;
+        return null;
+    }
+
+    private void StartHandInConversation()
+    {
+        CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+        string client = def != null && def.clientFinale != null && !string.IsNullOrWhiteSpace(def.clientFinale.name) ? def.clientFinale.name : "my client";
+        List<DialogueLine> lines = new DialogueBuilder("Auditor")
+            .Player($"Hi! {client}'s case is ready for your review.")
+            .Npc("Good. Hand me the Case Folder, and I'll go through it with you.", "Auditor_Default")
+            .AwaitAction(SubmitAction, "Drag the Case Folder to the Auditor")
+            .Build();
+
+        folderTaken = summaryOpened = summaryClosed = sameAnswers = false;
+        handInResult = null;
+        handedFolder = null;
+        dropLineIndex = -1;
+        dropAction = null;
+        INpcState priorNpcState = npcState.CurrentState;
+        if (!dialogueUI.TryStartDialogue(lines, OnHandInEnded, () => OnHandInCancelled(priorNpcState), this)) return;
+        handInConversation = true;
+        dialogueSessionActive = true;
+        dialogueUI.LineChanged -= OnHandInLine;
+        dialogueUI.LineChanged += OnHandInLine;
+        npcState.ChangeState(new NpcInteractState());
+        npcState.ChangeState(new NpcDialogueState());
+    }
+
+    /// <summary>Folder icon tap while he waits for it: the same as dragging it onto him.</summary>
+    public bool TryIconHandIn() => AwaitingFolder && TryHandInFolder();
+
+    /// <summary>
+    /// A Case Folder drag released (OfficeHudRuntime). Level 1 only: on the
+    /// Auditor (or his tray) while he asks for it, he takes it; on him before
+    /// that, or anywhere else while he waits, it goes back to its icon. Null =
+    /// not his drop (the icon decides as before).
+    /// </summary>
+    public static HudDragOutcome? ResolveFolderDrop(Vector2 screen)
+    {
+        if (!TalkFirst || Current == null) return null;
+        bool onHim = Current.IsOver(screen);
+        if (AwaitingFolder) return onHim && Current.TryHandInFolder() ? HudDragOutcome.Consumed : HudDragOutcome.Returned;
+        if (!onHim) return null;
+        // Not yet: he takes the folder in a conversation (a tap on him starts it). No icon outside a conversation.
+        return HudDragOutcome.Returned;
+    }
+
+    private bool IsOver(Vector2 screen)
+    {
+        Camera cam = CameraController.Instance != null ? CameraController.Instance.MainCamera : Camera.main;
+        if (cam == null) return false;
+        Ray ray = cam.ScreenPointToRay(screen);
+        Transform tray = submissionTray != null ? submissionTray.transform : null;
+        foreach (RaycastHit hit in Physics.RaycastAll(ray, 100f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide))
+        {
+            if (hit.collider == null) continue;
+            Transform t = hit.collider.transform;
+            if (t.IsChildOf(transform) || (tray != null && t.IsChildOf(tray))) return true;
+        }
+        return false;
+    }
+
+    /// <summary>He takes the folder (the icon empties) and goes through it, all in the running conversation.</summary>
+    private bool TryHandInFolder()
+    {
+        if (!AwaitingFolder || CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null) return false;
+        FolderToHUDIcon folder = FolderInHand();
+        if (folder == null) return false;
+        if (submissionTray != null && !submissionTray.AcceptFromConversation()) return false;
+        if (OfficeHudRuntime.Instance != null) OfficeHudRuntime.Instance.CloseCaseFolderView();
+        folder.ReleaseQuietly();
+        handedFolder = folder;
+        folderTaken = true;
+
+        CaseData data = CaseManager.Instance.CurrentCase;
+        if (lastFailedAnswers != null && AnswerSignature(data) == lastFailedAnswers)
+        {
+            // The same answers that already failed: he does not check them again.
+            sameAnswers = true;
+            CaseDefinition def = CaseManager.Instance.CurrentDefinition;
+            string line = def != null && !string.IsNullOrWhiteSpace(def.auditorSameAnswersLine)
+                ? def.auditorSameAnswersLine
+                : "These are the exact same answers you gave me last time. Change what's wrong, then come back.";
+            dialogueUI.ContinueWith(SubmitAction, new DialogueBuilder("Auditor")
+                .Npc(line, "Auditor_Disappointed")
+                .Npc("Here's your folder back.", "Auditor_Default")
+                .Build());
+            return true;
+        }
+
+        pendingAuditCase = data;
+        auditPending = true;
+        handInResult = EvaluateSubmission(data);
+        bool passed = handInResult.MissedIssues == null || handInResult.MissedIssues.Count == 0;
+        List<DialogueLine> lines = BuildAuditDialogue(handInResult);
+        lines.AddRange(new DialogueBuilder("Auditor")
+            .Npc(passed ? "Here's my summary." : "Here's my summary. It shows where to look again.", passed ? "Auditor_Happy" : "Auditor_Default")
+            .AwaitAction(SummaryAction, "Read the Audit Summary")
+            .Build());
+
+        GameStateMachine machine = GameStateMachine.Instance;
+        if (machine != null)
+        {
+            handInPriorState = machine.CurrentState;
+            handInSubmittedState = new AuditSubmittedState();
+            machine.ChangeState(handInSubmittedState);
+        }
+        dialogueUI.ContinueWith(SubmitAction, lines);
+        return true;
+    }
+
+    /// <summary>Each new line: the summary card opens on its waiting line; the Client Copy drops on the hand-over line.</summary>
+    private void OnHandInLine(DialogueLine line)
+    {
+        if (!handInConversation || line == null) return;
+        if (line.AwaitAction == SubmitAction) GameplayEvents.RaiseGuideCue(CueAsksForFolder);
+        if (line.AwaitAction == SummaryAction && !summaryOpened && handInResult != null)
+        {
+            summaryOpened = true;
+            RecordAuditOutcome(handInResult);
+            summaryPopupUI.Show(handInResult.MissedIssues, OnHandInSummaryClosed);
+        }
+        if (dropAction != null && dropLineIndex >= 0 && dialogueUI.CurrentLineIndex >= dropLineIndex) DropNow();
+    }
+
+    private void OnHandInSummaryClosed()
+    {
+        if (summaryClosed) return;
+        summaryClosed = true;
+        bool passed = handInResult.VerdictWasCorrect && handInResult.MissedIssues.Count == 0;
+        if (!passed)
+        {
+            // He hands the folder back at the end of the conversation (OnHandInEnded).
+            dialogueUI.ContinueWith(SummaryAction, new DialogueBuilder("Auditor")
+                .Npc("Here's your folder back. Fix what I marked, then bring it to me again.", "Auditor_Default")
+                .Build());
+            return;
+        }
+        // Approved: he signs it off; the case result and Marie's Client Copy continue this conversation.
+        dialogueUI.ContinueWith(SummaryAction, new DialogueBuilder("Auditor")
+            .Npc("Let me sign this off.", "Auditor_Happy")
+            .AwaitAction(ApprovalAction, null)
+            .Build());
+        OnSummaryClosed(handInResult);
+        // Nothing continued it (no Client Copy in this run): the conversation just ends.
+        if (handInConversation && DialogueUI.ActiveAwaitingAction == ApprovalAction) dialogueUI.ContinueWith(ApprovalAction, null);
+    }
+
+    /// <summary>
+    /// The Client Copy handover's approval lines continue his conversation
+    /// (instead of a new one); drop runs when the last line shows. False when
+    /// he is not waiting to sign off (the handover then talks as before).
+    /// </summary>
+    public bool TryContinueApproval(List<DialogueLine> lines, System.Action drop)
+    {
+        if (!handInConversation || DialogueUI.ActiveAwaitingAction != ApprovalAction) return false;
+        int first = dialogueUI.ContinueWith(ApprovalAction, lines);
+        if (first == -2) return false;
+        dropAction = drop;
+        dropLineIndex = first >= 0 && lines != null ? first + lines.Count - 1 : -1;
+        if (dropLineIndex < 0 || dialogueUI.CurrentLineIndex >= dropLineIndex) DropNow();
+        return true;
+    }
+
+    private void DropNow()
+    {
+        System.Action drop = dropAction;
+        dropAction = null;
+        dropLineIndex = -1;
+        drop?.Invoke();
+    }
+
+    private void OnHandInEnded()
+    {
+        FinishHandIn();
+        if (sameAnswers)
+        {
+            HandFolderBack(retry: false);
+            npcState.ChangeState(new NpcIdleState());
+            return;
+        }
+        if (!folderTaken)
+        {
+            npcState.ChangeState(new NpcIdleState());
+            return;
+        }
+        if (!summaryClosed)
+        {
+            // Should not happen (the summary waits): treat as an interrupted audit.
+            UndoHandIn();
+            npcState.ChangeState(new NpcIdleState());
+            return;
+        }
+        bool passed = handInResult.VerdictWasCorrect && handInResult.MissedIssues.Count == 0;
+        if (passed)
+        {
+            npcState.ChangeState(new NpcCompletedState());
+            return;
+        }
+        HandFolderBack(retry: true);
+    }
+
+    private void OnHandInCancelled(INpcState priorNpcState)
+    {
+        FinishHandIn();
+        if (sameAnswers) HandFolderBack(retry: false);
+        else if (folderTaken && !summaryClosed) UndoHandIn();
+        else if (folderTaken && summaryClosed && !(handInResult.VerdictWasCorrect && handInResult.MissedIssues.Count == 0)) HandFolderBack(retry: true);
+        RestoreNpcState(priorNpcState);
+    }
+
+    private void FinishHandIn()
+    {
+        if (dialogueUI != null) dialogueUI.LineChanged -= OnHandInLine;
+        handInConversation = false;
+        dialogueSessionActive = false;
+        if (dropAction != null) DropNow();
+    }
+
+    /// <summary>The folder goes back (into the icon first, then the retry puts it back on the desk as before).</summary>
+    private void HandFolderBack(bool retry)
+    {
+        if (handedFolder != null) handedFolder.RestoreStored();
+        handedFolder = null;
+        if (retry) OnSummaryClosed(handInResult);
+        else
+        {
+            auditPending = false;
+            pendingAuditCase = null;
+            if (submissionTray != null) submissionTray.ResetForRetryWithoutNewCase();
+        }
+        GameplayEvents.RaiseGuideCue(CueFolderBack);
+    }
+
+    /// <summary>The conversation stopped before the summary: the folder is back in hand and nothing was checked.</summary>
+    private void UndoHandIn()
+    {
+        if (handedFolder != null) handedFolder.RestoreStored();
+        handedFolder = null;
+        auditPending = false;
+        pendingAuditCase = null;
+        if (submissionTray != null) submissionTray.ResetSubmissionKeysOnly();
+        GameStateMachine machine = GameStateMachine.Instance;
+        if (machine != null && handInSubmittedState != null && System.Object.ReferenceEquals(machine.CurrentState, handInSubmittedState))
+        {
+            machine.UnlockProgression();
+            machine.ChangeState(handInPriorState);
+        }
+        handInSubmittedState = null;
+    }
 }

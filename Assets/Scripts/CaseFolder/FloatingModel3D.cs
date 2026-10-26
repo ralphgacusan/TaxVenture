@@ -49,7 +49,9 @@ public class FloatingModel3D :
         "Smoothly moves the model toward the pointer."
     )]
     [SerializeField]
+#pragma warning disable CS0414 // kept for scene data: drags now follow the finger exactly (2026-10-26)
     private bool animateDragging = true;
+#pragma warning restore CS0414
 
     [Tooltip(
         "Higher values make the model follow the pointer faster."
@@ -197,26 +199,9 @@ public class FloatingModel3D :
             return;
         }
 
-        if (animateDragging)
-        {
-            float interpolation =
-                1f - Mathf.Exp(
-                    -dragSmoothness *
-                    Time.deltaTime
-                );
-
-            model.position =
-                Vector3.Lerp(
-                    model.position,
-                    dragTargetPosition,
-                    interpolation
-                );
-        }
-        else
-        {
-            model.position =
-                dragTargetPosition;
-        }
+        // The open folder sits exactly under the finger (2026-10-26: no easing behind it).
+        model.position =
+            dragTargetPosition;
 
         if (preserveOriginalRotation)
         {
@@ -262,6 +247,11 @@ public class FloatingModel3D :
 
             return;
         }
+
+        // 2026-10-26: a running open animation lands first, and the folder keeps the pose it has now.
+        DeskDocumentAnimator.CompleteAll(model);
+        originalRotation = model.rotation;
+        originalScale = model.localScale;
 
         eventCamera =
             eventData.pressEventCamera != null
@@ -320,6 +310,8 @@ public class FloatingModel3D :
 
         isDragging = true;
         hasDragTarget = true;
+        // The model stops at the screen edge while it is held.
+        held = HeldOnScreen.ForModel(model, eventCamera, eventData.position);
         UpdateOutlineFocus();
 
         if (preserveOriginalRotation)
@@ -398,10 +390,13 @@ public class FloatingModel3D :
     }
 
 
+    private HeldOnScreen held;
+
     private void UpdateDragTarget(
         Vector2 screenPosition
     )
     {
+        screenPosition = held.Clamp(screenPosition);
         if (eventCamera == null)
         {
             eventCamera = mainCamera;

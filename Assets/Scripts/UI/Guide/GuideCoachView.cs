@@ -72,6 +72,7 @@ public sealed class GuideCoachView : MonoBehaviour
     private RectTransform footerArrow;
     private TextMeshProUGUI skipLabel;
     private float skipArmedUntil = -1f;
+    private bool skipHidden;
     private bool boxVisible;
     private float boxAppear;
     private float boxY;
@@ -238,7 +239,7 @@ public sealed class GuideCoachView : MonoBehaviour
         RectTransform plateRim = HudTheme.CreateRect("Rim", plate);
         HudTheme.Stretch(plateRim, 3f);
         HudTheme.AddImage(plateRim, HudTheme.Rounded, HudTheme.Brass, 10f);
-        nameLabel = HudTheme.CreateLabel("Name", plateRim, "ARTHUR", 30f, new Color32(29, 32, 40, 255),
+        nameLabel = HudTheme.CreateLabel("Name", plateRim, "GUIDE", 30f, new Color32(29, 32, 40, 255),
             TextAlignmentOptions.Center, FontStyles.Bold | FontStyles.UpperCase);
         HudTheme.Stretch((RectTransform)nameLabel.transform, 4f);
         nameLabel.characterSpacing = 6f;
@@ -356,6 +357,7 @@ public sealed class GuideCoachView : MonoBehaviour
     /// <summary>Shows or hides the two-tap SKIP TUTORIAL button (Training Hub practice hides it).</summary>
     public void SetSkipVisible(bool visible)
     {
+        skipHidden = !visible;
         if (skipLabel != null) skipLabel.transform.parent.gameObject.SetActive(visible);
     }
 
@@ -609,6 +611,7 @@ public sealed class GuideCoachView : MonoBehaviour
         float hintY = bottom ? 24f : deskView ? -24f : -190f;
         hint.anchoredPosition = Vector2.Lerp(hint.anchoredPosition, new Vector2(0f, hintY),
             1f - Mathf.Exp(-10f * dt));
+
     }
 
     private void LayoutDims()

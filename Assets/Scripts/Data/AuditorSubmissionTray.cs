@@ -124,6 +124,13 @@ public class AuditorSubmissionTray :
             return false;
         }
 
+        // Level 1 (2026-10-26): the folder is handed to the Auditor in his conversation, never dropped on the tray.
+        if (AuditorInteractable.TalkFirst)
+        {
+            Debug.Log("[AuditorSubmissionTray] Refused: talk to the Auditor and hand him the folder when he asks.");
+            return false;
+        }
+
         if (!CanAccept(value))
         {
             Debug.Log(
@@ -169,6 +176,21 @@ public class AuditorSubmissionTray :
     }
 
     /// <summary>
+    /// Level 1 (2026-10-26): the Auditor took the folder in his conversation.
+    /// Marks the Case Folder submitted (one paper sound) without starting a
+    /// second audit; the conversation runs the audit itself. False when the
+    /// case or the hand-in is not possible now.
+    /// </summary>
+    public bool AcceptFromConversation()
+    {
+        if (ClientCopyHandover.CaseActionsBlocked || CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null) return false;
+        if (submittedKeys.Contains("Submit_CaseFolder")) return false;
+        submittedKeys.Add("Submit_CaseFolder");
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_folder_submit_01");
+        return true;
+    }
+
+    /// <summary>
     /// Resets submission state for a RETRY of the SAME case (audit failed),
     /// as opposed to ResetSubmission() which is for loading a brand-new case.
     /// Kept separate so "new case" and "retry" semantics never get conflated.
@@ -182,6 +204,9 @@ public class AuditorSubmissionTray :
         Debug.Log("[AuditorSubmissionTray] Submission state reset for case retry.");
     }
 
+
+    /// <summary>Forgets a hand-in without moving any folder (the Auditor's conversation stopped before his check).</summary>
+    public void ResetSubmissionKeysOnly() => submittedKeys.Clear();
 
     /// <summary>
     /// Brings the case folder back to the desk from the icon. Level 1 has two

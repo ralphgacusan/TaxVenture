@@ -20,6 +20,10 @@
     <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignRewards.cs" Link="CampaignRewards.cs" />
     <Compile Include="../../Assets/Scripts/SideQuest1/TaxpayerProfileData.cs" Link="TaxpayerProfileData.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignMenu.cs" Link="CampaignMenu.cs" />
+    <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignPickups.cs" Link="CampaignPickups.cs" />
+    <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignInventory.cs" Link="CampaignInventory.cs" />
+    <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignShop.cs" Link="CampaignShop.cs" />
+    <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignVouchers.cs" Link="CampaignVouchers.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignSave.cs" Link="CampaignSave.cs" />
     <Compile Include="../../Assets/Scripts/Save/SaveFileStore.cs" Link="SaveFileStore.cs" />
   </ItemGroup>

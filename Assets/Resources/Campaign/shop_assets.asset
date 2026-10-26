@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46cb4de21c5144cf90a2628dea357d06, type: 3}
+  m_Name: shop_assets
+  m_EditorClassIdentifier: Assembly-CSharp::CampaignShopAssets
+  counterPrefab: {fileID: 1810563028744556, guid: 8673173cb192e5448943d51b5e2df9bf, type: 3}
+  shelfPrefab: {fileID: 1740889233818740, guid: 27a460540f893cd4c8ac1086c7197daa, type: 3}
+  bookPrefab: {fileID: 1173342265669808, guid: 94b71dbe7c75f5c46b056c1ceb10909e, type: 3}
+  cratePrefab: {fileID: 1414887969237499401, guid: 6e3cfe8cda1ce5449b002fd1348507fc, type: 3}
+  booksPrefab: {fileID: 1678797560971030, guid: a75d54721660055458ad1b98221ba023, type: 3}
+  solidMaterial: {fileID: 2100000, guid: 56075b5ff19276a4eb803a05821c08f0, type: 2}

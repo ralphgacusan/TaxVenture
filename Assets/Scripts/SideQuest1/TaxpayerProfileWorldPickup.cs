@@ -35,7 +35,13 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
     private Vector3 dropStartPosition;
     private bool isCollecting;
     private float collectElapsed;
-    private float collectionDuration = 0.6f;
+    // T11: lift about 8 cm and turn to face the camera (first quarter), then glide into the binder; 0.45 s in all.
+    private float collectionDuration = 0.45f;
+    private const float LiftShare = 0.25f;
+    private const float LiftHeight = 0.08f;
+    private Vector3 liftFromPosition;
+    private Quaternion liftFromRotation;
+    private Vector3 liftedPosition;
     private TaxpayerProfileCollectionHUD collectionHUD;
     private Camera collectionCamera;
     private Vector2 collectionStartScreenPoint;
@@ -190,8 +196,16 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
 
         collectElapsed += Time.deltaTime;
         float progress = Mathf.Clamp01(collectElapsed / collectionDuration);
+        if (progress < LiftShare)
+        {
+            // Tip toward the camera and lift off the spot.
+            float lift = WorldPickupMotion.Smooth(progress / LiftShare);
+            transform.SetPositionAndRotation(Vector3.Lerp(liftFromPosition, liftedPosition, lift),
+                Quaternion.Slerp(liftFromRotation, collectionStartRotation, lift));
+            return;
+        }
         WorldPickupMotion.Fly(transform, collectionCamera, collectionStartScreenPoint, targetScreenPoint,
-            collectionStartDepth, collectionTargetDepth, collectionStartRotation, collectionStartScale, progress);
+            collectionStartDepth, collectionTargetDepth, collectionStartRotation, collectionStartScale, (progress - LiftShare) / (1f - LiftShare));
 
         if (progress >= 1f)
         {
@@ -295,6 +309,12 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
     {
         if (eventData != null && (eventData.button != PointerEventData.InputButton.Left || MobileInputGuard.IsDragOrCancelled(eventData) || VirtualJoystick.BlocksWorldInput ||
             MobileInputGuard.IsPointerOverUI(eventData.position))) return;
+        // A second tap while it flies lands it at once.
+        if (isCollecting && collectionHUD != null)
+        {
+            CompleteCollection(collectionHUD);
+            return;
+        }
         if (collected || isCollecting || isDropping || profileData == null)
         {
             return;
@@ -310,6 +330,10 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
             return;
         }
 
+        // T11: the card is committed to the campaign first (claim + Profile Binder, one save).
+        // A failed save leaves it here, touchable, with no sound or motion; it can be tapped again.
+        if (CollectGate != null && !CollectGate(profileData)) return;
+
         AudioManager.Instance?.QueueInteractionSFX("paper");
         Camera inputCamera = eventData != null ? eventData.pressEventCamera : null;
         collectionCamera = inputCamera != null ? inputCamera : Camera.main;
@@ -319,7 +343,10 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
             return;
         }
 
-        Vector3 startScreenPoint = collectionCamera.WorldToScreenPoint(transform.position);
+        liftFromPosition = transform.position;
+        liftFromRotation = transform.rotation;
+        liftedPosition = liftFromPosition + Vector3.up * LiftHeight;
+        Vector3 startScreenPoint = collectionCamera.WorldToScreenPoint(liftedPosition);
         if (startScreenPoint.z <= collectionCamera.nearClipPlane)
         {
             CompleteCollection(hud);
@@ -331,10 +358,18 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
         collectionStartScreenPoint = new Vector2(startScreenPoint.x, startScreenPoint.y);
         collectionStartDepth = startScreenPoint.z;
         collectionTargetDepth = WorldPickupMotion.FlightEndDepth(collectionCamera, collectionStartDepth);
-        collectionStartRotation = transform.rotation;
+        // Face-forward at the end of the lift: the same camera-facing pose the flight ends in.
+        collectionStartRotation = Quaternion.Slerp(liftFromRotation, collectionCamera.transform.rotation, 0.6f);
         collectionStartScale = transform.localScale;
         collectElapsed = 0f;
         isCollecting = true;
     }
     public TaxpayerProfile Profile => profileData;
+
+    /// <summary>
+    /// T11 (Level 1 hotbar): asked before a tapped card flies. True = it is
+    /// committed to the campaign (or this run keeps no campaign record);
+    /// false = the save failed and the card stays where it is.
+    /// </summary>
+    public static System.Func<TaxpayerProfile, bool> CollectGate;
 }

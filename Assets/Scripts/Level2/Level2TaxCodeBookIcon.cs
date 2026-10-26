@@ -85,8 +85,40 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
     /// <summary>The book is flying into or out of the icon (the review cutoff waits for it).</summary>
     public bool IsBusy => storing || phase == Phase.Opening || phase == Phase.Closing;
 
-    /// <summary>The book is carried in the icon (saved with the review).</summary>
-    public static bool Stored => Level2OfficeStart.Review?.taxBookStored == true;
+    /// <summary>
+    /// Campaign Foundation T10: where the carried book lives outside Level 2.
+    /// Level 1's hotbar keeps it as an inventory item that any slot can hold
+    /// (HudHotbar). Null = Level 2's review, exactly as before.
+    /// </summary>
+    public interface IBookCarrier
+    {
+        /// <summary>The campaign owns the book (a slot, the bag or the drawer).</summary>
+        bool Carried { get; }
+        /// <summary>The finger is over the hotbar (a slot or the row): the desk book is carried from there.</summary>
+        bool IsOverStoreTarget(Vector2 screen);
+        /// <summary>Where the book flies for that drop (the slot it will take, or the Bag icon).</summary>
+        RectTransform LandingFor(Vector2 screen);
+        /// <summary>The book was carried (drop point) or put back on its desk stand (null).</summary>
+        void SetCarried(bool carried, Vector2? dropScreen);
+        void Say(string line);
+    }
+
+    public static IBookCarrier Carrier;
+
+    private Vector2 storeScreen;
+    private RectTransform flyTarget;
+
+    /// <summary>The book is carried in the icon (saved with the review; Level 1: owned in the campaign inventory).</summary>
+    public static bool Stored => Carrier != null ? Carrier.Carried : Level2OfficeStart.Review?.taxBookStored == true;
+
+    private static void Say(string line)
+    {
+        if (Carrier != null) Carrier.Say(line);
+        else Level2Say.Line(line, null, 5f);
+    }
+
+    /// <summary>Level 2: over this icon. Level 1: over the hotbar (any slot or the row).</summary>
+    private bool OverStoreTarget(Vector2 screen) => Carrier != null ? Carrier.IsOverStoreTarget(screen) : OverIcon(screen);
 
     private void OnEnable()
     {
@@ -236,7 +268,7 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         if (!Stored)
         {
             punchStarted = Time.unscaledTime;
-            Level2Say.Line("Your Tax Code Book is on your desk. Drag it onto this icon to carry it with you.", null, 5f);
+            Say("Your Tax Code Book is on your desk. Drag it onto this icon to carry it with you.");
             return;
         }
         Open(null);
@@ -246,12 +278,8 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
     public bool Open(Vector2? screenPosition)
     {
         if (!Stored || storing || !CanOpen()) return false;
-        // Dropped from the icon onto the office desk: back on its stack, not opened.
-        if (screenPosition.HasValue && phase == Phase.Closed && OverOfficeDesk(screenPosition.Value))
-        {
-            ReturnToDesk();
-            return true;
-        }
+        // Dragged out of its slot (also onto the desk): it always opens first. The open book
+        // then goes back on its desk stack, or back into the bar, by dropping it there.
         if (phase != Phase.Closed) return true;
         TaxCodeBook3DDrag desk = DeskBook();
         if (desk == null || desk.OpenBook == null) return false;
@@ -266,9 +294,11 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
     /// <summary>TaxCodeBook3DDrag hook: the dragged desk book released over this icon flies into it.</summary>
     private bool StoreFromDesk(TaxCodeBook3DDrag desk, Vector2 screenPosition)
     {
-        if (Stored || storing || desk == null || icon == null || Level2OfficeStart.Review == null) return false;
-        if (!OverIcon(screenPosition)) return false;
+        if (Stored || storing || desk == null || icon == null || (Carrier == null && Level2OfficeStart.Review == null)) return false;
+        if (!OverStoreTarget(screenPosition)) return false;
         deskBook = desk;
+        storeScreen = screenPosition;
+        flyTarget = Carrier != null ? Carrier.LandingFor(screenPosition) : null;
         StartCoroutine(FlyIntoIcon(desk));
         return true;
     }
@@ -306,20 +336,24 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         closed.localScale = restScale;
         desk.ParkClosedBook();
         CaseReviewState review = Level2OfficeStart.Review;
-        if (review != null) review.taxBookStored = true;
+        if (Carrier != null) Carrier.SetCarried(true, storeScreen);
+        else if (review != null) review.taxBookStored = true;
         GameplayEvents.RaiseGuideCue("TaxBookStored");
         storing = false;
+        flyTarget = null;
         punchStarted = Time.unscaledTime;
         if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX();
-        Level2Say.Line("Your Tax Code Book is in its icon now. Tap it to read anywhere; tap again to put it away.", null, 5f);
+        Say("Your Tax Code Book is in its icon now. Tap it to read anywhere; tap again to put it away.");
     }
 
     /// <summary>TaxCodeBookFloatingModel3D hook: the open desk book dragged over this icon closes into it.</summary>
     private bool StoreOpenFromDesk(TaxCodeBookFloatingModel3D model, Vector2 screenPosition)
     {
-        if (Stored || storing || icon == null || Level2OfficeStart.Review == null || phase != Phase.Closed) return false;
+        if (Stored || storing || icon == null || (Carrier == null && Level2OfficeStart.Review == null) || phase != Phase.Closed) return false;
         TaxCodeBook3DDrag desk = DeskBook();
-        if (desk == null || !desk.IsBookOpen || !OverIcon(screenPosition)) return false;
+        if (desk == null || !desk.IsBookOpen || !OverStoreTarget(screenPosition)) return false;
+        storeScreen = screenPosition;
+        flyTarget = Carrier != null ? Carrier.LandingFor(screenPosition) : null;
         StartCoroutine(FlyOpenBookIntoIcon(desk));
         return true;
     }
@@ -346,42 +380,42 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         open.localScale = restScale;
         desk.ParkOpenBook();
         CaseReviewState review = Level2OfficeStart.Review;
-        if (review != null) review.taxBookStored = true;
+        if (Carrier != null) Carrier.SetCarried(true, storeScreen);
+        else if (review != null) review.taxBookStored = true;
         GameplayEvents.RaiseGuideCue("TaxBookStored");
         storing = false;
+        flyTarget = null;
         punchStarted = Time.unscaledTime;
         if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX();
-        Level2Say.Line("Your Tax Code Book is in its icon now. Tap it to read anywhere; tap again to put it away.", null, 5f);
+        Say("Your Tax Code Book is in its icon now. Tap it to read anywhere; tap again to put it away.");
     }
 
-    /// <summary>Seated at the office desk, and the point is on the desk (or on the book's own desk spot).</summary>
-    private bool OverOfficeDesk(Vector2 screen)
+    /// <summary>
+    /// Seated at the office desk and the point is on the book's own desk stack
+    /// (its closed resting spot). Only there does an open book go back to the
+    /// desk, so moving it around over the desk never puts it away by accident.
+    /// </summary>
+    private bool OverDeskStack(Vector2 screen)
     {
         CameraController cc = CameraController.Instance;
         Camera view = MainCamera();
         TaxCodeBook3DDrag desk = DeskBook();
-        if (cc == null || view == null || desk == null || cc.CurrentMode != CameraController.CameraMode.Workstation) return false;
-        Transform officeDesk = Find(gameObject.scene, Level2FolderHandoff.DeskPath);
-        if (officeDesk == null || (view.transform.position - officeDesk.position).sqrMagnitude > 9f) return false;
-        if (desk.ClosedBook != null)
-        {
-            Vector3 spot = view.WorldToScreenPoint(desk.RestingClosedPosition);
-            if (spot.z > 0f && Vector2.Distance(screen, spot) < Screen.height * 0.18f) return true;
-        }
-        Ray ray = view.ScreenPointToRay(screen);
-        foreach (RaycastHit hit in Physics.RaycastAll(ray, 6f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide))
-            if (hit.collider.transform.IsChildOf(officeDesk) || hit.collider.GetComponentInParent<DeskPlacementSurface>() != null)
-                return true;
-        return false;
+        if (cc == null || view == null || desk == null || desk.ClosedBook == null || cc.CurrentMode != CameraController.CameraMode.Workstation) return false;
+        Vector3 spot = view.WorldToScreenPoint(desk.RestingClosedPosition);
+        return spot.z > 0f && Vector2.Distance(screen, spot) < Screen.height * DeskStackRadius;
     }
+
+    /// <summary>How close to the closed book's desk spot a drop must be (fraction of the screen height).</summary>
+    private const float DeskStackRadius = 0.14f;
 
     /// <summary>The carried book goes back onto its desk stack (closed, settling in place); the icon empties.</summary>
     private void ReturnToDesk()
     {
         TaxCodeBook3DDrag desk = DeskBook();
         CaseReviewState review = Level2OfficeStart.Review;
-        if (desk == null || review == null) return;
-        review.taxBookStored = false;
+        if (desk == null || (review == null && Carrier == null)) return;
+        if (Carrier != null) Carrier.SetCarried(false, null);
+        else review.taxBookStored = false;
         desk.UnparkClosedBook();
         punchStarted = Time.unscaledTime;
         if (AudioManager.Instance != null) AudioManager.Instance.PlayDocumentSFX();
@@ -400,10 +434,13 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
     // =========================================================
 
     /// <summary>Empty: grey. Filled: full colour. A pop when it changes or an empty icon is tapped.</summary>
+    private static readonly Color OutTint = new Color(1f, 1f, 1f, 0.38f);
+
     private void UpdateIconLook()
     {
         if (icon == null || iconImage == null) return;
-        Color target = Stored ? Color.white : EmptyTint;
+        // While the book is out (floating), its icon waits dimmed; it lights up again when the book is back.
+        Color target = !Stored ? EmptyTint : IsOpen() ? OutTint : Color.white;
         iconImage.color = Color.Lerp(iconImage.color, target, 1f - Mathf.Exp(-10f * Time.unscaledDeltaTime));
         float punch = Time.unscaledTime - punchStarted;
         float scale = punch < 0.45f ? 1f + 0.22f * Mathf.Sin(punch / 0.45f * Mathf.PI) * (1f - punch / 0.45f) : 1f;
@@ -454,21 +491,36 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
 
     internal bool CanMoveBook => phase == Phase.Open && book != null;
 
-    /// <summary>Grab offset in camera space (like FloatingFolderGrab's, but kept relative to the camera).</summary>
+    /// <summary>
+    /// The grab (2026-10-26): where the finger is, and the depth of the printed page it holds. The
+    /// book then moves exactly as far as the finger does at that depth, so the page stays under the
+    /// finger (moving by the model's pivot depth made the leaning page run ahead of or behind it).
+    /// </summary>
     internal Vector3 GrabOffset(Vector2 screen)
     {
         Camera main = MainCamera();
         if (main == null || book == null) return Vector3.zero;
-        return pinPosition - ScreenToLocal(main, screen, pinPosition.z);
+        held = HeldOnScreen.ForModel(book, main, screen);
+        grabScreen = screen;
+        grabPin = pinPosition;
+        RectTransform page = deskBook != null && deskBook.BookUI != null ? deskBook.BookUI.PaperRoot as RectTransform : null;
+        Vector3 anchor = page != null ? page.TransformPoint(page.rect.center) : book.position;
+        grabDepth = Mathf.Max(main.nearClipPlane + 0.01f, Vector3.Dot(anchor - main.transform.position, main.transform.forward));
+        return Vector3.zero;
     }
+
+    private HeldOnScreen held;
+    private Vector2 grabScreen;
+    private Vector3 grabPin;
+    private float grabDepth;
 
     internal void MoveBook(Vector2 screen, Vector3 offset)
     {
         Camera main = MainCamera();
         if (main == null || !CanMoveBook) return;
-        // Follow the finger directly, as the floating Case Folder does.
-        pinPosition = ScreenToLocal(main, screen, pinPosition.z) + offset;
-        if (OverIcon(screen) && Time.unscaledTime - punchStarted > 0.45f) punchStarted = Time.unscaledTime;
+        // Exactly under the finger (at the held page's depth), stopping only at the screen edge.
+        pinPosition = grabPin + ScreenToLocal(main, held.Clamp(screen), grabDepth) - ScreenToLocal(main, grabScreen, grabDepth);
+        if (OverStoreTarget(screen) && Time.unscaledTime - punchStarted > 0.45f) punchStarted = Time.unscaledTime;
     }
 
     private static Vector3 ScreenToLocal(Camera main, Vector2 screen, float depth)
@@ -480,8 +532,9 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
     internal void ReleaseBook(Vector2 screen)
     {
         if (!CanMoveBook) return;
-        if (OverIcon(screen)) CloseFloating();
-        else if (OverOfficeDesk(screen))
+        // Back into the bar (any slot or the Bag in Level 1; its icon in Level 2), or back on its desk stack.
+        if (OverStoreTarget(screen)) CloseFloating();
+        else if (OverDeskStack(screen))
         {
             RestoreFloating(true);
             ReturnToDesk();
@@ -555,6 +608,14 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
             relRotation = inv * savedRotation;
         }
         if (relPosition.z < main.nearClipPlane + 0.1f) relPosition.z = 0.55f;
+        // Read upright from the printed page itself (any level's model axes): the page faces the
+        // camera, leaning back a little so the slim hardcover's depth shows.
+        RectTransform page = desk.BookUI.PaperRoot as RectTransform;
+        if (page != null)
+        {
+            Quaternion pageInBook = Quaternion.Inverse(savedRotation) * page.rotation;
+            relRotation = Quaternion.Euler(ReadingLean, 0f, 0f) * Quaternion.Inverse(pageInBook);
+        }
         toRotation = relRotation;
         toScale = savedScale.x;
 
@@ -562,9 +623,10 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         book.SetParent(null, true);
         book.gameObject.SetActive(true);
         ApplyLocal(main, relPosition, toRotation, toScale);
-        RectTransform page = desk.BookUI.PaperRoot as RectTransform;
         Vector3 pageCentre = page != null ? page.TransformPoint(page.rect.center) : TaxCodeBook3DDrag.VisualCentre(book.gameObject);
         Vector2 screen = screenPosition ?? new Vector2(main.pixelRect.center.x, main.pixelRect.center.y);
+        // A drop near an edge still lands the whole page on screen (as the floating Case Folder does).
+        if (page != null) screen = KeepPageOnScreen(main, page, pageCentre, screen);
         float depth = Vector3.Dot(pageCentre - main.transform.position, main.transform.forward);
         Vector3 wanted = main.ScreenToWorldPoint(new Vector3(screen.x, screen.y, Mathf.Max(main.nearClipPlane + 0.05f, depth)));
         toPosition = relPosition + Quaternion.Inverse(main.transform.rotation) * (wanted - pageCentre);
@@ -585,6 +647,27 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         BringBookToFront(book);
         if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_book_open_01");
         return true;
+    }
+
+    /// <summary>How far the floating book leans back from facing the camera (degrees).</summary>
+    private const float ReadingLean = 12f;
+
+    /// <summary>The screen point to centre the page on so all of it shows (12 px margin).</summary>
+    private static Vector2 KeepPageOnScreen(Camera main, RectTransform page, Vector3 pageCentre, Vector2 screen)
+    {
+        page.GetWorldCorners(IconCorners);
+        Vector2 centre = main.WorldToScreenPoint(pageCentre);
+        float halfW = 0f, halfH = 0f;
+        for (int i = 0; i < 4; i++)
+        {
+            Vector2 corner = main.WorldToScreenPoint(IconCorners[i]);
+            halfW = Mathf.Max(halfW, Mathf.Abs(corner.x - centre.x));
+            halfH = Mathf.Max(halfH, Mathf.Abs(corner.y - centre.y));
+        }
+        Rect view = main.pixelRect;
+        screen.x = halfW * 2f + 24f < view.width ? Mathf.Clamp(screen.x, view.xMin + halfW + 12f, view.xMax - halfW - 12f) : view.center.x;
+        screen.y = halfH * 2f + 24f < view.height ? Mathf.Clamp(screen.y, view.yMin + halfH + 12f, view.yMax - halfH - 12f) : view.center.y;
+        return screen;
     }
 
     private void CloseFloating()
@@ -610,11 +693,17 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
         if (phase == Phase.Closed) return;
         CameraController cc = CameraController.Instance;
         Camera main = MainCamera();
-        if (book == null || main == null || (cc != null && cc.CurrentMode != openedInMode &&
-                                             !(IsWalking(cc.CurrentMode) && IsWalking(openedInMode))))
+        if (book == null || main == null)
         {
             RestoreFloating(true);
             return;
+        }
+        // Sitting down at (or leaving) the desk while it floats: it flies back into its icon
+        // (2026-10-26: the usual close motion instead of a jump).
+        if (cc != null && cc.CurrentMode != openedInMode && !(IsWalking(cc.CurrentMode) && IsWalking(openedInMode)) &&
+            (phase == Phase.Opening || phase == Phase.Open))
+        {
+            CloseFloating();
         }
         // The book's own swipe-down close hid its pages: fly back too.
         if (phase == Phase.Open && deskBook != null && deskBook.BookUI != null && !BookPagesShowing())
@@ -695,8 +784,9 @@ public sealed class Level2TaxCodeBookIcon : MonoBehaviour
 
     private Vector3 IconWorldPoint(Camera main, float depth, Vector3 fallback)
     {
-        if (icon == null || depth <= main.nearClipPlane) return fallback;
-        Vector2 screen = RectTransformUtility.WorldToScreenPoint(null, icon.TransformPoint(icon.rect.center));
+        RectTransform target = flyTarget != null ? flyTarget : icon;
+        if (target == null || depth <= main.nearClipPlane) return fallback;
+        Vector2 screen = RectTransformUtility.WorldToScreenPoint(null, target.TransformPoint(target.rect.center));
         return main.ScreenToWorldPoint(new Vector3(screen.x, screen.y, depth));
     }
 

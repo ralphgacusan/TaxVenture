@@ -175,6 +175,52 @@ public class CameraController : MonoBehaviour
     // INITIALIZATION
     // =============================================================
 
+    // =============================================================
+    // NO TAPS WHILE THE CAMERA MOVES (2026-10-26)
+    // =============================================================
+
+    /// <summary>A short guard after the camera arrives, so a tap made during the move does not land.</summary>
+    private const float ArrivalTapGuard = 0.15f;
+    private float inputHeldUntil = -1f;
+    private GameObject transitionBlocker;
+
+    /// <summary>The camera is moving between views (desk, corkboard, interview).</summary>
+    public bool IsTransitioning => activeTransition != null;
+
+    /// <summary>
+    /// Nothing can be tapped: the camera is moving into a view (or just
+    /// arrived). A full-screen invisible blocker above every UI swallows
+    /// touches, so neither the HUD nor the world reacts until it is done.
+    /// </summary>
+    public bool InputHeld => activeTransition != null || Time.unscaledTime < inputHeldUntil;
+
+    private void LateUpdate()
+    {
+        bool held = InputHeld;
+        if (held && transitionBlocker == null) transitionBlocker = BuildTransitionBlocker();
+        if (transitionBlocker != null && transitionBlocker.activeSelf != held) transitionBlocker.SetActive(held);
+    }
+
+    private GameObject BuildTransitionBlocker()
+    {
+        var host = new GameObject("Camera Move Input Blocker", typeof(RectTransform));
+        host.transform.SetParent(transform, false);
+        var canvas = host.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 32000;
+        host.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+        var shield = new GameObject("Shield", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
+        var rect = (RectTransform)shield.transform;
+        rect.SetParent(host.transform, false);
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+        var image = shield.GetComponent<UnityEngine.UI.Image>();
+        image.color = new Color(0f, 0f, 0f, 0f);
+        image.raycastTarget = true;
+        return host;
+    }
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -357,12 +403,7 @@ public class CameraController : MonoBehaviour
             playerInteractor.enabled = false;
         }
 
-        // ---------------------------------------------------------
-        // ENABLE WORKSTATION INTERACTION
-        // ---------------------------------------------------------
-
-        if (workstationInteractor != null)
-            workstationInteractor.enabled = true;
+        // Desk taps start only once the camera has arrived (2026-10-26): see the transition below.
 
         // ---------------------------------------------------------
         // HANDS
@@ -399,6 +440,9 @@ public class CameraController : MonoBehaviour
                     DebugTrace.Log(
                         "[CameraController] Workstation view reached."
                     );
+
+                    if (CurrentMode == CameraMode.Workstation && workstationInteractor != null)
+                        workstationInteractor.enabled = true;
 
                     if (workstationUI != null)
                         workstationUI.Show(exitLabel);
@@ -588,6 +632,9 @@ public class CameraController : MonoBehaviour
         );
 
         activeTransition = null;
+        // The tap that was still down when the camera arrived is not a new tap.
+        inputHeldUntil = Time.unscaledTime + ArrivalTapGuard;
+        MobileInputGuard.SuppressWorldTapsThisFrame();
 
         onComplete?.Invoke();
 

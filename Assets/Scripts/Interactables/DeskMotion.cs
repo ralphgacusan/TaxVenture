@@ -55,29 +55,48 @@ public static class DeskMotion
         return Quaternion.AngleAxis(angle, axis) * restRotation;
     }
 
+    /// <summary>Length of one page turn (the 3D Menu training binder's flip).</summary>
+    public const float PageFlipSeconds = 0.5f;
+
     /// <summary>
-    /// Flips a page about its own vertical axis: it turns edge-on, the
-    /// content is swapped at the midpoint, then it turns back in from the
-    /// other side. The page always ends at its rest rotation and scale.
+    /// Turns a page like the 3D Menu training binder: the page hinges on its
+    /// left edge (the spine), lifts a little toward the reader, eases in to
+    /// edge-on, the content is swapped exactly there, then it eases out flat
+    /// from the other side. Forward turns lift the free edge toward the
+    /// reader first; backward turns lay the new page down toward the reader.
+    /// The page always ends at its rest position, rotation and scale (the
+    /// rest position is the page's position when the turn starts).
     /// </summary>
     public static IEnumerator TurnPage(RectTransform page, Quaternion restRotation, Vector3 restScale,
         int direction, float duration, Action onMidpoint)
     {
         float half = Mathf.Max(0.01f, duration * 0.5f);
         float sign = direction >= 0 ? 1f : -1f;
+        Vector3 restPosition = page.localPosition;
+        Rect rect = page.rect;
+        // The hinge (left edge, mid height) and the lift, in the page's scaled local units.
+        Vector3 hinge = Vector3.Scale(restScale, new Vector3(rect.xMin, rect.center.y, 0f));
+        float lift = rect.height * 0.04f * restScale.z;
+
+        void Pose(float angle, float t)
+        {
+            Quaternion turn = Quaternion.Euler(0f, angle, 0f);
+            page.localRotation = restRotation * turn;
+            page.localScale = restScale;
+            page.localPosition = restPosition + restRotation * (hinge - turn * hinge)
+                                 + restRotation * new Vector3(0f, 0f, -lift * Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI));
+        }
 
         for (float t = 0f; t < half; t += Step)
         {
-            float angle = 90f * EaseInQuad(t / half);
-            page.localRotation = restRotation * Quaternion.Euler(0f, -sign * angle, 0f);
-            page.localScale = restScale * Mathf.Lerp(1f, 0.96f, t / half);
+            float a = t / half;
+            Pose(sign * 90f * a * a, a * 0.5f);
             yield return null;
         }
 
         // Finish exactly edge-on before changing content; low frame rates must
         // not expose the next page before it reaches the spine.
-        page.localRotation = restRotation * Quaternion.Euler(0f, -sign * 90f, 0f);
-        page.localScale = restScale * 0.96f;
+        Pose(sign * 90f, 0.5f);
         onMidpoint?.Invoke();
         // The new page's rows were just built: skip that (possibly slow) frame so
         // the second half starts from the spine instead of jumping ahead.
@@ -85,13 +104,13 @@ public static class DeskMotion
 
         for (float t = 0f; t < half; t += Step)
         {
-            float angle = 90f * (1f - EaseOutCubic(t / half));
-            page.localRotation = restRotation * Quaternion.Euler(0f, sign * angle, 0f);
-            page.localScale = restScale * Mathf.Lerp(0.96f, 1f, t / half);
+            float b = 1f - t / half;
+            Pose(-sign * 90f * b * b, 0.5f + (t / half) * 0.5f);
             yield return null;
         }
 
         page.localRotation = restRotation;
         page.localScale = restScale;
+        page.localPosition = restPosition;
     }
 }

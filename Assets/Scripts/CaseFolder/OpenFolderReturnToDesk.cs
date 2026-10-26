@@ -139,6 +139,22 @@ public class OpenFolderReturnToDesk :
     }
 
 
+    /// <summary>The point is over the desk's folder stack (the drop target), for this camera.</summary>
+    public bool IsOverDeskStack(Vector2 screenPosition, Camera camera)
+    {
+        if (camera == null) camera = mainCamera;
+        if (camera == null || deskDropFolder == null) return false;
+        if (deskDropCollider != null && deskDropCollider.enabled && deskDropCollider.gameObject.activeInHierarchy)
+            return deskDropCollider.Raycast(camera.ScreenPointToRay(screenPosition), out _, 1000f);
+        // A hidden target: near its spot on screen.
+        Vector3 spot = camera.WorldToScreenPoint(DeskStackPosition);
+        return spot.z > 0f && Vector2.Distance(screenPosition, spot) < Screen.height * 0.14f;
+    }
+
+    /// <summary>Where a folder put back on the desk lands (world).</summary>
+    public Vector3 DeskStackPosition =>
+        deskDropFolder != null ? deskDropFolder.transform.position + Vector3.up * dropHeightOffset : transform.position;
+
     private void ReturnFolderToDesk(bool animate)
     {
         Transform deskTransform = deskDropFolder.transform;
@@ -155,6 +171,8 @@ public class OpenFolderReturnToDesk :
         Vector3 stackedPosition = deskTransform.position;
         stackedPosition.y += dropHeightOffset;
 
+        // The desk's animator may be added at runtime after this Awake (CaseFolder3DDrag): look again now.
+        if (deskAnimator == null) deskAnimator = originalClosedFolder.GetComponentInParent<DeskDocumentAnimator>(true);
         bool canAnimate = animate && deskAnimator != null;
 
         void Finish()
@@ -165,8 +183,9 @@ public class OpenFolderReturnToDesk :
             gameObject.SetActive(false);
             originalClosedFolder.SetActive(true);
 
-            if (canAnimate)
-                deskAnimator.PlaySettle(originalClosedFolder.transform);
+            // It drops onto the stack (also when returned from the bar), never just appears there.
+            if (deskAnimator != null)
+                deskAnimator.PlayDrop(originalClosedFolder.transform);
         }
 
         // Play paper sound when the open folder closes.

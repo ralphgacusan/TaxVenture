@@ -33,14 +33,14 @@ Use relevant static validators after source changes: python Tests/VerifyGuideTar
 | Shop | Shared stock/price/ownership; insufficient funds; rapid double confirm; failed save; locked computer/stand; purchase optional | Counter reachable, previews honest, menu/counter agree, installed objects visible |
 | Supplies | Carry2; confirmed overflow purchase/pickup to drawer; atomic drawer withdrawal up to carry capacity; consume once/case; +180 active seconds; before cutoff only; rollback; restore at cutoff; app loss; sandbox isolation | Retrieve stored supplies physically, clear destination/effect/confirmation, clock cue, no incorrect statutory-deadline language |
 | Collectibles | Claimed pickup absent on reload; supply overflow; same keepsake not regranted; display placement retained; mandatory handover intact | Discoverable/physical, not a pixel hunt, lore and bag location readable |
-| Guide/input/audio | Sample fixture excluded; guide never awards; actual actor bindings; cleanup; SFX gated across new events | Quax stands/gestures correctly, never clips/solves the actual task; SFX OFF listening |
+| Guide/input/audio | Sample fixture excluded; guide never awards; actual actor bindings; cleanup; SFX gated across new events | Arthur's in-person talk and guide box never solve the actual task; SFX OFF listening |
 | B: Rosa | Existing frozen 12-answer grading/checkpoint restored; coins/service once; knowing vs ordinary-error branch; pending consequence reload | Existing investigation retained, choice wording and reactions believable |
 | B: stand | Purchase unlock only after B ready; two source panes same revisions; free comparison exists | Physical stand fit, reading focus, no clipping or answer highlight |
 
 ## Delivery A manual script (USER only)
 
 1. Open a fresh install or an isolated test fixture with incompatible old progress: Continue cannot import the old campaign and no archive screen appears. Cancel New Game and confirm no replacement occurs; confirm it and verify the fresh starting values and retained audio/settings. Use fixtures for destructive checks, not the user's real save.
-2. Start New Game. Check intro route/skip policy and personally approach Quax. Confirm Public Trust 40/100, future target65, wallet0 and contextual bag tutorial. Inspect first profile, close, continue moving.
+2. Start New Game. Check intro route/skip policy and Arthur's opening lessons; after the profiles, approach Arthur in person and tap to talk. Confirm Public Trust 40/100, future target65, wallet0 and contextual bag tutorial. Inspect first profile, close, continue moving.
 3. Collect two profiles; exit/relaunch through Continue. Confirm same two, same next objective and no extra reward. Finish collecting; deliberately rearrange draft board without correctness feedback.
 4. Submit incomplete board (blocked), then a complete imperfect board. Read frozen tier. Correct all; verify +60 coins once and +2 trust for completed service; replaying the result cannot award again.
 5. Before office review, collect optional postcard and supply voucher; inspect, pin if eligible, display later. Test a full carry/drawer fixture supplied by implementer without editing production save. Bag reading consumes review time; compulsory lesson/settings/shop do not.
@@ -49,7 +49,7 @@ Use relevant static validators after source changes: python Tests/VerifyGuideTar
 8. Resolve Marie's case and client follow-through. Check total completion coins160 and L1 trust46 before optional spending; low mastery does not block corrected completion. Visit counter introduction; choose Back without buying and still finish chapter.
 9. Buy bookmarks/decor (in a suitable funded campaign). Inspect installed tab/prop. Return to main-menu shop; price/ownership/wallet match. Try insufficient funds, rapid repeated purchase, locked stand/computer and cancellation.
 10. Replay mastery/practice and leave: live wallet/trust/story/supplies unchanged. Continue resumes the updated story with earned badges and possessions retained. Confirmed New Game resets the active campaign but retains settings. L2 launch remains unavailable in A; its existing scene is not silently entered.
-11. Test phone/tall/wide layouts and Android back, scene fades, repeated openings, SFX/music OFF and ON. Inspect Quax actor/portrait match, sample demonstrations, paper/coin/voucher/decor motions and all collider reachability. Record visual defects separately from domain results.
+11. Test phone/tall/wide layouts and Android back, scene fades, repeated openings, SFX/music OFF and ON. Inspect Arthur's actor/portrait match, the Chapter 1 wrap-up sheet, paper/coin/voucher/decor motions and all collider reachability. Record visual defects separately from domain results.
 
 ## Delivery B additional manual script (USER only)
 

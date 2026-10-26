@@ -271,6 +271,20 @@ public class FirstPersonCameraController : MonoBehaviour
         return true;
     }
 
+    /// <summary>The current look angles (degrees).</summary>
+    public float Yaw => yaw;
+    public float Pitch => pitch;
+
+    /// <summary>
+    /// Sets the look angles (pitch kept inside the limits), e.g. after a guided
+    /// turn toward the Supply Counter (ViewTurn), so control resumes from there.
+    /// </summary>
+    public void SetLook(float newYaw, float newPitch)
+    {
+        yaw = newYaw;
+        pitch = Mathf.Clamp(newPitch, minPitch, maxPitch);
+    }
+
     public void ResetLook()
     {
         if (player == null)

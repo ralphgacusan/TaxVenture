@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 /// <summary>
 /// PURPOSE:
-/// What Arthur says about the corkboard, without ever naming a
+/// What the guide (Arthur) says about the corkboard, without ever naming a
 /// classification: his introduction (one indirect line per corner), his
 /// wrap-up, and his reaction to every card placed on the board.
 ///
@@ -50,7 +50,7 @@ public static class CorkboardTeaching
     }
 
     // ---------------------------------------------------------
-    // Arthur's talks (built-in; town.json may replace)
+    // The guide's talks (built-in; town.json may replace)
     // ---------------------------------------------------------
 
     private static readonly List<KeyValuePair<bool, string>> BuiltInIntro = new List<KeyValuePair<bool, string>>
@@ -114,10 +114,10 @@ public static class CorkboardTeaching
     public static IReadOnlyList<KeyValuePair<bool, string>> IntroLines => introOverride ?? BuiltInIntro;
     public static IReadOnlyList<KeyValuePair<bool, string>> DoneLines => doneOverride ?? BuiltInDone;
 
-    /// <summary>Arthur's corkboard introduction as a conversation.</summary>
+    /// <summary>The guide's corkboard introduction as a conversation.</summary>
     public static List<DialogueLine> BuildIntro(string speakerName) => Build(speakerName, IntroLines);
 
-    /// <summary>Arthur's wrap-up once the board is solved.</summary>
+    /// <summary>The guide's wrap-up once the board is solved.</summary>
     public static List<DialogueLine> BuildDone(string speakerName) => Build(speakerName, DoneLines);
 
     private static List<DialogueLine> Build(string speakerName, IReadOnlyList<KeyValuePair<bool, string>> lines)
@@ -132,7 +132,7 @@ public static class CorkboardTeaching
     }
 
     /// <summary>
-    /// Arthur's reaction to a card placed on a corner: why it fits, or a
+    /// The guide's reaction to a card placed on a corner: why it fits, or a
     /// hint toward the clue that was missed. Never names a classification.
     /// </summary>
     public static string ReactionFor(TaxpayerProfile profile, TaxpayerClassification placedOn)

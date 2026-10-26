@@ -4,7 +4,7 @@ Status: Planned. Blocked by: T09, T10.
 
 ## Goal
 
-Keep required records and optional world finds in one durable campaign bag.
+Keep required records and optional world finds in one durable campaign bag. Every pickup uses T10's Acquire command: hotbar first, then bag, then stack, and the "Make room" panel when full; profiles join the Profile Binder rather than taking separate slots.
 
 ## Visible accomplishment
 

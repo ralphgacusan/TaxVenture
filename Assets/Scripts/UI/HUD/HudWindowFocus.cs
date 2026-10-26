@@ -55,13 +55,16 @@ public sealed class HudWindowFocus : MonoBehaviour
             bestOrder = w.SortingOrder;
         }
 
-        // A 3D document actually hit at that point, if it is further in front.
+        // A 3D document drawn at that point, if it is further in front. "Drawn there" is tested on
+        // the document's own shape (2026-10-26): a raycast hit can belong to a document that is not
+        // the one seen there, which kept the Case Folder in front of a touched Tax Code Book.
         Doc3DLayer bestDocument = null;
         for (int d = 0; d < Doc3DLayer.All.Count; d++)
         {
             Doc3DLayer layer = Doc3DLayer.All[d];
             if (layer == null || !layer.IsVisible || layer.SortingOrder <= bestOrder) continue;
-            if (!HitsDocument(layer.Source) && !HitsDocument(layer.transform)) continue;
+            bool shown = layer.ShowsAt(screenPosition, out bool known);
+            if (known ? !shown && !HitsDocument(layer.transform) : !HitsDocument(layer.Source) && !HitsDocument(layer.transform)) continue;
             bestDocument = layer;
             bestOrder = layer.SortingOrder;
         }
