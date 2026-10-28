@@ -24,10 +24,10 @@ using UnityEngine.UI;
 public sealed class HudProgressionPanel : MonoBehaviour
 {
     public const float Width = 460f;
-    private const float Height = 172f;
+    private const float Height = 208f;
     private const float RowCaptionX = 18f;
-    private const float BarX = 82f;
-    private const float BarWidth = 250f;
+    private const float BarX = 108f;
+    private const float BarWidth = 224f;
     private const float BarHeight = 18f;
     private const float ValueWidth = 104f;
     private const float ExpRowY = 96f;
@@ -117,17 +117,25 @@ public sealed class HudProgressionPanel : MonoBehaviour
     private TextMeshProUGUI headingText;
     private TextMeshProUGUI levelNameText;
     private TextMeshProUGUI careerText;
+    private TextMeshProUGUI repCaption;
+    private RectTransform walletRow;
+    private RectTransform walletIcon;
+    private TextMeshProUGUI walletValue;
     private RectTransform medalRow;
     private int medalsShown;
     private readonly AnimatedBar expBar = new AnimatedBar();
     private readonly AnimatedBar repBar = new AnimatedBar();
     private bool subscribed;
     private float holdSeconds;
+    private int walletShown;
+    private int walletTarget;
+    private int walletFrom;
+    private float walletElapsed = -1f;
 
     public RectTransform ExpBar => expBar.Fill != null ? (RectTransform)expBar.Fill.parent : null;
     public RectTransform ReputationBar => repBar.Fill != null ? (RectTransform)repBar.Fill.parent : null;
     /// <summary>The wallet / career line (T09 coin flights land here).</summary>
-    public RectTransform WalletLabel => careerText != null ? (RectTransform)careerText.transform : null;
+    public RectTransform WalletLabel => walletIcon;
 
     // =========================================================
     // BUILD
@@ -171,6 +179,19 @@ public sealed class HudProgressionPanel : MonoBehaviour
         HudTheme.PlaceTopLeft((RectTransform)careerText.transform, 262f, 16f, 122f, 32f);
         careerText.gameObject.SetActive(false);
 
+        // Campaign coins have their own row and landing point, separate from the career EXP label.
+        walletRow = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Wallet", body), 18f, 168f, 424f, RowHeight);
+        walletIcon = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Wallet Coin", walletRow), 0f, 1f, 24f, 24f);
+        HudTheme.AddImage(walletIcon, HudTheme.Coin, HudTheme.CoinGold);
+        TextMeshProUGUI walletCaption = HudTheme.CreateLabel("Wallet Caption", walletRow, "COINS", HudTheme.CaptionSize,
+            HudTheme.CoinGold, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+        walletCaption.characterSpacing = 3f;
+        HudTheme.PlaceTopLeft((RectTransform)walletCaption.transform, 34f, 0f, 120f, RowHeight);
+        walletValue = HudTheme.CreateLabel("Wallet Value", walletRow, "0", HudTheme.ValueSize,
+            HudTheme.TextPrimary, TextAlignmentOptions.MidlineRight, FontStyles.Bold);
+        HudTheme.PlaceTopLeft((RectTransform)walletValue.transform, 292f, 0f, 132f, RowHeight);
+        walletRow.gameObject.SetActive(false);
+
         levelNameText = HudTheme.CreateLabel("Level Name", body, string.Empty, HudTheme.ValueSize,
             HudTheme.TextPrimary, TextAlignmentOptions.MidlineLeft);
         HudTheme.PlaceTopLeft((RectTransform)levelNameText.transform, 100f, 48f, 338f, 28f);
@@ -179,20 +200,24 @@ public sealed class HudProgressionPanel : MonoBehaviour
         medalRow = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Badges", body), 444f - MedalSize, 34f,
             MedalSize, MedalSize);
 
-        // EXP row: "EXP" caption + bar + value.
+        // EXP row: a star and its clear label before the bar and total.
+        RectTransform expIcon = HudTheme.PlaceTopLeft(HudTheme.CreateRect("EXP Icon", body), RowCaptionX, ExpRowY + 2f, 22f, 22f);
+        HudTheme.AddImage(expIcon, HudTheme.Star, HudTheme.Exp);
         TextMeshProUGUI expCaption = HudTheme.CreateLabel("EXP Caption", body, "EXP", HudTheme.CaptionSize,
             HudTheme.Exp, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
-        expCaption.characterSpacing = 4f;
-        HudTheme.PlaceTopLeft((RectTransform)expCaption.transform, RowCaptionX, ExpRowY, 60f, RowHeight);
-        expBar.Icon = (RectTransform)expCaption.transform;
+        expCaption.characterSpacing = 2f;
+        HudTheme.PlaceTopLeft((RectTransform)expCaption.transform, RowCaptionX + 30f, ExpRowY, 50f, RowHeight);
+        expBar.Icon = expIcon;
         BuildBar(body, "EXP", ExpRowY, HudTheme.Exp, HudTheme.ExpGain, expBar);
 
-        // Reputation row: heart icon + bar + value.
+        // Hearts represent reputation in ordinary runs and Public Trust in a campaign.
         RectTransform heart = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Reputation Icon", body),
-            RowCaptionX + 4f, RepRowY, RowHeight, RowHeight);
-        heart.pivot = new Vector2(0.5f, 0.5f);
-        heart.anchoredPosition = new Vector2(RowCaptionX + 4f + RowHeight * 0.5f, -RepRowY - RowHeight * 0.5f);
+            RowCaptionX, RepRowY + 1f, 24f, 24f);
         HudTheme.AddImage(heart, HudTheme.Heart, HudTheme.Reputation);
+        repCaption = HudTheme.CreateLabel("Reputation Caption", body, "REP", HudTheme.CaptionSize,
+            HudTheme.Reputation, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+        repCaption.characterSpacing = 1f;
+        HudTheme.PlaceTopLeft((RectTransform)repCaption.transform, RowCaptionX + 30f, RepRowY, 50f, RowHeight);
         repBar.Icon = heart;
         BuildBar(body, "Reputation", RepRowY, HudTheme.Reputation, HudTheme.ReputationGain, repBar);
 
@@ -305,11 +330,12 @@ public sealed class HudProgressionPanel : MonoBehaviour
         }
         expBar.SetTarget(maxExp, exp, animate);
         repBar.SetTarget(maxReputation, reputation, animate);
+        repCaption.SetText(trust ? "TRUST" : "REP");
         expBar.SetPassing(passing);
         repBar.SetPassing(trust ? CampaignRewards.SupportTarget : passing);
-        ApplyCareer();
+        ApplyCareer(animate);
         ApplyPassingCaption(progressionManager, passing);
-        enabled = expBar.Animating || repBar.Animating;
+        enabled = expBar.Animating || repBar.Animating || walletAnimating;
     }
 
     private void ApplyLevelLabels(string levelId, string levelName)
@@ -320,7 +346,8 @@ public sealed class HudProgressionPanel : MonoBehaviour
             badgeText.SetText("{0}", number);
             headingText.SetText("LEVEL {0}", number);
         }
-        levelNameText.text = string.IsNullOrWhiteSpace(levelName) ? string.Empty : levelName;
+        levelNameOnly = string.IsNullOrWhiteSpace(levelName) ? string.Empty : levelName;
+        levelNameText.text = levelNameOnly;
     }
 
     private string levelNameOnly;
@@ -406,15 +433,50 @@ public sealed class HudProgressionPanel : MonoBehaviour
 
     private RectTransform newMedal;
 
-    private void ApplyCareer()
+    private void ApplyCareer(bool animate)
     {
         PlayerProgressManager manager = PlayerProgressManager.Instance;
         bool show = manager != null && manager.CurrentProgress != null;
-        careerText.gameObject.SetActive(show);
-        if (!show) return;
-        // T09: a campaign shows its wallet (saved balance) here.
-        if (TrustDisplay.Active) careerText.SetText("{0} coins", manager.CurrentProgress.campaign.coins);
-        else careerText.SetText("Career {0} EXP", manager.CurrentProgress.totalExp);
+        bool showWallet = show && TrustDisplay.Active;
+        careerText.gameObject.SetActive(show && !showWallet);
+        walletRow.gameObject.SetActive(showWallet);
+        if (!show)
+        {
+            walletElapsed = -1f;
+            return;
+        }
+        if (showWallet)
+        {
+            SetWalletTarget(manager.CurrentProgress.campaign.coins, animate);
+            return;
+        }
+        walletElapsed = -1f;
+        careerText.SetText("Career {0} EXP", manager.CurrentProgress.totalExp);
+    }
+
+    private bool walletAnimating => walletElapsed >= 0f;
+
+    private void SetWalletTarget(int target, bool animate)
+    {
+        if (!animate || walletValue == null)
+        {
+            walletShown = walletTarget = target;
+            walletElapsed = -1f;
+            walletValue.SetText("{0}", walletShown);
+            return;
+        }
+        if (walletAnimating && walletTarget == target) return;
+        if (walletShown == target)
+        {
+            walletTarget = target;
+            walletElapsed = -1f;
+            walletValue.SetText("{0}", walletShown);
+            return;
+        }
+        walletFrom = walletShown;
+        walletTarget = target;
+        walletElapsed = 0f;
+        enabled = true;
     }
 
     // =========================================================
@@ -437,8 +499,24 @@ public sealed class HudProgressionPanel : MonoBehaviour
         expBar.Tick(dt);
         // Reputation follows the EXP fill slightly later so the two read as a sequence.
         if (!expBar.Animating || expBar.Shown >= expBar.Target * 0.5f) repBar.Tick(dt);
+        TickWallet(dt);
 
-        if (!expBar.Animating && !repBar.Animating) enabled = false;
+        if (!expBar.Animating && !repBar.Animating && !walletAnimating) enabled = false;
+    }
+
+    private void TickWallet(float dt)
+    {
+        if (!walletAnimating) return;
+        walletElapsed += dt;
+        float t = walletElapsed / FillDuration;
+        walletShown = Mathf.RoundToInt(Mathf.Lerp(walletFrom, walletTarget, HudTheme.EaseOutCubic(t)));
+        walletValue.SetText("{0}", walletShown);
+        if (t >= 1f)
+        {
+            walletShown = walletTarget;
+            walletValue.SetText("{0}", walletShown);
+            walletElapsed = -1f;
+        }
     }
 
     /// <summary>
@@ -448,6 +526,7 @@ public sealed class HudProgressionPanel : MonoBehaviour
     public void HoldFillFor(float seconds)
     {
         holdSeconds = Mathf.Max(holdSeconds, seconds);
+        enabled = true;
     }
 
     public static float Fraction(float value, int max) => max <= 0 ? 0f : Mathf.Clamp01(value / max);

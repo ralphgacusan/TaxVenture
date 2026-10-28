@@ -73,16 +73,10 @@
   },
 
   "_levelCompleteNote": "Result-card lessons are ONE tap page each, shown right after the card appears; one tap and the card is yours, no more interruptions. The card's auto-continue waits while it shows.",
-  "_waypoints": "Where the arrows lead for each objectives.json step. 'step' must match the step's trigger exactly. pick: nearestAvailable | nearest | first.",
+  "_waypoints": "Where arrows lead for guided objectives.json steps. AllProfilesCollected is deliberately omitted for free plaza discovery. 'step' must match the step's trigger exactly. pick: nearestAvailable | nearest | first.",
   "waypoints": [
     { "step": "event:ArthurMet", "target": "Environment/Outside/Plaza/NPCS/NPC_TutorialGuide", "label": "Arthur" },
     { "step": "event:ReviewedFileLookedOver", "target": "type:ReviewedFilePickup|Environment/Outside/Plaza/NPCS/NPC_TutorialGuide", "pick": "first", "label": "Arthur's file", "arriveDistance": 1.5 },
-    {
-      "step": "event:AllProfilesCollected",
-      "target": "type:TaxpayerProfileWorldPickup|Environment/Outside/Plaza/NPCS/NPC_Marie|Environment/Outside/Plaza/NPCS/NPC_Zorbix|Environment/Outside/Plaza/NPCS/NPC_Jhun|Environment/Outside/Plaza/NPCS/NPC_Milo",
-      "pick": "nearestAvailable",
-      "label": "Plaza client"
-    },
     { "step": "event:TutorialGuideTalkedTo", "target": "Environment/Outside/Plaza/NPCS/NPC_TutorialGuide", "label": "Arthur" },
     { "step": "event:SideQuestCompleted", "target": "Environment/Outside/Plaza/NPCS/NPC_TutorialGuide", "label": "Corkboard" },
     {
@@ -138,7 +132,7 @@
       "after": "move",
       "pages": [
         { "point": "hud:look", "gesture": "swipe", "waitFor": "look:90", "text": "Now slide your right thumb across the right side of the screen to look around." },
-        { "text": "Perfect! That's the whole plaza. Walk and look together, and you can go anywhere." }
+        { "text": "Perfect! Now you can take in the whole scenery of Coast Tales. Walk and look together to explore!" }
       ]
     },
     {
@@ -197,7 +191,7 @@
       "when": "lesson:shop-intro|not:active:type:SupplyCounter",
       "after": "notes",
       "pages": [
-        { "point": "waypoint", "face": "waypoint", "gesture": "none", "revealArrows": true, "mood": "wow", "text": "Ta-da! The glowing arrows and the floating pin always lead to your next step." },
+        { "point": "waypoint", "face": "waypoint", "gesture": "none", "revealArrows": true, "mood": "wow", "text": "Ta-da! The blue arrows and floating pin lead to me. When it's time to meet again, they'll light the way back." },
         { "point": "hud:minimap", "gesture": "none", "text": "Your goal pulses on the minimap too." },
         { "point": "hud:joystick", "gesture": "joystick", "waitFor": "move:8|near:4:world:Environment/Outside/Plaza/NPCS/NPC_TutorialGuide|dialogue:start", "text": "Follow the arrows. They lead to me!" }
       ]
@@ -218,7 +212,7 @@
       "after": "reviewed-notes",
       "duringDialogue": true,
       "pages": [
-        { "style": "hint", "waitFor": "seconds:5", "text": "Listen closely: what they tell you ends up on their ID." }
+        { "style": "hint", "waitFor": "seconds:5", "text": "Everyone has a story. Listen closely: a friendly chat can hide a useful clue!" }
       ]
     },
     {
@@ -272,7 +266,7 @@
       "preserveWhileHidden": true,
       "pages": [
         { "box": "top", "text": "Filipino, but his home is abroad: that's his classification. And his own shop explains the other two." },
-        { "box": "top", "text": "Keep it handy. Now go meet the four clients: each will hand you a copy of their ID." }
+        { "box": "top", "text": "Keep that file handy! Take a stroll around Coast Tales and hear people's stories. A friendly hello might turn up something useful." }
       ]
     },
     {
@@ -295,7 +289,7 @@
       "pages": [
         { "point": "hud:profiles", "gesture": "tap", "waitFor": "open:profiles", "text": "It went into your Client IDs. Tap them to have a look." },
         { "gesture": "tap", "waitFor": "flag:ids-flipped|not:open:profiles", "text": "Tap a card to flip it: their profile is on the back." },
-        { "point": "hud:profiles", "gesture": "tap", "waitFor": "not:open:profiles", "text": "Tap the icon again to put them away. Three clients to go!" }
+        { "point": "hud:profiles", "gesture": "tap", "waitFor": "not:open:profiles", "text": "Tap the icon again to put them away. More stories, and perhaps more IDs, are waiting around the plaza!" }
       ]
     },
     {
@@ -304,7 +298,7 @@
       "when": "event:TutorialGuideAppeared",
       "onlyIn": "mode:FirstPerson",
       "delay": 1.0,
-      "_note": "T26: a follow-up with the same Arthur, not another introduction; the board talk itself is town.json arthurBoardIntro (three lines).",
+      "_note": "T26: a follow-up with the same Arthur, not another introduction; the board talk itself is town.json arthurBoardIntro (four short lines).",
       "pages": [
         { "point": "waypoint", "gesture": "tap", "mood": "wow", "waitFor": "near:4:world:Environment/Outside/Plaza/NPCS/NPC_TutorialGuide|dialogue:start", "text": "That's all four IDs! Follow the arrows back to me." },
         { "point": "world:Environment/Outside/Plaza/NPCS/NPC_TutorialGuide", "gesture": "tap", "waitFor": "dialogue:start", "text": "Tap me, and we'll organize them on my corkboard." }
@@ -316,12 +310,11 @@
       "when": "mode:CorkboardSideQuest",
       "onlyIn": "mode:CorkboardSideQuest",
       "delay": 2.0,
-      "_note": "T26 (2026-10-27): one target at a time: the CATEGORIES reference, reading an ID's back, the first drag, then how the check and the medal work.",
+      "_note": "T26 (2026-10-27): one target at a time: the CATEGORIES reference, reading an ID's back, the first drag, Arthur has already explained the first check and medals.",
       "pages": [
         { "point": "ui:Board Categories", "gesture": "none", "text": "Each corner is a kind of taxpayer. CATEGORIES explains them any time." },
         { "point": "type:ProfileDragCard", "gesture": "tap", "waitFor": "flag:board-flipped|corkboard:placed|corkboard:wrong", "text": "Tap an ID to flip it and read the profile." },
-        { "point": "type:ProfileDragCard", "to": "type:CorkboardSlot", "gesture": "drag", "waitFor": "corkboard:placed|corkboard:wrong", "text": "Now drag an ID onto the corner that fits." },
-        { "mood": "wow", "text": "Once all four are pinned, the board checks itself. That first check sets your medal: Gold for all four right, Silver for two, Bronze for fewer." }
+        { "point": "type:ProfileDragCard", "to": "type:CorkboardSlot", "gesture": "drag", "waitFor": "corkboard:placed|corkboard:wrong", "text": "Now drag an ID onto the corner that fits." }
       ]
     },
     {
@@ -380,7 +373,7 @@
       "delay": 0.5,
       "pages": [
         { "point": "ui:Office Hours Chip", "gesture": "none", "mood": "confused", "text": "Uh-oh, a deadline! This shows when the Auditor leaves and how many minutes you have left." },
-        { "point": "hud:minimap", "gesture": "none", "text": "Keep an eye on the clock on your minimap too. Hand in your case before he leaves and you'll earn an on-time bonus!" },
+        { "point": "hud:minimap", "gesture": "none", "text": "Keep an eye on the clock on your minimap too. Hand in your case before he leaves to avoid losing EXP and hearts for finishing late." },
         { "text": "And if you miss it? Don't panic. He'll be back the next morning and your work stays put. You'd just lose the bonus. Now hurry!" }
       ]
     },

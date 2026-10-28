@@ -1,6 +1,17 @@
 # Progress and next-agent handoff
 
-## Current execution — Arthur reviewed-file revision (2026-10-26)
+## Current next ticket — T28; T27 deferred until after T17 (2026-10-28)
+
+The latest user schedule places T27 after the Delivery A gate and before Level 2 adopts its library. This update changes documentation only and does not start T28 or T27.
+
+- Last numbered implementation: T26 (internally verified; user manual acceptance remains pending).
+- Next: [T28](tickets/T28-level1-paper-motion-and-route-polish.md), Planned / not started. Its prerequisite is T26; polish only existing Level 1 documents and interactions. Recent animation/HUD follow-ups do not mark the full T28 ticket complete.
+- [T27](tickets/T27-eight-document-template-library.md) remains DEFERRED, not cancelled, implemented or accepted. Its full scope and unchecked acceptance remain intact; resume it after T17 and complete it before T18.
+- Updated order: T28 -> T29 -> T17 -> T27 -> T18 -> T19/T20 -> T21. T29 and T17 verify the existing Level 1 route only; they explicitly carry the unfinished library, isolated fixture and Rosa adapter-map gap without claiming it passed. T27 verifies the library and map itself; T18 depends on both T17 and T27, and T21 still covers all Delivery B amendments.
+- Updated navigation, authority, specification, verification scope, handoffs, dependency table, known-issue status and documentation dependency validator. Historical progress logs below remain unchanged.
+- Documentation only: no gameplay code, assets, scenes, actual saves, Unity checks or ticket implementation. Documentation check: python Documentation/CampaignFoundation/verify_pack.py passed (39 Markdown documents, 31 detailed tickets, 274 local links, dependency DAG and Delivery A/B gates). No gameplay checks were needed for this update.
+
+## Historical execution — Arthur reviewed-file revision (2026-10-26)
 
 **Next: T25 -> T26 -> T27 -> T28 -> T29 -> T17 -> T18, then existing Delivery B dependencies.** T30 and T31 were implemented on 2026-10-26 (internally verified, user manual pending; sections at the end). User feedback supersedes original T24's Jhun-first gate and flat bench sleeve. T24's internal implementation/test evidence stays historical; it is not evidence that the revised opening exists. All new work below is Planned, implementation and internal/manual checks not run.
 

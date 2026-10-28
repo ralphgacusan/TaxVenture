@@ -238,6 +238,8 @@ public class LevelCompleteUI : MonoBehaviour
         CaseDefinition definition = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
         PlayerProgressManager.CaseResultCommit commit = manager.CommitLevelOneCaseResult(result,
             definition != null ? definition.caseId : null, definition != null ? Level1CaseCheckpoint.Fingerprint(definition) : null);
+        if (commit == PlayerProgressManager.CaseResultCommit.Committed)
+            HudFeedback.AnnounceCampaign(default, manager.LastCaseCoins, null);
         return commit == PlayerProgressManager.CaseResultCommit.Committed || commit == PlayerProgressManager.CaseResultCommit.AlreadyRecorded;
     }
 
@@ -281,13 +283,14 @@ public class LevelCompleteUI : MonoBehaviour
             data.Fact("Board first check", $"{caseResult.firstCheckCorrect}/4  ·  {tier}");
         // T09: the case's coins, saved with the result (a pending, unsaved result shows none).
         CampaignRewards.Change coins = PlayerProgressManager.Instance != null ? PlayerProgressManager.Instance.LastCaseCoins : default;
-        if (saved && coins.Applied) data.Fact("Coins", $"+{coins.Amount}  ->  {coins.After}");
+        if (saved && coins.Applied)
+            data.RewardTile("Coins", HudTheme.Coin, HudTheme.CoinGold, coins.Amount, "Wallet", coins.After);
         for (int i = 0; i < result.BadgeTiers.Count; i++)
             if (result.BadgeTiers[i] != BadgeTier.None) data.Medals.Add(HudBadgeArt.For(rules, result.BadgeTiers[i]));
         data.Fact("Time", result.FormattedCompletionTime);
         OfficeHours hours = OfficeHours.Instance;
         if (hours != null && hours.Announced)
-            data.Fact("Office hours", hours.BonusAwarded ? "On time ✓"
+            data.Fact("Office hours", hours.OnTime ? "On time ✓"
                 : hours.LateExpLost > 0 ? $"Late (day {hours.Day})  -{hours.LateExpLost} EXP" : $"Finished on day {hours.Day}");
         if (career != null) data.Footer = $"Career {career.totalExp} EXP";
         return data;
@@ -324,8 +327,9 @@ public class LevelCompleteUI : MonoBehaviour
         };
         for (int i = 0; i < result.BadgeTiers.Count; i++)
             if (result.BadgeTiers[i] != BadgeTier.None) data.Medals.Add(HudBadgeArt.For(rules, result.BadgeTiers[i]));
-        data.Fact("Coins", $"+{summary.CoinsEarned}  ->  {summary.Wallet}");
-        data.Fact("Public Trust", $"+{summary.TrustEarned}  ->  {summary.TrustNow} / 100");
+        data.RewardTile("Coins", HudTheme.Coin, HudTheme.CoinGold, summary.CoinsEarned, "Wallet", summary.Wallet);
+        data.RewardTile("Public Trust", HudTheme.Heart, HudTheme.Reputation, summary.TrustEarned,
+            "Trust", summary.TrustNow, CampaignRecord.MaxTrust);
         if (caseResult != null && caseResult.firstCheckCorrect >= 0)
             data.Fact("Board first check", $"{caseResult.firstCheckCorrect}/4  ·  {tier}");
         data.Fact("Time", result.FormattedCompletionTime);
@@ -370,7 +374,7 @@ public class LevelCompleteUI : MonoBehaviour
         data.Fact("Cases", result.CasesCompleted.ToString());
         OfficeHours hours = OfficeHours.Instance;
         if (hours != null && hours.Announced)
-            data.Fact("Office hours", hours.BonusAwarded ? "On time ✓"
+            data.Fact("Office hours", hours.OnTime ? "On time ✓"
                 : hours.LateExpLost > 0 || hours.LateHeartsLost > 0
                     ? $"Late (day {hours.Day})  -{hours.LateExpLost} EXP  -{hours.LateHeartsLost} hearts"
                     : $"Finished on day {hours.Day}");

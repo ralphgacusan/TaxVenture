@@ -38,6 +38,12 @@ public sealed class NpcIdlePacing : MonoBehaviour
 
     private void Awake()
     {
+        // NpcLife (Living Plaza) owns this NPC's movement and facing; two owners would fight.
+        if (GetComponent<NpcLife>() != null)
+        {
+            enabled = false;
+            return;
+        }
         stateMachine = GetComponent<NpcStateMachine>();
         driver = GetComponent<NpcAnimationDriver>();
         dialogueUI = FindAnyObjectByType<DialogueUI>(FindObjectsInactive.Include);

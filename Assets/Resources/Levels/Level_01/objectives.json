@@ -34,7 +34,7 @@
       "steps": [
         { "text": "Meet Arthur.", "trigger": "event:ArthurMet" },
         { "text": "Look over Arthur's file.", "trigger": "event:ReviewedFileLookedOver" },
-        { "text": "Meet the four clients and collect all 4 IDs.", "trigger": "event:AllProfilesCollected", "progress": "profiles" },
+        { "text": "Explore the plaza, hear people's stories, and collect 4 IDs.", "trigger": "event:AllProfilesCollected", "progress": "profiles" },
         { "text": "Talk to Arthur in the plaza.", "trigger": "event:TutorialGuideTalkedTo" },
         { "text": "Organize the four IDs on Arthur's corkboard.", "trigger": "event:SideQuestCompleted" }
       ]

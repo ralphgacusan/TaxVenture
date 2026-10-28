@@ -390,7 +390,7 @@ public static class ReviewedFileRules
         },
         arthurIntro = new[]
         {
-            "There you are, Elijah! Before you meet today's clients, I want you to see a case I finished.",
+            "There you are, Elijah! Before you get to know the locals, I want you to see a case I finished.",
             "It's closed, so it's just for reading. Here, take it!"
         },
         notes = new[]
@@ -398,7 +398,7 @@ public static class ReviewedFileRules
             "The ID gives his citizenship, the background where he lives.",
             "Filipino, but his home is abroad: that's his classification.",
             "And his own shop explains the other two.",
-            "Keep it handy. Now go meet the four clients: each will hand you a copy of their ID."
+            "Keep that file handy! Take a stroll around Coast Tales and hear people's stories. A friendly hello might turn up something useful."
         }
     };
 }

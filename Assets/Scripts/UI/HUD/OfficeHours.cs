@@ -18,13 +18,11 @@ using UnityEngine.UI;
 /// - Arthur warns at 15 and 5 minutes left (game minutes).
 /// - Missing it is never a fail: the Auditor goes home, it's "next
 ///   morning" with the case progress kept and a new, roomier deadline;
-///   only the on-time bonus is lost.
-/// - Handing in the case before the first deadline earns an on-time bonus
-///   (a Bonus score entry; it does not raise the level maximum).
+///   late completion costs EXP and hearts, while on-time completion adds nothing.
 ///
 /// Settings: Resources/Levels/Level_01/office_hours.json (built-in defaults
 /// below when missing). Observation-only towards gameplay: it reads states
-/// and events and adds one score entry; it never changes the case or FSM.
+/// and events and applies late penalties; it never changes the case or FSM.
 /// </summary>
 [DefaultExecutionOrder(120)]
 public sealed class OfficeHours : MonoBehaviour
@@ -49,7 +47,8 @@ public sealed class OfficeHours : MonoBehaviour
         public int[] warnMinutes = { 15, 5 };
         public float amberRealSeconds = 120f;
         public float redRealSeconds = 30f;
-        public int onTimeBonusExp = 20;
+        // Legacy JSON fields retained for compatibility; on-time completion never awards a bonus.
+        public int onTimeBonusExp = 0;
         public int onTimeBonusHearts = 0;
         // Late case: taken off per day late (day 2 = 1 day), up to lateMaxDays.
         public int lateExpPerDay = 15;
@@ -62,7 +61,7 @@ public sealed class OfficeHours : MonoBehaviour
         public string arthurWarning = "Tick-tock! The Auditor leaves in {minutes} minutes.";
         public string arthurMissed = "Oh no, the Auditor's gone home! Don't worry, he'll be back in the morning.";
         public string arthurNextMorning = "A fresh start! The Auditor is back, and today he leaves at {deadline}. Your work is right where you left it.";
-        public string arthurOnTime = "Right on time! You got the folder to the Auditor before he leaves. If it's approved, that's an on-time bonus!";
+        public string arthurOnTime = "Right on time! You got the folder to the Auditor before he leaves, so you avoid the late-day consequences.";
         // Next morning the player starts outside the office front door.
         public bool nextMorningAtFrontDoor = true;
         public string frontDoor = "Environment/OfficeBuilding/Rooms/Reception/Doors";
@@ -84,7 +83,7 @@ public sealed class OfficeHours : MonoBehaviour
     public bool Announced { get; private set; }
     public int DeadlineSeconds { get; private set; }
     public bool CaseDone { get; private set; }
-    public bool BonusAwarded { get; private set; }
+    public bool BonusAwarded => false;
     /// <summary>EXP / hearts actually taken off for a late case (0 when on time).</summary>
     public int LateExpLost { get; private set; }
     public int LateHeartsLost { get; private set; }
@@ -378,7 +377,6 @@ public sealed class OfficeHours : MonoBehaviour
             nextMorning = null;
         }
         CaseDone = true;
-        BonusAwarded = Announced && OnTime;
         if (Announced && Day > 1)
         {
             int daysLate = Mathf.Clamp(Day - 1, 0, Mathf.Max(0, Config.lateMaxDays));
@@ -450,14 +448,7 @@ public sealed class OfficeHours : MonoBehaviour
     {
         if (CaseDone) return;
         CaseDone = true;
-        if (Announced && OnTime && !BonusAwarded)
-        {
-            BonusAwarded = true;
-            CaseProgressionManager progression = CaseProgressionManager.Instance;
-            if (progression != null && (Config.onTimeBonusExp > 0 || Config.onTimeBonusHearts > 0))
-                progression.Score.AddBonus("On-time bonus", Config.onTimeBonusExp, Config.onTimeBonusHearts);
-        }
-        else if (Announced && Day > 1)
+        if (Announced && Day > 1)
         {
             // Late: the case is still done, but it costs a little per day late.
             int daysLate = Mathf.Clamp(Day - 1, 0, Mathf.Max(0, Config.lateMaxDays));

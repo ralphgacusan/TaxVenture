@@ -6,10 +6,17 @@ using UnityEngine.SceneManagement;
 /// PURPOSE:
 /// Marie in the conference room during her case (Campaign Foundation T23).
 ///
-/// The one owner of her relocation: once the side quest is completed her
-/// plaza model moves to the conference room's client spot while neither place
-/// is on screen (no visible teleport), and the room's stand-in client steps
-/// aside. ClientCopyHandover asks this owner to move her (approval, resume).
+/// The one owner of her relocation (Living Plaza: she walks, never teleports
+/// in view). Completing the side quest is her cue: she stops her plaza
+/// activity and walks into the office (MarieOfficeRoute: through the front
+/// doors once they open) to wait beside the front desk. When the
+/// receptionist's hand-over for her case is done she walks on to the
+/// conference room's client spot; if it was done before she got there she
+/// continues without waiting. Arrival there is presence only, never progress.
+/// The room's stand-in client steps aside. ClientCopyHandover asks this owner
+/// to move her (approval, resume). Her stage is never saved separately: on
+/// resume it follows from the saved flags (in the room, the side quest, the
+/// receptionist) once the checkpoint has restored them.
 ///
 /// The one owner of taps on her after her plaza talk: during the case a tap
 /// starts a short consultation chosen by ClientConsultationRules (a clue that
@@ -32,13 +39,20 @@ public sealed class ClientConsultation : MonoBehaviour
     private TaxpayerNpcInteractable client;
     private Transform clientRoot;
     private Transform spot;
+    private NpcLife life;
+    private MarieOfficeRoute route;
+    private ReceptionistInteractable receptionist;
     private bool resolved;
     private bool warnedResolve;
     private bool inRoom;
-    private bool movePending;
     private bool inVisit;
-    private readonly Plane[] frustum = new Plane[6];
-    private readonly List<Renderer> renderers = new List<Renderer>();
+    private bool restorePending, restoreInRoom;
+
+    private MarieTripRules.Leg leg = MarieTripRules.Leg.Plaza;
+    private float nextLegAt;
+
+    /// <summary>Her trip's current leg (presentation; derived again on resume).</summary>
+    public MarieTripRules.Leg CurrentLeg => leg;
 
     /// <summary>Marie stands at the conference room's client spot.</summary>
     public bool InRoom => inRoom;
@@ -87,69 +101,130 @@ public sealed class ClientConsultation : MonoBehaviour
     private void Update()
     {
         if (!Resolve()) return;
-        if (!inRoom && !movePending && LevelGate.SideQuestDone) movePending = true;
-        if (movePending && !Seen()) Move(save: true);
+        if (restorePending)
+        {
+            // The receptionist's hand-over is restored after this record: wait for the whole checkpoint.
+            if (Level1FieldCheckpointer.Active != null && !Level1FieldCheckpointer.Active.IsReady) return;
+            ApplyRestore();
+        }
+        if (inRoom || !LevelGate.SideQuestDone) return;
+        // The side quest is her cue (the front doors open with it); the hand-over is read, not awaited.
+        MarieTripRules.Leg next = MarieTripRules.Next(leg, true, OfficeDoorGate.IsClosed, ReceptionDone, Time.time >= nextLegAt);
+        if (next != leg && (next == MarieTripRules.Leg.ToReception || next == MarieTripRules.Leg.ToRoom)) StartLeg(next);
     }
 
     // =========================================================
-    // RELOCATION (single owner)
+    // RELOCATION (single owner): she walks
     // =========================================================
 
-    /// <summary>Moves Marie to the conference room: now (resume, under a fade) or as soon as nobody sees it.</summary>
+    /// <summary>Moves Marie to the conference room: now (resume, under a fade) or on foot from where she is.</summary>
     public void MoveToRoom(bool immediate)
     {
         if (inRoom || !Resolve()) return;
-        if (immediate) Move(save: false);
-        else movePending = true;
+        if (immediate) PlaceInRoom(save: false);
+        else if (leg != MarieTripRules.Leg.ToRoom) StartLeg(MarieTripRules.Leg.ToRoom);
     }
 
-    /// <summary>Marie or her spot is on screen and not behind a wall.</summary>
-    private bool Seen()
+    /// <summary>The receptionist has handed over Marie's case (the condition is read, never waited on as an event).</summary>
+    private bool ReceptionDone
     {
-        Camera cam = GuideTargets.ViewCamera;
-        if (cam == null) return false;
-        GeometryUtility.CalculateFrustumPlanes(cam, frustum);
-        return Visible(cam, clientRoot) || Visible(cam, spot);
-    }
-
-    private bool Visible(Camera cam, Transform target)
-    {
-        renderers.Clear();
-        target.GetComponentsInChildren(false, renderers);
-        bool seen = false;
-        for (int i = 0; i < renderers.Count && !seen; i++)
+        get
         {
-            Renderer r = renderers[i];
-            if (!r.enabled || !(r is MeshRenderer || r is SkinnedMeshRenderer) || !GeometryUtility.TestPlanesAABB(frustum, r.bounds)) continue;
-            Vector3 from = cam.transform.position;
-            Vector3 to = r.bounds.center;
-            seen = !Physics.Linecast(from, to, out RaycastHit hit, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) ||
-                   hit.collider.transform.IsChildOf(target);
+            if (receptionist == null) receptionist = FindAnyObjectByType<ReceptionistInteractable>(FindObjectsInactive.Include);
+            return receptionist == null || (definition != null && receptionist.HasSpokenFor(definition.caseId));
         }
-        renderers.Clear();
-        return seen;
     }
 
-    private void Move(bool save)
+    private void StartLeg(MarieTripRules.Leg next)
     {
-        movePending = false;
-        if (inRoom || clientRoot == null || spot == null) return;
+        bool fromPlaza = MarieTripRules.StartsOutside(leg);
+        if (next == MarieTripRules.Leg.ToReception)
+        {
+            List<Vector3> stops = route != null ? route.ToReception() : new List<Vector3>();
+            if (stops.Count == 0)
+            {
+                StartLeg(MarieTripRules.Leg.ToRoom);
+                return;
+            }
+            leg = MarieTripRules.Leg.ToReception;
+            Debug.Log("[Consultation] Marie walks to the front desk.");
+            life.TravelForQuest(stops, ReceptionFacing(), () =>
+            {
+                leg = MarieTripRules.Leg.AtReception;
+                // A moment at the desk, even when the hand-over already happened.
+                nextLegAt = Time.time + 1.5f;
+            });
+            return;
+        }
 
+        List<Vector3> toRoom = route != null ? route.ToRoom(fromPlaza) : new List<Vector3>();
+        toRoom.Add(RoomFeet());
+        leg = MarieTripRules.Leg.ToRoom;
+        Debug.Log("[Consultation] Marie walks to the conference room.");
+        life.TravelForQuest(toRoom, RoomFacing(), () => ArriveInRoom(save: true));
+    }
+
+    private void ArriveInRoom(bool save)
+    {
+        StandInStepsAside();
+        inRoom = true;
+        leg = MarieTripRules.Leg.InRoom;
+        state.clientInRoom = true;
+        Debug.Log("[Consultation] Marie is in the conference room.");
+        if (save) SaveCheckpoint();
+    }
+
+    /// <summary>Puts her at the room's client spot at once (resume under the fade, or a handover resume).</summary>
+    private void PlaceInRoom(bool save)
+    {
+        if (inRoom || clientRoot == null || spot == null) return;
+        life.PlaceForQuest(RoomFeet(), RoomFacing());
+        ArriveInRoom(save);
+    }
+
+    private void PlaceAtReception()
+    {
+        Transform wait = route != null ? route.ReceptionWait : null;
+        if (wait == null) return;
+        life.PlaceForQuest(NpcLife.Ground(wait.position), ReceptionFacing());
+        leg = MarieTripRules.Leg.AtReception;
+        nextLegAt = Time.time + 1.5f;
+    }
+
+    private void StandInStepsAside()
+    {
         // The conference room's stand-in client steps aside for Marie (restored with the scene).
+        if (spot == null) return;
         foreach (Renderer r in spot.GetComponentsInChildren<Renderer>()) r.enabled = false;
         foreach (Collider c in spot.GetComponentsInChildren<Collider>()) c.enabled = false;
         foreach (NpcStatusMarker m in spot.GetComponentsInChildren<NpcStatusMarker>()) m.enabled = false;
         foreach (ClientInteractable c in spot.GetComponentsInChildren<ClientInteractable>()) c.enabled = false;
+    }
 
+    private Vector3 RoomFeet()
+    {
         Vector3 feet = spot.position;
         if (Physics.Raycast(spot.position + Vector3.up * 1f, Vector3.down, out RaycastHit floor, 2.5f,
                 Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
             feet.y = floor.point.y;
-        clientRoot.SetPositionAndRotation(feet, spot.rotation);
-        inRoom = true;
-        state.clientInRoom = true;
-        Debug.Log("[Consultation] Marie is in the conference room.");
-        if (save) SaveCheckpoint();
+        return feet;
+    }
+
+    /// <summary>She faces the way the room's client spot faces (into the room, toward the door).</summary>
+    private Quaternion RoomFacing() => Quaternion.Euler(0f, spot.eulerAngles.y, 0f);
+
+    /// <summary>At the front desk she faces the receptionist.</summary>
+    private Quaternion ReceptionFacing()
+    {
+        Transform wait = route != null ? route.ReceptionWait : null;
+        if (receptionist == null) receptionist = FindAnyObjectByType<ReceptionistInteractable>(FindObjectsInactive.Include);
+        if (wait != null && receptionist != null)
+        {
+            Vector3 look = receptionist.transform.position - wait.position;
+            look.y = 0f;
+            if (look.sqrMagnitude > 0.01f) return Quaternion.LookRotation(look.normalized);
+        }
+        return wait != null ? Quaternion.Euler(0f, wait.eulerAngles.y, 0f) : Quaternion.identity;
     }
 
     // =========================================================
@@ -165,8 +240,23 @@ public sealed class ClientConsultation : MonoBehaviour
     private bool HandleVisit(TaxpayerNpcInteractable npc)
     {
         if (HandoverOwnsVisits) return ClientCopyHandover.Instance.HandleClientVisit(npc);
-        if (npc != client || !CanConsult) return false;
+        if (npc != client) return false;
+        if (!inRoom && LevelGate.SideQuestDone && leg != MarieTripRules.Leg.Plaza) return StartTravelAside();
+        if (!CanConsult) return false;
         return StartConsultation();
+    }
+
+    /// <summary>A tap on her on the way: one friendly line (talk only); the walk pauses and then goes on.</summary>
+    private bool StartTravelAside()
+    {
+        if (inVisit) return false;
+        MarieTravelDefinition travel = PlazaLifeContent.Current.marieTravel;
+        List<DialogueLineDefinition> source = leg == MarieTripRules.Leg.AtReception ? travel.atReception
+            : leg == MarieTripRules.Leg.ToRoom ? travel.toRoom : travel.toOffice;
+        List<DialogueLine> lines = PlazaLifeContent.Build(source, ClientName);
+        if (lines == null || lines.Count == 0) return false;
+        inVisit = client.TryStartVisit(lines, EndVisit, EndVisit);
+        return inVisit;
     }
 
     private NpcAvailability? VisitAvailability(TaxpayerNpcInteractable npc)
@@ -257,15 +347,29 @@ public sealed class ClientConsultation : MonoBehaviour
     }
 
     /// <summary>
-    /// Resume: the saved visits and markers come back, and Marie stands in the
-    /// room again when she was there (or the side quest is done). No line, no
-    /// event, no save.
+    /// Resume: the saved visits and markers come back. Where Marie stands is
+    /// decided once the whole checkpoint is back (ApplyRestore): in the room
+    /// when she was there or her hand-over is done, else beside the front desk
+    /// when the side quest is done. No line, no event, no save.
     /// </summary>
     public void Restore(Level1ConsultationRecord saved, bool sideQuestDone)
     {
         state = Copy(saved);
         state.Repair();
-        if (state.clientInRoom || sideQuestDone) MoveToRoom(immediate: true);
+        restoreInRoom = state.clientInRoom;
+        if (state.clientInRoom || sideQuestDone) restorePending = true;
+    }
+
+    /// <summary>Places her for a resumed run, under the level's fade-in (no walk, no line, no save).</summary>
+    private void ApplyRestore()
+    {
+        restorePending = false;
+        if (inRoom) return;
+        switch (MarieTripRules.Resume(restoreInRoom, LevelGate.SideQuestDone, ReceptionDone))
+        {
+            case MarieTripRules.Leg.InRoom: PlaceInRoom(save: false); break;
+            case MarieTripRules.Leg.AtReception: PlaceAtReception(); break;
+        }
     }
 
     private static Level1ConsultationRecord Copy(Level1ConsultationRecord record) =>
@@ -293,6 +397,13 @@ public sealed class ClientConsultation : MonoBehaviour
         clientRoot = FindInScene(gameObject.scene, staging.modelPath);
         spot = FindInScene(gameObject.scene, staging.spotPath);
         client = clientRoot != null ? clientRoot.GetComponentInChildren<TaxpayerNpcInteractable>(true) : null;
+        route = MarieOfficeRoute.Find(gameObject.scene);
+        if (route == null) Debug.LogWarning("[Consultation] No MarieOfficeRoute in the scene; Marie walks straight to the conference room.");
+        if (client != null)
+        {
+            life = client.GetComponent<NpcLife>();
+            if (life == null) life = client.gameObject.AddComponent<NpcLife>();
+        }
         if (client == null || spot == null)
         {
             if (!warnedResolve) Debug.LogWarning("[Consultation] The client or her conference-room spot was not found; she stays where she is.");

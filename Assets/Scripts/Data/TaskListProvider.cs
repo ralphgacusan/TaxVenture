@@ -216,7 +216,7 @@ public static class TaskListProvider
             new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.ArthurMet), "Meet Arthur.", false, null),
             new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.ReviewedFileLookedOver), "Look over Arthur's file.", false, null),
             new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.AllProfilesCollected),
-                "Meet the four clients and collect all 4 IDs.", false,
+                "Explore the plaza, hear people's stories, and collect 4 IDs.", false,
                 ObjectiveTriggers.ProfilesProgress),
             new TaskDefinition(ObjectiveTriggers.EventKey(ObjectiveTriggers.TutorialGuideTalkedTo),
                 "Talk to Arthur in the plaza.", false, null),

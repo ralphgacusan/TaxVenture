@@ -1,6 +1,10 @@
 # T28 — Polish the first-morning paper interactions and transitions
 
-Status: Planned. Blocked by: T27.
+Status: Planned — NEXT; not started. Blocked by: T26.
+
+## Scheduling amendment — 2026-10-28
+
+The user deferred [T27](T27-eight-document-template-library.md), selected T28 as the next ticket, and then placed T27 after the T17 gate. Polish only the existing Level 1 papers and interactions; the missing eight-type library and its isolated fixtures are outside this pass. Existing T26 implementation permits this work to proceed; user manual acceptance remains separately pending. This documentation update does not begin T28. Next run [T29](T29-record-route-verification.md), then [T17](T17-delivery-a-verification.md); carry the library, fixture and Rosa-map gap to T27 after T17 and before T18.
 
 ## Goal and visible accomplishment
 
@@ -38,4 +42,4 @@ Keep the combined two new sequences within the approximate 2–3 minute target t
 
 ## Non-goals and handoff
 
-No whole-game art replacement, new rendering pipeline, NPC locomotion, legal content revision, economy rebalance, or Level 2 rollout. Record internal results and exact user-only polish checks in PROGRESS. Next: [T29](T29-record-route-verification.md).
+No whole-game art replacement, new rendering pipeline, NPC locomotion, legal content revision, economy rebalance, or Level 2 rollout. Record internal results and exact user-only polish checks in PROGRESS. Next: [T29](T29-record-route-verification.md), then [T17](T17-delivery-a-verification.md). T27 follows T17 and completes the library before T18 adoption; T29 does not wait for or verify T27.

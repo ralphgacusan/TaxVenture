@@ -950,8 +950,10 @@ Check(Between(folderIcon, "private void StoreFolder(bool restoring)", "private v
 Check(Between(cp5, "private static void CaptureCase(", "// RESUME").Contains("FindObjectsByType<FolderToHUDIcon>(FindObjectsInactive.Include)"),
     "either folder component (closed desk folder or open folder) counts as stored when saving");
 string npcFix = Between(Src("SideQuest1", "TaxpayerNpcInteractable.cs"), "public void RestoreHandover", "public void OnFocus");
-Check(Index(npcFix, "profilePickup.Initialize(data);") > 0 && Index(npcFix, "profilePickup.Initialize(data);") < Index(npcFix, "if (!profileCollected && !profileHeld) profilePickup.gameObject.SetActive(true);"),
-    "a restored NPC's profile paper always knows its profile (Marie's 1/1 counter and viewer) and only lies in the world while uncollected (T24: and not held for the records step)");
+Check(Index(npcFix, "profilePickup.Initialize(data, profileCollected);") > 0 &&
+      Index(npcFix, "profilePickup.Initialize(data, profileCollected);") < Index(npcFix, "profileHeld = holdProfile && !profileCollected;") &&
+      Index(npcFix, "profileHeld = holdProfile && !profileCollected;") < Index(npcFix, "profilePickup.gameObject.SetActive(!profileCollected && !profileHeld);"),
+    "restoring a client keeps the profile and collected state on its paper, then only shows it while uncollected and not held");
 
 string restoreStored = Between(Src("CaseFolder", "FolderToHUDIcon.cs"), "public void RestoreStored()", "private void StoreFolder(bool restoring)");
 Check(Index(restoreStored, "StoreFolder(restoring: true);") > 0 && Index(restoreStored, "openFolderReturnToDesk.HideClosedFolderForRestore();") > Index(restoreStored, "StoreFolder(restoring: true);") &&
@@ -1151,13 +1153,17 @@ Check(skin.Contains("bool corkboard = face.GetComponentInParent<ProfileDragCard>
 Check(board.Contains("LayoutFeedbackUnderBoard();") && Between(board, "private void LayoutFeedbackUnderBoard()", "// =====").Contains("feedbackPanel.anchorMin = new Vector2(minX, 0f);"),
     "the feedback line is centred under the board, spanning its width");
 string teaching = Src("SideQuest1", "CorkboardTeaching.cs") + File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Levels", "Level_01", "town.json")) + Src("SideQuest1", "SideQuestSplash.cs");
-Check(!teaching.Contains("bounce back") && !teaching.Contains("CHECK BOARD") && teaching.Contains("The board checks itself"),
-    "Arthur's intro and the title card describe draft-then-check");
+Check(!teaching.Contains("bounce back") && !teaching.Contains("CHECK BOARD") &&
+      teaching.Contains("Pinning the fourth ID checks the whole board.") && teaching.Contains("The board checks itself"),
+    "Arthur explains the fourth-ID auto-check and the title card reinforces it");
 using (JsonDocument guideDoc = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Tutorials", "Level_01", "guide.json"))))
 {
     string lesson = guideDoc.RootElement.GetProperty("lessons").EnumerateArray().First(l => l.GetProperty("id").GetString() == "corkboard").GetRawText();
-    Check(!lesson.Contains("CheckBoardTarget") && lesson.Contains("the board checks itself") && !lesson.Contains("After every card") && !lesson.Contains("bounces back"),
-        "the corkboard lesson teaches draft-then-check");
+    Check(!lesson.Contains("CheckBoardTarget") && lesson.Contains("ui:Board Categories") &&
+          lesson.Contains("flag:board-flipped|corkboard:placed|corkboard:wrong") &&
+          lesson.Contains("corkboard:placed|corkboard:wrong") && !lesson.Contains("The board checks itself") &&
+          !lesson.Contains("After every card") && !lesson.Contains("bounces back"),
+        "the corkboard guide stays hands-on: categories, an ID flip, then a real placement; the auto-check was explained before the board");
 }
 
 // =====================================================================
@@ -1824,15 +1830,24 @@ string[] forbidden23 = { "PlayerProgressManager", "CampaignRewards", "Trust", "C
 Check(forbidden23.All(word => consult23.IndexOf(word, StringComparison.Ordinal) < 0),
     "visiting calls no trust, coin, XP, score, objective, clock or story command");
 string restore23 = Between(consult23, "public void Restore(", "private static Level1ConsultationRecord Copy(");
+// Living Plaza (2026-10-27): resume places Marie once the whole checkpoint is back (the receptionist is restored later), never walking.
+string applyRestore23 = Between(consult23, "private void ApplyRestore()", "private static Level1ConsultationRecord Copy(");
 Check(!restore23.Contains("SaveCheckpoint") && !restore23.Contains("TryStartVisit") && !restore23.Contains("GameplayEvents") &&
-      restore23.Contains("MoveToRoom(immediate: true)") && Between(consult23, "public void MoveToRoom(", "/// <summary>Marie or her spot").Contains("Move(save: false)"),
-    "restore puts Marie back quietly: no line, no event, no save");
+      restore23.Contains("restorePending = true;") && !applyRestore23.Contains("SaveCheckpoint") && !applyRestore23.Contains("TravelForQuest") &&
+      applyRestore23.Contains("MarieTripRules.Resume(") && applyRestore23.Contains("PlaceInRoom(save: false)") && applyRestore23.Contains("PlaceAtReception()") &&
+      Between(consult23, "private void Update()", "public void MoveToRoom(").Contains("Level1FieldCheckpointer.Active.IsReady") &&
+      Between(consult23, "public void MoveToRoom(", "private bool ReceptionDone").Contains("PlaceInRoom(save: false)"),
+    "restore puts Marie back quietly (room, front desk or plaza from the restored flags): no walk, no line, no event, no save");
 Check(consult23.Contains("TaxpayerNpcInteractable.VisitHandler = HandleVisit;") && !handover23.Contains("TaxpayerNpcInteractable.VisitHandler =") &&
       consult23.Contains("ClientCopyHandover.Instance.HandleClientVisit(npc)") && handover23.Contains("public bool OwnsClientVisits => phase != ClientCopyPhase.None;") &&
       handover23.Contains("ClientConsultation.Instance.MoveToRoom(immediate)") && !handover23.Contains("SetPositionAndRotation(feet"),
     "one owner: ClientConsultation moves Marie and takes taps, handing them to the Client Copy handover from approval on");
-Check(consult23.Contains("LevelGate.SideQuestDone") && consult23.Contains("if (movePending && !Seen()) Move(save: true);"),
-    "Marie moves after the side quest, only while neither she nor the spot is seen");
+// Living Plaza (2026-10-27): she walks (plaza -> front desk -> conference room) instead of a hidden teleport;
+// the hand-over is a condition read every frame, so finishing it early can never strand her.
+Check(consult23.Contains("LevelGate.SideQuestDone") && consult23.Contains("MarieTripRules.Next(leg, true, OfficeDoorGate.IsClosed, ReceptionDone,") &&
+      consult23.Contains("life.TravelForQuest(") && !consult23.Contains("SetPositionAndRotation(") && !consult23.Contains("!Seen()") &&
+      Src("FSM", "NPC", "NpcLife.cs").Contains("Mover.StageWhenUnseen(destination, questFacing,"),
+    "Marie walks after the side quest (doors open), checks in at the front desk and walks on once the hand-over is done; an unreachable route falls back to a move nobody sees");
 Check(checkpointer23.Contains("checkpoint.consultation = ClientConsultation.Instance.Capture();") &&
       checkpointer23.Contains("ClientConsultation.Instance.Restore(saved.consultation, solved || rewarded);") &&
       Index(checkpointer23, "ClientConsultation.Instance.Restore(") < Index(checkpointer23, "ClientCopyHandover.Instance.Restore("),
@@ -3367,11 +3382,14 @@ string[] answer30 = { "resident", "alien", "classification", "corner", "self-emp
 Check(built30.records.All(r => new[] { r.name, r.citizenship, r.born, r.address, r.reference, r.period, r.living, r.work, r.income, r.footer }
           .Where(v => v != null).All(v => answer30.All(w => v.IndexOf(w, StringComparison.OrdinalIgnoreCase) < 0) && !v.Contains("183"))),
     "the records state facts only (the completed answers live on page one, never inside the evidence)");
-Check(built30.arthurIntro.Length <= 2 && built30.arthurIntro[0] == "There you are, Elijah! Before you meet today's clients, I want you to see a case I finished." &&
+Check(built30.arthurIntro.Length <= 2 &&
+      built30.arthurIntro[0] == "There you are, Elijah! Before you get to know the locals, I want you to see a case I finished." &&
       built30.notes.Length == 4 && built30.notes[0] == "The ID gives his citizenship, the background where he lives." &&
-      built30.notes[3] == "Keep it handy. Now go meet the four clients: each will hand you a copy of their ID." &&
-      built30.notes.Concat(built30.arthurIntro).All(l => l.Split(' ').Length <= 18),
-    "Arthur: two short opening lines at most, and exactly four short comments across the reading (one at a time)");
+      built30.notes[3] == "Keep that file handy! Take a stroll around Coast Tales and hear people's stories. A friendly hello might turn up something useful." &&
+      built30.notes.Take(3).All(l => l.Split(' ').Length <= 18) &&
+      built30.arthurIntro.All(l => l.Split(' ').Length <= 22) &&
+      built30.notes[3].Split(' ').Length <= 24,
+    "Arthur opens with the locals, then sends the player to explore Coast Tales and hear people's stories");
 var town30 = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Levels", "Level_01", "town.json"))).RootElement;
 var fileContent30 = JsonSerializer.Deserialize<ReviewedFileContent>(town30.GetProperty("reviewedFile").GetRawText(), json);
 ReviewedFileRules.SetOverrides(fileContent30);
@@ -3402,11 +3420,12 @@ string objectives30 = File.ReadAllText(Path.Combine(root, "Assets", "Resources",
 string guide30 = File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Tutorials", "Level_01", "guide.json"));
 Check(Index(objectives30, "\"text\": \"Meet Arthur.\", \"trigger\": \"event:ArthurMet\"") > 0 &&
       Index(objectives30, "\"text\": \"Meet Arthur.\"") < Index(objectives30, "\"text\": \"Look over Arthur's file.\", \"trigger\": \"event:ReviewedFileLookedOver\"") &&
-      Index(objectives30, "\"text\": \"Look over Arthur's file.\"") < Index(objectives30, "\"text\": \"Meet the four clients and collect all 4 IDs.\", \"trigger\": \"event:AllProfilesCollected\"") &&
+      Index(objectives30, "\"text\": \"Look over Arthur's file.\"") < Index(objectives30, "\"text\": \"Explore the plaza, hear people's stories, and collect 4 IDs.\", \"trigger\": \"event:AllProfilesCollected\"") &&
       !objectives30.Contains("FirstClient") && !objectives30.Contains("Jhun-jhun"),
-    "objectives: Meet Arthur, Look over Arthur's file, then the four clients in any order (T24's three steps are gone)");
+    "objectives: meet Arthur, review his file, then explore and collect four IDs before returning to him");
 string tasks30 = Src("Data", "TaskListProvider.cs");
-Check(tasks30.Contains("\"Meet Arthur.\"") && tasks30.Contains("\"Look over Arthur's file.\"") && tasks30.Contains("\"Meet the four clients and collect all 4 IDs.\"") &&
+Check(tasks30.Contains("\"Meet Arthur.\"") && tasks30.Contains("\"Look over Arthur's file.\"") &&
+      tasks30.Contains("\"Explore the plaza, hear people's stories, and collect 4 IDs.\"") &&
       !tasks30.Contains("FirstClient"),
     "the built-in objectives copy matches objectives.json");
 Check(Src("Data", "ObjectiveTriggers.cs").Contains("ArthurMet = ReviewedFileRules.MetEvent") && Src("Data", "ObjectiveTriggers.cs").Contains("ArthurMet, ReviewedFileLookedOver,") &&
@@ -3416,11 +3435,13 @@ Check(Src("Data", "ObjectiveTriggers.cs").Contains("ArthurMet = ReviewedFileRule
 string take30 = Between(guide30, "\"id\": \"reviewed-take\"", "\"id\": \"reviewed-open\"");
 string open30Lesson = Between(guide30, "\"id\": \"reviewed-open\"", "\"id\": \"pickup\"");
 Check(guide30.Contains("{ \"step\": \"event:ArthurMet\", \"target\": \"Environment/Outside/Plaza/NPCS/NPC_TutorialGuide\"") &&
+      guide30.Contains("{ \"step\": \"event:TutorialGuideTalkedTo\", \"target\": \"Environment/Outside/Plaza/NPCS/NPC_TutorialGuide\"") &&
+      !guide30.Contains("\"step\": \"event:AllProfilesCollected\"") &&
       take30.Contains("\"when\": \"cue:ReviewedFilePresented|owns:arthur_reviewed_file\"") && take30.Contains("\"waitFor\": \"cue:ReviewedFileCollected|owns:arthur_reviewed_file\"") &&
       open30Lesson.Contains("\"point\": \"hud:reviewed\"") && open30Lesson.Contains("cue:ReviewedFileOpened|open:reviewed|flag:reviewed-complete") &&
       !guide30.Contains("\"id\": \"records\"") && !guide30.Contains("ClientRecordSleeve") && !guide30.Contains("FirstClient") &&
       Src("UI", "Guide", "GuideTargets.cs").Contains("case \"reviewed\": return HotbarTarget(InventoryCatalogue.ReviewedFile);"),
-    "guide: arrows to Arthur; the take page ends only on the committed collection, the open page only when the file really opened; T24's pages are gone");
+    "guide: arrows lead to Arthur at both plaza meetings, while the four-ID collection has no client route; file prompts still wait for real actions");
 string[] framing30 = { "lesson", "teach", "learn", "quiz", "test", "assessment", "tutorial", "correct answer" };
 Check(framing30.All(w => (Text24(take30 + open30Lesson) + " " + string.Join(" ", built30.notes) + " " + string.Join(" ", built30.arthurIntro))
           .IndexOf(w, StringComparison.OrdinalIgnoreCase) < 0),
@@ -3897,7 +3918,9 @@ Check(!ClientRecordRules.MayAttach("case_marie_001", "OpenCaseFolder") && !Clien
     "cross-folder drops are refused both ways, and Arthur's copy of the desk folder leaves Marie's records behind");
 string page25src = Src("SideQuest1", "AttachedRecordsPage.cs");
 Check(page25src.Contains("public int PageIndex => pageRole != null ? pages.FindPageIndexByRole(pageRole) : fixedPageIndex;") &&
-      Between(page25src, "private void LateUpdate()", "private void OnApplicationFocus(").Contains("bool onPage = pages.IsShowing && pages.CurrentPageIndex == PageIndex;") &&
+      Between(page25src, "private void LateUpdate()", "private void OnApplicationFocus(").Contains("RectTransform surface = pages.IsShowing ? pages.SurfaceFor(PageIndex) : null;") &&
+      Between(page25src, "private void LateUpdate()", "private void OnApplicationFocus(").Contains("bool onPage = surface != null;") &&
+      Between(Src("UI", "CaseFolderUI.cs"), "public RectTransform SurfaceFor(", "public void NextPage()").Contains("return currentPageIndex == pageIndex ? GetPageTurnRoot() : null;") &&
       Between(page25src, "public void ReadingPose(", "private int SheetOrdinal(").Contains("bool right = !card && SheetOrdinal(paper) % 2 == 1;") &&
       page25src.Contains("pages.Closing += page.GatherAll;"),
     "the same per-folder controls: page by role, records only on their open page, the 2316 read beside the background, closing gathers them");
@@ -3955,14 +3978,19 @@ Check(level2Sources25.All(f => !File.ReadAllText(f).Contains("CaseRecordsDesk") 
 JsonElement town26 = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Levels", "Level_01", "town.json"))).RootElement;
 string teaching26 = Src("SideQuest1", "CorkboardTeaching.cs");
 var intro26 = town26.GetProperty("arthurBoardIntro").EnumerateArray().ToList();
-Check(intro26.Count == 3 && intro26.All(l => l.GetProperty("who").GetString() == "npc") &&
+Check(intro26.Count == 4 && intro26.All(l => l.GetProperty("who").GetString() == "npc") &&
       intro26.All(l => teaching26.Contains("Npc(\"" + l.GetProperty("text").GetString() + "\")")) &&
-      teaching26.Contains("public const int MaxIntroLines = 3;") &&
+      teaching26.Contains("public const int MaxIntroLines = 4;") &&
       Src("SideQuest1", "TownContentLoader.cs").Contains("intro.Count > CorkboardTeaching.MaxIntroLines"),
-    "Arthur's board introduction: three short lines, the same in town.json and the built-in copy; a longer edit is refused");
+    "Arthur's four short category and medal screens match the built-in copy; a longer edit is refused");
 string introText26 = string.Join(" ", intro26.Select(l => l.GetProperty("text").GetString()));
-Check(new[] { "Marie", "Jhun", "Milo", "Zorbix", "born Filipino", "overseas", "ticket home", "fell for this place", "Some " }.All(w => introText26.IndexOf(w, StringComparison.Ordinal) < 0),
-    "the four near-answer biographies are gone from the introduction (a reminder, not every client again)");
+string introLower26 = introText26.ToLowerInvariant();
+Check(new[] { "Marie", "Jhun", "Milo", "Zorbix", "born Filipino", "ticket home", "fell for this place" }.All(w => introText26.IndexOf(w, StringComparison.OrdinalIgnoreCase) < 0) &&
+      new[] { "resident citizens", "non-resident citizens", "resident aliens", "non-resident aliens" }.All(introLower26.Contains) &&
+      introLower26.Contains("no spaceship required") && introLower26.Contains("categories") &&
+      introLower26.Contains("four right earns gold") && introLower26.Contains("two earns silver") &&
+      introLower26.Contains("zero or one earns bronze"),
+    "the playful introduction explains four category names and first-check medals, never assigning a client");
 var categories26 = town26.GetProperty("boardCategories").EnumerateArray().ToList();
 Check(categories26.Count == 4 && categories26.Select(c => c.GetProperty("category").GetString()).SequenceEqual(new[] { "ResidentCitizen", "NonResidentCitizen", "ResidentAlien", "NonResidentAlien" }) &&
       categories26.All(c => teaching26.Contains("Meaning = \"" + c.GetProperty("meaning").GetString() + "\"")) &&
@@ -3974,12 +4002,57 @@ Check(new[] { "TaxpayerProfile", "OccupyingCard", "CorrectClassification", "Prof
           .All(w => referenceCode26.IndexOf(w, StringComparison.Ordinal) < 0) &&
       reference26.Contains("foreach (CorkboardTeaching.CategoryMeaning category in CorkboardTeaching.Categories)"),
     "the reference is static and client-independent: it never reads a profile, a placement or an answer, never checks, saves or rewards");
-Check(Between(reference26, "public void Open()", "public void Close()").Contains("if (IsOpen || board == null || !board.ReferenceMayOpen) return;") &&
+Check(Between(reference26, "public void Open()", "public void Close()").Contains("if (targetOpen || board == null || !board.ReferenceMayOpen) return;") &&
       reference26.Contains("shade.raycastTarget = true;") && reference26.Contains("outside.onClick.AddListener(Close);") &&
       reference26.Contains("paperEdge.raycastTarget = true;") &&
       Body(reference26, "private void LateUpdate()").Contains("DialogueUI.IsAnyDialogueActive || InGameSettings.IsOpen || HudRewardScreen.AnyOpen)) Close();") &&
       !Between(reference26, "public void Close()", "private void LateUpdate()").Contains("board."),
     "the reference never swallows a pending drag or check, blocks touches to the board and world while open, and closing moves no card");
+string openReference26 = Between(reference26, "public void Open()", "public void Close()");
+string closeReference26 = Between(reference26, "public void Close()", "private void BeginMotion(bool opening)");
+string beginReferenceMotion26 = Between(reference26, "private void BeginMotion(bool opening)", "private void LateUpdate()");
+string referenceMotion26 = Between(reference26, "private void LateUpdate()", "private void FinishClose()");
+string finishReferenceClose26 = Body(reference26, "private void FinishClose()");
+Check(reference26.Contains("private const float OpenSeconds = 0.26f, CloseSeconds = 0.18f;") &&
+      openReference26.Contains("panel.localScale = Vector3.one * 0.9f;") &&
+      openReference26.Contains("panelGroup.alpha = backdropGroup.alpha = 0f;") &&
+      openReference26.Contains("BeginMotion(true);") &&
+      closeReference26.Contains("if (!IsOpen || !targetOpen) return;") &&
+      closeReference26.Contains("BeginMotion(false);") &&
+      !closeReference26.Contains("panel.gameObject.SetActive(false);") &&
+      beginReferenceMotion26.Contains("fromAlpha = panelGroup.alpha;") &&
+      beginReferenceMotion26.Contains("fromScale = panel.localScale;") &&
+      beginReferenceMotion26.Contains("panelGroup.blocksRaycasts = backdropGroup.blocksRaycasts = true;") &&
+      referenceMotion26.Contains("Time.unscaledDeltaTime") && referenceMotion26.Contains("HudTheme.EaseOutBack(t)") &&
+      referenceMotion26.Contains("if (!targetOpen) FinishClose();") &&
+      finishReferenceClose26.Contains("panel.gameObject.SetActive(false);") &&
+      finishReferenceClose26.Contains("backdrop.gameObject.SetActive(false);") &&
+      reference26.Contains("private void OnDisable() => FinishClose();"),
+    "the category reference pops in and out, keeps blocking touches until close settles, reverses from its current pose, and cleans up on disable");
+string ambient26 = Src("SideQuest1", "AmbientNpcInteractable.cs");
+string ambientCode26 = Code30(ambient26);
+string endTalk26 = Body(ambientCode26, "private void EndTalk(bool completed)");
+Check(ambient26.Contains("[RequireComponent(typeof(NpcStatusMarker))]") &&
+      ambientCode26.Contains("if (GetComponent<NpcStatusMarker>() == null) gameObject.AddComponent<NpcStatusMarker>();") &&
+      ambientCode26.Contains("ArthurOpening.Active != null && !ArthurOpening.Active.PlazaConversationsOpen") &&
+      ambientCode26.Contains("NpcAvailability.Unavailable : NpcAvailabilityRules.Colleague(hasSpoken)") &&
+      Index(endTalk26, "if (completed)") >= 0 &&
+      Index(endTalk26, "hasSpoken = true;") > Index(endTalk26, "if (completed)") &&
+      Index(endTalk26, "nextTalk++;") > Index(endTalk26, "hasSpoken = true;") &&
+      Index(endTalk26, "hasSpoken = true;") == endTalk26.LastIndexOf("hasSpoken = true;"),
+    "ambient plaza NPCs get a status marker, stay unavailable until Arthur opens plaza conversations, and complete only after a finished talk");
+Check(new[] { "SaveNow", "PlayerProgressManager", "CampaignRewards", "GrantRewards", "TownEvents", "ObjectiveTriggers", "InventoryRules" }
+      .All(w => ambientCode26.IndexOf(w, StringComparison.Ordinal) < 0),
+    "ambient small talk changes no saved progress, reward, inventory, or gameplay event");
+string openingAvailabilitySource26 = Src("SideQuest1", "ArthurOpening.cs");
+string openingAvailability26 = Between(openingAvailabilitySource26, "private NpcAvailability? OpeningAvailability", "private bool HandleOpeningTap");
+string guideAvailability26 = Between(Src("SideQuest1", "TutorialNpcController.cs"), "public NpcAvailability Availability", "private bool OpeningOpen");
+Check(openingAvailability26.Contains("practice ? (NpcAvailability?)null") &&
+      openingAvailability26.Contains("ReviewedFileRules.OpeningAvailable(introDone, OpeningLessonsDone()) ? NpcAvailability.Available") &&
+      openingAvailability26.Contains("introDone && npc != null && !npc.HasAppeared ? NpcAvailability.Completed") &&
+      guideAvailability26.Contains("bool boardPending = hasAppeared && !hasShownCompletionPanel;") &&
+      guideAvailability26.Contains("!boardPending && OpeningAvailability != null ? OpeningAvailability(this) : null"),
+    "Arthur shows a completed marker after his file talk during free plaza exploration, then the board's available marker takes over after all IDs");
 string board26 = Src("SideQuest1", "CorkboardSideQuestManager.cs");
 string mayOpen26 = Between(board26, "public bool ReferenceMayOpen", "public bool ReferenceOpen");
 Check(mayOpen26.Contains("if (!CanInteract || checking || autoCheckAt >= 0f || revealHeld) return false;") && mayOpen26.Contains("card.IsBeingMoved") &&
@@ -4002,19 +4075,21 @@ string LessonText26(string id) => string.Join(" ", lessons26.First(l => l.GetPro
     .Select(p => p.TryGetProperty("text", out JsonElement t) ? t.GetString() : ""));
 // 2026-10-27 revision: 95 -> 94 (Arthur's file +4 hands-on steps, binder +1 flip, board +1 flip, desk +1 flip;
 // welcome -1, notes -2, office welcome -2, book pages -1, investigate -2, desk orientation merged).
-Check(lessons26.Sum(l => l.GetProperty("pages").GetArrayLength()) == 91 &&
-      Pages26("case-folder") == 5 && Pages26("profiles-icon") == 3 && Pages26("guide-appears") == 2 && Pages26("corkboard") == 4 &&
+Check(lessons26.Sum(l => l.GetProperty("pages").GetArrayLength()) == 90 &&
+      Pages26("case-folder") == 5 && Pages26("profiles-icon") == 3 && Pages26("guide-appears") == 2 && Pages26("corkboard") == 3 &&
       Pages26("investigate") == 1 && Pages26("reviewed-inspect") == 6,
-    "guide pages: 100 before T25/T26 -> 95 after T26 -> 94 after the 2026-10-27 revision -> 95 with the medal page -> 91 after the second polish (shorter, hands shown on the real records)");
-Check(Text24(Between(guide30, "\"id\": \"corkboard\"", "\"id\": \"sidequest-card\"")).Contains("Gold for all four right, Silver for two, Bronze for fewer") &&
-      Text24(Between(guide30, "\"id\": \"sidequest-card\"", "\"id\": \"to-office\"")).Contains("Gold, Silver or Bronze") &&
-      ClassificationCheck.LastCardPrompt.Contains("medal") && teaching26.Contains("that first check sets your medal"),
-    "the medals are introduced before the first check (and named again on the reward card), in the job's words");
+    "guide pages: the shorter route keeps the file and ID hands-on pages, three board practice pages, and removes the repeated medal page");
+string corkboardText26 = Text24(Between(guide30, "\"id\": \"corkboard\"", "\"id\": \"sidequest-card\""));
+string resultCardText26 = Text24(Between(guide30, "\"id\": \"sidequest-card\"", "\"id\": \"to-office\""));
+Check(introLower26.Contains("four right earns gold") && introLower26.Contains("two earns silver") && introLower26.Contains("zero or one earns bronze") &&
+      !corkboardText26.Contains("Gold for all four right, Silver for two, Bronze for fewer") &&
+      resultCardText26.Contains("Gold, Silver or Bronze") && ClassificationCheck.LastCardPrompt.Contains("medal"),
+    "Arthur teaches first-check medal thresholds before opening the board; the board stays hands-on and the result still names the medal");
 string corkLesson26 = lessons26.First(l => l.GetProperty("id").GetString() == "corkboard").GetRawText();
 Check(corkLesson26.Contains("\"point\": \"ui:Board Categories\"") && reference26.Contains("public const string ControlName = \"Board Categories\";") &&
       corkLesson26.Contains("corkboard:placed|corkboard:wrong") && !LessonText26("corkboard").Contains("Welcome to the corkboard") &&
       !LessonText26("corkboard").Contains("where are they from, and where do they spend their year"),
-    "board guidance: one target at a time (the categories, the first drag, how the check works); the reminder lives in Arthur's three lines");
+    "board guidance: one target at a time (the categories, the first drag, how the check works); category names and medals live in Arthur's four lines");
 string allText26 = string.Join(" ", lessons26.Select(l => LessonText26(l.GetProperty("id").GetString())));
 Check(new[] { "teaching", "learning", "lesson", "quiz", "test", "assessment", "Good tax detectives" }.All(w =>
           !System.Text.RegularExpressions.Regex.IsMatch(allText26, @"\b" + System.Text.RegularExpressions.Regex.Escape(w), System.Text.RegularExpressions.RegexOptions.IgnoreCase)) &&
@@ -4026,7 +4101,7 @@ Check(lessons26.Where(l => l.GetProperty("id").GetString() != "welcome").SelectM
     "no extra welcome panel, reward card or detour was added");
 string objectives26 = File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Levels", "Level_01", "objectives.json"));
 string tasks26 = Src("Data", "TaskListProvider.cs");
-string[] sq26 = { "Meet Arthur.", "Look over Arthur's file.", "Meet the four clients and collect all 4 IDs.", "Talk to Arthur in the plaza.", "Organize the four IDs on Arthur's corkboard." };
+string[] sq26 = { "Meet Arthur.", "Look over Arthur's file.", "Explore the plaza, hear people's stories, and collect 4 IDs.", "Talk to Arthur in the plaza.", "Organize the four IDs on Arthur's corkboard." };
 Check(sq26.All(s => objectives26.Contains("\"text\": \"" + s + "\"") && tasks26.Contains("\"" + s + "\"")) && !objectives26.Contains("Finish Side Quest 1 at the corkboard."),
     "objectives.json and its built-in copy agree on the side quest steps (same triggers, job wording)");
 string[] trainingDrills26 = Directory.GetFiles(Path.Combine(root, "Assets", "Resources", "Tutorials", "Training", "Drills"), "*.json");

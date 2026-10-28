@@ -49,6 +49,7 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
     [SerializeField] private TaxpayerProfileWorldPickup profilePickup;
 
     private NpcStateMachine stateMachine;
+    private NpcLife npcLife;
     private HighlightEffect pointerHighlight;
     private bool hasBeenTalkedTo;
     private bool dialogueSessionActive;
@@ -65,6 +66,10 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
 
     /// <summary>T24 hook: the talk is done but the profile waits for its owner (none since T30).</summary>
     public bool IsProfileHeld => profileHeld;
+
+    /// <summary>True while this client still has an uncollected profile handover.</summary>
+    public bool HasPendingHandover => profileHeld ||
+        (hasBeenTalkedTo && profilePickup != null && !profilePickup.IsCollected);
 
     /// <summary>
     /// The plaza rounds' order (T24; ArthurOpening since T30). True = this client is
@@ -85,6 +90,9 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
 
     private bool WaitingForTurn => !hasBeenTalkedTo && WaitingForRound != null && WaitingForRound(this);
 
+    /// <summary>Not this client's turn yet (the plaza rounds have not opened). Read-only, for presentation.</summary>
+    public bool IsWaitingForRound => WaitingForTurn;
+
     /// <summary>
     /// Resume (T04): this NPC's conversation already happened in the saved run.
     /// Retires the NPC without the dialogue, the drop animation or the score
@@ -103,9 +111,9 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
         // The paper always knows its profile (the profile viewer and the n/1
         // counter read Marie's paper after the side quest); it only lies in the
         // world while it still has to be collected.
-        profilePickup.Initialize(data);
+        profilePickup.Initialize(data, profileCollected);
         profileHeld = holdProfile && !profileCollected;
-        if (!profileCollected && !profileHeld) profilePickup.gameObject.SetActive(true);
+        profilePickup.gameObject.SetActive(!profileCollected && !profileHeld);
     }
 
     /// <summary>True while this NPC owns the shared conversation.</summary>
@@ -122,6 +130,9 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
     public static System.Func<TaxpayerNpcInteractable, NpcAvailability?> VisitAvailability;
 
     private bool VisitOpen => hasBeenTalkedTo && VisitAvailability != null && VisitAvailability(this) == NpcAvailability.Available;
+
+    private bool CanOfferFollowUpSmallTalk => hasBeenTalkedTo && !HasPendingHandover &&
+        npcLife != null && npcLife.TryGetFollowUpSmallTalkLine(out _);
 
     /// <summary>
     /// T08: a visit conversation after the plaza talk (the shared dialogue
@@ -143,6 +154,17 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
         stateMachine.ChangeState(new NpcDialogueState());
         ClearPointerFocus();
         return true;
+    }
+
+    private bool TryStartFollowUpSmallTalk()
+    {
+        if (!hasBeenTalkedTo || HasPendingHandover || npcLife == null ||
+            !npcLife.TryGetFollowUpSmallTalkLine(out string line)) return false;
+        var lines = new List<DialogueLine>
+        {
+            new DialogueLine(DialogueSpeaker.Npc, line, "default", npcDisplayName)
+        };
+        return TryStartVisit(lines, null, null);
     }
 
     /// <summary>
@@ -199,6 +221,7 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
     private void Awake()
     {
         stateMachine = GetComponent<NpcStateMachine>();
+        npcLife = GetComponent<NpcLife>();
         pointerHighlight = HighlightEffect.For(this);
 
         if (dialogueUI == null)
@@ -253,7 +276,7 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
 
     private bool CanFocusPointer(PointerEventData eventData)
     {
-        return eventData != null && (!hasBeenTalkedTo || VisitOpen) && !dialogueSessionActive && !WaitingForTurn &&
+        return eventData != null && (!hasBeenTalkedTo || VisitOpen || CanOfferFollowUpSmallTalk) && !dialogueSessionActive && !WaitingForTurn &&
                InteractionRange.PlayerCanReach(this) &&
                !DialogueUI.IsAnyDialogueActive && !VirtualJoystick.BlocksWorldInput &&
                !MobileInputGuard.IsPointerOverUI(eventData.position);
@@ -277,7 +300,8 @@ public class TaxpayerNpcInteractable : MonoBehaviour, IPointerEnterHandler, IPoi
         // T08: after the plaza talk, a visit owner may take the tap (Marie's handover).
         if (hasBeenTalkedTo)
         {
-            if (VisitHandler != null) VisitHandler(this);
+            if (VisitHandler != null && VisitHandler(this)) return;
+            TryStartFollowUpSmallTalk();
             return;
         }
 

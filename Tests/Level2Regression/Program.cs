@@ -328,7 +328,7 @@ Check(Src("Scripts/Level2/Level2FindingsSheet.cs").Contains("observation.enableA
 string folderUiSrc = Src("Scripts/UI/CaseFolderUI.cs");
 Check(deskStampsSrc.Contains("Destroy(old)") && deskStampsSrc.Contains("GetComponents<StampSetInteractable>()") && deskStampsSrc.Contains("old.enabled = false"),
     "Level 2 replaces the old stamp-set action and stamp drags in its own scene only");
-Check(deskStampsSrc.Contains("Folder.TurnToPage(StampPageIndex(), () =>") && folderUiSrc.Contains("public void TurnToPage(int target") && folderUiSrc.Contains("DeskMotion.TurnPage(root"),
+Check(deskStampsSrc.Contains("Folder.TurnToPage(StampPageIndex(), () =>") && folderUiSrc.Contains("public void TurnToPage(int target") && folderUiSrc.Contains("pageTurn.Begin(root, pageTurnRestPosition"),
     "using the stamps leafs the folder to the stamp page (page 1, or Final Assessment) with page-turn flips");
 Check(deskStampsSrc.Contains("Mathf.Clamp(right + ColumnGap, 0.08f, 0.9f)") && deskStampsSrc.Contains("float centre = (bottom + top) * 0.5f") &&
       stampDragSrc.Contains("if (lifted && owner != null) owner.TryFloatPose(slot, out home, out homeUp, out size)") &&
@@ -2154,7 +2154,9 @@ Check(bookIconSrc.Contains("SideQuestSplash.IsShowing") && bookIconSrc.Contains(
 Check(HudIconArt.Icons.Contains("book") && HudIconArt.Render(32, "book").Count(px => px.a > 200) > 200,
     "the book icon has its own drawn art");
 string bookUiSrc = Src("Scripts/UI/TaxCodeBookUI.cs");
-Check(bookUiSrc.Contains("// The book always opens on page 1.\r\n        currentSectionIndex = 0;") && !bookUiSrc.Contains("shownLevelLeaves") && bookUiSrc.Contains("FitBody()"),
+string bookUiNormalized = bookUiSrc.Replace("\r\n", "\n");
+Check(bookUiNormalized.Contains("// The book always opens on page 1.\n        currentSectionIndex = 0;") &&
+      !bookUiSrc.Contains("shownLevelLeaves") && bookUiSrc.Contains("FitBody()"),
     "the book always opens on page 1, and long leaves shrink to fit");
 string faceSrc = Src("Scripts/Level2/AnnotationPaperCollectionFace.cs");
 Check(faceSrc.Contains("new ToolkitBuilder(layer) { SelfLight = 0.5f }") && faceSrc.Contains("view.documentLayer.AlwaysComposite = true;") &&

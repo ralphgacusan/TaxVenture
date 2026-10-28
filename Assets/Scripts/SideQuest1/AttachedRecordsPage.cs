@@ -164,9 +164,11 @@ public sealed class AttachedRecordsPage : MonoBehaviour, IClientRecordHolder
     // =========================================================
 
     /// <summary>The page paper's frame from its world corners: centre, +Z its top, +Y out toward the reader.</summary>
-    private void PagePose(out Vector3 centre, out Quaternion rotation, out float width, out float height)
+    private void PagePose(out Vector3 centre, out Quaternion rotation, out float width, out float height) =>
+        PagePose(pages.PaperRect, out centre, out rotation, out width, out height);
+
+    private static void PagePose(RectTransform paper, out Vector3 centre, out Quaternion rotation, out float width, out float height)
     {
-        RectTransform paper = pages.PaperRect;
         paper.GetWorldCorners(Corners);   // bottom-left, top-left, top-right, bottom-right
         Vector3 right = Corners[3] - Corners[0], up = Corners[1] - Corners[0];
         width = right.magnitude;
@@ -177,9 +179,13 @@ public sealed class AttachedRecordsPage : MonoBehaviour, IClientRecordHolder
         rotation = Quaternion.LookRotation(pageUp, normal);
     }
 
-    private void FollowPage()
+    private void FollowPage(RectTransform surface = null)
     {
-        PagePose(out Vector3 centre, out Quaternion rotation, out float width, out _);
+        Vector3 centre;
+        Quaternion rotation;
+        float width;
+        if (surface != null) PagePose(surface, out centre, out rotation, out width, out _);
+        else PagePose(out centre, out rotation, out width, out _);
         pageAnchor.SetPositionAndRotation(centre, rotation);
         float parentScale = Mathf.Max(1e-6f, recordsRoot.lossyScale.x);
         pageAnchor.localScale = Vector3.one * (width / referencePageWidth / parentScale);
@@ -211,9 +217,11 @@ public sealed class AttachedRecordsPage : MonoBehaviour, IClientRecordHolder
     {
         if (pageAnchor == null || folderRoot == null || !folderRoot.gameObject.activeInHierarchy) return;
         // Attached records show only on their page of an open folder (a closed desk folder shows none).
-        bool onPage = pages.IsShowing && pages.CurrentPageIndex == PageIndex;
+        // During a page turn they ride the surface that prints their page (a turning leaf's front included).
+        RectTransform surface = pages.IsShowing ? pages.SurfaceFor(PageIndex) : null;
+        bool onPage = surface != null;
         if (pageAnchor.gameObject.activeSelf != onPage) pageAnchor.gameObject.SetActive(onPage);
-        FollowPage();
+        FollowPage(surface);
         // Interruptions put everything back (a safe, idle folder).
         if (outOrder.Count > 0 && (DialogueUI.IsAnyDialogueActive || InGameSettings.IsOpen || HudRewardScreen.AnyOpen)) GatherAll();
         Camera camera = ViewCamera;

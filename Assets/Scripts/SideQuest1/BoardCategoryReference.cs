@@ -33,8 +33,13 @@ public sealed class BoardCategoryReference : MonoBehaviour
     private CorkboardSideQuestManager board;
     private RectTransform panel;
     private RectTransform backdrop;
+    private CanvasGroup panelGroup, backdropGroup;
+    private const float OpenSeconds = 0.26f, CloseSeconds = 0.18f;
+    private bool targetOpen, animating;
+    private float motionTime, fromAlpha;
+    private Vector3 fromScale;
 
-    /// <summary>True while the four meanings are open.</summary>
+    /// <summary>True through opening, display and closing, so board input stays blocked.</summary>
     public bool IsOpen => panel != null && panel.gameObject.activeSelf;
 
     public static BoardCategoryReference Create(CorkboardSideQuestManager board)
@@ -133,7 +138,9 @@ public sealed class BoardCategoryReference : MonoBehaviour
             y += 150f;
         }
         panel = paperFrame;
-        panel.gameObject.SetActive(false);
+        panelGroup = panel.gameObject.AddComponent<CanvasGroup>();
+        backdropGroup = backdrop.gameObject.AddComponent<CanvasGroup>();
+        FinishClose();
     }
 
     // =========================================================
@@ -142,29 +149,74 @@ public sealed class BoardCategoryReference : MonoBehaviour
 
     public void Toggle()
     {
-        if (IsOpen) Close();
+        if (targetOpen) Close();
         else Open();
     }
 
     public void Open()
     {
-        if (IsOpen || board == null || !board.ReferenceMayOpen) return;
+        if (targetOpen || board == null || !board.ReferenceMayOpen) return;
+        if (!IsOpen)
+        {
+            panel.localScale = Vector3.one * 0.9f;
+            panelGroup.alpha = backdropGroup.alpha = 0f;
+        }
         backdrop.gameObject.SetActive(true);
         panel.gameObject.SetActive(true);
+        BeginMotion(true);
         if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_paper_pickup_01", 0.45f);
     }
 
     public void Close()
     {
-        if (!IsOpen) return;
-        panel.gameObject.SetActive(false);
-        backdrop.gameObject.SetActive(false);
+        if (!IsOpen || !targetOpen) return;
+        // Keep the backdrop and IsOpen until the exit finishes: no touch-through.
+        BeginMotion(false);
         if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_paper_place_01", 0.4f);
+    }
+
+    private void BeginMotion(bool opening)
+    {
+        targetOpen = opening;
+        animating = true;
+        motionTime = 0f;
+        fromAlpha = panelGroup.alpha;
+        fromScale = panel.localScale;
+        panelGroup.interactable = opening;
+        panelGroup.blocksRaycasts = backdropGroup.blocksRaycasts = true;
     }
 
     private void LateUpdate()
     {
-        // A conversation, Settings or a result card takes over: the reference steps aside.
+        if (IsOpen && (board == null || !board.CanInteract)) { FinishClose(); return; }
         if (IsOpen && (DialogueUI.IsAnyDialogueActive || InGameSettings.IsOpen || HudRewardScreen.AnyOpen)) Close();
+        if (!animating) return;
+        motionTime += Time.unscaledDeltaTime;
+        float t = Mathf.Clamp01(motionTime / (targetOpen ? OpenSeconds : CloseSeconds));
+        float fade = t * t * (3f - 2f * t);
+        panelGroup.alpha = backdropGroup.alpha = Mathf.Lerp(fromAlpha, targetOpen ? 1f : 0f, fade);
+        float pop = targetOpen ? HudTheme.EaseOutBack(t) : t * t;
+        panel.localScale = Vector3.LerpUnclamped(fromScale, Vector3.one * (targetOpen ? 1f : 0.9f), pop);
+        if (t < 1f) return;
+        animating = false;
+        if (!targetOpen) FinishClose();
+        else
+        {
+            panel.localScale = Vector3.one;
+            panelGroup.alpha = backdropGroup.alpha = 1f;
+        }
     }
+
+    private void FinishClose()
+    {
+        targetOpen = animating = false;
+        if (panel != null)
+        {
+            panel.localScale = Vector3.one;
+            panel.gameObject.SetActive(false);
+        }
+        if (backdrop != null) backdrop.gameObject.SetActive(false);
+    }
+
+    private void OnDisable() => FinishClose();
 }

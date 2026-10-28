@@ -151,17 +151,29 @@ foreach (var p in guide.GetProperty("guide").GetProperty("portraits").EnumerateA
 }
 Check(guide.GetProperty("guide").GetProperty("portraits").EnumerateArray().Any(p => Str(p, "mood") == "default"), "has a default portrait");
 
-// Waypoints point at real objective steps; every step has a waypoint.
+// Waypoints point at real objective steps. The four-ID collection step stays unpointed;
+// the following talk step leads back to Arthur rather than sending the player to clients.
 var waypointSteps = new HashSet<string>();
-foreach (var w in guide.GetProperty("waypoints").EnumerateArray())
+var waypointEntries = guide.GetProperty("waypoints").EnumerateArray().ToArray();
+foreach (var w in waypointEntries)
 {
     string step = ObjectiveTriggers.Normalize(Str(w, "step"));
     waypointSteps.Add(step);
     Check(stepTriggers.Contains(step), "waypoint step exists in objectives.json: " + step);
     Check(!string.IsNullOrWhiteSpace(Str(w, "target")), "waypoint has a target: " + step);
 }
+var deliberatelyUnpointedSteps = new HashSet<string> { "event:AllProfilesCollected" };
 foreach (string step in stepTriggers)
-    Check(waypointSteps.Contains(step), "objective step has arrows: " + step);
+    Check(waypointSteps.Contains(step) == !deliberatelyUnpointedSteps.Contains(step),
+        "objective waypoint policy is explicit for " + step);
+string WaypointTarget(string step) => waypointEntries
+    .Where(w => ObjectiveTriggers.Normalize(Str(w, "step")) == step)
+    .Select(w => Str(w, "target")).FirstOrDefault();
+Check(WaypointTarget("event:ArthurMet") == "Environment/Outside/Plaza/NPCS/NPC_TutorialGuide" &&
+      WaypointTarget("event:TutorialGuideTalkedTo") == "Environment/Outside/Plaza/NPCS/NPC_TutorialGuide",
+    "blue guidance leads to Arthur for the first plaza meeting and again after the four IDs are collected");
+Check(stepTriggers.Contains("event:AllProfilesCollected") && WaypointTarget("event:AllProfilesCollected") == null,
+    "the four-ID collection event has no blue route to the four clients");
 
 // Lessons.
 var ids = new HashSet<string>();
@@ -345,10 +357,23 @@ foreach (var tp in town.GetProperty("taxpayers").EnumerateArray())
 }
 Check(townIds.SetEquals(new[] { "npc_marie", "npc_jhunjhun", "npc_milo", "npc_zorbix" }), "town.json covers all four plaza clients");
 var intro = town.GetProperty("arthurBoardIntro").EnumerateArray().ToList();
-Check(intro.Count == CorkboardTeaching.IntroLines.Count, "Arthur's intro matches the built-in copy");
+Check(intro.Count == 4 && intro.Count == CorkboardTeaching.IntroLines.Count, "Arthur's four-line intro matches the built-in copy");
 for (int i = 0; i < intro.Count; i++)
-    Check(Str(intro[i], "text") == CorkboardTeaching.IntroLines[i].Value && !Labelled(Str(intro[i], "text")), $"Arthur intro line {i + 1} matches and stays indirect");
+    Check(Str(intro[i], "text") == CorkboardTeaching.IntroLines[i].Value, $"Arthur intro line {i + 1} matches");
+string introText = string.Join(" ", intro.Select(l => Str(l, "text")));
+string introLower = introText.ToLowerInvariant();
+Check(new[] { "resident citizens", "non-resident citizens", "resident aliens", "non-resident aliens" }.All(introLower.Contains) &&
+      new[] { "four right earns gold", "two earns silver", "zero or one earns bronze", "no spaceship required", "categories" }.All(introLower.Contains) &&
+      new[] { "marie", "jhun", "milo", "zorbix" }.All(n => !introLower.Contains(n)),
+    "Arthur names all four categories and the first-check medal thresholds without assigning a client");
 Check(!File.ReadAllText(Res("Tutorials/Level_01/guide.json")).Contains("corkboard-wrong"), "the generic wrong-corner hint lesson is gone (Arthur reacts instead)");
+var lookLesson = guide.GetProperty("lessons").EnumerateArray().FirstOrDefault(l => Str(l, "id") == "look");
+Check(lookLesson.ValueKind == JsonValueKind.Object &&
+      Str(lookLesson.GetProperty("pages")[1], "text") == "Perfect! Now you can take in the whole scenery of Coast Tales. Walk and look together to explore!" &&
+      reviewedNotes.Length == 4 &&
+      reviewedNotes[3].GetString().Contains("Take a stroll around Coast Tales") &&
+      reviewedNotes[3].GetString().Contains("A friendly hello might turn up something useful."),
+    "Arthur sends the player to explore Coast Tales and hear people's stories after the file");
 
 // ================= Office Hours (Phase 2) =================
 Check(OfficeHoursMath.ParseTime("7:30 AM", -1) == 7 * 3600 + 30 * 60, "parse 7:30 AM");

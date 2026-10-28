@@ -118,9 +118,12 @@ public sealed class HudFeedback : MonoBehaviour
     {
         HudFeedback feedback = Instance;
         if (feedback == null || feedback.toasts == null) return;
-        if (trust.Applied && trust.Amount > 0)
+        bool earnedTrust = trust.Applied && trust.Amount > 0;
+        bool earnedCoins = coins.Applied && coins.Amount > 0;
+        if (!earnedTrust && !earnedCoins) return;
+        if (earnedTrust)
             feedback.toasts.Show(HudToastKind.Reputation, $"Public Trust +{trust.Amount}", trust.Reason, "trust");
-        if (coins.Applied && coins.Amount > 0)
+        if (earnedCoins)
             feedback.toasts.Show(HudToastKind.Badge, $"+{coins.Amount} coins", coins.Reason, "coins");
         feedback.pendingCampaign.Add(new PendingCampaign { Trust = trust, Coins = coins, Origin = origin });
         if (feedback.progression != null) feedback.progression.HoldFillFor(0.85f);
@@ -269,12 +272,15 @@ public sealed class HudFeedback : MonoBehaviour
                     Vector3 p = cam.WorldToScreenPoint(grant.Origin.Value);
                     if (p.z > 0f) from = p;
                 }
-                if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_reward_points_01", 0.65f);
-                if (grant.Trust.Applied)
+                if ((grant.Trust.Applied && grant.Trust.Amount > 0 || grant.Coins.Applied && grant.Coins.Amount > 0) &&
+                    AudioManager.Instance != null)
+                    AudioManager.Instance.PlayEffect("sfx_reward_points_01", 0.65f);
+                if (grant.Trust.Applied && grant.Trust.Amount > 0)
                     fx.Burst(HudTheme.Heart, HudTheme.Reputation, Mathf.Clamp(grant.Trust.Amount, 1, MaxHearts), from + new Vector2(40f, 0f),
                         progression.ReputationBar, 40f);
-                if (grant.Coins.Applied)
-                    fx.Burst(HudTheme.Circle, HudTheme.Exp, 6, from + new Vector2(-40f, 0f), progression.WalletLabel, 30f);
+                if (grant.Coins.Applied && grant.Coins.Amount > 0)
+                    fx.Burst(HudTheme.Coin, HudTheme.CoinGold, Mathf.Clamp(grant.Coins.Amount, 1, 6),
+                        from + new Vector2(-40f, 0f), progression.WalletLabel, 30f);
             }
             pendingCampaign.Clear();
             progression.RefreshFromGame(animate: true);

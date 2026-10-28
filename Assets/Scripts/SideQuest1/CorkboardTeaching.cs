@@ -54,18 +54,18 @@ public static class CorkboardTeaching
     // The guide's talks (built-in; town.json may replace)
     // ---------------------------------------------------------
 
-    // T26: a short follow-up with the Arthur already met at the opening (at most
-    // three lines): the records are in, the two details to weigh, the whole
-    // board is checked. No client is described again.
+    // Four brief screens explain the vocabulary and the first-check stakes,
+    // without assigning any plaza person to a category.
     private static readonly List<KeyValuePair<bool, string>> BuiltInIntro = new List<KeyValuePair<bool, string>>
     {
-        Npc("You've got all four IDs, Elijah. Let's organize them on my corkboard."),
-        Npc("For each client, weigh the same two details as my file: their nationality, and where they live most of the year."),
-        Npc("Pin all four. When the last one is up, I'll check the whole board, and that first check sets your medal.")
+        Npc("Four IDs, four stories! Resident citizens are Filipinos whose home is here; non-resident citizens are Filipinos whose home is abroad."),
+        Npc("Resident aliens are foreign nationals who make their home here; non-resident aliens live abroad. 'Alien' just means foreign national. No spaceship required!"),
+        Npc("Flip an ID to reread its story, then drag it to a corner. CATEGORIES is your reminder. Pinning the fourth ID checks the whole board."),
+        Npc("First check: four right earns Gold, two earns Silver, zero or one earns Bronze. Fix any mix-ups to finish; that first check sets your medal!")
     };
 
-    /// <summary>The board introduction's longest allowed length (T26).</summary>
-    public const int MaxIntroLines = 3;
+    /// <summary>The board introduction's longest allowed length.</summary>
+    public const int MaxIntroLines = 4;
 
     private static readonly List<KeyValuePair<bool, string>> BuiltInDone = new List<KeyValuePair<bool, string>>
     {

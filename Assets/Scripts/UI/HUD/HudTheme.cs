@@ -29,6 +29,7 @@ public static class HudTheme
     public static readonly Color Empty = new Color32(60, 72, 86, 255);
     public static readonly Color Exp = new Color32(241, 194, 108, 255);
     public static readonly Color ExpGain = new Color32(255, 236, 186, 255);
+    public static readonly Color CoinGold = new Color32(255, 211, 102, 255);
     public static readonly Color Reputation = new Color32(236, 93, 98, 255);
     public static readonly Color ReputationGain = new Color32(255, 196, 198, 255);
     public static readonly Color Complete = new Color32(110, 201, 140, 255);
@@ -86,6 +87,7 @@ public static class HudTheme
     private static Sprite heart;
     private static Sprite check;
     private static Sprite star;
+    private static Sprite coin;
     private static Sprite tap;
     private static Sprite mouse;
     private static Sprite padlock;
@@ -132,6 +134,16 @@ public static class HudTheme
         {
             if (star == null) star = MakeSprite(Rasterize(RoundedSize, StarCoverage), "HudStar");
             return star;
+        }
+    }
+
+    /// <summary>Gold coin with an engraved currency mark.</summary>
+    public static Sprite Coin
+    {
+        get
+        {
+            if (coin == null) coin = MakeSprite(Rasterize(RoundedSize, CoinCoverage), "HudCoin");
+            return coin;
         }
     }
 
@@ -237,6 +249,23 @@ public static class HudTheme
         float sector = Mathf.Repeat(a, Mathf.PI * 2f / 5f) / (Mathf.PI * 2f / 5f);
         float towardPoint = Mathf.Abs(sector * 2f - 1f);
         return r <= Mathf.Lerp(0.21f, 0.48f, towardPoint * towardPoint);
+    }
+
+    private static bool CoinCoverage(float u, float v)
+    {
+        float dx = u - 0.5f, dy = v - 0.5f;
+        float radius = Mathf.Sqrt(dx * dx + dy * dy);
+        if (radius > 0.47f) return false;
+
+        // Cut an engraved dollar-like mark and a thin inner rim through the coin face.
+        bool mark = SegmentDistance(u, v, 0.60f, 0.68f, 0.43f, 0.68f) <= 0.045f ||
+                    SegmentDistance(u, v, 0.43f, 0.68f, 0.39f, 0.58f) <= 0.045f ||
+                    SegmentDistance(u, v, 0.39f, 0.58f, 0.58f, 0.51f) <= 0.045f ||
+                    SegmentDistance(u, v, 0.58f, 0.51f, 0.61f, 0.42f) <= 0.045f ||
+                    SegmentDistance(u, v, 0.61f, 0.42f, 0.41f, 0.34f) <= 0.045f ||
+                    SegmentDistance(u, v, 0.50f, 0.27f, 0.50f, 0.73f) <= 0.035f;
+        bool rim = radius >= 0.37f && radius <= 0.395f;
+        return !mark && !rim;
     }
 
     private static bool TapCoverage(float u, float v)

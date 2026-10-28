@@ -1,5 +1,12 @@
 # Progress
 
+## 2026-10-27: plaza discovery and concise Arthur teaching
+- At the user's request, the four-ID collection step is intentionally unguided. Both Arthur meeting routes remain. No blue trail, goal beacon or minimap objective reveals an individual plaza client or profile pickup during discovery.
+- Updated the follow lesson, post-reviewed-file invitation and ID reminder to encourage conversations without promising every person gives an ID. The look lesson now refers to the whole scenery of Coast Tales.
+- Arthur explains category vocabulary, board controls and first-check medals in four short pre-board screens; the board guide keeps its three hands-on prompts without repeating the medal explanation. No client-to-category answer is supplied.
+- `objectives.json` and TaskListProvider fallback both use the exploration wording. All plaza people use the same conversation triangle/check presentation; optional conversations grant no quest rewards.
+- Internal checks: scratch **0 errors / 29 baseline warnings**; Guide **907**, Dialogue **1098**, Controls **5734**, Progression **PASS**. The other four required plaza/campaign/Level2 suites and all three validators also pass; full counts are in Level1LivingPlaza/PROGRESS.md. GuideTargets checks **14 paths / 0 missing**.
+- **Play Mode / visual acceptance not run; user pending.**
 Last updated: 2026-10-16
 
 ## Status

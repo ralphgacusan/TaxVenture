@@ -443,7 +443,7 @@ void CheckGuideConversation(List<DialogueLine> guideLines, string label, int exp
 }
 
 // T26: the board talk is a three-line reminder (the four client biographies were removed).
-CheckGuideConversation(guideIntroLines, "The guide intro conversation", 3);
+CheckGuideConversation(guideIntroLines, "The guide intro conversation", 4);
 CheckGuideConversation(guideCompletionLines, "The guide completion conversation", 3);
 
 // ---------------------------------------------------------------------
@@ -482,21 +482,25 @@ foreach (string npcId in townNpcIds)
     Check(seen.Count == 4, $"'{npcId}' right answer and the three kinds of miss must read differently.");
 }
 
-foreach (var line in CorkboardTeaching.IntroLines)
-    Check(!NamesALabel(line.Value), $"Arthur's intro must stay indirect: \"{line.Value}\"");
-// T26: a reminder with the Arthur already met, not one line per corner.
-Check(CorkboardTeaching.IntroLines.Count >= 1 && CorkboardTeaching.IntroLines.Count <= CorkboardTeaching.MaxIntroLines &&
-      CorkboardTeaching.MaxIntroLines == 3 && CorkboardTeaching.IntroLines.All(l => !l.Key),
-    "Arthur's board introduction is at most three of his own short lines.");
+// The introduction deliberately names the category vocabulary now; keep label bans on
+// client stories and reactions above, while checking this explicit four-screen teaching.
+Check(CorkboardTeaching.IntroLines.Count == 4 &&
+      CorkboardTeaching.IntroLines.Count <= CorkboardTeaching.MaxIntroLines &&
+      CorkboardTeaching.MaxIntroLines == 4 && CorkboardTeaching.IntroLines.All(l => !l.Key),
+    "Arthur's board introduction is exactly four of his own short lines.");
 string introText26 = string.Join(" ", CorkboardTeaching.IntroLines.Select(l => l.Value));
+string introLower26 = introText26.ToLowerInvariant();
 string[] clients26 = { "Marie", "Jhun", "Milo", "Zorbix", "passport has never", "overseas", "ticket home", "fell for this place" };
 Check(clients26.All(c => introText26.IndexOf(c, StringComparison.OrdinalIgnoreCase) < 0) &&
-      introText26.Contains("nationality") && introText26.Contains("where they live") && introText26.Contains("whole board"),
-    "the introduction acknowledges the profiles, reminds the two details and says the whole board is checked, describing no client");
+      new[] { "resident citizens", "non-resident citizens", "resident aliens", "non-resident aliens" }.All(introLower26.Contains) &&
+      introLower26.Contains("no spaceship required") && introLower26.Contains("categories") &&
+      introLower26.Contains("four right earns gold") && introLower26.Contains("two earns silver") &&
+      introLower26.Contains("zero or one earns bronze"),
+    "Arthur playfully explains the four category names and first-check medals without assigning a client");
 var overlong26 = new List<KeyValuePair<bool, string>>();
-for (int i = 0; i < 4; i++) overlong26.Add(new KeyValuePair<bool, string>(false, "line " + i));
+for (int i = 0; i < 5; i++) overlong26.Add(new KeyValuePair<bool, string>(false, "line " + i));
 CorkboardTeaching.SetIntro(overlong26);
-Check(CorkboardTeaching.IntroLines.Count <= 3 && CorkboardTeaching.IntroLines[0].Value != "line 0", "a town.json intro longer than three lines keeps the built-in one");
+Check(CorkboardTeaching.IntroLines.Count == 4 && CorkboardTeaching.IntroLines[0].Value != "line 0", "a town.json intro longer than four lines keeps the built-in one");
 CorkboardTeaching.ClearOverrides();
 
 // T26: the board's static category reference (vocabulary, never an answer).

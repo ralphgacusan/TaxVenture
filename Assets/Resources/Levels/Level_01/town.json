@@ -2,14 +2,14 @@
   "_readme": [
     "LEVEL 1 TOWN TEXT: what the 4 plaza clients say, their profile notes, and what Arthur (the guide) says at the corkboard.",
     "Edit freely; changes apply on the next Play. Fields starting with '_' are notes and are ignored.",
-    "GOLDEN RULE: never name a classification (resident, non-resident, citizen, alien). Tell the STORY; the player works it out.",
+    "CLIENT STORY RULE: never name a classification in client dialogue or clues. Arthur may explain neutral category vocabulary, never a client assignment.",
     "Every corner answers two questions: is the person Filipino? and do they live here most of the year?",
     "talk: the conversation, top to bottom. who = \"you\" for the player, \"npc\" for the client. Keep it short (about 6 lines).",
     "emote (optional, per line): a small icon over the speaker while the line shows: heart, sparkles, alert, question, thinking, idea, sweat, worried, annoyed, music. Add \"burst\": true only for a peak moment. Lines without one show nothing.",
     "description: the profile card. A short summary of what they said (about 12-13 words) - clues, never the answer.",
     "placedRight: Arthur when the card lands in the right corner (say WHY, without the label).",
     "hintCitizenship / hintResidence / hintBoth: Arthur when the card is wrong because of where they're FROM / where they LIVE / both. Hint, never the answer.",
-    "arthurBoardIntro / arthurBoardDone: the guide's talk when the corkboard opens (T26: at most 3 short lines, a reminder; never describe each client again), and when every card is right.",
+    "arthurBoardIntro / arthurBoardDone: the guide's talk when the corkboard opens (at most 4 short lines explaining category vocabulary and first-check medals; never give a client assignment), and when every card is right.",
     "Marie is also the office client: her talk and profile hint how she earns her money (for the Case Folder) without naming the answer.",
     "waiting: the one line a client says if tapped before the rounds open (T30: all four wait until Arthur's reviewed file was looked over).",
     "reviewedFile (T30): Arthur's Reviewed File, a FORMER client's finished reference (never one of the four). entries: the three completed first-page entries (keys fixed, values are enum names). records: his ID card and background sheet (ids and types fixed). arthurIntro: one or two short lines. notes: exactly four lines, one at a time (first record looked at; back on page one: classification; work and earnings; send-off). A blank field keeps the built-in text.",
@@ -128,21 +128,22 @@
       }
     ],
     "arthurIntro": [
-      "There you are, Elijah! Before you meet today's clients, I want you to see a case I finished.",
+      "There you are, Elijah! Before you get to know the locals, I want you to see a case I finished.",
       "It's closed, so it's just for reading. Here, take it!"
     ],
     "notes": [
       "The ID gives his citizenship, the background where he lives.",
       "Filipino, but his home is abroad: that's his classification.",
       "And his own shop explains the other two.",
-      "Keep it handy. Now go meet the four clients: each will hand you a copy of their ID."
+      "Keep that file handy! Take a stroll around Coast Tales and hear people's stories. A friendly hello might turn up something useful."
     ]
   },
 
   "arthurBoardIntro": [
-    { "who": "npc", "text": "You've got all four IDs, Elijah. Let's organize them on my corkboard." },
-    { "who": "npc", "text": "For each client, weigh the same two details as my file: their nationality, and where they live most of the year." },
-    { "who": "npc", "text": "Pin all four. When the last one is up, I'll check the whole board, and that first check sets your medal." }
+    {"who": "npc", "text": "Four IDs, four stories! Resident citizens are Filipinos whose home is here; non-resident citizens are Filipinos whose home is abroad."},
+    {"who": "npc", "text": "Resident aliens are foreign nationals who make their home here; non-resident aliens live abroad. 'Alien' just means foreign national. No spaceship required!"},
+    {"who": "npc", "text": "Flip an ID to reread its story, then drag it to a corner. CATEGORIES is your reminder. Pinning the fourth ID checks the whole board."},
+    {"who": "npc", "text": "First check: four right earns Gold, two earns Silver, zero or one earns Bronze. Fix any mix-ups to finish; that first check sets your medal!"}
   ],
 
   "_boardCategories": "T26: the board's category reference (the CATEGORIES button while sorting). One short sentence per corner from the board's two questions only. These are the formal names already printed on the corners; never name a client, an assignment or which corner a profile goes to. category = ResidentCitizen | NonResidentCitizen | ResidentAlien | NonResidentAlien; a blank meaning keeps the built-in sentence.",

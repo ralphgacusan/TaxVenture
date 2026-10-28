@@ -18,6 +18,9 @@ public static class NpcMarkerTests
         // Colleague: one-shot.
         check(NpcAvailabilityRules.Colleague(false) == A && NpcAvailabilityRules.Colleague(true) == C,
             "Colleague: available until spoken to, then completed (exhausted).");
+        check(NpcAvailabilityRules.Shape(NpcAvailabilityRules.Colleague(false), false, 5f, 0.5f, 10f, false) == NpcMarkerShape.Available &&
+              NpcAvailabilityRules.Shape(NpcAvailabilityRules.Colleague(true), false, 5f, 0.5f, 10f, false) == NpcMarkerShape.Completed,
+            "ambient plaza conversations use the same triangle while available and check after a completed talk.");
 
         // Client: interview, then case-dependent presentation.
         check(NpcAvailabilityRules.Client(false, false, false, false) == U, "Client: no case → no marker.");

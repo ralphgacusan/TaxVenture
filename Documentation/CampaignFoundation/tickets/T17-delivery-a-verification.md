@@ -12,7 +12,7 @@ Before: the new shared systems and Level 1 story are separate planned slices. Af
 
 ## Work
 
-Latest user revision: wait for T30/T31 and T25-T29 implementation/internal work; original T24's bench path is superseded. Include Arthur start-marker/click/one collectible handover, teal model/ghost/icons, read-only two-page sample, +1 Bag capacities once, real extracted 3D papers and optional two-second grouping, all four freely ordered profile-only clients, short board reminder/category references, Marie's separate editable two-page case with attached records, source isolation and progressed-save compatibility. No global case swap or extra full case. T29's focused findings feed this full matrix; rendered polish and 2–3 minute pacing need user evidence. Use the latest Chapter 1 card/finale; do not rebuild a check lever, opaque flap or obsolete wrap-up sheet.
+Scheduling revision (2026-10-28): T28 -> T29 -> T17, then deferred T27 before T18. Wait for T30/T31, T25/T26 and T28/T29 implementation/internal work; original T24's bench path is superseded. T29 and this gate verify the existing Level 1 route only. The eight-type library, isolated fixtures and Rosa adapter map remain unbuilt T27 scope: record the gap here without requiring or certifying it, then complete and verify it in T27 after T17. T18 depends on both gates and may adopt the library only after T27; T21 verifies that integration. Include Arthur start-marker/click/one collectible handover, teal model/ghost/icons, read-only two-page sample, +1 Bag capacities once, real extracted 3D papers and optional two-second grouping, all four freely ordered profile-only clients, short board reminder/category references, Marie's separate editable two-page case with attached records, source isolation and progressed-save compatibility. No global case swap or extra full case. T29's focused route findings feed this full Delivery A matrix; rendered polish and 2–3 minute pacing need user evidence. Use the latest Chapter 1 card/finale; do not rebuild a check lever, opaque flap or obsolete wrap-up sheet.
 
 Verify the ordered player route from first main-menu input through opening, plaza, four profile conversations, draft/check/correction, Marie case, follow-through, optional supply exploration and career return. Include the difficult paths: low frozen grade followed by required corrections; incorrect first submission followed by a corrected approval; missed office cutoff and next-day recovery; optional purchases/no purchase; exit and relaunch before and after each committed milestone. A paused, quit or crashed run must resume at the last durable checkpoint without re-awarding or replaying gameplay events. Confirm New Game requires explicit confirmation, creates the specified fresh campaign, retains settings, and cannot be disguised as Continue. A supported pre-v5 save only receives the updated-story message and cannot resume or grant mastery, story unlocks, trust, coins, or inventory.
 
@@ -29,7 +29,7 @@ The manual handoff must be ordered and reproducible, with a fresh save and inter
 
 - [ ] Full Delivery A build, targeted progression/save/Level 1 suites, content validators, scene/asset static checks and source audits pass or list precise blockers.
 - [ ] Fresh, supported pre-v5, interrupted-write and resumed flows prove one signed owner, preserved settings, no imported old progress, no repeated payout, and no new-campaign Level 2 path before T21.
-- [ ] Documentation lists exact commands/results, touched-path inventory supplied by implementers, remaining art limitation, reproduction route and next work (T18); no unsupported Unity/manual claim is recorded.
+- [ ] Documentation lists exact commands/results, touched-path inventory supplied by implementers, remaining art limitation, reproduction route, next work (T27), and the explicit library/fixture/map gap; no unsupported Unity/manual claim is recorded.
 
 ## USER manual acceptance — Unity/device/visual/feel/listen checks
 
@@ -39,7 +39,7 @@ The manual handoff must be ordered and reproducible, with a fresh save and inter
 
 ## Handoff
 
-Next ticket: [T18](T18-level2-campaign-and-inventory.md) begins Delivery B after Delivery A passes its internal gate.
+Next ticket: [T27](T27-eight-document-template-library.md) completes and verifies the eight-type library, fixtures and Rosa map after this Delivery A gate. Then [T18](T18-level2-campaign-and-inventory.md) may adopt them; it depends on both T17 and T27. [T21](T21-delivery-b-verification.md) remains the complete Delivery B gate.
 
 ## Non-goals and references
 

@@ -81,7 +81,7 @@ public class CaseFolderUI : MonoBehaviour
     [SerializeField] private RectTransform pageTurnRoot;
     [SerializeField, Min(0f)] private float pageTurnDuration = 0.26f;
 
-    private Coroutine pageTurnRoutine;
+    private PageTurnStage pageTurn;
     private bool hasPageTurnRest;
     private Quaternion pageTurnRestRotation;
     private Vector3 pageTurnRestScale;
@@ -215,18 +215,40 @@ public class CaseFolderUI : MonoBehaviour
 
             RectTransform root = GetPageTurnRoot();
             StopPageTurn(false);
+            int from = currentPageIndex;
+            int shown = currentPageIndex + direction;
             if (root == null)
             {
-                currentPageIndex += direction;
-                RenderPage(currentPageIndex);
+                currentPageIndex = shown;
+                RenderPage(shown);
                 continue;
             }
-            int shown = currentPageIndex + direction;
-            yield return DeskMotion.TurnPage(root, pageTurnRestRotation, pageTurnRestScale, direction, flipSeconds,
-                () => { currentPageIndex = shown; RenderPage(shown); });
+            if (pageTurn == null) pageTurn = new PageTurnStage(this);
+            // The page index and print change together only after each turn lands.
+            pageTurn.Begin(root, pageTurnRestPosition, pageTurnRestRotation, pageTurnRestScale, direction, from, shown,
+                flipSeconds, () => { currentPageIndex = shown; RenderPage(shown); });
+            while (pageTurn.IsTurning) yield return null;
         }
         leafThroughRoutine = null;
         done?.Invoke();
+    }
+
+    /// <summary>
+    /// The paper surface printing <paramref name="pageIndex"/> right now with
+    /// its print toward the reader: the live paper, or the moving / still copy
+    /// of a page turn. Null when that page is not visible (attached records
+    /// follow this, so they ride a turning leaf and never sit on a covered page).
+    /// </summary>
+    public RectTransform SurfaceFor(int pageIndex)
+    {
+        if (pageIndex < 0) return null;
+        if (pageTurn != null && pageTurn.IsTurning)
+        {
+            if (pageTurn.LeafPage == pageIndex) return pageTurn.LeafShowsFront ? pageTurn.Leaf : null;
+            if (pageTurn.UnderPage == pageIndex) return pageTurn.Under;
+            if (pageTurn.PaperHidden) return null;
+        }
+        return currentPageIndex == pageIndex ? GetPageTurnRoot() : null;
     }
 
     // Objects a level page created (slots, ink); removed on every page render.
@@ -630,6 +652,8 @@ public class CaseFolderUI : MonoBehaviour
         if (pages == null || pages.Count == 0)
             return;
 
+        StopPageTurn();
+
         if (currentPageIndex < pages.Count - 1)
         {
             currentPageIndex++;
@@ -640,7 +664,7 @@ public class CaseFolderUI : MonoBehaviour
                 AudioManager.Instance.PlayPaper2SFX();
             }
 
-            TurnToCurrentPage(1);
+            TurnToCurrentPage(1, currentPageIndex - 1);
         }
     }
 
@@ -654,6 +678,8 @@ public class CaseFolderUI : MonoBehaviour
         if (pages == null || pages.Count == 0)
             return;
 
+        StopPageTurn();
+
         if (currentPageIndex > 0)
         {
             currentPageIndex--;
@@ -664,7 +690,7 @@ public class CaseFolderUI : MonoBehaviour
                 AudioManager.Instance.PlayPaper2SFX();
             }
 
-            TurnToCurrentPage(-1);
+            TurnToCurrentPage(-1, currentPageIndex + 1);
         }
     }
 
@@ -762,24 +788,29 @@ public class CaseFolderUI : MonoBehaviour
     // PAGE TURN
     // ============================================================
 
-    private void TurnToCurrentPage(int direction)
+    /// <summary>
+    /// Defers the new page until landing and turns a copy of
+    /// the page that was showing (PageTurnStage). A turn still playing is
+    /// completed first, so rapid taps can never leave a page half drawn.
+    /// </summary>
+    private void TurnToCurrentPage(int direction, int fromIndex)
     {
         RectTransform root = GetPageTurnRoot();
+        StopPageTurn();
+        int shown = currentPageIndex;
         if (root == null || pageTurnDuration <= 0f || !isActiveAndEnabled)
         {
-            RenderPage(currentPageIndex);
+            RenderPage(shown);
             return;
         }
 
-        StopPageTurn();
-        pageTurnRoutine = StartCoroutine(DeskMotion.TurnPage(root, pageTurnRestRotation,
-            pageTurnRestScale, direction, Mathf.Max(pageTurnDuration, DeskMotion.PageFlipSeconds), () =>
-            {
-                RenderPage(currentPageIndex);
-            }));
+        currentPageIndex = fromIndex;  // the visible page stays authoritative until landing
+        if (pageTurn == null) pageTurn = new PageTurnStage(this);
+        pageTurn.Begin(root, pageTurnRestPosition, pageTurnRestRotation, pageTurnRestScale, direction,
+            fromIndex, shown, Mathf.Max(pageTurnDuration, DeskMotion.PageFlipSeconds), () => { currentPageIndex = shown; RenderPage(shown); });
     }
 
-    /// <summary>Stops a page turn and puts the paper back at rest.</summary>
+    /// <summary>Completes a page turn at once and puts the paper back at rest.</summary>
     private void StopPageTurn(bool cancelLeafThrough = true)
     {
         if (cancelLeafThrough && leafThroughRoutine != null)
@@ -787,11 +818,7 @@ public class CaseFolderUI : MonoBehaviour
             StopCoroutine(leafThroughRoutine);
             leafThroughRoutine = null;
         }
-        if (pageTurnRoutine != null)
-        {
-            StopCoroutine(pageTurnRoutine);
-            pageTurnRoutine = null;
-        }
+        pageTurn?.Complete();
 
         if (hasPageTurnRest && pageTurnRoot != null)
         {

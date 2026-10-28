@@ -54,6 +54,7 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
     private bool pointerHovered;
     private Vector2 pointerPosition;
 
+    public bool IsCollected => collected;
     public bool IsDropping => isDropping;
     public bool IsCollecting => isCollecting;
 
@@ -62,14 +63,16 @@ public class TaxpayerProfileWorldPickup : MonoBehaviour, IPointerEnterHandler, I
         pointerHighlight = HighlightEffect.For(this);
     }
 
-    public void Initialize(TaxpayerProfile data)
+    public void Initialize(TaxpayerProfile data) => Initialize(data, false);
+
+    public void Initialize(TaxpayerProfile data, bool alreadyCollected)
     {
         CancelCollectionAndRestoreTarget();
         StopDropAndRestoreTarget();
         CacheBasePose();
 
         profileData = data;
-        collected = false;
+        collected = alreadyCollected;
 
         if (nameText != null)
         {

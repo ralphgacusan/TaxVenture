@@ -31,8 +31,15 @@ public sealed class ArthurStartPlacement : MonoBehaviour
         if (guideRoot == null) return;
         Pose pose = StandPose;
         guideRoot.SetPositionAndRotation(pose.position, pose.rotation);
+        GroundModel(guideRoot, pose.position);
+    }
+
+    /// <summary>Grounds the actual geometry, including Arthur's hidden startup rig.</summary>
+    public static void GroundModel(Transform guideRoot, Vector3 groundSpot)
+    {
+        if (guideRoot == null) return;
         // The marker chooses the spot, not the model's pivot height. Read mesh
-        // corners (also works before Awake reveals the model), not UI bounds.
+        // geometry (also works while the model is hidden), not UI bounds.
         TutorialNpcController guide = guideRoot.GetComponent<TutorialNpcController>();
         Transform model = guide != null ? guide.ModelRoot : guideRoot;
         float feetY = float.PositiveInfinity;
@@ -42,11 +49,35 @@ public sealed class ArthurStartPlacement : MonoBehaviour
             feetY = Mathf.Min(feetY, LowestPoint(filter.transform, filter.sharedMesh.bounds));
         }
         foreach (SkinnedMeshRenderer skin in model.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-            if (skin.sharedMesh != null) feetY = Mathf.Min(feetY, LowestPoint(skin.transform, skin.localBounds));
+        {
+            if (skin.sharedMesh == null) continue;
+            // localBounds is an animation/culling envelope, not the soles. Its
+            // root-bone space can also differ from the renderer's space. Bake
+            // a snapshot with renderer scale compensation instead (Unity 6's
+            // useScale=true); TransformPoint then applies the scene transform.
+            Mesh snapshot = new Mesh();
+            try
+            {
+                skin.BakeMesh(snapshot, true);
+                foreach (Vector3 vertex in snapshot.vertices)
+                    feetY = Mathf.Min(feetY, skin.transform.TransformPoint(vertex).y);
+            }
+            finally
+            {
+                if (Application.isPlaying) Destroy(snapshot);
+                else DestroyImmediate(snapshot);
+            }
+        }
         Physics.SyncTransforms();
         if (!float.IsPositiveInfinity(feetY) &&
-            PlayerPlacement.Ground(pose.position + Vector3.up * 0.5f, guideRoot, out float groundY))
+            PlayerPlacement.Ground(groundSpot + Vector3.up * 0.5f, guideRoot, out float groundY))
+        {
             guideRoot.position += Vector3.up * (groundY - feetY);
+            // Walking must keep this measured sole offset, not infer one from
+            // a root that may have been positioned above the raycast range.
+            NpcLocomotion mover = guideRoot.GetComponent<NpcLocomotion>();
+            if (mover != null) mover.SetFeetOffset(guideRoot.position.y - groundY);
+        }
         Physics.SyncTransforms();
     }
 

@@ -9,7 +9,7 @@ Before you change anything, read `README.md` (the feature and JSON reference), `
 - It is **observation only**: never change rewards, objectives, the FSM, save data or NPC rules. If you need a new signal, add a read-only accessor or a notification event (the same rule as the HUD initiative), or poll existing public state.
 - Build UI at runtime (`GuideRuntime`). Never rewrite the 4.5 MB scene YAML and never delete legacy objects.
 - **Content belongs in `guide.json`**, not in code. Add new trigger kinds to `GuideTriggers` (parsing) and `GuideDirector` (evaluation), add new targets to `GuideTargets`, then document both in `README.md` and the JSON `_triggers` / `_targets` notes.
-- Keep the waypoints in sync with `Levels/Level_01/objectives.json`: every step needs a waypoint. `Tests/GuideRegression` enforces this.
+- Keep the waypoints in sync with `Levels/Level_01/objectives.json`: every guided step needs a waypoint. User revision 2026-10-27: `event:AllProfilesCollected` intentionally has none, so exploration never points to the four ID-giving NPCs. Preserve both Arthur routes. `Tests/GuideRegression` enforces this.
 - Keep CRLF line endings. Every new script needs a `.meta` with a fresh unique GUID.
 - **The user performs all Play Mode and device checks and all git actions.** Never claim Play Mode results you did not receive.
 - Do not edit the other initiatives' documentation folders. You may read them for context.

@@ -39,6 +39,9 @@ public sealed class ArthurOpening : MonoBehaviour
 
     public static ArthurOpening Active { get; private set; }
 
+    /// <summary>Read-only presentation gate for every plaza conversation marker.</summary>
+    public bool PlazaConversationsOpen => practice || roundsOpen || LevelGate.SideQuestDone;
+
     /// <summary>A saved milestone changed (talk done, record shown / put back, page revisited, rounds open).</summary>
     public static event Action Changed;
 
@@ -129,7 +132,13 @@ public sealed class ArthurOpening : MonoBehaviour
             yield break;
         }
         // Only trust ownership after the hotbar reset/restore has finished. Continue keeps its file; a restart recollects it.
-        if (FileOwned()) introDone = true;
+        if (FileOwned())
+        {
+            introDone = true;
+            // Living Plaza: after the hand-over he walked to the corkboard; a resumed run finds him there.
+            ResolveGuide();
+            if (guide != null) guide.PlaceAtCorkboard();
+        }
         else if (introDone || pickupSpawnPending) SpawnPickup(pickupSpawnAnimated);
         MarkStepsBehind(Stage);
     }
@@ -188,7 +197,8 @@ public sealed class ArthurOpening : MonoBehaviour
 
     private NpcAvailability? OpeningAvailability(TutorialNpcController npc) =>
         practice ? (NpcAvailability?)null
-        : ReviewedFileRules.OpeningAvailable(introDone, OpeningLessonsDone()) ? NpcAvailability.Available : (NpcAvailability?)null;
+        : ReviewedFileRules.OpeningAvailable(introDone, OpeningLessonsDone()) ? NpcAvailability.Available
+        : introDone && npc != null && !npc.HasAppeared ? NpcAvailability.Completed : (NpcAvailability?)null;
 
     /// <summary>A deliberate tap on Arthur before (or, in an older run, after) the board: his opening talk.</summary>
     private bool HandleOpeningTap(TutorialNpcController npc)
@@ -292,6 +302,9 @@ public sealed class ArthurOpening : MonoBehaviour
         pickup = null;
         GameplayEvents.RaiseGuideCue(CueCollected);
         Changed?.Invoke();
+        // Living Plaza: his hand-over is done; he heads over to the corkboard where the side quest starts.
+        ResolveGuide();
+        if (!practice && guide != null) guide.WalkToCorkboard();
     }
 
     // =========================================================

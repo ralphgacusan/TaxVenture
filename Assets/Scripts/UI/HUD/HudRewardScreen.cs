@@ -31,6 +31,18 @@ public sealed class RewardScreenData
     public readonly List<Sprite> Medals = new List<Sprite>();
     public string MedalLabel;
 
+    public sealed class RewardTileData
+    {
+        public string Label;
+        public Sprite Icon;
+        public Color Accent;
+        public int Earned;
+        public string BalanceLabel;
+        public int Balance;
+        public int BalanceMax;
+    }
+
+    public readonly List<RewardTileData> RewardTiles = new List<RewardTileData>();
     public readonly List<KeyValuePair<string, string>> Facts = new List<KeyValuePair<string, string>>();
     public string Summary;
     public string Footer;
@@ -49,6 +61,21 @@ public sealed class RewardScreenData
     public Color Accent = new Color32(241, 194, 108, 255);
 
     public void Fact(string label, string value) => Facts.Add(new KeyValuePair<string, string>(label, value));
+
+    public void RewardTile(string label, Sprite icon, Color accent, int earned, string balanceLabel, int balance, int balanceMax = 0)
+    {
+        if (earned <= 0) return;
+        RewardTiles.Add(new RewardTileData
+        {
+            Label = label,
+            Icon = icon,
+            Accent = accent,
+            Earned = earned,
+            BalanceLabel = balanceLabel,
+            Balance = balance,
+            BalanceMax = balanceMax
+        });
+    }
 }
 
 /// <summary>
@@ -583,6 +610,7 @@ public sealed class HudRewardScreen : MonoBehaviour
 
         y = BuildHero(data, y);
         y = BuildBars(data, y);
+        y = BuildRewardTiles(data, y);
         y = BuildFacts(data, y);
 
         if (!string.IsNullOrEmpty(data.Summary))
@@ -855,6 +883,48 @@ public sealed class HudRewardScreen : MonoBehaviour
             x += chip.sizeDelta.x + 16f;
         }
         return y + 52f + 20f;
+    }
+
+    private float BuildRewardTiles(RewardScreenData data, float y)
+    {
+        int count = data.RewardTiles.Count;
+        if (count == 0) return y;
+
+        const float height = 112f;
+        const float gap = 18f;
+        float width = Mathf.Min(420f, (ContentWidth - gap * (count - 1)) / count);
+        RectTransform row = Rect("Rewards", y, height);
+
+        for (int i = 0; i < count; i++)
+        {
+            RewardScreenData.RewardTileData reward = data.RewardTiles[i];
+            float x = (i - (count - 1) * 0.5f) * (width + gap);
+            RectTransform tile = Place(HudTheme.CreateRect(reward.Label + " Reward", row), x, -height * 0.5f, width, height);
+            HudTheme.AddImage(tile, HudTheme.Rounded,
+                new Color(reward.Accent.r, reward.Accent.g, reward.Accent.b, 0.42f), 14f);
+            RectTransform fill = HudTheme.CreateRect("Fill", tile);
+            HudTheme.Stretch(fill, 2f);
+            HudTheme.AddImage(fill, HudTheme.Rounded, HudTheme.PanelInner, 13f);
+
+            RectTransform icon = Place(HudTheme.CreateRect("Icon", tile), -width * 0.5f + 42f, -height * 0.5f, 42f, 42f);
+            HudTheme.AddImage(icon, reward.Icon, reward.Accent);
+            TextMeshProUGUI title = CardLabel("Title", tile, reward.Label.ToUpperInvariant(), 23f,
+                HudTheme.TextMuted, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            Place((RectTransform)title.transform, -width * 0.5f + 74f, -22f, width - 92f, 28f, 0f);
+
+            TextMeshProUGUI earned = CardLabel("Earned", tile, $"+{reward.Earned} earned", 27f,
+                reward.Accent, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            Place((RectTransform)earned.transform, -width * 0.5f + 74f, -53f, width - 92f, 30f, 0f);
+
+            string balance = reward.BalanceMax > 0
+                ? $"{reward.BalanceLabel} {reward.Balance} / {reward.BalanceMax}"
+                : $"{reward.BalanceLabel} {reward.Balance}";
+            TextMeshProUGUI totalLabel = CardLabel("Balance", tile, balance, 20f,
+                HudTheme.TextPrimary, TextAlignmentOptions.MidlineLeft);
+            Place((RectTransform)totalLabel.transform, 0f, -87f, width - 28f, 24f);
+        }
+
+        return y + height + 18f;
     }
 
     // =========================================================

@@ -14,20 +14,20 @@ Explicitly cover T30/T31: consistent color/name across world/ghost/icons/open mo
 
 Check each preparation milestone is driven by actual document admission/presentation/return and acquisition rather than a guide page, arbitrary timer, UI button, or reward callback. These milestones do not claim to measure comprehension. Remove the old Jhun-first gate without resetting a compatible progressed campaign. Do not relock rounds/case work to force the new Arthur opening on a resumed run. No new first-desk sequence should erase or block existing answers or a resumed outcome. Source records remain accessible after the side quest and when correction is needed.
 
-Audit the eight-type library and isolated preview entry: three relevant types in Level 1, others absent from the public route, fixed templates with variable facts, generic silhouettes, mobile-readable field budgets. T18 receives the explicit Rosa D1–D6 adapter map without changing content or enabling Level 2. Do not require an additional paper activity to demonstrate the library.
+Scheduling revision 2026-10-28: T28 precedes T29, then T17, then deferred T27. This ticket verifies the existing Level 1 route only. The eight-type library, isolated fixtures and Rosa adapter map are unfinished T27 scope; explicitly carry them as a gap to T17 and do not test or certify them here. T27 itself completes and verifies the library and map after T17, before T18 adoption. T18 receives the verified adapter map without changing Rosa's content or enabling Level 2.
 
 ## Focused internal verification
 
-Run only the suites and static/build checks affected by T30/T31 and T25–T28, adding meaningful cases for uncovered integration seams. Record actual commands, counts, failures and current warnings. T17 still owns the full Delivery A regression matrix; T21 owns the eventual integrated Delivery B result. This ticket does not certify appearances or ask the AI to launch Unity.
+Run only the suites and static/build checks affected by T30/T31, T25/T26 and T28, adding meaningful cases for uncovered integration seams. Record actual commands, counts, failures and current warnings. T17 still owns the full Delivery A gate; T21 owns the eventual integrated Delivery B result, including T27 adoption. This ticket does not certify appearances or ask the AI to launch Unity.
 
 - [ ] Milestone ordering, Arthur-to-four-client unlock, actual paper-view completion, repeated input, cancellation and retry are covered.
 - [ ] Fresh, partially progressed compatible, post-board, partially completed case and approved/finale checkpoints resume without forced replay, lost records or duplicate awards.
 - [ ] Failed-save paths preserve a retryable prior state; reward/trust/coin totals and frozen board result are unchanged.
 - [ ] Source identity and references remain canonical across each reviewed/active folder, its attachments, bag and desk; sample completed entries stay in their authored reference source, never copied from the active answer key into inventory snapshots.
 - [ ] First-board drafting has no client-specific answer hint; category meanings are static and the fourth-card auto-check remains intact.
-- [ ] Compulsory pause is bounded; independent rereading cannot stop the review clock indefinitely; preview fixtures cannot touch campaign state.
+- [ ] Compulsory pause is bounded; independent rereading cannot stop the review clock indefinitely; the report explicitly records that T27's library, isolated fixtures and Rosa map are unbuilt and excluded here.
 - [ ] New/rewritten player copy avoids lesson/learning/teaching/quiz/test/assessment framing, stays brief, and replaces rather than accumulates existing explanation. Retain existing tool names where required.
-- [ ] Relevant builds/content/scene/asset checks pass or precise blockers are documented; T17/T18 remain the next delivery gates.
+- [ ] Relevant builds/content/scene/asset checks pass or precise blockers are documented; T17 is next, and T27 follows T17 before T18.
 
 ## USER manual acceptance
 
@@ -39,4 +39,4 @@ Run only the suites and static/build checks affected by T30/T31 and T25–T28, a
 
 ## Non-goals and handoff
 
-No new gameplay system, visual acceptance claim without user evidence, real-save reset, full Level 2 rollout or automatic chapter launch. Mark implementation/internal status separately from user manual acceptance. Update PROGRESS with unresolved findings, actual page/action counts, fixture instructions and readiness. Next: [T17](T17-delivery-a-verification.md); only afterward [T18](T18-level2-campaign-and-inventory.md) and the existing Delivery B sequence. If source/internal work is complete but user checks remain, report them honestly as pending; do not manufacture acceptance or introduce an extra approval ceremony.
+No new gameplay system, visual acceptance claim without user evidence, real-save reset, full Level 2 rollout or automatic chapter launch. Mark implementation/internal status separately from user manual acceptance. Update PROGRESS with unresolved findings, actual page/action counts, current route readiness, and the explicit T27 library/fixture/map gap. Next: [T17](T17-delivery-a-verification.md), then [T27](T27-eight-document-template-library.md); only after T27 does [T18](T18-level2-campaign-and-inventory.md) adopt its library. If source/internal work is complete but user checks remain, report them honestly as pending; do not manufacture acceptance or introduce an extra approval ceremony.

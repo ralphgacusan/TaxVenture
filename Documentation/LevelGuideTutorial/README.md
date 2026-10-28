@@ -107,7 +107,7 @@ If a target is not on screen, the box still shows, but without the spotlight and
 - `step` must match the step's `trigger` in `objectives.json` exactly.
 - `target` takes one or more scene paths or `type:` names joined with `|`.
 - `pick: nearestAvailable` chooses the closest target that still has something to do. For example, it skips NPCs whose marker is "done" and includes profile papers waiting on the ground. The other options are `nearest` and `first`.
-- If you add a new objective step, add a waypoint for it. A step whose trigger is `area:` and has no waypoint uses the centre of the area.
+- Add a waypoint for each guided objective step. The Level 1 `event:AllProfilesCollected` step is intentionally unguided: it has no trail, beacon or minimap objective. Both Arthur waypoints remain. An `area:` step without a waypoint uses the centre of its area.
 - `trail` settings: colour, spacing, length, speed, beacon on/off, minimap on/off, arrive distance and reminder pop interval.
 
 ### Replacing the portrait

@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 /// and applies it over the built-in text:
 /// - each plaza NPC's conversation (TownNpcDialogueLibrary),
 /// - each taxpayer profile's description (TaxpayerProfileDatabase),
-/// - Arthur's corkboard introduction (at most three lines, T26) / wrap-up,
+/// - Arthur's corkboard introduction (at most four short lines) / wrap-up,
 ///   his reaction to every card placed and the board's category meanings
 ///   ("boardCategories", T26) (CorkboardTeaching),
 /// - each client's waiting line ("waiting", T24) for a tap before the rounds
@@ -168,7 +168,7 @@ public static class TownContentLoader
         if (parsed.arthurBoardIntro != null && parsed.arthurBoardIntro.Length > 0)
         {
             if (introProblem == null && intro.Count > CorkboardTeaching.MaxIntroLines)
-                introProblem = $"at most {CorkboardTeaching.MaxIntroLines} short lines (a reminder, not every client again)";
+                introProblem = $"at most {CorkboardTeaching.MaxIntroLines} short lines (neutral categories and medals, never client answers)";
             if (introProblem != null) problems.AppendLine($"- arthurBoardIntro: {introProblem}; built-in kept.");
             else CorkboardTeaching.SetIntro(intro);
         }

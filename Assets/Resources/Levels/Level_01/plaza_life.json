@@ -1,0 +1,114 @@
+{
+  "_readme": [
+    "Level 1 Living Plaza (Documentation/Level1LivingPlaza). Read by PlazaLifeContent; a missing or broken file falls back to a short built-in line.",
+    "npcs: the four ambient townspeople. id must match AmbientNpcInteractable.ambientId in Office_Level1. name is what the dialogue box shows.",
+    "role / background / attitude are notes for writers (not shown in game).",
+    "talks: each tap plays the next talk (it wraps around), so a talk is short (1-4 lines). speaker is Npc or Player; emote is an optional tag (heart, sparkles, alert, question, thinking, idea, sweat, worried, annoyed, music).",
+    "Ambient talk is flavour only: it never gives a profile, ID, EXP, coins or progress. Keep it everyday (receipts, prices, small business), never a lecture, and never name a taxpayer classification.",
+    "marieTravel: Marie's one line if you tap her while she walks to the office (toOffice), waits at the front desk (atReception) or walks to the conference room (toRoom)."
+  ],
+  "npcs": [
+    {
+      "id": "lorna",
+      "name": "Aling Lorna",
+      "fullName": "Lorna Dizon",
+      "role": "Sari-sari store owner, shopping at the Supply Counter",
+      "background": "Runs a small store two streets from the plaza and restocks her receipt booklets and ledger here every few months. Writes everything down.",
+      "attitude": "busy",
+      "talks": [
+        { "lines": [
+          { "speaker": "Npc", "text": "Sorry, sorry, I'm counting my change. Busy morning!", "emote": "sweat" },
+          { "speaker": "Npc", "text": "My store's receipt booklet ran out. I write one for every sale, even a sachet of coffee." },
+          { "speaker": "Player", "text": "Even for the small sales?" },
+          { "speaker": "Npc", "text": "Especially those! At month's end I know exactly where my money went.", "emote": "idea" }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "Ballpens went up by two pesos. Two!", "emote": "annoyed" },
+          { "speaker": "Npc", "text": "Good thing I keep every supplier receipt in one folder. One look and I know my real costs." }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "Still choosing a ledger. The thick one lasts the whole year.", "emote": "thinking" },
+          { "speaker": "Npc", "text": "Sige, I need to get back before the afternoon rush. My suki will be waiting!" }
+        ] }
+      ]
+    },
+    {
+      "id": "dante",
+      "name": "Mang Dante",
+      "fullName": "Dante Ramirez",
+      "role": "Security guard of the office building, patrolling the front",
+      "background": "Has guarded the building for twelve years. Knows every regular by face and keeps a visitor logbook out of habit.",
+      "attitude": "reserved",
+      "talks": [
+        { "lines": [
+          { "speaker": "Npc", "text": "Good day." },
+          { "speaker": "Npc", "text": "Just keeping an eye on the plaza." }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "Quiet morning. That's how I like it." }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "Hm? I write down everyone who comes and goes. Old habit.", "emote": "thinking" },
+          { "speaker": "Player", "text": "Even me?" },
+          { "speaker": "Npc", "text": "Even you." }
+        ] }
+      ]
+    },
+    {
+      "id": "bea",
+      "name": "Bea",
+      "fullName": "Beatriz Mendoza",
+      "role": "Freelance graphic artist, catching up with her cousin Carlo",
+      "background": "Designs logos and menus for small shops around town. Recently started tracking her client payments after losing count last year.",
+      "attitude": "friendly",
+      "talks": [
+        { "lines": [
+          { "speaker": "Npc", "text": "Hi! Don't mind us, we're just catching up.", "emote": "sparkles" },
+          { "speaker": "Npc", "text": "Three clients paid me for their logos this month. Finally!", "emote": "music" },
+          { "speaker": "Player", "text": "Congratulations!" },
+          { "speaker": "Npc", "text": "Salamat! I list every payment in a little notebook now, so nothing slips through.", "emote": "heart" }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "Carlo says I spend too much on milk tea. He's not wrong.", "emote": "sweat" },
+          { "speaker": "Npc", "text": "I keep my receipts in an envelope now. Seeing the total is a little scary!" }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "The plaza's always lively this time of day." },
+          { "speaker": "Npc", "text": "Good luck with whatever you're working on!", "emote": "heart" }
+        ] }
+      ]
+    },
+    {
+      "id": "carlo",
+      "name": "Carlo",
+      "fullName": "Carlo Navarro",
+      "role": "Delivery rider on his break, resting on the bench with Bea",
+      "background": "Rides deliveries for a few shops since six in the morning. Tired, a little short with strangers, softer than he sounds.",
+      "attitude": "mildly dismissive",
+      "talks": [
+        { "lines": [
+          { "speaker": "Npc", "text": "Hm? We're kind of in the middle of something.", "emote": "annoyed" },
+          { "speaker": "Npc", "text": "...Fine. I'm on my break. Deliveries since six this morning." }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "Gas went up again. Half of what I earn goes into the motorbike.", "emote": "worried" },
+          { "speaker": "Npc", "text": "Bea keeps telling me to write it all down. Maybe she has a point." }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "You again? Okay, okay. Have a good one." }
+        ] }
+      ]
+    }
+  ],
+  "marieTravel": {
+    "toOffice": [
+      { "speaker": "Npc", "text": "Oh, hi! I'm heading to your office now. See you inside!", "portraitId": "Client1_Marie_Default", "emote": "sparkles" }
+    ],
+    "atReception": [
+      { "speaker": "Npc", "text": "I'm just checking in at the front desk. Go ahead, she's expecting you.", "portraitId": "Client1_Marie_Default" }
+    ],
+    "toRoom": [
+      { "speaker": "Npc", "text": "I'll wait for you in the conference room!", "portraitId": "Client1_Marie_Default" }
+    ]
+  }
+}

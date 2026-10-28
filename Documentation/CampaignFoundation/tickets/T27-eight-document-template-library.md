@@ -1,6 +1,10 @@
 # T27 — Complete the reusable eight-type paper library
 
-Status: Planned. Blocked by: T26.
+Status: Planned — DEFERRED until after T17 by user schedule revision on 2026-10-28; not implemented or accepted. Blocked by: T17.
+
+## Scheduling revision — 2026-10-28
+
+Proceed with [T28](T28-level1-paper-motion-and-route-polish.md), then [T29](T29-record-route-verification.md) and [T17](T17-delivery-a-verification.md). Those tickets verify the existing Level 1 route only and must carry the unfinished eight-type library, isolated-fixture and Rosa-map gap without claiming it passed. Resume T27 immediately after T17; complete and verify the library and adapter map before [T18](T18-level2-campaign-and-inventory.md) adopts them. All requirements and unchecked acceptance below remain outstanding. This documentation update does not start any ticket or runtime work.
 
 ## Goal and visible accomplishment
 
@@ -12,7 +16,7 @@ Keep T30/T31's identity/background path and T25's 2316 path. All remaining types
 
 Provide a minimal development-only way to instantiate two named fixtures through the production viewer, inspect, compare, close and switch records. Reuse an existing isolated document/debug entry if available; otherwise add a narrowly scoped development fixture, not a new public menu or gallery framework. It must not read/write the user's campaign, award items, or appear on the normal Level 1 route. Fixture data contains no real personal identifiers. Each type has at least two different fixture records demonstrating the same layout with changed client details, including a long name or a larger amount.
 
-Use Rosa's existing D1–D6 and source links as read-only compatibility fixtures for Types 4–7. Her collection sheet, bank extract, three transaction records and loan agreement must remain individually identifiable. Never combine six records into four papers just because there are four categories. Record the future adapter mapping, but do not mutate the live Level 2 case, scene, handover, scoring, or launches here. T18 owns that integration after T17.
+Use Rosa's existing D1–D6 and source links as read-only compatibility fixtures for Types 4–7. Her collection sheet, bank extract, three transaction records and loan agreement must remain individually identifiable. Never combine six records into four papers just because there are four categories. Record and verify the future adapter mapping, but do not mutate the live Level 2 case, scene, handover, scoring, or launches here. T18 owns that integration after T17 and T27.
 
 ## Source and presentation boundaries
 
@@ -38,4 +42,4 @@ Missing type mappings fall back to the existing readable viewer with a diagnosti
 
 ## Non-goals and handoff
 
-No additional campaign case, tax-law expansion, Level 2 runtime restyle, future-level progression, paid comparison replacement, or public asset browser. Record real asset paths, fixture entry/exit instructions and T18 adoption map in PROGRESS. Next: [T28](T28-level1-paper-motion-and-route-polish.md).
+No additional campaign case, tax-law expansion, Level 2 runtime restyle, future-level progression, paid comparison replacement, or public asset browser. Record real asset paths, fixture entry/exit instructions and T18 adoption map in PROGRESS. When resumed after T17, complete and internally verify the library, all eight-type previews and Rosa adapter map; then hand them directly to [T18](T18-level2-campaign-and-inventory.md) for adoption. [T29](T29-record-route-verification.md) and T17 carry this unfinished scope and do not verify it; [T21](T21-delivery-b-verification.md) verifies the later integration.

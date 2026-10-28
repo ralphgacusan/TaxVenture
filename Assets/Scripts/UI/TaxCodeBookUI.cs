@@ -5,11 +5,12 @@ using System.Collections.Generic;
 
 /// <summary>
 /// PURPOSE:
-/// Displays the Tax Code Book using the same static "paper" pattern as
-/// CaseFolderUI — one panel, one paper, Previous/Next swap text in place,
-/// no animation. Content comes from a TaxCodeBookData ScriptableObject
-/// asset instead of runtime CaseData, since this is static reference
-/// material.
+/// Displays the Tax Code Book using the same "paper" pattern as
+/// CaseFolderUI — one panel, one live paper. Previous/Next play a staged page turn
+/// and commit the destination section only after the leaf lands, keeping its
+/// contents hidden throughout the motion. Content comes from a
+/// TaxCodeBookData ScriptableObject asset instead of runtime CaseData, since
+/// this is static reference material.
 ///
 /// RESPONSIBILITIES:
 /// - Show/hide the book panel
@@ -63,7 +64,7 @@ public class TaxCodeBookUI : MonoBehaviour
     [SerializeField] private RectTransform pageTurnRoot;
     [SerializeField, Min(0f)] private float pageTurnDuration = 0.26f;
 
-    private Coroutine pageTurnRoutine;
+    private PageTurnStage pageTurn;
     private bool hasPageTurnRest;
     private Quaternion pageTurnRestRotation;
     private Vector3 pageTurnRestScale;
@@ -204,6 +205,8 @@ public class TaxCodeBookUI : MonoBehaviour
         if (Sections.Count == 0)
             return;
 
+        StopPageTurn();
+
         if (currentSectionIndex < Sections.Count - 1)
         {
             currentSectionIndex++;
@@ -213,7 +216,7 @@ public class TaxCodeBookUI : MonoBehaviour
                 AudioManager.Instance.PlayPaper2SFX();
             }
 
-            TurnToCurrentPage(1);
+            TurnToCurrentPage(1, currentSectionIndex - 1);
         }
     }
 
@@ -226,6 +229,8 @@ public class TaxCodeBookUI : MonoBehaviour
         if (Sections.Count == 0)
             return;
 
+        StopPageTurn();
+
         if (currentSectionIndex > 0)
         {
             currentSectionIndex--;
@@ -235,7 +240,7 @@ public class TaxCodeBookUI : MonoBehaviour
                 AudioManager.Instance.PlayPaper2SFX();
             }
 
-            TurnToCurrentPage(-1);
+            TurnToCurrentPage(-1, currentSectionIndex + 1);
         }
     }
 
@@ -243,31 +248,32 @@ public class TaxCodeBookUI : MonoBehaviour
     // PAGE TURN
     // ============================================================
 
-    private void TurnToCurrentPage(int direction)
+    /// <summary>
+    /// Defers the new section until landing and turns a copy
+    /// of the page that was showing (PageTurnStage). A turn still playing is
+    /// completed first, so rapid taps can never leave a page half drawn.
+    /// </summary>
+    private void TurnToCurrentPage(int direction, int fromIndex)
     {
         RectTransform root = GetPageTurnRoot();
+        StopPageTurn();
+        int shown = currentSectionIndex;
         if (root == null || pageTurnDuration <= 0f || !isActiveAndEnabled)
         {
-            RenderSection(currentSectionIndex);
+            RenderSection(shown);
             return;
         }
 
-        StopPageTurn();
-        pageTurnRoutine = StartCoroutine(DeskMotion.TurnPage(root, pageTurnRestRotation,
-            pageTurnRestScale, direction, Mathf.Max(pageTurnDuration, DeskMotion.PageFlipSeconds), () =>
-            {
-                RenderSection(currentSectionIndex);
-            }));
+        currentSectionIndex = fromIndex;  // the visible page stays authoritative until landing
+        if (pageTurn == null) pageTurn = new PageTurnStage(this);
+        pageTurn.Begin(root, pageTurnRestPosition, pageTurnRestRotation, pageTurnRestScale, direction,
+            fromIndex, shown, Mathf.Max(pageTurnDuration, DeskMotion.PageFlipSeconds), () => { currentSectionIndex = shown; RenderSection(shown); });
     }
 
-    /// <summary>Stops a page turn and puts the paper back at rest.</summary>
+    /// <summary>Completes a page turn at once and puts the paper back at rest.</summary>
     private void StopPageTurn()
     {
-        if (pageTurnRoutine != null)
-        {
-            StopCoroutine(pageTurnRoutine);
-            pageTurnRoutine = null;
-        }
+        pageTurn?.Complete();
 
         if (hasPageTurnRest && pageTurnRoot != null)
         {

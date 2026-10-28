@@ -101,7 +101,7 @@ public class AuditSummaryPopupUI : MonoBehaviour
             data.Fact("Mistakes", "0");
             OfficeHours hours = OfficeHours.Instance;
             if (hours != null && hours.Announced)
-                data.Fact("Office hours", hours.OnTime ? $"On time  +{hours.Config.onTimeBonusExp} EXP"
+                data.Fact("Office hours", hours.OnTime ? "On time"
                     : $"Day {hours.Day}  ·  late  -{hours.Config.lateExpPerDay * Mathf.Clamp(hours.Day - 1, 0, hours.Config.lateMaxDays)} EXP");
             data.Summary = "You now know your taxpayer. All three required facts have been gathered.";
             // A success needs no decision: it moves on by itself (tap to go now).

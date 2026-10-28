@@ -123,8 +123,12 @@ public class SideQuestCompleteUI : MonoBehaviour
                 data.Footer = "Replay and get all four right on the first check to earn Gold.";
         }
         // T08/T09: what the corrected field assignment saved (only after the write succeeded).
-        if (result.Trust.Applied) data.Fact("Public Trust", $"+{result.Trust.Amount}  ->  {result.Trust.After} / {CampaignRecord.MaxTrust}");
-        if (result.Coins.Applied) data.Fact("Coins", $"+{result.Coins.Amount}  ->  {result.Coins.After}");
+        if (result.Trust.Applied)
+            data.RewardTile("Public Trust", HudTheme.Heart, HudTheme.Reputation, result.Trust.Amount,
+                "Trust", result.Trust.After, CampaignRecord.MaxTrust);
+        if (result.Coins.Applied)
+            data.RewardTile("Coins", HudTheme.Coin, HudTheme.CoinGold, result.Coins.Amount,
+                "Wallet", result.Coins.After);
         return data;
     }
 

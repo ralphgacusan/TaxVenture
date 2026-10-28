@@ -276,14 +276,55 @@ public class TutorialNpcController : MonoBehaviour, IPointerEnterHandler, IPoint
         }
     }
 
-    /// <summary>After the client round, instantly restore the scene-authored corkboard pose.</summary>
+    /// <summary>
+    /// Instantly restores the scene-authored corkboard pose: resume, practice
+    /// (he appears there after the profiles), or after the client round if he
+    /// never walked there. No-op once he is there or walking there.
+    /// </summary>
     private void ReturnToCorkboard()
     {
         if (returnedToCorkboard || !corkboardPoseCaptured) return;
         returnedToCorkboard = true;
         ClearPointerFocus();
         transform.SetPositionAndRotation(corkboardPose.position, corkboardPose.rotation);
+        ArthurStartPlacement.GroundModel(transform, corkboardPose.position);
         Physics.SyncTransforms();
+        // Living Plaza: the board is his everyday spot from now on.
+        NpcLife life = GetComponent<NpcLife>();
+        if (life != null) life.PlaceForQuest(life.Mover.Feet, Quaternion.LookRotation(Flat(life.Mover.Facing)));
+    }
+
+    /// <summary>Resume (ArthurOpening): his file was already handed over, so he is at the corkboard.</summary>
+    public void PlaceAtCorkboard() => ReturnToCorkboard();
+
+    /// <summary>
+    /// Living Plaza (Level 1): after his opening hand-over he walks from his
+    /// opening spot to the scene-authored corkboard pose, where the side quest
+    /// starts. Arrival only puts him there; the board still opens from his
+    /// talk once all four profiles are collected. Without a walker he is
+    /// placed there at once.
+    /// </summary>
+    public void WalkToCorkboard()
+    {
+        if (returnedToCorkboard || !corkboardPoseCaptured) return;
+        NpcLife life = GetComponent<NpcLife>();
+        if (life == null)
+        {
+            ReturnToCorkboard();
+            return;
+        }
+        returnedToCorkboard = true;
+        ClearPointerFocus();
+        // His character faces the way the authored pose made him face (the model sits rotated in the root).
+        Vector3 facing = corkboardPose.rotation * (Quaternion.Inverse(transform.rotation) * life.Mover.Facing);
+        Vector3 feet = NpcLife.Ground(corkboardPose.position);
+        life.TravelForQuest(new[] { feet }, Quaternion.LookRotation(Flat(facing)), null);
+    }
+
+    private static Vector3 Flat(Vector3 v)
+    {
+        v.y = 0f;
+        return v.sqrMagnitude > 0.0001f ? v : Vector3.forward;
     }
 
     private void HandleAllProfilesCollected()

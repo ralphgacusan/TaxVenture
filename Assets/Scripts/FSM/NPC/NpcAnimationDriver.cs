@@ -42,6 +42,8 @@ public sealed class NpcAnimationDriver : MonoBehaviour
     [SerializeField] private Behavior defaultBehavior = Behavior.Idle;
     [SerializeField] private string idleStateName = "Standing Idle";
     [SerializeField] private StateBinding[] stateBindings;
+    [Tooltip("Slower walk used for ambient strolls and patrols (falls back to Walking when the controller has no such state).")]
+    [SerializeField] private string strollStateName = "Strolling";
     [SerializeField, Min(0f)] private float transitionSeconds = 0.18f;
     [SerializeField, Min(0)] private int animatorLayer;
 
@@ -100,10 +102,16 @@ public sealed class NpcAnimationDriver : MonoBehaviour
     private IdleAction currentAction, lastAction;
     private float actionStart, actionDuration, actionSign, nextActionTime;
     private Transform headBone, neckBone, spineBone, chestBone;
+    private bool bonesCachedLive;
     private int lineIndex;
     private ConversationMotion.LineMood lineMood;
     private bool lineRevealed;
     private float lineStartTime, revealTime, farewellStart = -1f;
+    private Transform ambientPartner;
+    private bool ambientTalking;
+    private int ambientTurn;
+    private float ambientTurnStart;
+    private ConversationMotion.LineMood ambientMood;
 
     private readonly Dictionary<Behavior, int> stateHashes = new Dictionary<Behavior, int>();
     private readonly Dictionary<Behavior, bool> availableStates = new Dictionary<Behavior, bool>();
@@ -115,6 +123,10 @@ public sealed class NpcAnimationDriver : MonoBehaviour
     private Behavior stateBehavior = Behavior.Idle;
     private bool isMoving;
     private bool locomotionRequested;
+    private bool strollRequested;
+    private int strollStateHash;
+    private readonly Dictionary<int, float> locomotionSpeeds = new Dictionary<int, float>();
+    private readonly List<AnimatorClipInfo> clipInfos = new List<AnimatorClipInfo>(2);
     private bool hasPosition;
     private bool ownsCurrentConversation;
 
@@ -202,6 +214,9 @@ public sealed class NpcAnimationDriver : MonoBehaviour
 
     private void Update()
     {
+        // A model revealed later (Arthur) starts on the controller's default state: give it this NPC's own.
+        if (activeStateHash == 0 && AnimatorOwnsPose)
+            ApplyBehavior(isMoving && !ownsCurrentConversation ? Behavior.Walking : requestedBehavior);
         MeasureWalkSpeed();
         if (!detectMovement && !locomotionRequested && !isMoving)
             return;
@@ -248,10 +263,38 @@ public sealed class NpcAnimationDriver : MonoBehaviour
     }
 
     /// <summary>
-    /// World speed (m/s) the playing Walking clip covers, so movers can match
-    /// the feet. Zero until the Walking state has been entered once.
+    /// World speed (m/s) the playing walk (or stroll) clip covers, so movers
+    /// can match the feet. Zero until that state has been entered once.
     /// </summary>
     public float AnimatedWalkSpeed { get; private set; }
+
+    /// <summary>After an instant placement: the jump is not movement (no one-frame walk).</summary>
+    public void ResetMotion()
+    {
+        previousPosition = transform.position;
+        hasPosition = true;
+    }
+
+    /// <summary>This NPC is saying its own dialogue line right now (not listening).</summary>
+    public bool IsSpeaking => ownsCurrentConversation && requestedBehavior == Behavior.Talking;
+
+    /// <summary>
+    /// A background chat with another NPC (Living Plaza pairs): the head turns
+    /// to <paramref name="partner"/> and plays the same talk or listen motion
+    /// as a dialogue, without any text. Null ends it. The player's own
+    /// conversation with this NPC always takes over.
+    /// </summary>
+    public void SetAmbientConversation(Transform partner, bool talking)
+    {
+        if (partner == ambientPartner && talking == ambientTalking) return;
+        ambientPartner = partner;
+        ambientTalking = talking;
+        ambientTurn++;
+        ambientTurnStart = Time.time;
+        // A varied but deterministic cadence: mostly statements, some questions and exclamations.
+        ambientMood = ambientTurn % 5 == 2 ? ConversationMotion.LineMood.Question
+            : ambientTurn % 7 == 3 ? ConversationMotion.LineMood.Exclaim : ConversationMotion.LineMood.Statement;
+    }
 
     /// <summary>Lets a mover start the walk before its displacement is detectable.</summary>
     public void SetLocomotion(bool walking)
@@ -259,18 +302,35 @@ public sealed class NpcAnimationDriver : MonoBehaviour
         locomotionRequested = walking;
     }
 
+    /// <summary>Walks at the slower stroll pace (patrols, pacing) instead of the purposeful walk.</summary>
+    public void SetLocomotion(bool walking, bool stroll)
+    {
+        bool paceChanged = stroll != strollRequested;
+        strollRequested = stroll;
+        locomotionRequested = walking;
+        if (paceChanged && isMoving && !ownsCurrentConversation && !(stateMachine != null && stateMachine.CurrentState is NpcDialogueState))
+            ApplyBehavior(Behavior.Walking);
+    }
+
     private void MeasureWalkSpeed()
     {
-        if (AnimatedWalkSpeed > 0f || !AnimatorOwnsPose) return;
-        int hash = GetStateHash(Behavior.Walking);
-        if (hash == 0 || animator.GetCurrentAnimatorStateInfo(animatorLayer).shortNameHash != hash) return;
-        AnimatorClipInfo[] clips = animator.GetCurrentAnimatorClipInfo(animatorLayer);
-        if (clips.Length == 0 || clips[0].clip == null) return;
-        Vector3 velocity = clips[0].clip.averageSpeed;
-        velocity.y = 0f;
-        // Humanoid root motion is stored normalized to the avatar's size.
-        float scale = (animator.isHuman ? animator.humanScale : 1f) * animator.transform.lossyScale.y;
-        AnimatedWalkSpeed = velocity.magnitude * scale * Mathf.Max(0.01f, animator.speed);
+        if (!AnimatorOwnsPose || !isMoving) return;
+        AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(animatorLayer);
+        int hash = state.shortNameHash;
+        if (hash != GetStateHash(Behavior.Walking) && (strollStateHash == 0 || hash != strollStateHash)) return;
+        if (!locomotionSpeeds.TryGetValue(hash, out float speed))
+        {
+            animator.GetCurrentAnimatorClipInfo(animatorLayer, clipInfos);
+            if (clipInfos.Count == 0 || clipInfos[0].clip == null) return;
+            Vector3 velocity = clipInfos[0].clip.averageSpeed;
+            velocity.y = 0f;
+            // Humanoid root motion is stored normalized to the avatar's size.
+            float scale = (animator.isHuman ? animator.humanScale : 1f) * animator.transform.lossyScale.y;
+            speed = velocity.magnitude * scale * Mathf.Abs(state.speed * state.speedMultiplier);
+            clipInfos.Clear();
+            locomotionSpeeds[hash] = speed;
+        }
+        AnimatedWalkSpeed = speed * Mathf.Max(0.01f, animator.speed);
     }
 
     private bool AnimatorOwnsPose =>
@@ -298,7 +358,11 @@ public sealed class NpcAnimationDriver : MonoBehaviour
             return;
 
         int hash = GetStateHash(behavior);
-        if (hash == 0 || !HasState(behavior, hash))
+        bool stroll = behavior == Behavior.Walking && strollRequested && strollStateHash != 0 &&
+                      animator.HasState(animatorLayer, strollStateHash);
+        if (stroll)
+            hash = strollStateHash;
+        if (hash == 0 || (!stroll && !HasState(behavior, hash)))
         {
             hash = idleStateHash;
             if (hash == 0 || !animator.HasState(animatorLayer, hash))
@@ -367,6 +431,8 @@ public sealed class NpcAnimationDriver : MonoBehaviour
         idleStateHash = string.IsNullOrWhiteSpace(idleStateName)
             ? 0
             : Animator.StringToHash(idleStateName);
+        strollStateHash = string.IsNullOrWhiteSpace(strollStateName) ? 0 : Animator.StringToHash(strollStateName);
+        locomotionSpeeds.Clear();
 
         if (stateBindings == null)
             return;
@@ -585,7 +651,7 @@ public sealed class NpcAnimationDriver : MonoBehaviour
             currentAction = IdleAction.None;
             nextActionTime = now + UnityEngine.Random.Range(idleActionInterval.x, Mathf.Max(idleActionInterval.x, idleActionInterval.y));
         }
-        if (now < nextActionTime || ownsCurrentConversation)
+        if (now < nextActionTime || ownsCurrentConversation || ambientPartner != null)
             return;
 
         IdleAction next;
@@ -616,6 +682,19 @@ public sealed class NpcAnimationDriver : MonoBehaviour
         if (ownsCurrentConversation)
         {
             ComputeConversationPose(t, now, ref head, ref body);
+            return;
+        }
+
+        if (ambientPartner != null)
+        {
+            // Background chat: face the partner, alternate talking and listening (no text).
+            float yaw = PartnerYaw(conversationTurnLimit + maxConversationBodyTurn, float.MaxValue, 0f, ambientPartner);
+            float headYaw = Mathf.Clamp(yaw, -conversationTurnLimit, conversationTurnLimit);
+            head = new Vector3(head.x * 0.5f, headYaw, head.z * 0.5f);
+            body = new Vector3(body.x * 0.5f, yaw - headYaw, body.z * 0.5f);
+            float sinceTurn = now - ambientTurnStart;
+            ConversationMotion.Apply(ambientTalking, t, sinceTurn, sinceTurn > 1.8f ? sinceTurn - 1.8f : -1f, ambientMood,
+                ambientTurn, motionSeed, headMotionDegrees, conversationStrength * 0.8f, ref head, ref body);
             return;
         }
 
@@ -698,9 +777,9 @@ public sealed class NpcAnimationDriver : MonoBehaviour
         FacingOffset = Quaternion.Euler(0f, yaw, 0f);
     }
 
-    private float PartnerYaw(float limit, float maxDistance = float.MaxValue, float fallback = 0f)
+    private float PartnerYaw(float limit, float maxDistance = float.MaxValue, float fallback = 0f, Transform partner = null)
     {
-        Transform partner = CameraController.Instance != null ? CameraController.Instance.PlayerRoot : null;
+        if (partner == null) partner = CameraController.Instance != null ? CameraController.Instance.PlayerRoot : null;
         if (partner == null) return fallback;
         Vector3 toPartner = Quaternion.Inverse(CharacterRotation) * (partner.position - transform.position);
         toPartner.y = 0f;
@@ -711,6 +790,12 @@ public sealed class NpcAnimationDriver : MonoBehaviour
     private void LateUpdate()
     {
         bool rigged = AnimatorOwnsPose;
+        // A model revealed later (Arthur) had an inactive Animator at Awake: find its bones once it plays.
+        if (rigged && animateRigBones && headBone == null && !bonesCachedLive)
+        {
+            bonesCachedLive = true;
+            CacheBones();
+        }
         bool bodyActive = !rigged && animateStaticBody && bodyCached;
         bool headActive = !rigged && animateStaticHead && headPoses != null;
         bool bonesActive = rigged && animateRigBones && headBone != null;
