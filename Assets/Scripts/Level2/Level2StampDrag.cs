@@ -326,7 +326,6 @@ public sealed class Level2StampDrag : MonoBehaviour
         if (lifted && AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_stamp_return_01");
         CancelPulse();
         SetHovered(false);
-        ReleaseLayer();
         lifted = false;
         dragging = false;
         busy = false;
@@ -342,6 +341,7 @@ public sealed class Level2StampDrag : MonoBehaviour
         // it off on the way; it rejoins the desk only once it has landed.
         yield return Travel(restPosition, restRotation, restSize, seconds, size * 0.4f);
         SetModelLayer(Level2DeskStamps.DragLayer);
+        ReleaseLayer();
         motion = null;
     }
 
@@ -399,7 +399,7 @@ public sealed class Level2StampDrag : MonoBehaviour
             return;
         }
         // Land exactly where the ghost was last shown (what the player saw).
-        bool onFront = aimValid || TryAim(screen, out aimLocal);
+        bool onFront = TryAim(screen, out aimLocal);
         bool onPaper = owner.TryPaperPoint(AimScreen(screen), out _, out _, out _, out _);
         HideGhost();
         if (onFront)
@@ -441,7 +441,7 @@ public sealed class Level2StampDrag : MonoBehaviour
     private void LateUpdate()
     {
         if (lifted && owner != null) owner.TryFloatPose(slot, out home, out homeUp, out size);
-        if (documentLayer != null && lifted) documentLayer.BringToFront(false);
+        if (documentLayer != null && onStampLayer) documentLayer.BringToFront(false);
         if (focusPending && documentLayer != null)
         {
             // Resolve after the shared document-focus Update, so the paper
@@ -598,6 +598,9 @@ public sealed class Level2StampDrag : MonoBehaviour
     private IEnumerator Press(Vector2 local)
     {
         busy = true;
+        CaseFolderUI targetFolder = owner.Folder;
+        int targetPage = targetFolder != null ? targetFolder.CurrentPageIndex : -1;
+        int targetRevision = Level2OfficeStart.Review != null ? Level2OfficeStart.Review.packetRevision : -1;
         if (!owner.TryContactPose(local, pressTilt, out _, out _, out _, out _, out float stampSize))
         {
             busy = false;
@@ -633,6 +636,17 @@ public sealed class Level2StampDrag : MonoBehaviour
         PinToContact(local, stampSize, 0f);
         currentScale = stampSize;
 
+        // A modal, page turn or edit before contact cancels this press; never stamp a different revision.
+        if (!owner.CanPoint || owner.Folder != targetFolder || targetFolder == null || !targetFolder.IsShowing ||
+            targetFolder.CurrentPageIndex != targetPage || targetPage != owner.StampPageIndex() ||
+            Level2OfficeStart.Review == null || Level2OfficeStart.Review.packetRevision != targetRevision)
+        {
+            ResetBody();
+            yield return Travel(home, Facing(homeUp), size, HomeSeconds, size * 0.2f, followFolder: true);
+            busy = false;
+            yield break;
+        }
+
         // 3. Impact. The decision is wrapped so the stamp always finishes its motion.
         if (AudioManager.Instance != null)
         {
@@ -641,8 +655,8 @@ public sealed class Level2StampDrag : MonoBehaviour
         RectTransform paper = owner.Folder != null ? owner.Folder.PaperRect : null;
         if (paper != null)
         {
-            StartCoroutine(Thump(paper));
-            StartCoroutine(InkBurst(paper, local, pressTilt, Level2DeskStamps.InkColorFor(type)));
+            paperThump = StartCoroutine(Thump(paper));
+            burstMotion = StartCoroutine(InkBurst(paper, local, pressTilt, Level2DeskStamps.InkColorFor(type)));
         }
         PreliminaryReview.Outcome outcome = PreliminaryReview.Outcome.NoRule;
         try
@@ -764,10 +778,11 @@ public sealed class Level2StampDrag : MonoBehaviour
     }
 
     /// <summary>A soft ring of ink that bursts out from the imprint at impact.</summary>
-    private static IEnumerator InkBurst(RectTransform paper, Vector2 local, float angle, Color ink)
+    private IEnumerator InkBurst(RectTransform paper, Vector2 local, float angle, Color ink)
     {
         if (paper == null) yield break;
         RectTransform ring = HudTheme.CreateRect("StampBurst", paper);
+        impactRing = ring;
         ring.gameObject.layer = paper.gameObject.layer;
         ring.anchorMin = ring.anchorMax = ring.pivot = new Vector2(0.5f, 0.5f);
         ring.anchoredPosition = local - paper.rect.center;
@@ -786,6 +801,8 @@ public sealed class Level2StampDrag : MonoBehaviour
             yield return null;
         }
         if (ring != null) Destroy(ring.gameObject);
+        impactRing = null;
+        burstMotion = null;
     }
 
     // =========================================================
@@ -824,10 +841,18 @@ public sealed class Level2StampDrag : MonoBehaviour
     }
 
     /// <summary>The paper dips a little under the impact, then settles.</summary>
-    private static IEnumerator Thump(RectTransform paper)
+    private Coroutine paperThump;
+    private RectTransform thumpedPaper;
+    private Vector3 paperRestScale;
+    private Coroutine burstMotion;
+    private RectTransform impactRing;
+
+    private IEnumerator Thump(RectTransform paper)
     {
         if (paper == null) yield break;
-        Vector3 rest = paper.localScale;
+        thumpedPaper = paper;
+        paperRestScale = paper.localScale;
+        Vector3 rest = paperRestScale;
         for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 0.16f)
         {
             if (paper == null) yield break;
@@ -835,6 +860,8 @@ public sealed class Level2StampDrag : MonoBehaviour
             yield return null;
         }
         if (paper != null) paper.localScale = rest;
+        thumpedPaper = null;
+        paperThump = null;
     }
 
     private void Play(IEnumerator routine)
@@ -899,8 +926,19 @@ public sealed class Level2StampDrag : MonoBehaviour
         if (grab != null) grab.enabled = on;
     }
 
-    private void OnDisable()
+    private void OnDisable() => ResetToStand();
+
+    /// <summary>Owner disabled or focus lost: stop owned motion and restore one deterministic resting pose.</summary>
+    public void ResetToStand()
     {
+        if (paperThump != null) StopCoroutine(paperThump);
+        paperThump = null;
+        if (thumpedPaper != null) thumpedPaper.localScale = paperRestScale;
+        thumpedPaper = null;
+        if (burstMotion != null) StopCoroutine(burstMotion);
+        burstMotion = null;
+        if (impactRing != null) Destroy(impactRing.gameObject);
+        impactRing = null;
         CancelPulse();
         SetHovered(false);
         ReleaseLayer();

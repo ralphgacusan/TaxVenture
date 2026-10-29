@@ -42,14 +42,54 @@ public sealed class Level2ReviewClock : MonoBehaviour
     public float RedSeconds => WarningSeconds(1, 30f);
     public string DeadlineText => ReviewClock.FormatTimeOfDay(ReviewClock.DeadlineSeconds(CurrentClock, ClockDefinition));
 
+    // ---------- review vouchers (T18: the Level 1 voucher on Rosa's clock) ----------
+
+    /// <summary>The review clock of the loaded Level 2 (null elsewhere): ReviewVoucherCommand uses it instead of Office Hours.</summary>
+    public static Level2ReviewClock Active { get; private set; }
+
+    /// <summary>The cutoff is set (the opening announcement started the clock).</summary>
+    public bool HasDeadline => CurrentClock != null && CurrentClock.started && ClockDefinition != null && ClockDefinition.IsSet;
+
+    /// <summary>The voucher rules' view of Rosa's clock (a day rolling over counts as closing).</summary>
+    public VoucherClockView VoucherView
+    {
+        get
+        {
+            VoucherClockView view = ReviewClock.VoucherView(CurrentClock, ClockDefinition, CaseDone);
+            if (rolling) view.DayClosing = true;
+            return view;
+        }
+    }
+
+    public int DeadlineSeconds => (int)Math.Floor(ReviewClock.DeadlineSeconds(CurrentClock, ClockDefinition));
+
+    /// <summary>Where the cutoff moves with one voucher: 180 active seconds at the clock's own rate.</summary>
+    public int ExtendedDeadlineSeconds => DeadlineSeconds + VoucherRules.CutoffShift(ReviewClock.GameSecondsPerActiveSecond);
+
+    public int ExtensionSeconds => ReviewClock.ExtensionToday(CurrentClock);
+
+    /// <summary>The clock as it will be after one voucher (a copy; null when the window is closed or already extended today).</summary>
+    public ReviewClockState ExtendedClock() => ReviewClock.Extend(CurrentClock, VoucherRules.ExtensionSeconds);
+
+    /// <summary>After the voucher is saved: the live review takes the extended clock (the chip and minimap follow it).</summary>
+    public void ApplyExtension(ReviewClockState extended)
+    {
+        CaseReviewState review = CurrentReview;
+        if (review == null || extended == null) return;
+        review.clock = extended;
+        shownClock = null;
+    }
+
     private void OnEnable()
     {
+        Active = this;
         GameplayEvents.OnNotesUnlockRequested += Announce;
         if (chip == null) chip = OfficeHoursChip.Create(this);
     }
 
     private void OnDisable()
     {
+        if (Active == this) Active = null;
         GameplayEvents.OnNotesUnlockRequested -= Announce;
         if (rollover != null)
         {
@@ -103,8 +143,9 @@ public sealed class Level2ReviewClock : MonoBehaviour
     {
         get
         {
+            // The Supply Counter catalogue pauses it, as in Level 1 (T12); reading records in the Bag does not.
             if (Time.timeScale <= 0f || InGameSettings.IsOpen || DialogueUI.IsAnyDialogueActive ||
-                HudRewardScreen.AnyOpen || SideQuestSplash.IsShowing ||
+                HudRewardScreen.AnyOpen || SideQuestSplash.IsShowing || SupplyShopScreen.PausesClock ||
                 (CaseResultPopupUI.Instance != null && CaseResultPopupUI.Instance.IsVisible) ||
                 (Level2AnnotatedPapers.Instance != null && Level2AnnotatedPapers.Instance.IsCollecting)) return true;
             if (GameStateMachine.Instance != null && GameStateMachine.Instance.IsPaused) return true;

@@ -16,7 +16,8 @@ using UnityEngine.UI;
 public sealed class Level2AnnotatedPapers : MonoBehaviour
 {
     public const string ChildName = "AnnotatedPapers";
-    private const string IconName = "AnnotatedPapersIcon";
+    /// <summary>Its HUD icon's name (T18: the hotbar wraps it as Rosa's "Marked Records" item).</summary>
+    public const string IconName = "AnnotatedPapersIcon";
     /// <summary>Fourth slot of the right-side column: below Notes, Case Folder and the Tax Code Book.</summary>
     public static readonly Vector2 IconPosition = new Vector2(10f, -440f);
     private const float CollectionPreviewSeconds = 2.2f;
@@ -72,6 +73,13 @@ public sealed class Level2AnnotatedPapers : MonoBehaviour
 
     /// <summary>The papers are gathered in one stack under the finger.</summary>
     public bool IsStacked => stacked;
+
+    /// <summary>T18: Rosa's marked records exist (Mark the Money! awarded and its papers built): the Bag item follows this.</summary>
+    public bool HasMarkedRecords => hasAwardedState && papersBuilt && papers.Count > 0;
+
+    /// <summary>T18: the entry ids of the built papers (stable ids for the Bag; never their values).</summary>
+    public IReadOnlyList<string> MarkedRecordIds => markedIds;
+    private readonly List<string> markedIds = new List<string>();
 
     /// <summary>A long press just ended: the release is not a tap on an amount.</summary>
     public bool SwallowTap => Time.unscaledTime < swallowTapUntil;
@@ -320,6 +328,7 @@ public sealed class Level2AnnotatedPapers : MonoBehaviour
         papers.Clear();
         faces.Clear();
         slots.Clear();
+        markedIds.Clear();
 
         int count = annotation.entries.Count;
         // One row: full gaps when there is room, otherwise an even slight overlap.
@@ -331,6 +340,7 @@ public sealed class Level2AnnotatedPapers : MonoBehaviour
             AnnotationEntryState saved = review.challenge.Find(entry.id);
             FloatingWindow window = BuildPaper(entry, saved, annotation, i);
             papers.Add(window);
+            markedIds.Add(entry.id);
             slots.Add(new Vector2((i - (count - 1) * 0.5f) * step, RowLift));
         }
         papersBuilt = papers.Count > 0;

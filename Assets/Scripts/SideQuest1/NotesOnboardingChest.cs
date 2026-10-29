@@ -27,6 +27,8 @@ public sealed class NotesOnboardingChest : MonoBehaviour, IInteractable, IPointe
     private bool interactorFocused;
     private bool opened;
     private bool opening;
+    private bool discovered;
+    private bool ownershipRestored;
 
     public bool IsOpen => opened;
     public Vector3 PaperLocalPosition => paperLocalPosition;
@@ -49,7 +51,30 @@ public sealed class NotesOnboardingChest : MonoBehaviour, IInteractable, IPointe
         RefreshHighlight();
     }
 
-    private void Update() => RefreshHighlight();
+    private void Update()
+    {
+        HudHotbar hotbar = HudHotbar.Instance;
+        if (!ownershipRestored && hotbar != null && hotbar.IsReady)
+        {
+            ownershipRestored = true;
+            // A carried notebook stays carried in the next chapter. Its copied
+            // chest is already empty; do not replay an acquisition on resume.
+            if (NotesAlreadyOwned()) RestoreOpen(true);
+        }
+        RefreshHighlight();
+        bool available = CanOpenNow();
+        if (highlight != null) highlight.SetAffordance(available);
+        if (!discovered && available)
+        {
+            Camera view = Camera.main;
+            Vector3 screen = view != null ? view.WorldToViewportPoint(transform.position) : Vector3.back;
+            if (screen.z > 0f && screen.x > 0f && screen.x < 1f && screen.y > 0f && screen.y < 1f)
+            {
+                discovered = true;
+                WorldEmote.Show(transform, Emotion.Surprise, 2.2f);
+            }
+        }
+    }
 
     /// <summary>Quiet checkpoint restore. It never replays the lid motion or pickup drop.</summary>
     public void RestoreOpen(bool wasOpened)
@@ -132,6 +157,8 @@ public sealed class NotesOnboardingChest : MonoBehaviour, IInteractable, IPointe
         opening = true;
         pointerHovered = false;
         if (highlight != null) highlight.SetFocused(false);
+        if (highlight != null) highlight.SetAffordance(false);
+        WorldEmote.Burst(transform, Emotion.Happy, 6);
         AudioManager.Instance?.QueueInteractionSFX("sfx_drawer_open_01");
         StartCoroutine(OpenLidAndReleasePaper());
     }
@@ -144,7 +171,7 @@ public sealed class NotesOnboardingChest : MonoBehaviour, IInteractable, IPointe
         float duration = Mathf.Max(0.05f, openSeconds);
         while (elapsed < duration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             if (lid != null) lid.localRotation = Quaternion.Slerp(start, end, WorldPickupMotion.Smooth(elapsed / duration));
             yield return null;
         }

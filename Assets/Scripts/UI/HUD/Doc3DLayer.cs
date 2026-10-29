@@ -76,12 +76,19 @@ public sealed class Doc3DLayer : MonoBehaviour
     public bool RenderOnlyWhenChanged { get; set; }
     /// <summary>Opt-in oversampling for small SDF record text; ordinary documents keep native resolution.</summary>
     public float ResolutionScale { get; set; } = 1f;
-    /// <summary>Refresh editable SDF geometry at its current world scale before a cached record capture.</summary>
+    /// <summary>
+    /// Refresh editable SDF geometry at its current world scale before a cached record capture.
+    /// Only when that scale changed (or the layer was just shown): a record dragged at a fixed
+    /// size keeps its glyph meshes instead of rebuilding every text each frame (T28).
+    /// </summary>
     public bool RefreshTextBeforeCapture { get; set; }
     /// <summary>Opt-in: the footprint is this screen-overlay rect (the paper's window) instead of a scan of every renderer.</summary>
     public RectTransform FootprintRect { get; set; }
 
     private bool hasRenderedPose;
+    private TMPro.TMP_Text textProbe;
+    private float refreshedTextScale = -1f;
+    private static readonly List<TMPro.TMP_Text> Texts = new List<TMPro.TMP_Text>(64);
     private Matrix4x4 renderedPose;
     private Vector2Int renderedSize;
     private float renderedFov;
@@ -89,6 +96,12 @@ public sealed class Doc3DLayer : MonoBehaviour
     /// <summary>Screen rectangle the document covers (valid while visible).</summary>
     public bool TryGetFootprint(out Rect rect)
     {
+        // A required capture can be queried by a held tool before this layer's LateUpdate.
+        if (!footprintValid && IsVisible && AlwaysComposite)
+        {
+            Camera main = CameraController.Instance != null ? CameraController.Instance.MainCamera : Camera.main;
+            if (main != null) footprintValid = ComputeFootprint(main, out footprint);
+        }
         rect = footprint;
         return footprintValid && IsVisible;
     }
@@ -288,7 +301,8 @@ public sealed class Doc3DLayer : MonoBehaviour
             for (int i = 0; i < All.Count; i++)
             {
                 Doc3DLayer other = All[i];
-                if (other != this && other != null && other.IsComposited && other.sortingOrder < sortingOrder &&
+                if (other != this && other != null && other.IsVisible &&
+                    (other.IsComposited || other.AlwaysComposite) && other.sortingOrder < sortingOrder &&
                     other.TryGetFootprint(out Rect rect) && rect.Overlaps(footprint)) return true;
             }
         return false;
@@ -314,19 +328,18 @@ public sealed class Doc3DLayer : MonoBehaviour
 
     private void SetComposited(bool on)
     {
-        if (!on) hasRenderedPose = false;
+        if (!on)
+        {
+            hasRenderedPose = false;
+            refreshedTextScale = -1f;
+        }
         composited = on;
         if (image.enabled != on) image.enabled = on;
     }
 
     private void RenderDocument(Camera main)
     {
-        if (RefreshTextBeforeCapture)
-        {
-            Canvas.ForceUpdateCanvases();
-            foreach (TMPro.TMP_Text text in source.GetComponentsInChildren<TMPro.TMP_Text>(false))
-                text.ForceMeshUpdate();
-        }
+        if (RefreshTextBeforeCapture) RefreshText();
         int width = Mathf.Max(1, main.pixelWidth);
         int height = Mathf.Max(1, main.pixelHeight);
         float scale = Mathf.Max(1f, Mathf.Min(ResolutionScale, 2048f / Mathf.Max(width, height)));
@@ -378,6 +391,23 @@ public sealed class Doc3DLayer : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Brings the record's glyph meshes up to its current world scale before the capture (the
+    /// canvas update runs after LateUpdate). Moving or turning never changes them, so a drag at a
+    /// fixed size skips the rebuild; a lift, return, stack or flip pop changes the scale and refreshes.
+    /// </summary>
+    private void RefreshText()
+    {
+        if (textProbe != null && textProbe.isActiveAndEnabled && refreshedTextScale > 0f &&
+            Mathf.Abs(textProbe.transform.lossyScale.y - refreshedTextScale) <= refreshedTextScale * 0.002f) return;
+        Canvas.ForceUpdateCanvases();
+        source.GetComponentsInChildren(false, Texts);
+        textProbe = Texts.Count > 0 ? Texts[0] : null;
+        for (int i = 0; i < Texts.Count; i++) Texts[i].ForceMeshUpdate();
+        Texts.Clear();
+        refreshedTextScale = textProbe != null ? textProbe.transform.lossyScale.y : -1f;
+    }
+
     private void SwapLayers()
     {
         nodes.Clear();
@@ -427,7 +457,8 @@ public sealed class Doc3DLayer : MonoBehaviour
         }
 
         canvases.Clear();
-        foreach (Canvas c in source.GetComponentsInChildren<Canvas>(false))
+        source.GetComponentsInChildren(false, pageCanvases);
+        foreach (Canvas c in pageCanvases)
             canvases.Add((RectTransform)c.transform);
         for (int i = 0; i < canvases.Count; i++)
         {

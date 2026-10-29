@@ -521,6 +521,13 @@ public sealed class IncomeToolkit : MonoBehaviour
     /// <summary>The player sat at the records desk; the case opens once the desk view is active.</summary>
     public void RequestOpen() => wantOpen = true;
 
+    /// <summary>Park the tools for Rosa's conversation; draft/current record remain in the review.</summary>
+    public void SuspendForRosaDiscussion()
+    {
+        wantOpen = false;
+        if (open) Close();
+    }
+
     private void Update()
     {
         if (!AtDesk)
@@ -561,7 +568,8 @@ public sealed class IncomeToolkit : MonoBehaviour
     {
         // This records desk owns the exit hold and the bottom hint while it is the one in use.
         active = this;
-        WorkstationUI.ExitBlocked = () => QuestInProgress || HoldingExitAfterQuest;
+        WorkstationUI.ExitBlocked = () => HoldingExitAfterQuest ||
+            (AtRecordsDesk() && (active.busy > 0 || active.demoRunning || SideQuestSplash.IsShowing));
         GuideCoachView.HintAtBottom = () => AtRecordsDesk() && active.mode != Mode.Done;
         if (!EnsureContent())
         {
@@ -641,7 +649,9 @@ public sealed class IncomeToolkit : MonoBehaviour
                 Level2Say.Line("Now Rosa's four records. Mark each one, add its notes, then press CHECK. Your first check sets the badge.", "wow", 6f);
             }
             else if (challenge.firstChecked) Level2Say.Line("Fix the red notes, then CHECK again. Tap a red one for a hint.", null, 5f);
-            else Level2Say.Line("Finish Rosa's four records, then press CHECK.", null, 4f);
+            else Level2Say.Line(Level2Checkpoint.EthicsChoiceCommitted(review, definition.caseId)
+                ? "Your conversation is recorded. Check your work when ready."
+                : "Finish Rosa's four records. CHECK will open her conversation before grading.", null, 6f);
         }
         flow = null;
     }
@@ -1615,6 +1625,21 @@ public sealed class IncomeToolkit : MonoBehaviour
     private IEnumerator PressCheck()
     {
         if (mode != Mode.Challenge) yield break;
+        CaseReviewState ethicsReview = Review;
+        string caseId = definition != null ? definition.caseId : "";
+        PlayerProgressManager ethicsProgress = PlayerProgressManager.Instance;
+        bool signedEthicsChoice = ethicsProgress != null && ethicsProgress.UsesLevelTwoStory && !Level2Checkpointer.IsDirectEditorAttempt &&
+                                  Level2CampaignRules.EthicsChoiceCommitted(ethicsProgress.CurrentProgress, caseId);
+        if (ethicsReview != null && Challenge != null && !Challenge.firstChecked &&
+            IncomeChallenge.Missing(Challenge, options).Count == 0 &&
+            !Level2Checkpoint.EthicsChoiceCommitted(ethicsReview, caseId) &&
+            !signedEthicsChoice)
+        {
+            MarketRecordsDesk desk = GetComponentInParent<MarketRecordsDesk>();
+            if (Level2RosaConsultation.Instance == null || !Level2RosaConsultation.Instance.TryDiscussFromDesk(desk))
+                Level2Say.Line("Rosa's conversation could not start. Your marks are kept; try CHECK again or use Exit Desk.", "thinking", 6f);
+            yield break;
+        }
         busy++;
         // Physical press: the cap sinks and springs back.
         for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 0.08f)

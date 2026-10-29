@@ -71,11 +71,12 @@ public sealed class OfficeMinimapMarkers
 
     private void Discover()
     {
-        NpcStatusMarker[] sources = Object.FindObjectsByType<NpcStatusMarker>(FindObjectsInactive.Exclude);
-        for (int i = 0; i < sources.Length; i++)
+        // The markers' own registry: no once-a-second search (and array) over the whole plaza scene (T28).
+        IReadOnlyList<NpcStatusMarker> sources = NpcStatusMarker.Active;
+        for (int i = 0; i < sources.Count; i++)
         {
             NpcStatusMarker source = sources[i];
-            if (!source.isActiveAndEnabled || source.gameObject.scene != scene || entries.ContainsKey(source)) continue;
+            if (source == null || !source.isActiveAndEnabled || source.gameObject.scene != scene || entries.ContainsKey(source)) continue;
             entries.Add(source, new Entry
             {
                 Source = source,

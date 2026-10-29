@@ -410,17 +410,17 @@
   "receptionistGreeting": [
     {
       "speaker": "Npc",
-      "text": "Good morning! You have one client today: Aling Rosa Santos, from the market.",
+      "text": "Welcome back. Aling Rosa Santos is worried about her prepared May income summary.",
       "portraitId": "default"
     },
     {
       "speaker": "Npc",
-      "text": "Someone already prepared her May income summary. The office needs it reviewed before today's review cutoff at {deadline}.",
+      "text": "Review her summary against its records. Today’s hand-in cutoff is {deadline}; after that, the Auditor resumes tomorrow morning.",
       "portraitId": "default"
     },
     {
       "speaker": "Npc",
-      "text": "After {deadline} the Auditor stops taking hand-ins until tomorrow morning, so watch the clock under your level card.",
+      "text": "Your carried tools and records are still yours. Her folder is ready for collection.",
       "portraitId": "default"
     },
     {
@@ -463,6 +463,477 @@
     "okay": [
       "I thought it was finished before. Thank you for staying with it until it was right.",
       "And yes, the Taxpayer Assistance Desk prepared that first summary."
+    ],
+    "farewellGreat": [
+      {
+        "speaker": "Npc",
+        "text": "Thank you! My receipts finally make sense to me too.",
+        "portraitId": "Rosa_Default",
+        "emote": "heart"
+      },
+      {
+        "speaker": "Npc",
+        "text": "Come by the stall any time. Your laundry is on me!",
+        "portraitId": "Rosa_Default",
+        "emote": "sparkles"
+      }
+    ],
+    "farewellGood": [
+      {
+        "speaker": "Npc",
+        "text": "Thank you for checking it so carefully.",
+        "portraitId": "Rosa_Default",
+        "emote": "heart"
+      },
+      {
+        "speaker": "Npc",
+        "text": "I'll keep every receipt in one envelope from now on.",
+        "portraitId": "Rosa_Default",
+        "emote": "music"
+      }
+    ],
+    "farewellOkay": [
+      {
+        "speaker": "Npc",
+        "text": "Thank you for not giving up on my papers.",
+        "portraitId": "Rosa_Default",
+        "emote": "sweat"
+      },
+      {
+        "speaker": "Npc",
+        "text": "Next month I'll bring everything together. Promise!",
+        "portraitId": "Rosa_Default",
+        "emote": "music"
+      }
+    ]
+  },
+  "_clientHandover": "Level 2 consistency pass: the same Client Copy flow as Marie's. After the approved Audit Summary the Auditor's hand-in conversation continues with approvalGreat / approvalGood / approvalOkay, then auditorGive, and Rosa's read-only copy drops beside him; you carry it to Rosa in the conference room, the handover line waits until you drag the copy onto her (or tap the folder icon), then explain and her clientFinale lines. afterDelivery = a tap on her afterwards. Delivery commits her follow-through once (story runs only).",
+  "clientHandover": {
+    "enabled": true,
+    "approvalGreat": [
+      {
+        "speaker": "Npc",
+        "text": "Rosa's review is approved. First try, and inside the cutoff. Well done.",
+        "portraitId": "Auditor_Happy",
+        "emote": "sparkles"
+      },
+      {
+        "speaker": "Npc",
+        "text": "Every payment she earned in May is listed once, and the coop loan stays out.",
+        "portraitId": "Auditor_Default"
+      },
+      {
+        "speaker": "Player",
+        "text": "So her summary is right now?",
+        "portraitId": "Auditor_Default"
+      },
+      {
+        "speaker": "Npc",
+        "text": "It is. Signed and on record.",
+        "portraitId": "Auditor_Happy"
+      }
+    ],
+    "approvalGood": [
+      {
+        "speaker": "Npc",
+        "text": "It took another look, but Rosa's review is approved.",
+        "portraitId": "Auditor_Happy"
+      },
+      {
+        "speaker": "Npc",
+        "text": "Every payment she earned in May is listed once now, and the coop loan stays out.",
+        "portraitId": "Auditor_Default"
+      },
+      {
+        "speaker": "Player",
+        "text": "Thanks for pointing me to what I missed.",
+        "portraitId": "Auditor_Default"
+      }
+    ],
+    "approvalOkay": [
+      {
+        "speaker": "Npc",
+        "text": "Rosa’s corrected review is approved now.",
+        "portraitId": "Auditor_Happy",
+        "emote": "sweat"
+      },
+      {
+        "speaker": "Npc",
+        "text": "Each earned May payment is listed once, and the repayable coop loan stays out.",
+        "portraitId": "Auditor_Default"
+      }
+    ],
+    "auditorGive": [
+      {
+        "speaker": "Npc",
+        "text": "Here is Rosa's client copy. Take it to her in the conference room and walk her through it.",
+        "portraitId": "Auditor_Default",
+        "emote": "alert"
+      }
+    ],
+    "auditorRemind": [
+      {
+        "speaker": "Npc",
+        "text": "Rosa is waiting in the conference room. Bring her the copy.",
+        "portraitId": "Auditor_Default"
+      }
+    ],
+    "waiting": [
+      {
+        "speaker": "Npc",
+        "text": "Is it done? I'll wait for the Auditor's word.",
+        "portraitId": "Rosa_Default",
+        "emote": "question"
+      },
+      {
+        "speaker": "Player",
+        "text": "Almost. He has your copy for me.",
+        "portraitId": "Auditor_Default"
+      }
+    ],
+    "opening": [
+      {
+        "speaker": "Player",
+        "text": "Rosa! Your review is approved.",
+        "portraitId": "Auditor_Default",
+        "emote": "alert"
+      },
+      {
+        "speaker": "Npc",
+        "text": "Really? Even with all my separate papers?",
+        "portraitId": "Rosa_Default",
+        "emote": "alert"
+      }
+    ],
+    "handover": {
+      "speaker": "Player",
+      "text": "Here's your copy. The Auditor checked every line.",
+      "portraitId": "Auditor_Default"
+    },
+    "handoverPrompt": "Drag Rosa's client copy to her",
+    "retryPrompt": "It didn't save. Drag the client copy to Rosa again.",
+    "explain": [
+      {
+        "speaker": "Player",
+        "text": "Your May summary now lists every job you were paid for, the blanket washing too.",
+        "portraitId": "Auditor_Default"
+      },
+      {
+        "speaker": "Player",
+        "text": "The coop money stays out: you pay it back, so you didn't earn it.",
+        "portraitId": "Auditor_Default"
+      },
+      {
+        "speaker": "Player",
+        "text": "Keep each month's receipts together and bring them before the next filing.",
+        "portraitId": "Auditor_Default",
+        "emote": "idea"
+      }
+    ],
+    "afterDelivery": [
+      {
+        "speaker": "Npc",
+        "text": "Thank you again. My receipts all go in one envelope from now on.",
+        "portraitId": "Rosa_Default",
+        "emote": "heart"
+      }
+    ],
+    "greatEmote": "sparkles",
+    "goodEmote": "heart",
+    "okayEmote": "music"
+  },
+  "clientApprovedPortrait": "Rosa_Default",
+  "_consultation": "Rosa in the conference room after her records are handed over (Level 2 consistency pass), Level 1's consultation rules: a clue that fits (a record still unread, an empty page-1 entry; never an answer or an amount change), a moment after a returned audit or on a new review day, else the visit ladder. review.roomMoments adds one line per review stage first. Talk only.",
+  "consultation": {
+    "enabled": true,
+    "clues": [
+      {
+        "id": "clue-collection-sheet",
+        "document": "Collection Sheet (D1)",
+        "when": "unread",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "My collection sheet is in your folder. I write down the clothes I wash every day.",
+            "portraitId": "Rosa_Default",
+            "emote": "idea"
+          },
+          {
+            "speaker": "Player",
+            "text": "I'll read it carefully.",
+            "portraitId": "Auditor_Default"
+          }
+        ]
+      },
+      {
+        "id": "clue-blanket-receipt",
+        "document": "Laundry Receipt (D3)",
+        "when": "unread",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "The guesthouse blankets were a bigger job, so that receipt is separate from my daily list.",
+            "portraitId": "Rosa_Default",
+            "emote": "thinking"
+          },
+          {
+            "speaker": "Player",
+            "text": "Good to know. Thanks, Rosa.",
+            "portraitId": "Auditor_Default"
+          }
+        ]
+      },
+      {
+        "id": "clue-rental-receipt",
+        "document": "Rental Receipt (D4)",
+        "when": "unread",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "Someone rented my spare washer for a few days in May. That receipt is in there too.",
+            "portraitId": "Rosa_Default"
+          },
+          {
+            "speaker": "Player",
+            "text": "I'll take a look.",
+            "portraitId": "Auditor_Default"
+          }
+        ]
+      },
+      {
+        "id": "clue-loan-agreement",
+        "document": "Loan Agreement (D5)",
+        "when": "unread",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "The coop paper is for the money I borrowed in May. I pay it back every month.",
+            "portraitId": "Rosa_Default",
+            "emote": "thinking"
+          },
+          {
+            "speaker": "Player",
+            "text": "That helps. Thank you.",
+            "portraitId": "Auditor_Default"
+          }
+        ]
+      },
+      {
+        "id": "clue-residency",
+        "field": "ResidencyStatus",
+        "when": "empty",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "Where I'm from? I'm Filipino, and I've lived here in town all my life.",
+            "portraitId": "Rosa_Default",
+            "emote": "thinking"
+          },
+          {
+            "speaker": "Player",
+            "text": "Thank you. That helps.",
+            "portraitId": "Auditor_Default"
+          }
+        ]
+      },
+      {
+        "id": "clue-taxpayer-type",
+        "field": "TaxpayerType",
+        "when": "empty",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "Nobody employs me. The stall is mine, and I run it myself.",
+            "portraitId": "Rosa_Default",
+            "emote": "idea"
+          },
+          {
+            "speaker": "Player",
+            "text": "Got it.",
+            "portraitId": "Auditor_Default"
+          }
+        ]
+      },
+      {
+        "id": "clue-income-source",
+        "field": "IncomeSource",
+        "when": "empty",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "My money? Customers pay me to wash their clothes. That's my work.",
+            "portraitId": "Rosa_Default",
+            "emote": "idea"
+          },
+          {
+            "speaker": "Player",
+            "text": "Thanks, Rosa.",
+            "portraitId": "Auditor_Default"
+          }
+        ]
+      }
+    ],
+    "failedAudit": [
+      {
+        "id": "failed-papers",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "The Auditor sent it back? Did I give you the wrong papers?",
+            "portraitId": "Rosa_Default",
+            "emote": "worried"
+          },
+          {
+            "speaker": "Player",
+            "text": "No, your papers are fine. I need to fix part of my review.",
+            "portraitId": "Auditor_Default"
+          },
+          {
+            "speaker": "Npc",
+            "text": "Okay. Take your time. I'm not going anywhere.",
+            "portraitId": "Rosa_Default",
+            "emote": "heart"
+          }
+        ]
+      },
+      {
+        "id": "failed-again",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "Back again... is it the blanket job or the coop money?",
+            "portraitId": "Rosa_Default",
+            "emote": "sweat"
+          },
+          {
+            "speaker": "Player",
+            "text": "I'm checking my own work, not yours. One more careful pass.",
+            "portraitId": "Auditor_Default"
+          },
+          {
+            "speaker": "Npc",
+            "text": "I trust you. Ask me anything.",
+            "portraitId": "Rosa_Default"
+          }
+        ]
+      }
+    ],
+    "laterDay": [
+      {
+        "id": "day-early",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "Good morning! I came back first thing. Do you need anything else from me?",
+            "portraitId": "Rosa_Default",
+            "emote": "thinking"
+          },
+          {
+            "speaker": "Player",
+            "text": "Not yet. I'll keep going with your papers.",
+            "portraitId": "Auditor_Default"
+          }
+        ]
+      }
+    ],
+    "ladder": [
+      {
+        "mood": "helpful",
+        "variants": [
+          {
+            "id": "ladder-helpful",
+            "lines": [
+              {
+                "speaker": "Npc",
+                "text": "If a paper is unclear, ask me. I remember every job I did in May.",
+                "portraitId": "Rosa_Default",
+                "emote": "idea"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "mood": "friendly",
+        "variants": [
+          {
+            "id": "ladder-friendly",
+            "lines": [
+              {
+                "speaker": "Npc",
+                "text": "My regular customers will wonder where I am. I told them I'm with my tax consultant!",
+                "portraitId": "Rosa_Default",
+                "emote": "music"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "mood": "teasing",
+        "variants": [
+          {
+            "id": "ladder-teasing",
+            "lines": [
+              {
+                "speaker": "Npc",
+                "text": "You sort papers the way I sort laundry: whites first, colours later!",
+                "portraitId": "Rosa_Default",
+                "emote": "music"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "mood": "playful",
+        "variants": [
+          {
+            "id": "ladder-playful",
+            "lines": [
+              {
+                "speaker": "Npc",
+                "text": "Next time I'll bring you a freshly washed towel. For all that hard work.",
+                "portraitId": "Rosa_Default",
+                "emote": "heart"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "mood": "redirect",
+        "variants": [
+          {
+            "id": "ladder-redirect",
+            "lines": [
+              {
+                "speaker": "Npc",
+                "text": "Your desk is waiting, I think. I'll be right here.",
+                "portraitId": "Rosa_Default"
+              }
+            ]
+          },
+          {
+            "id": "ladder-redirect-2",
+            "lines": [
+              {
+                "speaker": "Npc",
+                "text": "Go on, I'm fine here. The chairs are comfier than my stall stool!",
+                "portraitId": "Rosa_Default",
+                "emote": "music"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "fallback": [
+      {
+        "speaker": "Npc",
+        "text": "I'm right here if you need anything about my records.",
+        "portraitId": "Rosa_Default"
+      }
     ]
   },
   "review": {
@@ -473,8 +944,141 @@
     "contentStatus": "educational-draft",
     "_contentStatus": "educational-draft: the loan-principal teaching rule has no confirmed Philippine primary-source passage yet (see CONTENT.md, Book additions and sources). It is NOT a legal citation.",
     "startPhase": "OfficeWelcome",
-    "_profileText": "Taxpayer Profile page (after Taxpayer Information). One sentence that lets the player work out Classification, Type and Income Source with Book Sections 1-3 without naming them: Filipino + lives here (Resident Citizen), runs her own stall with no employer (Self-Employed), paid by customers of her trade (Business Income).",
+    "_profileText": "One sentence that lets the player work out Classification, Type and Income Source with Book Sections 1-3 without naming them: Filipino + lives here (Resident Citizen), runs her own stall with no employer (Self-Employed), paid by customers of her trade (Business Income). Level 2 consistency pass: no separate Taxpayer Profile page any more; the same facts print on the Client Background notes (background) on Supporting Documents.",
     "profileText": "A Filipino who has always lived in town, Rosa has no boss: she runs her own laundry stall, and customers pay her to wash their clothes.",
+    "_background": "Client Background notes (Type 2, 'Client interview notes'), the first record on Supporting Documents (page 2) from the start: profileText's facts in the fixed HOME / WORK / INCOME blocks. Never an answer label.",
+    "background": {
+      "period": "Interview, June 2026",
+      "home": "Filipino. Has always lived here in town, Town Proper.",
+      "work": "Has no boss. Runs her own laundry stall at Plaza Market, Stall 04.",
+      "income": "Customers pay her to wash their clothes."
+    },
+    "_travelLines": "T32: Rosa's one-liners when tapped on her walk to the office (toOffice), while she waits at the front desk (atReception) and on her way to the conference room (toRoom). Talk only; her walk pauses and resumes.",
+    "travelLines": {
+      "toOffice": [
+        {
+          "speaker": "Npc",
+          "text": "My neighbour is minding the stall. I'll wait for you at your office, so you can work in peace.",
+          "portraitId": "Rosa_Default",
+          "emote": "heart"
+        },
+        {
+          "speaker": "Player",
+          "text": "See you there, Rosa.",
+          "portraitId": "Auditor_Default"
+        }
+      ],
+      "atReception": [
+        {
+          "speaker": "Npc",
+          "text": "The receptionist says they'll show me to a quiet room soon. Your office smells like new folders!",
+          "portraitId": "Rosa_Default",
+          "emote": "music"
+        }
+      ],
+      "toRoom": [
+        {
+          "speaker": "Npc",
+          "text": "A whole meeting room, just for my papers? Very official! I'll be right there.",
+          "portraitId": "Rosa_Default",
+          "emote": "alert"
+        }
+      ]
+    },
+    "_roomMoments": "Rosa's line once per review stage in the conference room (stages: arrival, reviewing, officeReview, readyToSubmit), before the consultation rules. Talk only.",
+    "roomMoments": [
+      {
+        "stage": "arrival",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "Oh, you found me! The receptionist said I could wait here while you work.",
+            "portraitId": "Rosa_Default",
+            "emote": "alert"
+          },
+          {
+            "speaker": "Player",
+            "text": "Thanks for coming in, Rosa. I'll come to you if I need anything.",
+            "portraitId": "Auditor_Default"
+          },
+          {
+            "speaker": "Npc",
+            "text": "My neighbour is minding the stall. Ask me if anything in my records needs explaining.",
+            "portraitId": "Rosa_Default"
+          }
+        ]
+      },
+      {
+        "stage": "reviewing",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "Are my papers making sense? I keep the daily list and the bigger jobs apart.",
+            "portraitId": "Rosa_Default",
+            "emote": "thinking"
+          },
+          {
+            "speaker": "Player",
+            "text": "They do. I'm going through each one.",
+            "portraitId": "Auditor_Default"
+          }
+        ]
+      },
+      {
+        "stage": "officeReview",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "Will my May total change? I just want it right, whatever it says.",
+            "portraitId": "Rosa_Default",
+            "emote": "thinking"
+          },
+          {
+            "speaker": "Player",
+            "text": "I'll show you exactly what changed, and why.",
+            "portraitId": "Auditor_Default"
+          }
+        ]
+      },
+      {
+        "stage": "readyToSubmit",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "You're taking it to the Auditor now? I'll wait right here.",
+            "portraitId": "Rosa_Default",
+            "emote": "heart"
+          },
+          {
+            "speaker": "Player",
+            "text": "I'll be back as soon as he's checked it.",
+            "portraitId": "Auditor_Default"
+          }
+        ]
+      },
+      {
+        "stage": "hold",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "We still need to support the review. I'll help you check the records; please keep the case open.",
+            "portraitId": "Rosa_Default",
+            "emote": "thinking"
+          }
+        ]
+      },
+      {
+        "stage": "correction",
+        "lines": [
+          {
+            "speaker": "Npc",
+            "text": "The Auditor found something to correct? Thank you for checking again. My records are still here if you need them.",
+            "portraitId": "Rosa_Default",
+            "emote": "thinking"
+          }
+        ]
+      }
+    ],
     "_reasons": "Review principles transferred from the Tax Code Book. Stable ids travel as Enum values under FindingReason; labels are display copy.",
     "reasons": [
       {
@@ -571,7 +1175,7 @@
       "afterLines": [
         {
           "speaker": "Npc",
-          "text": "Your records are on the desk beside me. Take your time.",
+          "text": "The four records are on the stall’s records desk and in your folder. Check each one before you decide.",
           "portraitId": "Rosa_Default"
         }
       ]
@@ -1293,6 +1897,10 @@
         "reference": "May 2026",
         "date": "May 31, 2026",
         "footer": "",
+        "paperType": 4,
+        "paperTitle": "Collection Sheet",
+        "paperStatus": "",
+        "paperTotalKey": "D1Total",
         "lines": [
           {
             "id": "D1-work",
@@ -1319,6 +1927,10 @@
         "reference": "****4821",
         "date": "May 31, 2026",
         "footer": "",
+        "paperType": 6,
+        "paperTitle": "Bank Statement",
+        "paperStatus": "",
+        "paperTotalKey": "",
         "lines": [
           {
             "id": "D2-bt",
@@ -1352,6 +1964,10 @@
         "reference": "CM-0526",
         "date": "May 26, 2026",
         "footer": "",
+        "paperType": 5,
+        "paperTitle": "Receipt",
+        "paperStatus": "Paid",
+        "paperTotalKey": "",
         "lines": [
           {
             "id": "D3-for",
@@ -1378,6 +1994,10 @@
         "reference": "RA-0520",
         "date": "May 20, 2026",
         "footer": "",
+        "paperType": 5,
+        "paperTitle": "Rental Receipt",
+        "paperStatus": "Paid",
+        "paperTotalKey": "",
         "lines": [
           {
             "id": "D4-item",
@@ -1404,6 +2024,10 @@
         "reference": "LN-0510",
         "date": "May 10, 2026",
         "footer": "",
+        "paperType": 7,
+        "paperTitle": "Loan Agreement",
+        "paperStatus": "",
+        "paperTotalKey": "",
         "lines": [
           {
             "id": "D5-principal",
@@ -1430,6 +2054,10 @@
         "reference": "RC-0531",
         "date": "May 31, 2026",
         "footer": "",
+        "paperType": 5,
+        "paperTitle": "Cash Receipt",
+        "paperStatus": "Paid",
+        "paperTotalKey": "",
         "lines": [
           {
             "id": "D6-amount",

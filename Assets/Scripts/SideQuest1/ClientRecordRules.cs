@@ -27,14 +27,30 @@ public class RecordPageLayout
     public float sheetWidth = 0.5f;
     /// <summary>Neighbouring sheets share one row, side by side (T25: Marie's background beside her 2316).</summary>
     public bool sheetsInRow;
+    /// <summary>Width share of a Type 5 slip (1 : 1.8 portrait).</summary>
+    public float slipWidth = 0.22f;
+    /// <summary>At most this many papers in one row (0 = no limit).</summary>
+    public int maxPerRow;
+    /// <summary>A row holds one shape only: sheets, then slips on their own row (Level 2 records).</summary>
+    public bool oneShapePerRow;
     public const float CardAspect = 1.6f;
     public const float SheetAspect = 1.4f;
+    public const float SlipAspect = 1.8f;
 
     /// <summary>Arthur's Reviewed File (T30): his ID card above his background sheet.</summary>
     public static RecordPageLayout Default => new RecordPageLayout();
 
     /// <summary>Marie's case (T25): her ID card on top, her two work papers side by side below it.</summary>
     public static RecordPageLayout CaseRecords => new RecordPageLayout { cardWidth = 0.5f, sheetWidth = 0.43f, sheetsInRow = true };
+
+    /// <summary>
+    /// A review case (Level 2: Rosa): the background notes and her sheets side by side (up to three),
+    /// her payment slips on the row below. Each one taps out to read large.
+    /// </summary>
+    public static RecordPageLayout ReviewRecords => new RecordPageLayout
+    {
+        topShare = 0.2f, bottomShare = 0.88f, sheetWidth = 0.3f, slipWidth = 0.22f, sheetsInRow = true, maxPerRow = 3, oneShapePerRow = true
+    };
 }
 
 /// <summary>
@@ -146,17 +162,22 @@ public static class ClientRecordRules
         foreach (string type in types)
         {
             bool card = type == ClientRecord.Identity;
-            float w = width * (card ? layout.cardWidth : layout.sheetWidth);
-            float h = card ? w / RecordPageLayout.CardAspect : w * RecordPageLayout.SheetAspect;
+            bool slip = type == ClientRecord.Payment;
+            float w = width * (card ? layout.cardWidth : slip ? layout.slipWidth : layout.sheetWidth);
+            float h = card ? w / RecordPageLayout.CardAspect : w * (slip ? RecordPageLayout.SlipAspect : RecordPageLayout.SheetAspect);
             sizes.Add((w, h));
         }
-        // Rows top to bottom: each card alone; with sheetsInRow, neighbouring sheets side by side.
+        // Rows top to bottom: each card alone; with sheetsInRow, neighbouring sheets side by side
+        // (up to maxPerRow; with oneShapePerRow a slip starts its own row after sheets).
         var rows = new List<List<int>>();
         for (int i = 0; i < types.Count; i++)
         {
             bool sheet = types[i] != ClientRecord.Identity;
             List<int> last = rows.Count > 0 ? rows[rows.Count - 1] : null;
-            if (layout.sheetsInRow && sheet && last != null && types[last[0]] != ClientRecord.Identity) last.Add(i);
+            bool joins = layout.sheetsInRow && sheet && last != null && types[last[0]] != ClientRecord.Identity &&
+                         (layout.maxPerRow <= 0 || last.Count < layout.maxPerRow) &&
+                         (!layout.oneShapePerRow || (types[last[0]] == ClientRecord.Payment) == (types[i] == ClientRecord.Payment));
+            if (joins) last.Add(i);
             else rows.Add(new List<int> { i });
         }
         // A row never wider than the page (with a margin); then everything scales together to fit the height.

@@ -4,65 +4,61 @@ using UnityEngine;
 /// <summary>
 /// PURPOSE:
 /// The Auditor's review of Rosa's stamped folder (Level 2, T09), under
-/// Level2Gameplay/Audit. Plugs into the existing hand-in through
-/// AuditorInteractable.LevelAudit; Level 1 keeps its own audit.
+/// Level2Gameplay/Audit. Level 2 consistency pass: the hand-in is Level 1's
+/// own talk-first conversation (AuditorInteractable): tap the Auditor, he
+/// asks for the folder and waits, the player drags Rosa's Case Folder onto
+/// him (or taps its icon), then this review decides through
+/// AuditorInteractable.ILevelHandIn. No tray drop, no second submission path.
 ///
-/// FLOW: the tray accepts the folder (only with a current final stamp,
-/// changed since the last returned/held review, inside the review window),
-/// then FinalAudit.Submit decides and records the outcome ONCE, before any
-/// dialogue (so a cancelled conversation, a cutoff or a second tap can never
-/// produce a second result). The Auditor's lines point to the record or rule;
-/// Rosa's short reaction follows.
+/// FLOW: before he takes the folder, Refusal() says why it cannot be handed in
+/// yet (no current final stamp, unchanged since a returned/held review, or the
+/// review window closed); nothing is decided or charged. With the folder in his
+/// hands, Decide() runs FinalAudit.Submit ONCE (so a cancelled conversation,
+/// a cutoff or a second tap can never produce a second result). His lines point
+/// to the record or rule; the same Audit Summary card as Level 1 follows.
 /// - Approved: case reward once (capped deductions from charged root causes,
-///   returned submissions and a late day), then the existing completion states.
-/// - Supported hold: acknowledged; folder back, no reward, no cost.
-/// - Premature approval / false hold / reason error: folder back with
-///   targeted feedback; new root causes charged once each.
-/// All review work (records, quest, schedule, findings) is kept.
-/// After the Auditor's lines, the same Audit Summary card as Office Level 1
-/// shows the outcome (approved, with totals and timing, before the level
-/// completes; or what to fix) before the flow continues.
+///   returned submissions and a late day), then the existing completion states;
+///   Rosa's Client Copy continues his conversation (ClientCopyHandover).
+/// - Supported hold / premature approval / false hold / reason error: the
+///   folder goes back to the desk with targeted feedback; new root causes are
+///   charged once each. All review work (records, quest, schedule, findings,
+///   stamps) is kept.
 /// </summary>
-public sealed class Level2Audit : MonoBehaviour
+public sealed class Level2Audit : MonoBehaviour, AuditorInteractable.ILevelHandIn
 {
     public const string ChildName = "Audit";
 
-    private const string Speaker = "Auditor";
-    private const float DialogueWaitSeconds = 10f;
+    private FinalAudit.Result decided;
+    private string rosaReaction;
 
-    private static Level2Audit instance;
-
-    /// <summary>A hand-in is being explained or summarised: further hand-in calls wait for it.</summary>
-    private static bool inProgress;
-
-    private void OnEnable()
-    {
-        instance = this;
-        AuditorInteractable.LevelAudit = Handle;
-    }
+    private void OnEnable() => AuditorInteractable.LevelHandIn = this;
 
     private void OnDisable()
     {
-        if (instance == this) instance = null;
-        inProgress = false;
-        if (AuditorInteractable.LevelAudit == (System.Func<AuditorInteractable, bool>)Handle)
-            AuditorInteractable.LevelAudit = null;
+        if (ReferenceEquals(AuditorInteractable.LevelHandIn, this)) AuditorInteractable.LevelHandIn = null;
     }
 
-    private static bool Handle(AuditorInteractable auditor)
+    private static CaseDefinition Definition => CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+
+    // =========================================================
+    // ILevelHandIn
+    // =========================================================
+
+    public string Refusal()
     {
         CaseReviewState review = Level2OfficeStart.Review;
-        CaseDefinition definition = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
-        CaseData data = CaseManager.Instance != null ? CaseManager.Instance.CurrentCase : null;
-        if (review == null || definition == null || !definition.HasReview || data == null) return false;
-        // One hand-in at a time: a repeated call never replays the Auditor or decides twice.
-        if (inProgress) return true;
+        CaseDefinition definition = Definition;
+        if (review == null || definition == null || !definition.HasReview) return "I can't take this folder right now.";
+        return Level2FolderHandoff.HandInRefusal(review);
+    }
 
-        if (!Level2FolderHandoff.CanHandInReview(review, true))
-        {
-            auditor.ReturnFolderForReview();
-            return true;
-        }
+    public AuditorInteractable.LevelHandInDecision Decide()
+    {
+        CaseReviewState review = Level2OfficeStart.Review;
+        CaseDefinition definition = Definition;
+        CaseData data = CaseManager.Instance != null ? CaseManager.Instance.CurrentCase : null;
+        if (review == null || definition == null || !definition.HasReview || data == null) return null;
+        if (Level2FolderHandoff.HandInRefusal(review) != null) return null;
 
         var fieldKeys = new List<string>();
         foreach (ComplianceIssue issue in ComplianceChecker.RunCheck(data, definition))
@@ -73,7 +69,7 @@ public sealed class Level2Audit : MonoBehaviour
         AuditLinesDefinition text = definition.review.audit ?? new AuditLinesDefinition();
         Debug.Log($"[Level2] Audit: {result.Outcome}; defects [{string.Join(", ", result.Defects)}]; newly charged {result.NewlyCharged.Count}.");
 
-        var builder = new DialogueBuilder(Speaker);
+        var builder = new DialogueBuilder("Auditor");
         string rosa = null;
         switch (result.Outcome)
         {
@@ -104,98 +100,53 @@ public sealed class Level2Audit : MonoBehaviour
                 foreach (string line in FinalAudit.Feedback(result, text)) builder.Npc(line, "Auditor_Default");
                 break;
             default:
-                auditor.ReturnFolderForReview();
-                return true;
+                // Not admitted after all (nothing was recorded): the folder goes back.
+                return null;
         }
         if (result.Returned && CaseProgressionManager.Instance != null)
             CaseProgressionManager.Instance.RecordAuditAttempt(result.NewlyCharged.Count, false);
 
-        // The summary (or the return) follows only when the Auditor's last line is closed and his box has left the screen.
-        inProgress = true;
-        System.Action conclude = () => Conclude(auditor, review, data, result, rosa, definition.review);
-        System.Action after = () =>
+        decided = result;
+        rosaReaction = rosa;
+        var decision = new AuditorInteractable.LevelHandInDecision
         {
-            if (instance != null) instance.StartCoroutine(AfterDialogueCloses(conclude));
-            else conclude();
+            Approved = result.Outcome == FinalAudit.Outcome.Approved,
+            Summary = Summary(result, review, definition.review)
         };
-        List<DialogueLine> lines = builder.Build();
-        if (!auditor.RunLevelDialogue(lines, after))
-        {
-            // Another conversation is still closing: the decision stands, and
-            // the Auditor explains it as soon as he can (as in Level 1).
-            if (instance != null) instance.StartCoroutine(instance.TalkWhenFree(auditor, lines, after, result.Outcome));
-            else Fallback(result.Outcome, after);
-        }
-        return true;
+        foreach (DialogueLine line in builder.Build())
+            if (line != null && !string.IsNullOrWhiteSpace(line.Text)) decision.Lines.Add(line);
+        return decision;
     }
 
-    private System.Collections.IEnumerator TalkWhenFree(AuditorInteractable auditor, List<DialogueLine> lines, System.Action after,
-        FinalAudit.Outcome outcome)
+    public void Approve()
     {
-        for (float waited = 0f; waited < DialogueWaitSeconds; waited += Time.unscaledDeltaTime)
-        {
-            if (!DialogueUI.IsAnyDialogueActive && auditor != null && auditor.RunLevelDialogue(lines, after)) yield break;
-            yield return null;
-        }
-        Fallback(outcome, after);
+        CaseReviewState review = Level2OfficeStart.Review;
+        CaseData data = CaseManager.Instance != null ? CaseManager.Instance.CurrentCase : null;
+        if (review == null || decided == null || decided.Outcome != FinalAudit.Outcome.Approved) return;
+        decided = null;
+        // The reward applies once, however often this is reached.
+        if (!FinalAudit.TryReward(review)) return;
+        // On time is recorded and shown on the Audit Summary (no separate Arthur line).
+        if (review.clock != null && review.clock.started && !review.clock.missed) review.audit.onTime = true;
+        if (CaseProgressionManager.Instance != null && data != null) CaseProgressionManager.Instance.CalculateAndStoreCaseReward(data);
+        // One neutral story fact (no accusation): Rosa confirms who prepared the first summary.
+        if (PlayerProgressManager.Instance != null) PlayerProgressManager.Instance.RecordStoryFact(Level2Checkpoint.StoryFactDeskProvenance);
+        AuditorInteractable auditor = AuditorInteractable.Current;
+        if (auditor != null) auditor.CompleteLevelReview();
     }
 
-    private static System.Collections.IEnumerator AfterDialogueCloses(System.Action next)
+    public void Returned()
     {
-        yield return null;
-        for (float waited = 0f; waited < 3f; waited += Time.unscaledDeltaTime)
-        {
-            if (!DialogueUI.IsAnyDialogueActive && !AnyDialoguePanelShowing()) break;
-            yield return null;
-        }
-        yield return new WaitForSecondsRealtime(0.25f);
-        next();
-    }
-
-    private static bool AnyDialoguePanelShowing()
-    {
-        foreach (DialogueUI ui in Object.FindObjectsByType<DialogueUI>(FindObjectsInactive.Exclude))
-            if (ui != null && ui.IsPanelShowing) return true;
-        return false;
-    }
-
-    private static void Fallback(FinalAudit.Outcome outcome, System.Action after)
-    {
-        Level2Say.Line(outcome == FinalAudit.Outcome.Approved ? "The Auditor approved Rosa's review." : "The Auditor returned Rosa's folder.", null, 5f);
-        after();
+        decided = null;
+        AuditorInteractable auditor = AuditorInteractable.Current;
+        if (auditor != null) auditor.ReturnFolderForReview();
+        GameplayEvents.RaiseAuditReturned();
+        string rosa = rosaReaction;
+        rosaReaction = null;
+        if (!string.IsNullOrWhiteSpace(rosa)) Level2Say.Line(rosa, null, 6f);
     }
 
     private static string Money(float amount) => "₱" + amount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
-
-    private static void Conclude(AuditorInteractable auditor, CaseReviewState review, CaseData data, FinalAudit.Result result,
-        string rosa, CaseReviewDefinition definition)
-    {
-        if (result.Outcome == FinalAudit.Outcome.Approved)
-        {
-            if (!FinalAudit.TryReward(review)) { inProgress = false; return; }
-            // On time is recorded and shown on the Audit Summary (no separate Arthur line).
-            if (review.clock != null && review.clock.started && !review.clock.missed) review.audit.onTime = true;
-            void Finish()
-            {
-                inProgress = false;
-                if (CaseProgressionManager.Instance != null) CaseProgressionManager.Instance.CalculateAndStoreCaseReward(data);
-                // One neutral story fact (no accusation): Rosa confirms who prepared the first summary.
-                if (PlayerProgressManager.Instance != null) PlayerProgressManager.Instance.RecordStoryFact(Level2Checkpoint.StoryFactDeskProvenance);
-                auditor.CompleteLevelReview();
-            }
-            // The Audit Summary first, exactly like Office Level 1; the reward and level completion follow when it closes.
-            if (!auditor.ShowLevelSummary(Summary(result, review, definition), "Audit Summary", Finish)) Finish();
-            return;
-        }
-        void Return()
-        {
-            inProgress = false;
-            auditor.ReturnFolderForReview();
-            GameplayEvents.RaiseAuditReturned();
-            if (!string.IsNullOrWhiteSpace(rosa)) Level2Say.Line(rosa, null, 6f);
-        }
-        if (!auditor.ShowLevelSummary(Summary(result, review, definition), "Audit Summary", Return)) Return();
-    }
 
     /// <summary>The Audit Summary card for Rosa's review, in the same layout as Office Level 1's.</summary>
     public static RewardScreenData Summary(FinalAudit.Result result, CaseReviewState review, CaseReviewDefinition definition)

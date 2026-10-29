@@ -82,7 +82,11 @@ public class InventoryItemDefinition
     public int stackLimit = 1;
     /// <summary>One slot holds everything of this kind (profiles in the binder, case papers in the folder).</summary>
     public bool container;
-    /// <summary>The story level the item belongs to ("Level_01"); "" = the whole campaign.</summary>
+    /// <summary>
+    /// The story level(s) the item belongs to ("Level_01", or "Level_01,Level_02" for a chapter tool each
+    /// chapter's world hands out again); "" = the whole campaign. A fresh run of a listed level clears it;
+    /// T18: entering a story level it does not list retires it (a chapter-bound object of another chapter).
+    /// </summary>
     public string scope = "";
     /// <summary>Closing "Make room" with it in hand can put it back where it came from (the desk book).</summary>
     public bool returnsToWorld;
@@ -90,6 +94,18 @@ public class InventoryItemDefinition
     public int carryLimit;
     /// <summary>T30: a read-only reference kept for good (Arthur's Reviewed File): never edited, submitted or needed by a case.</summary>
     public bool reference;
+
+    /// <summary>Kept for the whole campaign (no scope).</summary>
+    public bool CampaignWide => string.IsNullOrWhiteSpace(scope);
+
+    /// <summary>The item belongs to this story level (one of its listed scopes; never a campaign-wide item).</summary>
+    public bool InScope(string levelId)
+    {
+        if (CampaignWide || string.IsNullOrWhiteSpace(levelId)) return false;
+        foreach (string part in scope.Split(','))
+            if (part.Trim() == levelId.Trim()) return true;
+        return false;
+    }
 }
 
 /// <summary>A neutral story fact the evidence journal can list once learned, with its source record.</summary>
@@ -120,6 +136,8 @@ public class InventoryCatalogue
     public const string BookmarkSet = "bookmark_set";
     /// <summary>T30: Arthur's Reviewed File (ReviewedFileRules.ItemId).</summary>
     public const string ReviewedFile = "arthur_reviewed_file";
+    /// <summary>T18: Rosa's four marked records from Mark the Money! (Level2AnnotatedPapers' icon).</summary>
+    public const string MarkedRecords = "marked_records";
 
     public List<InventoryItemDefinition> items = new List<InventoryItemDefinition>();
     public List<InventoryJournalFact> journal = new List<InventoryJournalFact>();
@@ -179,17 +197,17 @@ public class InventoryCatalogue
         });
         catalogue.items.Add(new InventoryItemDefinition
         {
-            id = Notes, label = "Notes", category = ToolsAndSupplies, icon = "notes", required = true, scope = "Level_01",
+            id = Notes, label = "Notes", category = ToolsAndSupplies, icon = "notes", required = true, scope = "Level_01,Level_02",
             description = "Today's objectives and every step, ticked off as you go."
         });
         catalogue.items.Add(new InventoryItemDefinition
         {
-            id = CaseFolder, label = "Case Folder", category = CaseFiles, icon = "folder", required = true, container = true, scope = "Level_01",
+            id = CaseFolder, label = "Case Folder", category = CaseFiles, icon = "folder", required = true, container = true, scope = "Level_01,Level_02",
             description = "Your client's case papers. Hand it to the Auditor from your bar."
         });
         catalogue.items.Add(new InventoryItemDefinition
         {
-            id = TaxCodeBook, label = "Tax Code Book", category = ToolsAndSupplies, icon = "book", scope = "Level_01", returnsToWorld = true,
+            id = TaxCodeBook, label = "Tax Code Book", category = ToolsAndSupplies, icon = "book", scope = "Level_01,Level_02", returnsToWorld = true,
             description = "The rules, section by section. Read it anywhere; it can go back on its desk stand."
         });
         catalogue.items.Add(new InventoryItemDefinition
@@ -212,12 +230,19 @@ public class InventoryCatalogue
             id = ReviewedFile, label = "Arthur's Reviewed File", category = CaseFiles, icon = "reviewed", required = true, container = true, reference = true,
             description = "A finished file Arthur reviewed for a former client: completed entries, then the ID and background behind them. Read only; yours to keep."
         });
+        catalogue.items.Add(new InventoryItemDefinition
+        {
+            id = MarkedRecords, label = "Marked Records", category = CaseFiles, icon = "papers", required = true, container = true, scope = "Level_02",
+            description = "Rosa's four records as you marked them at her desk: highlight and cards. Read them anywhere; compare them at your desk."
+        });
         catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_marie", text = "You met Marie Bautista in the plaza and took a copy of her ID.", sourceItemId = ProfileBinder });
         catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_jhunjhun", text = "You met Jhun-jhun in the plaza and took a copy of his ID.", sourceItemId = ProfileBinder });
         catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_milo", text = "You met Milo in the plaza and took a copy of his ID.", sourceItemId = ProfileBinder });
         catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_zorbix", text = "You met Zorbix in the plaza and took a copy of his ID.", sourceItemId = ProfileBinder });
         catalogue.journal.Add(new InventoryJournalFact { id = "case-received", text = "The receptionist handed you Marie's case for the day.", sourceItemId = CaseFolder });
         catalogue.journal.Add(new InventoryJournalFact { id = "client-copy", text = "The Auditor gave you Marie's client copy to deliver.", sourceItemId = CaseFolder });
+        catalogue.journal.Add(new InventoryJournalFact { id = "rosa-case-received", text = "The receptionist gave you Aling Rosa's review for the day.", sourceItemId = CaseFolder });
+        catalogue.journal.Add(new InventoryJournalFact { id = "rosa-records", text = "Aling Rosa handed over her original records at her stall.", sourceItemId = CaseFolder });
         return catalogue;
     }
 }
@@ -957,7 +982,7 @@ public static class InventoryRules
         if (c == null) return problems;
         int required = 0;
         foreach (InventoryItemDefinition item in c.items)
-            if (item != null && item.required && (string.IsNullOrEmpty(item.scope) || item.scope == levelId)) required++;
+            if (item != null && item.required && (item.CampaignWide || item.InScope(levelId))) required++;
         int capacity = CampaignInventoryRecord.StartHotbar + CampaignInventoryRecord.StartBag;
         if (required > capacity)
             problems.Add($"{levelId} can need {required} required items at once, more than the starting {capacity} slots");

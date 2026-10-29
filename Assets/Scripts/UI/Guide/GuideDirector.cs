@@ -110,6 +110,7 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
 
     // Startup.
     private bool started;
+    private bool levelTwoResumeApplied;
     private float readySince = -1f;
 
     // Polled observations.
@@ -407,6 +408,20 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
 
     private void TryStart(float now)
     {
+        // T33: wait for the Level 2 checkpoint before choosing a welcome or a tool lesson.
+        if (levelId == OfficeLevelCatalog.Level2Id)
+        {
+            Level2Checkpointer checkpoint = Level2Checkpointer.Active;
+            if (checkpoint == null || !checkpoint.IsReady) return;
+            if (checkpoint.Resumed && !levelTwoResumeApplied)
+            {
+                foreach (string id in Level2Checkpoint.ImpliedLessons(Level2OfficeStart.Review))
+                    if (finished.Add(id)) Fire(GuideTriggers.LessonKey(id));
+                foreach (string key in Level2Checkpoint.ImpliedTriggers(Level2OfficeStart.Review))
+                    if (Count(key) == 0) Fire(key);
+                levelTwoResumeApplied = true;
+            }
+        }
         OfficeHudRuntime hud = OfficeHudRuntime.Instance;
         bool ready = (hud == null || hud.IsShown) && CurrentMode == CameraController.CameraMode.FirstPerson &&
                      !DialogueUI.IsAnyDialogueActive && Calm();

@@ -175,9 +175,17 @@ public sealed class NotesChestPaperPickup : MonoBehaviour, IInteractable, IPoint
         // Ownership and the once-per-campaign pickup claim are durable before
         // any sound or flight; a failed write leaves this paper in the world.
         InventoryResult result = hotbar.CollectNotesFromChest();
-        if (result == null || !result.Changed) return;
+        if (result == null || !result.Changed)
+        {
+            if (result != null && result.Outcome == InventoryOutcome.SaveFailed)
+                hotbar.Notice("Notes could not be saved. Your paper is still here; tap it to try again.");
+            else if (result != null && result.Outcome == InventoryOutcome.Rejected)
+                hotbar.Notice(result.Message);
+            return;
+        }
 
         AudioManager.Instance?.QueueInteractionSFX("paper");
+        WorldEmote.Show(chest != null ? chest.transform : transform, Emotion.Idea, 1.6f);
         collectionCamera = inputCamera != null ? inputCamera : Camera.main;
         if (collectionCamera == null || !hotbar.TryGetNotesLandingScreenPoint(out _))
         {

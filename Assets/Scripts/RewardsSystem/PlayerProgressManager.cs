@@ -182,6 +182,13 @@ public class PlayerProgressManager : MonoBehaviour
             return;
         }
 
+        // T18: a story run of Rosa's review commits its case claim, mastery record and checkpoint in one write.
+        if (IsLevelTwoStoryResult(levelTotal))
+        {
+            CommitLevelTwoResult(levelTotal);
+            return;
+        }
+
         lastAppliedRunId = levelTotal.RunId;
         if (pendingResult == levelTotal) pendingResult = null;
         CampaignRunMode mode = CurrentRunMode;
@@ -606,20 +613,36 @@ public class PlayerProgressManager : MonoBehaviour
     /// Practice, replays and Editor runs use their temporary supplies and a
     /// claim for this visit only. No coins, trust, XP or tax date change.
     /// </summary>
-    public VoucherUseResult CommitVoucherUse(InventoryCatalogue items, string levelId, string caseId, Level1FieldCheckpoint checkpoint, string actionId)
+    public VoucherUseResult CommitVoucherUse(InventoryCatalogue items, string levelId, string caseId, Level1FieldCheckpoint checkpoint, string actionId) =>
+        CommitVoucher(items, levelId, caseId, actionId, candidate =>
+        {
+            if (checkpoint == null || !UsesLevelOneCheckpoint) return;
+            Level1FieldCheckpoint previous = candidate.campaign.levelOne;
+            checkpoint.version = Level1FieldCheckpoint.CurrentVersion;
+            checkpoint.writes = (previous != null && previous.IsSet ? previous.writes : 0) + 1;
+            candidate.campaign.levelOne = checkpoint;
+        });
+
+    /// <summary>
+    /// T18: a voucher on Rosa's review. Story: the voucher, the per-case claim
+    /// and the Level 2 checkpoint holding the extended clock in one write (a
+    /// failed write changes nothing). Other runs: temporary supplies and a claim
+    /// for this visit only, as in Level 1.
+    /// </summary>
+    public VoucherUseResult CommitLevelTwoVoucherUse(InventoryCatalogue items, string caseId, LevelCheckpoint checkpoint, string actionId) =>
+        CommitVoucher(items, Level2CampaignRules.LevelId, caseId, actionId, candidate =>
+        {
+            if (checkpoint != null && checkpoint.IsSet && UsesLevelTwoStory) candidate.SetCheckpoint(checkpoint);
+        });
+
+    private VoucherUseResult CommitVoucher(InventoryCatalogue items, string levelId, string caseId, string actionId, Action<PlayerProgressData> attachCheckpoint)
     {
         if (UsesStoryInventory)
         {
             PlayerProgressData candidate = CloneProgress();
             VoucherUseResult result = VoucherRules.Use(candidate.campaign, items, levelId, caseId, actionId);
             if (result.Outcome != InventoryOutcome.Applied) return result;
-            if (checkpoint != null && UsesLevelOneCheckpoint)
-            {
-                Level1FieldCheckpoint previous = candidate.campaign.levelOne;
-                checkpoint.version = Level1FieldCheckpoint.CurrentVersion;
-                checkpoint.writes = (previous != null && previous.IsSet ? previous.writes : 0) + 1;
-                candidate.campaign.levelOne = checkpoint;
-            }
+            attachCheckpoint?.Invoke(candidate);
             if (!TryWriteCandidate(candidate))
             {
                 Debug.LogWarning($"[PlayerProgressManager] Voucher use on '{caseId}' not saved; nothing changed.");
@@ -714,6 +737,8 @@ public class PlayerProgressManager : MonoBehaviour
     {
         if (!CampaignRun.AllowsStoryWrites(CurrentRunMode)) return true;
         if (pendingResult != null) FlushPending("leaving the level");
+        // T18: a story result whose commit failed is still pending: stay and retry.
+        if (pendingResult != null && IsLevelTwoStoryResult(pendingResult)) return false;
         return Save();
     }
 
@@ -841,12 +866,189 @@ public class PlayerProgressManager : MonoBehaviour
         // Practice drills and mastery replays never replace the story's resumable checkpoint.
         if (progress == null || checkpoint == null || !checkpoint.IsSet || TrainingSession.IsPracticing ||
             CurrentRunMode == CampaignRunMode.MasteryReplay) return false;
-        progress.SetCheckpoint(checkpoint);
-        return Save();
+        // T18: written as a candidate, so a failed write leaves the previous checkpoint in memory and on disk.
+        PlayerProgressData candidate = CloneProgress();
+        candidate.SetCheckpoint(checkpoint);
+        return TryWriteCandidate(candidate);
     }
 
     /// <summary>The resumable run of this level, or null.</summary>
     public LevelCheckpoint GetCheckpoint(string levelId) => progress != null ? progress.CheckpointFor(levelId) : null;
+
+    // =========================================================
+    // LEVEL 2 IN THE CAMPAIGN (T18)
+    // =========================================================
+
+    /// <summary>Rosa's review as the campaign rules see it, read from the live review (set by Level2Checkpointer).</summary>
+    public static Func<Level2CaseFacts> LevelTwoFacts;
+
+    /// <summary>A story run of a committed campaign: Level 2's checkpoint, claims and supplies are the campaign's own.</summary>
+    public bool UsesLevelTwoStory => progress != null && progress.HasCampaign && CampaignSave.CanContinue(campaignState) &&
+                                     CampaignRun.AllowsStoryWrites(CurrentRunMode) && !TrainingSession.IsPracticing;
+
+    public bool IsLevelTwoStoryResult(LevelTotalResult levelTotal) =>
+        levelTotal != null && levelTotal.LevelId == Level2CampaignRules.LevelId && UsesLevelTwoStory;
+
+    /// <summary>What the last committed Level 2 story write granted (presentation only).</summary>
+    public Level2CampaignRules.Grants LastLevelTwoGrants { get; private set; }
+
+    /// <summary>Rosa's follow-through is waiting for the approved case (T19/T33 deliver it at Rosa).</summary>
+    public bool LevelTwoFollowThroughPending => UsesLevelTwoStory && Level2CampaignRules.FollowThroughPending(progress);
+
+    /// <summary>
+    /// Commits Rosa's one T19 choice and review checkpoint atomically. In
+    /// isolated runs only the transient review snapshot changes; campaign
+    /// trust/history remains untouched.
+    /// </summary>
+    public bool CommitLevelTwoEthicsChoice(Level2EthicsChoice choice, string caseId, out CampaignRewards.Change trust)
+    {
+        trust = default;
+        Level2Checkpointer checkpointOwner = Level2Checkpointer.Active;
+        if (checkpointOwner == null) return false;
+        if (!UsesLevelTwoStory || Level2Checkpointer.IsDirectEditorAttempt)
+            return checkpointOwner.CommitLocalEthicsChoice(choice, caseId);
+
+        LevelCheckpoint checkpoint = checkpointOwner.CaptureEthicsChoice(choice, caseId);
+        if (checkpoint == null || !checkpoint.IsSet) return false;
+        PlayerProgressData candidate = CloneProgress();
+        candidate.SetCheckpoint(checkpoint);
+        int before = progress.campaign.publicTrust;
+        if (!Level2CampaignRules.CommitEthicsChoice(candidate, choice, caseId)) return false;
+        if (!TryWriteCandidate(candidate)) return false;
+
+        checkpointOwner.PublishEthicsChoice(choice, caseId);
+        trust = new CampaignRewards.Change
+        {
+            Outcome = CampaignRewards.Outcome.Applied,
+            Kind = CampaignRewards.TrustKind,
+            Before = before,
+            After = progress.campaign.publicTrust,
+            Amount = progress.campaign.publicTrust - before,
+            Reason = "Rosa's promise was recorded"
+        };
+        LastLevelTwoGrants = new Level2CampaignRules.Grants { Changed = true, Trust = trust };
+        Debug.Log($"[PlayerProgressManager] Rosa's ethics choice saved: {caseId}, trust {trust.Before}->{trust.After}/100.");
+        return true;
+    }
+
+    /// <summary>
+    /// One Level 2 milestone: the checkpoint and the claims it has earned (the
+    /// corrected income review: +2 trust, 60 coins once) go into one candidate
+    /// and one write. Outside a story run only the checkpoint is kept, as
+    /// before (never claims). A failed write changes nothing; the next save retries.
+    /// </summary>
+    public StoryGrants CommitLevelTwoCheckpoint(LevelCheckpoint checkpoint, Level2CaseFacts facts)
+    {
+        var grants = new StoryGrants();
+        if (!UsesLevelTwoStory)
+        {
+            grants.Saved = SaveCheckpoint(checkpoint);
+            return grants;
+        }
+        if (checkpoint == null || !checkpoint.IsSet) return grants;
+        PlayerProgressData candidate = CloneProgress();
+        candidate.SetCheckpoint(checkpoint);
+        Level2CampaignRules.Grants due = Level2CampaignRules.ApplyCheckpointClaims(candidate, facts);
+        grants.Saved = TryWriteCandidate(candidate);
+        if (!grants.Saved) return grants;
+        grants.Trust = due.Trust;
+        grants.Coins = due.Coins;
+        if (due.Changed)
+        {
+            LastLevelTwoGrants = due;
+            Debug.Log($"[PlayerProgressManager] Rosa's income review completed: trust {progress.campaign.publicTrust}/100, coins {progress.campaign.coins}.");
+        }
+        return grants;
+    }
+
+    /// <summary>
+    /// Rosa's approved review (the level result of a story run): the case
+    /// claim (100 coins once, approved and corrected only), the mastery record
+    /// (frozen first-check tier) and the end of the checkpoint, in one write.
+    /// True when saved now or earlier. On a failed write nothing changes, the
+    /// result stays pending (SaveBeforeLeaving keeps the player on the card) and
+    /// trying again is safe. Chapter 2 completes only after the follow-through.
+    /// </summary>
+    public bool CommitLevelTwoResult(LevelTotalResult levelTotal) => CommitLevelTwoResult(levelTotal, out _);
+
+    /// <summary>As above; wroteNow is true only for the write that recorded it (presentation shows the grant once).</summary>
+    public bool CommitLevelTwoResult(LevelTotalResult levelTotal, out bool wroteNow)
+    {
+        wroteNow = false;
+        if (!IsLevelTwoStoryResult(levelTotal)) return false;
+        if (levelTotal.RunId == lastAppliedRunId) return true;
+        Level2CaseFacts facts = LevelTwoFacts != null ? LevelTwoFacts() : default;
+        LevelCheckpoint approvedCopy = null;
+        bool copyAlreadyDelivered = Level2CampaignRules.FollowThroughDone(progress);
+        if (facts.Approved && !copyAlreadyDelivered)
+        {
+            approvedCopy = Level2Checkpointer.Active != null ? Level2Checkpointer.Active.CaptureApprovedClientCopy() : null;
+            if (approvedCopy == null || !approvedCopy.IsSet)
+            {
+                pendingResult = levelTotal;
+                Debug.LogWarning("[PlayerProgressManager] Rosa's approved case has no resumable Client Copy checkpoint; the result stays pending for a retry.");
+                return false;
+            }
+        }
+        PlayerProgressData candidate = CloneProgress();
+        Level2CampaignRules.Grants grants = Level2CampaignRules.ApplyCaseResult(candidate, facts);
+        // The approved review and copy state are one write, closing the crash gap before the copy spawns.
+        if (facts.Approved && copyAlreadyDelivered) candidate.ClearCheckpoint(levelTotal.LevelId);
+        else if (facts.Approved) candidate.SetCheckpoint(approvedCopy);
+        else Debug.LogWarning("[PlayerProgressManager] Level 2 result without an approved review: no case claim; the checkpoint is kept.");
+        MasteryBoundary.ApplyRun(candidate, ToMasteryRun(levelTotal));
+        if (!TryWriteCandidate(candidate))
+        {
+            pendingResult = levelTotal;
+            Debug.LogWarning("[PlayerProgressManager] Rosa's case result not saved; nothing changed. It stays pending for a retry.");
+            return false;
+        }
+        lastAppliedRunId = levelTotal.RunId;
+        if (pendingResult == levelTotal) pendingResult = null;
+        LastLevelTwoGrants = grants;
+        wroteNow = true;
+        Debug.Log($"[PlayerProgressManager] Rosa's case result recorded: coins {progress.campaign.coins}, trust {progress.campaign.publicTrust}/100, " +
+                  $"follow-through pending {Level2CampaignRules.FollowThroughPending(progress)}.");
+        return true;
+    }
+
+    /// <summary>
+    /// Rosa's required follow-through (+4 trust once, after the saved approved
+    /// case); completes Chapter 2 when everything required is done. T19/T33 call
+    /// it from Rosa's follow-through conversation. Story runs only; a failed
+    /// write changes nothing (Saved false) and a repeat is AlreadyDone.
+    /// </summary>
+    public StoryGrants CommitLevelTwoFollowThrough()
+    {
+        var grants = new StoryGrants();
+        if (!UsesLevelTwoStory) return grants;
+        if (Level2Checkpointer.IsDirectEditorAttempt) return grants;
+        RosaEthicsRecord ethics = progress.campaign.rosaEthics;
+        bool ethicsPending = ethics != null && ethics.committed && ethics.followThroughRequired && !ethics.followThroughDone;
+        if (Level2CampaignRules.FollowThroughDone(progress) && !ethicsPending)
+        {
+            grants.Saved = grants.AlreadyDone = true;
+            return grants;
+        }
+        PlayerProgressData candidate = CloneProgress();
+        int trustBefore = progress.campaign.publicTrust;
+        Level2CampaignRules.Grants due = Level2CampaignRules.ApplyFollowThrough(candidate);
+        if (!due.Changed) return grants;
+        // The checkpoint kept only for the Client Copy ends in the same write (nothing left to resume).
+        candidate.ClearCheckpoint(Level2CampaignRules.LevelId);
+        grants.Saved = TryWriteCandidate(candidate);
+        if (!grants.Saved) return grants;
+        grants.Trust = due.Trust;
+        grants.Trust.Before = trustBefore;
+        grants.Trust.After = progress.campaign.publicTrust;
+        grants.Trust.Amount = grants.Trust.After - trustBefore;
+        grants.Trust.Outcome = CampaignRewards.Outcome.Applied;
+        grants.Trust.Reason = "Rosa's records follow-through";
+        LastLevelTwoGrants = due;
+        Level2Checkpointer.Active?.PublishEthicsFollowThrough();
+        Debug.Log($"[PlayerProgressManager] Rosa's follow-through done: trust {progress.campaign.publicTrust}/100; chapter complete {due.ChapterCompleted}.");
+        return grants;
+    }
 
     // =========================================================
     // LEVEL 1 FIELD CHECKPOINT (T04, inside the v5 campaign)

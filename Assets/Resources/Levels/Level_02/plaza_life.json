@@ -1,0 +1,143 @@
+{
+  "_readme": [
+    "Level 2's townspeople (T32): the same format as Levels/Level_01/plaza_life.json, read by PlazaLifeContent while Office_Level2 is played.",
+    "Each talk is optional, replayable local colour: never a clue the case needs, an item, coins, trust or progress. Talks rotate each time.",
+    "Where they stand and walk: Levels/Level_02/town_life.json. Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "npcs": [
+    {
+      "id": "ernesto",
+      "name": "Mang Ernesto",
+      "fullName": "Ernesto Villanueva",
+      "role": "Retired bookkeeper of the market cooperative",
+      "background": "Kept the market co-op's books for thirty years; now reads the paper on the plaza bench every afternoon.",
+      "attitude": "dry, kind",
+      "talks": [
+        { "lines": [
+          { "speaker": "Npc", "text": "Thirty years I kept the market co-op's books. My rule: every peso gets a paper.", "emote": "idea" },
+          { "speaker": "Player", "text": "And a peso without a paper?" },
+          { "speaker": "Npc", "text": "Is just a story. Nice to hear, hard to check." }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "You're helping Rosa from the laundry stall? Good woman. Never late with her stall fees.", "emote": "heart" },
+          { "speaker": "Npc", "text": "She keeps her daily list in one notebook and the big jobs on separate slips. Old habit from her husband." }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "Borrowed money spends just like earned money. Until the lender comes back for it.", "emote": "thinking" },
+          { "speaker": "Player", "text": "Wise words." },
+          { "speaker": "Npc", "text": "Expensive words. I learned them the hard way." }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "Quiet plaza today. Everyone's at the fiesta rehearsal. Suits me fine.", "emote": "music" }
+        ] }
+      ]
+    },
+    {
+      "id": "tess",
+      "name": "Tess",
+      "fullName": "Teresita Abad",
+      "role": "Young mother running errands",
+      "background": "Runs a small snack cart with her husband; does the family errands round the plaza while her son is at school.",
+      "attitude": "warm, busy",
+      "talks": [
+        { "lines": [
+          { "speaker": "Npc", "text": "Bread, school glue, a new ledger for our snack cart... I always forget one thing.", "emote": "thinking" },
+          { "speaker": "Player", "text": "Write a list?" },
+          { "speaker": "Npc", "text": "I did. I forgot the list.", "emote": "sweat" }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "My husband says receipts are clutter. I say they're how we know the cart is worth the trouble.", "emote": "idea" }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "Rosa washed my son's school uniforms in one afternoon. Spotless! I don't know how she does it.", "emote": "heart" },
+          { "speaker": "Npc", "text": "If you see her, tell her the blue shirt finally fits him." }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "The tax office helped my mother with her pension papers last year. Very patient people.", "emote": "heart" },
+          { "speaker": "Player", "text": "Glad to hear it." }
+        ] }
+      ]
+    },
+    {
+      "id": "arthur_l2",
+      "name": "Arthur",
+      "fullName": "Arthur Reyes",
+      "role": "Senior tax consultant",
+      "background": "A familiar consultant taking a slow walk through Coast Tales between appointments.",
+      "attitude": "thoughtful, easygoing",
+      "talks": [
+        { "lines": [
+          { "speaker": "Npc", "text": "A good case starts with listening. The papers make more sense after you know the person." , "emote": "idea" },
+          { "speaker": "Player", "text": "I'll keep that in mind." },
+          { "speaker": "Npc", "text": "Good. Rosa's been patient with us." , "emote": "heart" }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "I take this loop when I need to think. The plaza has a way of clearing the head." , "emote": "thinking" }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "Every person keeps records a little differently. Our job is to understand them, not judge the handwriting." , "emote": "cheerful" }
+        ] }
+      ]
+    },
+    {
+      "id": "dante_l2",
+      "name": "Mang Dante",
+      "fullName": "Dante Ramirez",
+      "role": "Office security guard",
+      "background": "A familiar guard making his regular check around the office and plaza.",
+      "attitude": "reserved, dependable",
+      "talks": [
+        { "lines": [
+          { "speaker": "Npc", "text": "All clear around the plaza. I like to check in with everyone on my rounds." , "emote": "cheerful" }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "The office stays busy. Good thing the people here look out for one another." , "emote": "heart" }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "If I'm walking, I'm working. If I'm standing still, I'm probably listening." , "emote": "idea" }
+        ] }
+      ]
+    },
+    {
+      "id": "marie_l2",
+      "name": "Marie",
+      "fullName": "Marie Bautista",
+      "role": "Local resident and consultant",
+      "background": "Marie is visiting Coast Tales and catching up with the people she knows in the plaza.",
+      "attitude": "warm, observant",
+      "talks": [
+        { "lines": [
+          { "speaker": "Npc", "text": "Mang Ernesto has a story for every old ledger in town." , "emote": "cheerful" },
+          { "speaker": "Player", "text": "I think he enjoys telling them." },
+          { "speaker": "Npc", "text": "He does. And I enjoy hearing them." , "emote": "heart" }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "It's nice to see the plaza feeling busy again. Rosa always brings people together." , "emote": "heart" }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "I promised I'd stop by for a chat. Somehow Mang Ernesto always has time for one more." , "emote": "thinking" }
+        ] }
+      ]
+    },
+    {
+      "id": "rosa_customer",
+      "name": "Lina",
+      "fullName": "Lina Mercado",
+      "role": "Rosa's laundry customer",
+      "background": "A regular customer stopping to collect a small laundry order.",
+      "attitude": "cheerful, familiar",
+      "talks": [
+        { "lines": [
+          { "speaker": "Npc", "text": "Rosa always remembers which bundle is mine. That saves me a trip home." , "emote": "cheerful" }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "I was just telling Rosa about my son's school play. He wants to be the narrator." , "emote": "heart" }
+        ] },
+        { "lines": [
+          { "speaker": "Npc", "text": "Oh, I can come back later. You two look like you're in the middle of something." , "emote": "cheerful" }
+        ] }
+      ]
+    }
+  ],
+  "marieTravel": { "toOffice": [], "atReception": [], "toRoom": [] }
+}

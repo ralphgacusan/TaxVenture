@@ -41,6 +41,38 @@ public class CaseRecordSource
     public List<CaseRecordDocument> documents = new List<CaseRecordDocument>();
 }
 
+/// <summary>One handed-over record of a review case as the records page reads it (case JSON review.documents + its document fields).</summary>
+[Serializable]
+public class ReviewRecordInput
+{
+    /// <summary>The canonical record id ("D1").</summary>
+    public string id;
+    public string documentName;
+    public string title;
+    public int paperType;
+    public string paperTitle;
+    public string issuer;
+    public string reference;
+    public string date;
+    public string status;
+    public string totalKey;
+    public List<CaseRecordField> fields = new List<CaseRecordField>();
+}
+
+/// <summary>A review case's client background notes (case JSON review.background; the old profile page's facts).</summary>
+[Serializable]
+public class ReviewBackgroundInput
+{
+    /// <summary>The document read marks use (the background is the office's own notes, not a client record).</summary>
+    public string documentName;
+    public string period;
+    public string home;
+    public string work;
+    public string income;
+
+    public bool HasContent => !string.IsNullOrWhiteSpace(home) || !string.IsNullOrWhiteSpace(work) || !string.IsNullOrWhiteSpace(income);
+}
+
 /// <summary>
 /// PURPOSE:
 /// Marie's two-page Level 1 case folder (Campaign Foundation T25): page two
@@ -261,6 +293,123 @@ public static class CaseRecordRules
             profileNumber = number > 0 ? "No. 0" + number : null
         };
     }
+
+    // =========================================================
+    // REVIEW CASES (Level 2 consistency pass: Rosa's folder on the Level 1 foundation)
+    // =========================================================
+
+    /// <summary>Rows one face of a paper shows (SupportingPaperTypes.SheetRows / SlipRows); the rest go on its back.</summary>
+    public const int SheetRowsPerFace = 5;
+    public const int SlipRowsPerFace = 4;
+
+    /// <summary>The fixed physical type of an authored supporting-paper type number (4, 5, 7; anything else prints plain).</summary>
+    public static string TypeForPaper(int paperType) =>
+        paperType == 4 ? ClientRecord.Income : paperType == 5 ? ClientRecord.Payment : paperType == 7 ? ClientRecord.Agreement : ClientRecord.Plain;
+
+    /// <summary>A review record's stable id: the case id and its canonical record id ("L2-ROSA-001/D1").</summary>
+    public static string ReviewRecordId(string caseId, string recordId) => (caseId ?? "case") + "/" + (recordId ?? "");
+
+    /// <summary>
+    /// A review case's Supporting Documents page, in page order: the office's client background notes
+    /// (Type 2, from the case's authored background; the facts the old Taxpayer Profile page printed),
+    /// then the records the client handed over, sheets before slips so each row has one shape.
+    /// Values come straight from the case; nothing is an answer or a value source.
+    /// </summary>
+    public static List<ClientRecord> BuildReview(string caseId, string clientName, ReviewBackgroundInput background, IList<ReviewRecordInput> records)
+    {
+        var built = new List<ClientRecord>();
+        if (background != null && background.HasContent)
+            built.Add(new ClientRecord
+            {
+                id = ReviewRecordId(caseId, "background"),
+                npcId = caseId,
+                type = ClientRecord.Background,
+                source = background.documentName,
+                tab = "Background",
+                title = "CLIENT BACKGROUND",
+                name = clientName,
+                period = string.IsNullOrWhiteSpace(background.period) ? null : background.period.Trim(),
+                living = Clean(background.home),
+                work = Clean(background.work),
+                income = Clean(background.income),
+                footer = "Client interview notes"
+            });
+        if (records == null) return built;
+        var slips = new List<ClientRecord>();
+        foreach (ReviewRecordInput input in records)
+        {
+            ClientRecord record = FromReviewRecord(caseId, clientName, input);
+            if (record == null) continue;
+            if (record.IsSlip) slips.Add(record);
+            else built.Add(record);
+        }
+        built.AddRange(slips);
+        return built;
+    }
+
+    /// <summary>
+    /// One handed-over record as its fixed type prints it: header title, issuer/party, reference and date,
+    /// the authored rows in order (the total or amount row in its large band), a status label. Rows that do
+    /// not fit one face continue on the paper's back. Null for a missing record.
+    /// </summary>
+    public static ClientRecord FromReviewRecord(string caseId, string clientName, ReviewRecordInput input)
+    {
+        if (input == null || string.IsNullOrWhiteSpace(input.id)) return null;
+        string type = TypeForPaper(input.paperType);
+        var record = new ClientRecord
+        {
+            id = ReviewRecordId(caseId, input.id.Trim()),
+            npcId = caseId,
+            type = type,
+            source = input.documentName != null ? input.documentName.Trim() : "",
+            tab = input.id.Trim(),
+            title = Upper(!string.IsNullOrWhiteSpace(input.paperTitle) ? input.paperTitle : !string.IsNullOrWhiteSpace(input.title) ? input.title : TypeTitle(type)),
+            name = clientName,
+            issuer = Clean(input.issuer),
+            party = type == ClientRecord.Agreement ? Clean(clientName) : null,
+            reference = Clean(input.reference),
+            date = Clean(input.date),
+            status = string.IsNullOrWhiteSpace(input.status) ? null : input.status.Trim().ToUpperInvariant()
+        };
+        var rows = new List<ClientRecordRow>();
+        CaseRecordField total = null;
+        if (input.fields != null)
+        {
+            string totalKey = string.IsNullOrWhiteSpace(input.totalKey) ? null : input.totalKey.Trim();
+            // A slip's large amount: its authored total, else its last amount row.
+            if (totalKey == null && type == ClientRecord.Payment)
+                total = input.fields.FindLast(f => f != null && IsAmount(f.value));
+            foreach (CaseRecordField field in input.fields)
+            {
+                if (field == null) continue;
+                if (totalKey != null && field.key == totalKey && total == null) { total = field; continue; }
+                if (field == total) continue;
+                rows.Add(new ClientRecordRow { label = Clean(field.label) ?? "", value = Clean(field.value) });
+            }
+        }
+        if (total != null)
+        {
+            record.totalLabel = Clean(total.label);
+            record.totalValue = Clean(total.value);
+        }
+        int perFace = type == ClientRecord.Payment ? SlipRowsPerFace : SheetRowsPerFace;
+        // A total band takes one row's room on its face.
+        if (total != null && type != ClientRecord.Payment) perFace = Math.Max(1, perFace - 1);
+        record.rows = rows.Count > perFace ? rows.GetRange(0, perFace) : rows;
+        record.backRows = rows.Count > perFace ? rows.GetRange(perFace, rows.Count - perFace) : new List<ClientRecordRow>();
+        return record;
+    }
+
+    /// <summary>The printed header of a type when the record has no title of its own.</summary>
+    public static string TypeTitle(string type) =>
+        type == ClientRecord.Income ? "INCOME RECORD" : type == ClientRecord.Payment ? "PAYMENT RECORD" :
+        type == ClientRecord.Agreement ? "AGREEMENT" : "RECORD";
+
+    private static bool IsAmount(string value) => !string.IsNullOrWhiteSpace(value) && value.TrimStart().StartsWith("₱", StringComparison.Ordinal);
+
+    private static string Clean(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string Upper(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToUpperInvariant();
 
     private static string Digits(string text)
     {

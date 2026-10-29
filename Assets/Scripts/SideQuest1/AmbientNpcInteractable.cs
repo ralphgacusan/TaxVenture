@@ -33,6 +33,16 @@ public sealed class AmbientNpcInteractable : MonoBehaviour, IPointerEnterHandler
     /// <summary>The id in plaza_life.json.</summary>
     public string AmbientId => ambientId;
 
+    /// <summary>A runtime-built townsperson (Level 2): its id in this level's plaza_life.json, set once after AddComponent.</summary>
+    public void Configure(string id, string name)
+    {
+        ambientId = id;
+        if (!string.IsNullOrWhiteSpace(name)) fallbackName = name;
+        int seed = 0;
+        if (ambientId != null) foreach (char c in ambientId) seed += c;
+        nextTalk = seed % 3;
+    }
+
     /// <summary>The character's name (from plaza_life.json).</summary>
     public string DisplayName
     {

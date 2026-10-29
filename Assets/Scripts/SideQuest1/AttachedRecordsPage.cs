@@ -447,6 +447,29 @@ public sealed class AttachedRecordsPage : MonoBehaviour, IClientRecordHolder
         finally { IsGathering = false; }
     }
 
+    /// <summary>True while any record is out of the folder (taken out, moving or dragged).</summary>
+    public bool AnyOut
+    {
+        get
+        {
+            foreach (ClientRecordPaper paper in papers) if (paper != null && !paper.IsAttached) return true;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// The folder's record set changed (Level 2: Rosa handed her originals over): this page and every
+    /// record on it are removed at once (the owner rebuilds the new set while the folder is closed).
+    /// </summary>
+    public void Dispose()
+    {
+        GatherAll();
+        if (recordsRoot != null) Destroy(recordsRoot.gameObject);
+        recordsRoot = null;
+        pageAnchor = null;
+        Destroy(this);
+    }
+
     private static List<string> Ids(List<ClientRecordPaper> list)
     {
         var ids = new List<string>();

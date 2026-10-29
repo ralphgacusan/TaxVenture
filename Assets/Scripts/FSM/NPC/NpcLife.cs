@@ -157,6 +157,45 @@ public sealed class NpcLife : MonoBehaviour
     /// <summary>The scene-authored seat, or null.</summary>
     public Transform Seat => seat;
 
+    /// <summary>
+    /// A runtime-built NPC (Level 2's town): the same settings a scene NPC gets in the Inspector,
+    /// given once right after AddComponent and before its first frame (Start reads them).
+    /// </summary>
+    public void ConfigureRuntime(Activity newActivity, Transform newHome, Transform newSeat, Transform[] newRoute, Vector2 pause, bool loop, bool ground)
+    {
+        if (started) return;
+        activity = newActivity;
+        home = newHome;
+        seat = newSeat;
+        route = newRoute;
+        pauseSeconds = pause;
+        loopRoute = loop;
+        groundOnStart = ground;
+    }
+
+    /// <summary>Configures the shared plaza visit behavior for a runtime-built NPC.</summary>
+    public void ConfigureRuntimeVisits(NpcLife[] targets, Transform center, float radius, float stopDistance, Vector2 duration)
+    {
+        visitTargets = targets;
+        visitAreaCenter = center;
+        visitAreaRadius = Mathf.Max(1f, radius);
+        visitDistance = Mathf.Max(0.5f, stopDistance);
+        visitDurationSeconds = duration;
+    }
+
+    /// <summary>Connects a runtime-built pair for the existing alternating ambient-chat behavior.</summary>
+    public void ConfigureRuntimeChat(NpcLife other, bool leads)
+    {
+        partner = other;
+        leadsChat = other != null && leads;
+        chatPause = false;
+        chatLeaderTalks = false;
+        chatSwitchAt = Time.time + UnityEngine.Random.Range(0.5f, 2f);
+    }
+
+    /// <summary>True while a quest move is still on its way (TravelForQuest not arrived).</summary>
+    public bool QuestTraveling => questLocked;
+
     /// <summary>The movement component (added when missing).</summary>
     public NpcLocomotion Mover => mover != null ? mover : (mover = GetComponent<NpcLocomotion>() ?? gameObject.AddComponent<NpcLocomotion>());
 

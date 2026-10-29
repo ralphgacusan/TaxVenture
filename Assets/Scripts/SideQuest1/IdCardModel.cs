@@ -61,7 +61,9 @@ public static class IdCardModel
         core.localPosition = new Vector3(0f, -thickness * 0.17f, 0f);
 
         frontCanvas = Face(pivot.transform, "Face", record, size, layer, thickness * 0.5f + FaceLift(size), false);
-        backCanvas = card ? Face(pivot.transform, "Back Face", record, size, layer, -(thickness * 0.5f + FaceLift(size)), true) : null;
+        // A sheet prints a back only when its table continues there (Level 2 records); an ID always has one.
+        backCanvas = card || (record != null && record.HasBack)
+            ? Face(pivot.transform, "Back Face", record, size, layer, -(thickness * 0.5f + FaceLift(size)), true) : null;
 
         CardFlip flip = pivot.AddComponent<CardFlip>();
         flip.Configure(size, record != null && record.HasBack);
@@ -116,7 +118,7 @@ public static class IdCardModel
         var canvas = host.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.WorldSpace;
         canvas.additionalShaderChannels |= AdditionalCanvasShaderChannels.TexCoord1;
-        if (back) SupportingDocumentFace.BuildIdentityBack(face, record);
+        if (back) SupportingDocumentFace.BuildBack(face, record);
         else SupportingDocumentFace.Build(face, record, physical: true);
         foreach (UnityEngine.UI.Graphic graphic in face.GetComponentsInChildren<UnityEngine.UI.Graphic>(true)) graphic.raycastTarget = false;
         return canvas;
@@ -155,6 +157,8 @@ public sealed class CardFlip : MonoBehaviour
     private float liftHeight;
     private bool hasBack;
     private float from, to, elapsed = -1f;
+    private float duration = FlipSeconds;
+    private bool quiet;
 
     /// <summary>Showing the back now (or turning toward it).</summary>
     public bool ShowingBack => to > 0.5f;
@@ -179,9 +183,26 @@ public sealed class CardFlip : MonoBehaviour
         if (!hasBack) return false;
         from = Current;
         to = ShowingBack ? 0f : 1f;
+        // A second tap mid-turn reverses it over only the part already turned (no slow restart).
+        duration = FlipSeconds * Mathf.Clamp(Mathf.Abs(to - from), 0.35f, 1f);
         elapsed = 0f;
+        quiet = false;
         if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_card_pickup_01", 0.45f);
         return true;
+    }
+
+    /// <summary>
+    /// Turns front up within seconds and without its own sounds (an ID going back into its folder
+    /// lands front up; the landing plays the one place cue). No-op when the front already faces up.
+    /// </summary>
+    public void TurnToFront(float seconds)
+    {
+        if (!hasBack || !ShowingBack) return;
+        from = Current;
+        to = 0f;
+        duration = Mathf.Max(0.05f, Mathf.Min(seconds, FlipSeconds * from));
+        elapsed = 0f;
+        quiet = true;
     }
 
     /// <summary>Front up again at once (closing, gathering, resetting a view).</summary>
@@ -194,7 +215,7 @@ public sealed class CardFlip : MonoBehaviour
         Changed?.Invoke();
     }
 
-    private float Current => elapsed < 0f ? to : Mathf.Lerp(from, to, Ease(Mathf.Clamp01(elapsed / FlipSeconds)));
+    private float Current => elapsed < 0f ? to : Mathf.Lerp(from, to, Ease(Mathf.Clamp01(elapsed / duration)));
 
     private static float Ease(float t) => t * t * t * (t * (t * 6f - 15f) + 10f);
 
@@ -202,7 +223,7 @@ public sealed class CardFlip : MonoBehaviour
     {
         if (elapsed < 0f) return;
         elapsed += Time.unscaledDeltaTime;
-        float t = Mathf.Clamp01(elapsed / FlipSeconds);
+        float t = Mathf.Clamp01(elapsed / duration);
         float turn = Mathf.Lerp(from, to, Ease(t));
         // Lifted and slightly larger at mid-turn, flat and still at both ends.
         float arc = Mathf.Sin(Mathf.PI * t) * Mathf.Abs(to - from);
@@ -213,7 +234,7 @@ public sealed class CardFlip : MonoBehaviour
         Apply(to, 0f);
         Changed?.Invoke();
         Flipped?.Invoke(ShowingBack);
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_card_place_01", 0.4f);
+        if (!quiet && AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_card_place_01", 0.4f);
     }
 
     private void Apply(float turn, float arc)

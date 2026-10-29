@@ -424,6 +424,22 @@ public sealed class NpcAnimationDriver : MonoBehaviour
             dialogueUI = FindFirstObjectByType<DialogueUI>(FindObjectsInactive.Include);
     }
 
+    /// <summary>
+    /// A runtime-built NPC (Level 2's town and Rosa): the controller state names a scene NPC sets in the
+    /// Inspector (idle, walk, stroll), given once after AddComponent. The animator plays the idle next frame.
+    /// </summary>
+    public void ConfigureStates(string idle, string walk, string stroll)
+    {
+        idleStateName = idle;
+        strollStateName = stroll;
+        stateBindings = string.IsNullOrWhiteSpace(walk)
+            ? null : new[] { new StateBinding { behavior = Behavior.Walking, stateName = walk } };
+        animator = null;
+        CacheReferences();
+        CacheStateNames();
+        activeStateHash = 0;
+    }
+
     private void CacheStateNames()
     {
         stateHashes.Clear();

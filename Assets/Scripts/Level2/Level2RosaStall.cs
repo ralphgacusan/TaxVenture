@@ -459,9 +459,11 @@ public sealed class Level2RosaStall : MonoBehaviour
         model.transform.localRotation = Quaternion.identity;
         FitHeight(model, position.y);
         Animator animator = model.GetComponentInChildren<Animator>();
-        if (animator != null && assets.rosaIdleController != null)
+        // T32: Level 1's shared Humanoid controller (her own Idle Relaxed clip, plus walking) when available.
+        RuntimeAnimatorController controller = assets.npcController != null ? assets.npcController : assets.rosaIdleController;
+        if (animator != null && controller != null)
         {
-            animator.runtimeAnimatorController = assets.rosaIdleController;
+            animator.runtimeAnimatorController = controller;
             animator.applyRootMotion = false;
         }
         else
@@ -473,6 +475,19 @@ public sealed class Level2RosaStall : MonoBehaviour
         capsule.center = new Vector3(0f, 0.9f, 0f);
         capsule.height = 1.8f;
         capsule.radius = 0.35f;
+
+        if (animator != null && assets.npcController != null)
+        {
+            // One owner for her body (T32): NpcLife stands her at the stall, turns her to the player in a
+            // conversation and walks her to the office (Level2RosaConsultation asks it); the driver adds
+            // idle variation and restrained speaking/listening motion over the clip.
+            holder.SetActive(false);
+            string idle = Level2Town.Instance != null ? Level2Town.Instance.Rosa.idle : null;
+            holder.AddComponent<NpcAnimationDriver>().ConfigureStates(string.IsNullOrWhiteSpace(idle) ? "Idle Relaxed" : idle,
+                Level2Town.WalkState, Level2Town.StrollState);
+            holder.AddComponent<NpcLife>().ConfigureRuntime(NpcLife.Activity.Stand, null, null, null, new Vector2(3f, 6f), false, true);
+            holder.SetActive(true);
+        }
 
         Rosa = holder.AddComponent<RosaInteractable>();
         Rosa.Init(this);

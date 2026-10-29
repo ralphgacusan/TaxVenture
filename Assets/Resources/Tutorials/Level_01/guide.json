@@ -13,7 +13,7 @@
   ],
   "_targets": [
     "face (page): the same target names; the view turns smoothly toward it when the page appears (first person), e.g. the Supply Counter or the next waypoint.",
-    "hud:objective hud:progress hud:timer hud:minimap hud:notes hud:folder hud:profiles hud:settings hud:icons hud:bag hud:slot hud:book",
+    "hud:objective hud:progress hud:exp hud:reputation hud:coins hud:timer hud:minimap hud:notes hud:folder hud:profiles hud:settings hud:icons hud:bag hud:slot hud:book",
     "hud:joystick hud:look hud:prompt hud:exit hud:card hud:continue (the open reward card and its button)",
     "world:<scene path>   type:<ComponentName>   ui:<UI object name>   screen:x,y[,w,h] (0..1)   waypoint",
     "chip = a Tax Code value that an empty case-folder field accepts;  field = the field that takes the value in hand (never Name/TIN)",
@@ -100,7 +100,7 @@
         { "show": "welcome" },
         { "mood": "wow", "text": "Well hello there, rookie! I'm {guide}. I've been sorting out this town's taxes since before you were born!" },
         { "text": "Quick tip: when I'm talking, tap anywhere to hear my next line. Same goes for chats with the townsfolk." },
-        { "text": "First day! We'll start with the plaza and its people, then your first real case in the office." }
+        { "text": "Today, learn who pays income tax in the plaza side quest, then prepare Marie's case, earn the Auditor's approval and deliver her Client Copy." }
       ]
     },
     {
@@ -109,7 +109,15 @@
       "when": "lesson:welcome",
       "after": "welcome",
       "pages": [
-        { "point": "hud:progress", "gesture": "tap", "text": "This card is your progress. EXP grows as you get better at the job, and hearts show how much the town trusts you." },
+        {"point": "hud:exp", "gesture": "none", "text": "EXP records your progress: finish the plaza side quest and get your case approved to earn it."},
+        {"point": "hud:exp", "gesture": "none", "text": "Your first complete check sets your mastery score and medal; corrections let you finish the work."},
+        {"point": "hud:exp", "gesture": "none", "text": "EXP builds your career record; it is not spent in the shop."},
+        {"point": "hud:reputation", "gesture": "none", "text": "These hearts show Public Trust: how the town feels about your work, from 0 to 100."},
+        {"point": "hud:reputation", "gesture": "none", "text": "Earn trust by completing helpful work and following through with clients; your words and actions can also lower it."},
+        {"point": "hud:reputation", "gesture": "none", "text": "Trust carries into the next chapter; it is separate from your first-check mastery medal."},
+        {"point": "hud:coins", "gesture": "none", "text": "Earn coins the first time you complete eligible side quests and approved cases."},
+        {"point": "hud:coins", "gesture": "none", "text": "Spend coins at the Supply Counter on supplies and office upgrades; a purchase is optional."},
+        {"point": "hud:coins", "gesture": "none", "text": "Your wallet carries into the next chapter; repeating an activity does not pay its coins again."},
         { "point": "hud:minimap", "gesture": "tap", "text": "Your minimap! The blue arrow is you, and the yellow diamonds are people. It's 7:30 in the morning, bright and early!" },
         { "point": "hud:icons", "gesture": "none", "text": "These squares are your carry slots. Whatever you pick up today lands here, ready to use." },
         { "point": "hud:settings", "gesture": "tap", "text": "And Settings, for the sound and controls." }
@@ -326,7 +334,7 @@
       "endIfGone": true,
       "delay": 0.5,
       "pages": [
-        { "point": "hud:card", "gesture": "none", "mood": "wow", "box": "bottom", "text": "Your first medal! It shows your first check: Gold, Silver or Bronze. The EXP and hearts go to your progress. Have a look, then tap Continue." }
+        { "point": "hud:card", "gesture": "none", "mood": "wow", "box": "bottom", "text": "Your first medal! It shows your first check: Gold, Silver or Bronze. Have a look, then tap Continue." }
       ]
     },
     {
@@ -374,7 +382,7 @@
       "pages": [
         { "point": "ui:Office Hours Chip", "gesture": "none", "mood": "confused", "text": "Uh-oh, a deadline! This shows when the Auditor leaves and how many minutes you have left." },
         { "point": "hud:minimap", "gesture": "none", "text": "Keep an eye on the clock on your minimap too. Hand in your case before he leaves to avoid losing EXP and hearts for finishing late." },
-        { "text": "And if you miss it? Don't panic. He'll be back the next morning and your work stays put. You'd just lose the bonus. Now hurry!" }
+        { "text": "And if you miss it? Don't panic. He'll be back the next morning, and your work stays put. Now hurry!" }
       ]
     },
     {
@@ -559,10 +567,9 @@
       "onlyIn": "mode:FirstPerson",
       "delay": 0.8,
       "pages": [
-        { "mood": "sad", "text": "Ah, the Auditor found a mistake or two. Happens to everyone, even me!" },
+        { "mood": "sad", "text": "Ah, the Auditor found a mistake or two. Happens to everyone, even me! Your folder is back on your desk." },
         { "text": "Marie is in the conference room. Talk to her again. She might remind you of something important." },
-        { "mood": "confused", "text": "And remember: the Auditor won't re-check the exact same answers. Change what he marked, keep the folder with you, then talk to him again." },
-        { "point": "hud:notes", "gesture": "tap", "text": "Your folder is back on your desk. You've got this!" }
+        { "mood": "confused", "point": "hud:notes", "gesture": "tap", "text": "He won't re-check the same answers: change what he marked, keep the folder with you, then talk to him again. You've got this!" }
       ]
     },
     {

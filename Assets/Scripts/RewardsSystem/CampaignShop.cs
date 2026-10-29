@@ -260,7 +260,7 @@ public class ShopCatalogue
             id = ComparisonStand, kind = ShopProduct.KindDecor, section = SectionOffice, price = 120, icon = "stand",
             title = "Comparison Stand", tagline = "Two records side by side",
             effect = "Holds two records upright at your desk so you can compare them.",
-            requires = "pending:comparison_stand", requiresLabel = "Requires ready Level 2"
+            requires = "pending:comparison_stand", requiresLabel = "Coming later"
         });
         c.products.Add(new ShopProduct
         {

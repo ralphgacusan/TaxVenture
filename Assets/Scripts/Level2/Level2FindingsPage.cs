@@ -1,5 +1,8 @@
 using System.Collections.Generic;
+using System.Collections;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// Three-part observation kept on a removable sheet: reported entry to check,
@@ -16,6 +19,7 @@ public sealed class Level2FindingsPage : MonoBehaviour
 {
     public const string ChildName = "FindingsPage";
     public const string PageTitle = "Findings";
+    public const string EthicsNotePageTitle = "Rosa's Review Note";
     public const string ReasonKey = "FindingReason";
     public const string InkText = "INITIAL REVIEW\nNOT READY";
 
@@ -25,6 +29,8 @@ public sealed class Level2FindingsPage : MonoBehaviour
     private Level2FindingsSheet sheet;
     private CaseData observedCase;
     private bool observedHandover;
+    private string lastEthicsNote;
+    private bool lastEthicsComplete;
 
     private void OnEnable()
     {
@@ -54,6 +60,15 @@ public sealed class Level2FindingsPage : MonoBehaviour
     // A box's value arrives inside the transfer; redraw on the next frame.
     private void LateUpdate()
     {
+        CaseReviewState ethicsReview = Level2OfficeStart.Review;
+        string ethicsNote = ethicsReview?.rosaEthicsChoiceId;
+        bool ethicsComplete = ethicsReview != null && ethicsReview.rosaEthicsFollowThroughDone;
+        if (ethicsNote != lastEthicsNote || ethicsComplete != lastEthicsComplete)
+        {
+            lastEthicsNote = ethicsNote;
+            lastEthicsComplete = ethicsComplete;
+            RefreshEthicsNote();
+        }
         CaseData current = CaseManager.Instance != null ? CaseManager.Instance.CurrentCase : null;
         bool handedOver = current?.review?.HandoverDone == true;
         if (current != observedCase || handedOver != observedHandover)
@@ -92,7 +107,110 @@ public sealed class Level2FindingsPage : MonoBehaviour
 
         pages.Add(new CaseFolderPageContent(PageTitle, "") { Render = Draw });
         Level2OfficeReview.AppendPages(pages, data);
+        pages.Add(new CaseFolderPageContent(EthicsNotePageTitle, "") { Render = DrawEthicsNote });
         return pages;
+    }
+
+    /// <summary>Refreshes the note when a committed choice or delivery changes its status.</summary>
+    public static void RefreshEthicsNote()
+    {
+        foreach (CaseFolderUI folder in FindObjectsByType<CaseFolderUI>(FindObjectsInactive.Include))
+        {
+            if (folder == null || folder.IsReference || !folder.IsShowing) continue;
+            int index = folder.FindPageIndex(EthicsNotePageTitle);
+            if (index >= 0 && folder.CurrentPageIndex == index) folder.RefreshCurrentPage();
+        }
+    }
+
+    private void DrawEthicsNote(CaseFolderUI.PageBuilder page)
+    {
+        RectTransform note = HudTheme.CreateRect("Neutral ruled Rosa review note", page.Paper);
+        note.anchorMin = new Vector2(0.08f, 0.12f);
+        note.anchorMax = new Vector2(0.92f, 0.9f);
+        note.offsetMin = Vector2.zero;
+        note.offsetMax = Vector2.zero;
+        HudTheme.AddImage(note, HudTheme.Rounded, new Color32(250, 247, 235, 255), 12f);
+        Shadow shadow = note.gameObject.AddComponent<Shadow>();
+        shadow.effectColor = new Color(0.15f, 0.15f, 0.12f, 0.18f);
+        shadow.effectDistance = new Vector2(2f, -2f);
+        RectTransform margin = HudTheme.CreateRect("Notebook margin", note);
+        margin.anchorMin = new Vector2(0.085f, 0.1f);
+        margin.anchorMax = new Vector2(0.085f, 0.78f);
+        margin.sizeDelta = new Vector2(1f, 0f);
+        HudTheme.AddImage(margin, null, new Color32(187, 144, 136, 130));
+
+        AddNoteText(note, "ROSA'S REVIEW NOTE", 0.12f, 0.82f, 0.82f, 0.94f, 22f, FontStyles.Bold);
+        AddRule(note, 0.78f);
+        CaseReviewState review = Level2OfficeStart.Review;
+        string choice = review != null && review.rosaEthicsCommitted ? review.rosaEthicsChoiceText : "No choice has been recorded.";
+        string followThrough = review == null || !review.rosaEthicsCommitted ? "No follow-through is recorded." :
+            ClientCopyRules.Parse(review.clientCopyPhase) == ClientCopyPhase.Done ? "Required follow-through is complete." :
+            review.rosaEthicsChoiceId.EndsWith("/dismissive-hold", System.StringComparison.Ordinal)
+                ? "The review stays open. Complete the records and return for approval."
+                : "Complete the supported correction, approval, and Client Copy.";
+        string status = Level2Checkpoint.EthicsStatus(review);
+        AddNoteText(note, "PLAYER'S WORDS", 0.12f, 0.66f, 0.82f, 0.75f, 16f, FontStyles.Bold);
+        AddNoteText(note, choice, 0.12f, 0.49f, 0.82f, 0.66f, 20f, FontStyles.Normal);
+        AddRule(note, 0.46f);
+        AddNoteText(note, "NEXT STEP: " + followThrough, 0.12f, 0.34f, 0.82f, 0.43f, 17f, FontStyles.Normal);
+        AddRule(note, 0.30f);
+        AddNoteText(note, "STATUS: " + status, 0.12f, 0.14f, 0.82f, 0.27f, 18f, FontStyles.Bold);
+
+        if (review != null && review.rosaEthicsFollowThroughDone &&
+            review.rosaEthicsChoiceId.EndsWith("/responsible", System.StringComparison.Ordinal))
+        {
+            RectTransform tab = HudTheme.CreateRect("RECORDS CHECKED tab", note);
+            tab.anchorMin = new Vector2(0.52f, 0.95f);
+            tab.anchorMax = new Vector2(1f, 1.04f);
+            tab.offsetMin = tab.offsetMax = Vector2.zero;
+            HudTheme.AddImage(tab, HudTheme.Rounded, new Color32(235, 230, 211, 255), 5f);
+            TextMeshProUGUI tabText = HudTheme.CreateLabel("Checked tab text", tab,
+                Level2CampaignRules.ResponsibleFollowThroughStatus, 15f, new Color32(50, 54, 56, 255),
+                TextAlignmentOptions.Center, FontStyles.Bold);
+            HudTheme.Stretch(tabText.rectTransform, 3f);
+        }
+        page.AddOverlay(note.gameObject);
+        StartCoroutine(PlaceNote(note));
+    }
+
+    private static TextMeshProUGUI AddNoteText(RectTransform parent, string text, float xMin, float yMin, float xMax, float yMax,
+        float fontSize, FontStyles style)
+    {
+        TextMeshProUGUI label = HudTheme.CreateLabel("Ruled note text", parent, text, fontSize, new Color32(50, 54, 56, 255),
+            TextAlignmentOptions.Left, style);
+        RectTransform rect = label.rectTransform;
+        rect.anchorMin = new Vector2(xMin, yMin);
+        rect.anchorMax = new Vector2(xMax, yMax);
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+        label.textWrappingMode = TextWrappingModes.Normal;
+        label.overflowMode = TextOverflowModes.Overflow;
+        label.margin = new Vector4(0f, 0f, 0f, 0f);
+        return label;
+    }
+
+    private static void AddRule(RectTransform parent, float y)
+    {
+        RectTransform rule = HudTheme.CreateRect("Pencil ruled line", parent);
+        rule.anchorMin = new Vector2(0.1f, y);
+        rule.anchorMax = new Vector2(0.9f, y);
+        rule.sizeDelta = new Vector2(0f, 1f);
+        HudTheme.AddImage(rule, null, new Color32(150, 170, 176, 160));
+    }
+
+    private static IEnumerator PlaceNote(RectTransform note)
+    {
+        if (note == null) yield break;
+        Vector3 target = note.localScale;
+        note.localScale = target * 0.96f;
+        float elapsed = 0f;
+        while (elapsed < 0.45f)
+        {
+            if (note == null || !note.gameObject.activeInHierarchy) yield break;
+            elapsed += Time.unscaledDeltaTime;
+            note.localScale = Vector3.Lerp(target * 0.96f, target, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / 0.45f)));
+            yield return null;
+        }
+        if (note != null) note.localScale = target;
     }
 
     private void Draw(CaseFolderUI.PageBuilder page)

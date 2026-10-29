@@ -15,3 +15,11 @@ MonoBehaviour:
   rosaPrefab: {fileID: 919132149155446097, guid: d39f95956aeb5ea40bc6d4060080e829, type: 3}
   storePrefab: {fileID: 1104469224843184, guid: 4c701139b81d9c140b18bb741804c1ec, type: 3}
   rosaIdleController: {fileID: 9100000, guid: 0b1fbdea34f261f4eacc93aa45b49b92, type: 2}
+  npcController: {fileID: 9100000, guid: 2e8c12097e1e471a86e5e5d07745decd, type: 2}
+  residentModels:
+  - {fileID: 1211250381875678, guid: 7d4d82511439be645bea1229f6c97998, type: 3}
+  - {fileID: 1032305250981868, guid: 0774b3aa9983d294e859db07a1f79702, type: 3}
+  - {fileID: 919132149155446097, guid: e6276f65987675b40b38ace97ad579b8, type: 3}
+  - {fileID: 1611835758375592, guid: 1d5338d27c0839b46892a6390262c9d4, type: 3}
+  - {fileID: 1822189464268616, guid: f78a881d3ec75d945ac878527dc26674, type: 3}
+  - {fileID: 1038128334585484, guid: a92acd4090533d84bb62ba63b05c0db5, type: 3}

@@ -1,0 +1,104 @@
+{
+  "_readme": [
+    "Level 2's quieter town (T32): where its small plaza cast spend their day, plus Rosa's walk from her stall to the office conference room.",
+    "Positions are world metres in Office_Level2 (its plaza and office are the same as Office_Level1's). yaw: the way a person faces (degrees, 0 = +Z).",
+    "residents: model = index into Resources/Levels/Level_02/scene_assets.asset residentModels; id = the person's id in Levels/Level_02/plaza_life.json (their name and talks); idle = a state of Assets/AssetIntegration/NpcHumanoid.controller; activity Stand, Patrol (looping route), or Visit (the shared Level 1 guard's ordered social round). partnerId/leadsChat set an optional pair. The MarketVisit customer walks to visitSpot and leaves when Rosa is spoken to.",
+    "A seat point is on the seat surface under the pelvis, yaw away from the backrest (the same rule as Level 1's seat markers). height = the model is fitted to this many metres.",
+    "rosa: route points are walked in order (doorways crossed straight through): toReception, then after waiting receptionWaitSeconds at the front desk, toRoom; her room spot is the case's clientFinale.spotPath. leaveDelaySeconds = the beat after Mark the Money! begins before she sets off.",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "visitCenter": { "x": 7.0, "y": -0.4, "z": 133.0, "yaw": 0 },
+  "visitRadius": 31,
+  "residents": [
+    {
+      "_who": "Mang Ernesto, retired market bookkeeper, reading on the bench between the plaza and the office forecourt (Level 1's west seat marker; nobody sits there in Level 2). Seated, so he never blocks a route.",
+      "id": "ernesto",
+      "model": 0,
+      "height": 1.7,
+      "idle": "Briefcase Idle",
+      "activity": "Stand",
+      "seat": { "x": 9.71, "y": 0.06, "z": 116.88, "yaw": 0 }
+    },
+    {
+      "_who": "Tess, a young mother on her errands, strolling slowly round the quiet north-east corner of the plaza, away from Rosa's stall and the office doors.",
+      "id": "tess",
+      "model": 1,
+      "height": 1.6,
+      "idle": "Standing Idle",
+      "activity": "Patrol",
+      "loop": true,
+      "pauseSeconds": [4, 8],
+      "route": [
+        { "x": 17.0, "y": -0.4, "z": 147.0, "yaw": 76 },
+        { "x": 25.0, "y": -0.4, "z": 149.0, "yaw": 144 },
+        { "x": 29.0, "y": -0.4, "z": 140.0, "yaw": -150 },
+        { "x": 23.0, "y": -0.4, "z": 134.0, "yaw": -56 }
+      ]
+    },
+    {
+      "_who": "Arthur strolls the plaza on a relaxed loop, carrying the briefcase and offering optional local conversation; the Level 2 route does not use his Level 1 guide or corkboard duties.",
+      "id": "arthur_l2",
+      "model": 2,
+      "height": 1.72,
+      "idle": "Briefcase Idle",
+      "activity": "Patrol",
+      "loop": true,
+      "pauseSeconds": [3, 5],
+      "route": [
+        { "x": 1.0, "y": -0.4, "z": 126.0, "yaw": 15 },
+        { "x": 7.0, "y": -0.4, "z": 129.0, "yaw": 90 },
+        { "x": 12.0, "y": -0.4, "z": 126.0, "yaw": 180 },
+        { "x": 7.0, "y": -0.4, "z": 123.0, "yaw": -90 }
+      ]
+    },
+    {
+      "_who": "Mang Dante, the familiar office security guard from Level 1, starts on the forecourt and visits Level 2's available plaza people in a short ordered round.",
+      "id": "dante_l2",
+      "model": 3,
+      "height": 1.7,
+      "idle": "Standing Idle",
+      "activity": "Visit",
+      "pauseSeconds": [3, 5],
+      "route": [ { "x": 9.0, "y": -0.4, "z": 111.5, "yaw": 160 } ],
+      "visitIds": [ "ernesto", "tess", "arthur_l2", "marie_l2", "rosa_customer" ]
+    },
+    {
+      "_who": "Marie chats with Mang Ernesto by the bench; both remain optional and independently interactable.",
+      "id": "marie_l2",
+      "model": 4,
+      "height": 1.62,
+      "idle": "Idle Relaxed",
+      "activity": "Stand",
+      "partnerId": "ernesto",
+      "leadsChat": true,
+      "route": [ { "x": 12.2, "y": -0.4, "z": 118.0, "yaw": 245 } ]
+    },
+    {
+      "_who": "A customer walking toward Rosa during the Market Visit. The customer waits with her until Elijah starts talking to Rosa, then walks back to the plaza edge.",
+      "id": "rosa_customer",
+      "model": 5,
+      "height": 1.65,
+      "idle": "Standing Idle",
+      "activity": "Stand",
+      "arriveOnPhase": "MarketVisit",
+      "visitSpot": { "x": -21.5, "y": -0.4, "z": 147.0, "yaw": 0 },
+      "route": [ { "x": -7.0, "y": -0.4, "z": 137.0, "yaw": 300 } ]
+    }
+  ],
+  "rosa": {
+    "leaveDelaySeconds": 2.5,
+    "receptionWaitSeconds": 40,
+    "idle": "Idle Relaxed",
+    "toReception": [
+      { "x": 4.55, "y": -0.4, "z": 106.4, "yaw": 180 },
+      { "x": 4.55, "y": -0.4, "z": 102.9, "yaw": 180 },
+      { "x": 6.45, "y": -0.4, "z": 101.6, "yaw": 155 }
+    ],
+    "toRoom": [
+      { "x": 4.57, "y": -0.4, "z": 98.2, "yaw": 180 },
+      { "x": 4.57, "y": -0.4, "z": 96.0, "yaw": 180 },
+      { "x": 3.0, "y": -0.42, "z": 92.69, "yaw": -90 },
+      { "x": 1.0, "y": -0.42, "z": 92.69, "yaw": -90 }
+    ]
+  }
+}

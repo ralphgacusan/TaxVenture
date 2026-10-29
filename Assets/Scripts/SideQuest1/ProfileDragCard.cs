@@ -27,6 +27,7 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
     private const float ArrivalStartScale = 0.14f;
     private const float DragLift = 0.035f;
     private const float DragTiltLimit = 5f;
+    private const float PickupSeconds = 0.08f;  // lifts to the finger, then follows it exactly (T28)
     private const float PinImpactLift = 0.015f;
     private const float PinImpactAngle = 4f;
     private const float PinHeadDiameter = 0.04f;
@@ -61,8 +62,9 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
     private bool[] arrivalColliderStates;
     private bool arrivalCollidersDisabled;
 
-    private Vector3 originalPosition, originalScale, pinPivotLocal, pinPivotOffset, dragTargetPosition, dragVelocity;
+    private Vector3 originalPosition, originalScale, pinPivotLocal, pinPivotOffset, dragTargetPosition, dragVelocity, lastDragTarget;
     private Quaternion originalRotation, dragStartRotation;
+    private float dragStartedAt;
     private Vector3 transitionFromPosition, transitionTargetPosition, pinnedPosition;
     private Quaternion transitionFromRotation, transitionTargetRotation, pinnedRotation;
     private float transitionStartedAt, transitionDuration, placedAt;
@@ -250,8 +252,10 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
         activePointerId = eventData.pointerId;
         dragOffset = transform.position - ray.GetPoint(enter);
         dragTargetPosition = transform.position - mainCamera.transform.forward * DragLift;
+        lastDragTarget = dragTargetPosition;
         dragVelocity = Vector3.zero;
         dragStartRotation = transform.rotation;
+        dragStartedAt = Time.unscaledTime;
         state = MotionState.Dragging;
         if (pointerHighlight != null) pointerHighlight.SetFocused(true);
         VacateCurrentSlot();
@@ -278,8 +282,14 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
         Ray ray = mainCamera.ScreenPointToRay(eventData.position);
         if (dragPlane.Raycast(ray, out float enter))
+        {
             dragTargetPosition = ray.GetPoint(enter) + dragOffset - mainCamera.transform.forward * DragLift;
+            // Once lifted it sits exactly under the finger this frame (no spring lag).
+            if (PickedUp) transform.position = dragTargetPosition;
+        }
     }
+
+    private bool PickedUp => Time.unscaledTime - dragStartedAt >= PickupSeconds;
 
     public void OnPointerUp(PointerEventData eventData)
     {
@@ -449,9 +459,15 @@ public class ProfileDragCard : MonoBehaviour, IPointerEnterHandler, IPointerExit
             return;
         }
         if (dt <= 0f) return;
-        transform.position = Vector3.SmoothDamp(transform.position, dragTargetPosition, ref dragVelocity,
-            1f / Mathf.Max(0.01f, dragSmoothness), Mathf.Infinity, dt);
+        // A short lift from where it was pressed to the finger (the press became a drag a few
+        // pixels later), then exactly under the finger; settling happens after release.
+        float pickup = Mathf.Clamp01((Time.unscaledTime - dragStartedAt) / PickupSeconds);
+        transform.position = pickup >= 1f ? dragTargetPosition
+            : Vector3.Lerp(transform.position, dragTargetPosition, Mathf.Max(pickup, 1f - Mathf.Exp(-dragSmoothness * dt)));
 
+        // The finger's own speed gives the slight tilt (smoothed, so jitter never shakes it).
+        dragVelocity = Vector3.Lerp(dragVelocity, (dragTargetPosition - lastDragTarget) / dt, 1f - Mathf.Exp(-14f * dt));
+        lastDragTarget = dragTargetPosition;
         float speed = Vector3.Dot(dragVelocity, mainCamera.transform.right);
         float tilt = Mathf.Clamp(-speed * 1.5f, -DragTiltLimit, DragTiltLimit);
         Quaternion targetRotation = dragStartRotation * Quaternion.Euler(0f, 0f, tilt);

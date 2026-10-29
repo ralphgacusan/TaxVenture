@@ -871,6 +871,8 @@ public class CampaignRecord
     public bool shopIntroduced;
     /// <summary>T13: office decor installed at its display anchors (one entry per owned decor product).</summary>
     public List<DecorPlacement> decor = new List<DecorPlacement>();
+    /// <summary>T19: Rosa's explicit promise and its pending, once-only supporting-record consequence.</summary>
+    public RosaEthicsRecord rosaEthics = new RosaEthicsRecord();
 
     public bool IsSet => !string.IsNullOrWhiteSpace(campaignId);
 
@@ -895,6 +897,22 @@ public class CampaignRecord
         publicTrust = StartingTrust,
         coins = 0
     };
+}
+
+[Serializable]
+public sealed class RosaEthicsRecord
+{
+    public string caseId = "";
+    public string commitmentId = "";
+    public string choiceId = "";
+    public string choiceText = "";
+    public bool committed;
+    public bool followThroughRequired;
+    public bool followThroughDone;
+    /// <summary>Actual clamped trust delta from an unsupported promise, reversed exactly at follow-through.</summary>
+    public int promiseTrustDelta;
+    /// <summary>Stable activity IDs of T19 consequences recorded in the campaign ledger.</summary>
+    public List<string> consequenceIds = new List<string>();
 }
 
 /// <summary>
@@ -1277,6 +1295,13 @@ public class PlayerProgressData
         changed |= c.ledger.RemoveAll(e => e == null || string.IsNullOrWhiteSpace(e.kind)) > 0;
         if (c.inventory == null) { c.inventory = new CampaignInventoryRecord(); changed = true; }
         changed |= c.inventory.Repair();
+        if (c.rosaEthics == null) { c.rosaEthics = new RosaEthicsRecord(); changed = true; }
+        if (c.rosaEthics.consequenceIds == null) { c.rosaEthics.consequenceIds = new List<string>(); changed = true; }
+        c.rosaEthics.consequenceIds = CleanIds(c.rosaEthics.consequenceIds, ref changed);
+        if (c.rosaEthics.caseId == null) { c.rosaEthics.caseId = ""; changed = true; }
+        if (c.rosaEthics.commitmentId == null) { c.rosaEthics.commitmentId = ""; changed = true; }
+        if (c.rosaEthics.choiceId == null) { c.rosaEthics.choiceId = ""; changed = true; }
+        if (c.rosaEthics.choiceText == null) { c.rosaEthics.choiceText = ""; changed = true; }
         changed |= RepairDecor(c);
         c.completedChapterIds = CleanIds(c.completedChapterIds, ref changed);
         c.rewardClaims = CleanIds(c.rewardClaims, ref changed);

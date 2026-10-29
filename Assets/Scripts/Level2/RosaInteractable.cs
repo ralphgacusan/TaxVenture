@@ -16,6 +16,10 @@ using UnityEngine;
 ///   and the envelope fans the records onto the desk;
 /// - afterwards: a short reminder. A cancelled conversation changes nothing.
 /// She turns to face the player while talking (transform turn).
+/// Level 2 consistency pass: once her records are handed over she waits in
+/// the office conference room (Level2RosaConsultation places this same
+/// actor; never a second Rosa) and taps there go to her consultation or the
+/// Client Copy handover through TryStartVisit.
 /// </summary>
 public sealed class RosaInteractable : MonoBehaviour, IInteractable
 {
@@ -32,7 +36,14 @@ public sealed class RosaInteractable : MonoBehaviour, IInteractable
         stall = owner;
         restRotation = transform.rotation;
         highlight = HighlightEffect.For((Component)this);
+        life = GetComponent<NpcLife>();
     }
+
+    // T32: with Level 1's NpcLife she has one body owner (it turns her to the player and back, and walks her).
+    private NpcLife life;
+
+    /// <summary>Her behaviour owner (null without the shared controller: she is then turned here and placed, not walked).</summary>
+    public NpcLife Life => life;
 
     public void OnFocus() { if (highlight != null) highlight.Highlight(); }
 
@@ -40,9 +51,61 @@ public sealed class RosaInteractable : MonoBehaviour, IInteractable
 
     public string GetPromptText() => "Talk to Aling Rosa";
 
+    /// <summary>A conversation is running with her (stall talk, a consultation or the Client Copy).</summary>
+    public bool Talking => talking;
+
+    /// <summary>Where she faces when not talking (her stall, or the conference room's client spot after the move).</summary>
+    public void SetRest(Quaternion rotation)
+    {
+        restRotation = rotation;
+        if (!talking)
+        {
+            if (turn != null) StopCoroutine(turn);
+            turn = null;
+            transform.rotation = rotation;
+        }
+    }
+
+    /// <summary>
+    /// A conference-room visit (Level 2 consistency pass) through the shared dialogue flow with her as
+    /// its owner, as Marie's TryStartVisit: she turns to the player and back. Talk only.
+    /// </summary>
+    public bool TryStartVisit(List<DialogueLine> lines, System.Action completed, System.Action cancelled)
+    {
+        if (talking || lines == null || lines.Count == 0) return false;
+        DialogueUI dialogue = FindAnyObjectByType<DialogueUI>(FindObjectsInactive.Include);
+        if (dialogue == null) return false;
+        bool admitted = dialogue.TryStartDialogue(lines,
+            () => { EndVisit(); completed?.Invoke(); },
+            () => { EndVisit(); cancelled?.Invoke(); },
+            this);
+        if (!admitted) return false;
+        AudioManager.Instance?.QueueInteractionSFX("npc");
+        talking = true;
+        FacePlayer(true);
+        return true;
+    }
+
+    private void OnDisable()
+    {
+        // Actor removal/scene interruption cancels its dialogue, never a handover milestone.
+        if (DialogueUI.Active != null) DialogueUI.Active.CancelDialogueFor(this);
+        talking = false;
+        if (turn != null) StopCoroutine(turn);
+        turn = null;
+    }
+
+    private void EndVisit()
+    {
+        talking = false;
+        FacePlayer(false);
+    }
+
     public void OnInteract()
     {
         if (talking) return;
+        // In the conference room her visits (consultation, Client Copy) belong to Level2RosaConsultation.
+        if (Level2RosaConsultation.Instance != null && Level2RosaConsultation.Instance.HandleTap(this)) return;
         CaseReviewState review = Level2OfficeStart.Review;
         CaseDefinition definition = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
         DialogueUI dialogue = FindAnyObjectByType<DialogueUI>(FindObjectsInactive.Include);
@@ -65,6 +128,7 @@ public sealed class RosaInteractable : MonoBehaviour, IInteractable
             this);
         if (!admitted) return;
 
+        Level2Town.Instance?.OnRosaDialogueStarted(this);
         talking = true;
         FacePlayer(true);
     }
@@ -93,6 +157,7 @@ public sealed class RosaInteractable : MonoBehaviour, IInteractable
 
     private void FacePlayer(bool toPlayer)
     {
+        if (life != null) return;   // NpcLife turns her for her own conversation and back afterwards
         Transform player = CameraController.Instance != null ? CameraController.Instance.PlayerRoot : null;
         Quaternion target = restRotation;
         if (toPlayer && player != null)

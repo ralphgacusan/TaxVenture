@@ -17,11 +17,50 @@ public static class ReviewVoucherCommand
     public static string ActiveCaseId =>
         CaseManager.Instance != null && CaseManager.Instance.CurrentDefinition != null ? CaseManager.Instance.CurrentDefinition.caseId ?? "" : "";
 
+    /// <summary>What the card shows of the active clock: Office Hours in Level 1, Rosa's review clock in Level 2 (T18).</summary>
+    public struct ClockInfo
+    {
+        public bool Shown;
+        public int Cutoff;
+        public int ExtendedCutoff;
+        public bool Extended;
+    }
+
+    /// <summary>Level 2's Auditor stays all day: its card speaks of today's review cutoff instead of his leaving time.</summary>
+    public static bool ReviewCutoff => Level2ReviewClock.Active != null;
+    public static string CaptionNow => ReviewCutoff ? "TODAY'S REVIEW CUTOFF" : "THE AUDITOR LEAVES AT";
+    public static string CaptionWill => ReviewCutoff ? "THE CUTOFF WILL MOVE TO" : "THE AUDITOR WILL LEAVE AT";
+    public static string CaptionAfter => ReviewCutoff ? "TODAY'S CUTOFF IS NOW" : "THE AUDITOR NOW LEAVES AT";
+
+    public static ClockInfo Clock()
+    {
+        Level2ReviewClock rosa = Level2ReviewClock.Active;
+        if (rosa != null)
+            return new ClockInfo
+            {
+                Shown = rosa.HasDeadline, Cutoff = rosa.DeadlineSeconds, ExtendedCutoff = rosa.ExtendedDeadlineSeconds, Extended = rosa.ExtensionSeconds > 0
+            };
+        OfficeHours hours = OfficeHours.Instance;
+        bool shown = hours != null && hours.Running && hours.HasDeadline;
+        return new ClockInfo
+        {
+            Shown = shown, Cutoff = shown ? hours.DeadlineSeconds : 0, ExtendedCutoff = shown ? hours.ExtendedDeadlineSeconds : 0,
+            Extended = hours != null && hours.ExtensionSeconds > 0
+        };
+    }
+
     public static VoucherUseStatus Status(HudHotbar hotbar)
     {
-        OfficeHours hours = OfficeHours.Instance;
         PlayerProgressManager manager = PlayerProgressManager.Instance;
         string caseId = ActiveCaseId;
+        Level2ReviewClock rosa = Level2ReviewClock.Active;
+        if (rosa != null)
+        {
+            if (hotbar == null || manager == null) return VoucherUseStatus.NoCase;
+            return VoucherRules.Check(InventoryRules.CarriedCount(hotbar.Inventory, InventoryCatalogue.ReviewVoucher), caseId, rosa.VoucherView,
+                manager.IsVoucherUsed(Level2CampaignRules.LevelId, caseId));
+        }
+        OfficeHours hours = OfficeHours.Instance;
         if (hotbar == null || hours == null || !hours.Running || manager == null) return VoucherUseStatus.NoCase;
         return VoucherRules.Check(InventoryRules.CarriedCount(hotbar.Inventory, InventoryCatalogue.ReviewVoucher), caseId, hours.VoucherView,
             manager.IsVoucherUsed(TaskListProvider.Level1Id, caseId));
@@ -31,6 +70,18 @@ public static class ReviewVoucherCommand
     {
         VoucherUseStatus status = Status(hotbar);
         if (status != VoucherUseStatus.Ready) return new VoucherUseResult { Message = VoucherRules.ReasonFor(status) };
+        Level2ReviewClock rosa = Level2ReviewClock.Active;
+        if (rosa != null)
+        {
+            // Rosa's review: the extended clock goes into the Level 2 checkpoint saved with the voucher and its claim.
+            ReviewClockState extendedReview = rosa.ExtendedClock();
+            if (extendedReview == null) return new VoucherUseResult { Message = VoucherRules.ReasonFor(VoucherUseStatus.AlreadyUsed) };
+            LevelCheckpoint reviewCheckpoint = Level2Checkpointer.Active != null ? Level2Checkpointer.Active.CaptureForCommit(extendedReview) : null;
+            VoucherUseResult used = PlayerProgressManager.Instance.CommitLevelTwoVoucherUse(hotbar.Catalogue, ActiveCaseId, reviewCheckpoint,
+                "voucher/" + Guid.NewGuid().ToString("N"));
+            if (used.Outcome == InventoryOutcome.Applied) rosa.ApplyExtension(extendedReview);
+            return used;
+        }
         OfficeHours hours = OfficeHours.Instance;
         Level1ClockRecord extended = hours.ExtendedClock();
         Level1FieldCheckpointer checkpointer = UnityEngine.Object.FindAnyObjectByType<Level1FieldCheckpointer>();
@@ -245,22 +296,22 @@ public sealed class VoucherUseCard : MonoBehaviour
         WorldCardFace.BuildVoucherFace(ticketFace, "REVIEW VOUCHER", carried, limit);
         carryLine.text = $"You carry {carried} of {limit}";
 
-        OfficeHours hours = OfficeHours.Instance;
-        bool clock = hours != null && hours.Running && hours.HasDeadline;
+        ReviewVoucherCommand.ClockInfo info = ReviewVoucherCommand.Clock();
+        bool clock = info.Shown;
         clockCard.gameObject.SetActive(clock || stage == Stage.Done);
         if (stage == Stage.Done) return;
 
         VoucherUseStatus check = ReviewVoucherCommand.Status(hotbar);
-        oldCutoff = clock ? hours.DeadlineSeconds : 0;
-        newCutoff = clock ? hours.ExtendedDeadlineSeconds : 0;
-        clockCaption.text = "THE AUDITOR LEAVES AT";
+        oldCutoff = clock ? info.Cutoff : 0;
+        newCutoff = clock ? info.ExtendedCutoff : 0;
+        clockCaption.text = ReviewVoucherCommand.CaptionNow;
         clockTime.text = clock ? OfficeHoursMath.Format(oldCutoff) : "";
-        extraLine.text = hours != null && hours.ExtensionSeconds > 0 ? "Extended with a voucher" : "";
+        extraLine.text = info.Extended ? "Extended with a voucher" : "";
 
         if (stage == Stage.Confirm && check == VoucherUseStatus.Ready)
         {
             status.text = "Use one voucher on this case? It is used up, and only one can be used per case.";
-            clockCaption.text = "THE AUDITOR WILL LEAVE AT";
+            clockCaption.text = ReviewVoucherCommand.CaptionWill;
             clockTime.text = $"<color=#76603F>{OfficeHoursMath.Format(oldCutoff)}</color>  <color=#BE6E3A>→</color>  <color=#2E8C54>{OfficeHoursMath.Format(newCutoff)}</color>";
             extraLine.text = "+180 active review seconds";
             message.text = "";
@@ -270,9 +321,13 @@ public sealed class VoucherUseCard : MonoBehaviour
             return;
         }
         stage = Stage.Status;
-        status.text = check == VoucherUseStatus.Ready
-            ? "Use it now and the Auditor leaves 180 active review seconds later. One per case."
-            : "+180 active review seconds on one case, before the Auditor leaves. One per case.";
+        status.text = ReviewVoucherCommand.ReviewCutoff
+            ? (check == VoucherUseStatus.Ready
+                ? "Use it now and today's cutoff moves 180 active review seconds later. One per case."
+                : "+180 active review seconds on one case, before today's cutoff. One per case.")
+            : check == VoucherUseStatus.Ready
+                ? "Use it now and the Auditor leaves 180 active review seconds later. One per case."
+                : "+180 active review seconds on one case, before the Auditor leaves. One per case.";
         message.text = VoucherRules.ReasonFor(check);
         message.color = Warn;
         primaryLabel.text = "USE ON THIS CASE";
@@ -331,10 +386,12 @@ public sealed class VoucherUseCard : MonoBehaviour
         primaryLabel.text = "DONE";
         secondaryLabel.text = "CLOSE";
         status.text = "Voucher used on this case.";
-        clockCaption.text = "THE AUDITOR NOW LEAVES AT";
+        clockCaption.text = ReviewVoucherCommand.CaptionAfter;
         clockTime.text = OfficeHoursMath.Format(newCutoff);
         extraLine.text = "+180 active review seconds";
-        message.text = "Your review clock keeps running; the Auditor just stays a little longer.";
+        message.text = ReviewVoucherCommand.ReviewCutoff
+            ? "Your review clock keeps running; today's window just stays open a little longer."
+            : "Your review clock keeps running; the Auditor just stays a little longer.";
         message.color = Good;
         ticket.gameObject.SetActive(false);
         Render();
@@ -382,7 +439,7 @@ public sealed class VoucherUseCard : MonoBehaviour
             ticked = true;
             if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_ui_click_02", 0.45f);
             clockTime.text = OfficeHoursMath.Format(newCutoff);
-            clockCaption.text = "THE AUDITOR NOW LEAVES AT";
+            clockCaption.text = ReviewVoucherCommand.CaptionAfter;
         }
         float pop = Mathf.Clamp01((t - 0.5f) / 0.2f);
         clockCard.localScale = Vector3.one * (pop > 0f && pop < 1f ? 1f + Mathf.Sin(pop * Mathf.PI) * 0.04f : 1f);

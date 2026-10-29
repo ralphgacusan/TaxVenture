@@ -99,8 +99,6 @@ public class CaseFolderUI : MonoBehaviour
     public const string PreparedPacketPageTitle = "Prepared Packet";
     public const string PreparedSummaryPageTitle = "Summary";
     public const string PaymentNotePageTitle = "Payment Note";
-    public const string TaxpayerProfilePageTitle = "Taxpayer Profile";
-    private const float ProfileRowHeight = 250f;
 
     /// <summary>
     /// Optional level pages added after the case's own pages (Level 2's
@@ -932,6 +930,7 @@ public class CaseFolderUI : MonoBehaviour
 
         ClearLevelPageObjects();
 
+        boundContentRows = false;
         if (index == Page1Index)
         {
             if (page1FieldRowsContainer != null)
@@ -969,6 +968,15 @@ public class CaseFolderUI : MonoBehaviour
 
     /// <summary>Tallest a value row may grow to (an easier drag source / drop target).</summary>
     public const float RowTargetHeight = 110f;
+    private bool boundContentRows;
+
+    /// <summary>Equal bounded rows, independent of whether their values are empty or populated.</summary>
+    public static float FittedRowHeight(float available, float fixedHeight, float padding, float spacing, int rowCount, int flexibleRows)
+    {
+        if (flexibleRows <= 0) return 0f;
+        float room = available - padding - spacing * System.Math.Max(0, rowCount - 1) - fixedHeight;
+        return System.Math.Max(1f, System.Math.Min(RowTargetHeight, room / flexibleRows));
+    }
 
     /// <summary>
     /// Makes the page's value rows taller, sharing the page's spare room, up
@@ -979,10 +987,43 @@ public class CaseFolderUI : MonoBehaviour
     {
         RectTransform list = page1FieldRowListRoot as RectTransform;
         if (list == null || !list.gameObject.activeInHierarchy) return;
+        ContentSizeFitter listFitter = list.GetComponent<ContentSizeFitter>();
+        if (listFitter != null) listFitter.enabled = !boundContentRows;
         Canvas.ForceUpdateCanvases();
         float available = list.rect.height;
         if (available <= 1f) return;
+        if (boundContentRows)
+        {
+            RectTransform paper = GetPageTurnRoot();
+            if (paper != null)
+            {
+                Vector3 footer = list.InverseTransformPoint(paper.TransformPoint(
+                    new Vector3(paper.rect.center.x, paper.rect.yMin + PageButtonBottom + PageButtonSize + 24f, 0f)));
+                available = Mathf.Max(1f, list.rect.yMax - footer.y);
+                list.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, available);
+            }
+        }
         var group = list.GetComponent<HorizontalOrVerticalLayoutGroup>();
+        if (boundContentRows)
+        {
+            // The inherited empty ScrollRect viewport is a sibling of generated
+            // rows, not their content. It must not consume a row's layout space.
+            ScrollRect scroll = list.GetComponent<ScrollRect>();
+            if (scroll != null && scroll.viewport != null && scroll.viewport.parent == list)
+            {
+                LayoutElement viewportLayout = scroll.viewport.GetComponent<LayoutElement>();
+                if (viewportLayout == null) viewportLayout = scroll.viewport.gameObject.AddComponent<LayoutElement>();
+                viewportLayout.ignoreLayout = true;
+            }
+            RectMask2D mask = list.GetComponent<RectMask2D>();
+            if (mask == null) mask = list.gameObject.AddComponent<RectMask2D>();
+            mask.enabled = true;
+        }
+        else
+        {
+            RectMask2D mask = list.GetComponent<RectMask2D>();
+            if (mask != null) mask.enabled = false;
+        }
         float spacing = group != null ? group.spacing : 0f;
         float padding = group != null ? group.padding.top + group.padding.bottom : 0f;
 
@@ -1003,10 +1044,33 @@ public class CaseFolderUI : MonoBehaviour
             small.Add(element);
         }
         if (small.Count == 0) return;
-        float room = available - padding - spacing * Mathf.Max(0, count - 1) - fixedHeight;
-        float each = Mathf.Min(RowTargetHeight, room / small.Count);
+        float each = FittedRowHeight(available, fixedHeight, padding, spacing, count, small.Count);
         foreach (LayoutElement element in small)
         {
+            if (boundContentRows)
+            {
+                element.minHeight = element.preferredHeight = Mathf.Max(1f, each);
+                element.flexibleHeight = 0f;
+                // The prefab fits itself AND its text to preferred height. On a
+                // populated schedule that fights the page's bounded layout.
+                foreach (ContentSizeFitter fitter in element.GetComponentsInChildren<ContentSizeFitter>(true))
+                    fitter.enabled = false;
+                var rowGroup = element.GetComponent<VerticalLayoutGroup>();
+                if (rowGroup != null) rowGroup.childForceExpandHeight = true;
+                foreach (TMP_Text text in element.GetComponentsInChildren<TMP_Text>(true))
+                {
+                    text.enableAutoSizing = true;
+                    text.fontSizeMax = 50f;
+                    text.fontSizeMin = 26f;
+                    text.overflowMode = TextOverflowModes.Ellipsis;
+                    LayoutElement textLayout = text.GetComponent<LayoutElement>();
+                    if (textLayout == null) textLayout = text.gameObject.AddComponent<LayoutElement>();
+                    textLayout.minHeight = 0f;
+                    textLayout.preferredHeight = 0f;
+                    textLayout.flexibleHeight = 1f;
+                }
+                continue;
+            }
             float natural = LayoutUtility.GetPreferredHeight((RectTransform)element.transform);
             // Never shorter than the row's own text needs.
             element.minHeight = Mathf.Max(each, Mathf.Min(natural, RowTargetHeight));
@@ -1035,13 +1099,15 @@ public class CaseFolderUI : MonoBehaviour
             return list;
         }
 
-        AddReviewPages(list, data);
-
+        // This folder's own pages (Supporting Documents) follow the front page in every
+        // level, as in Level 1; a review case's working pages come after them.
         if (InstancePages != null)
         {
             List<CaseFolderPageContent> own = InstancePages(data);
             if (own != null) list.AddRange(own);
         }
+
+        AddReviewPages(list, data);
 
         if (ExtraPages != null)
         {
@@ -1070,6 +1136,9 @@ public class CaseFolderUI : MonoBehaviour
         public RectTransform Paper => ui.GetPageTurnRoot();
 
         public CaseFolderUI Owner => ui;
+
+        /// <summary>Keep populated review controls inside the page and above its navigation.</summary>
+        public void FitContentRows() => ui.boundContentRows = true;
 
         /// <summary>A row owned by a removable sheet, rather than the current folder page.</summary>
         public CaseFolderFieldRow CreateSheetRow(Transform parent) => Instantiate(ui.caseFolderFieldRowPrefab, parent);
@@ -1136,16 +1205,8 @@ public class CaseFolderUI : MonoBehaviour
             definition.documents == null || definition.review.documents == null)
             return;
 
-        // One-sentence client profile, right after Taxpayer Information.
-        if (!string.IsNullOrWhiteSpace(definition.review.profileText))
-        {
-            string profile = definition.review.profileText.Trim();
-            list.Add(new CaseFolderPageContent(TaxpayerProfilePageTitle, "")
-            {
-                Render = page => BuildProfileRows(data, profile)
-            });
-        }
-
+        // Level 2 consistency pass: no separate Taxpayer Profile page. The client's background
+        // notes are a physical record on Supporting Documents (page 2), as in Level 1.
         var preparedDocuments = new List<ReviewDocumentDefinition>();
         foreach (ReviewDocumentDefinition document in definition.review.documents)
         {
@@ -1169,41 +1230,6 @@ public class CaseFolderUI : MonoBehaviour
                 Render = page => BuildReviewPageRows(data, document)
             });
         }
-    }
-
-    /// <summary>The Taxpayer Profile page: the client's name, then the profile sentence as a printed paragraph.</summary>
-    private void BuildProfileRows(CaseData data, string profile)
-    {
-        ClearRows(page1Rows);
-        AddSourceOnlyRow(page1Rows, page1FieldRowListRoot, "Name", data.fullName, DataValueType.Text, "FullName");
-
-        GameObject row = new PageBuilder(this).AddRowObject();
-        foreach (MonoBehaviour behaviour in row.GetComponents<MonoBehaviour>())
-            if (behaviour is CaseFolderFieldRow || behaviour is ValueDragSource ||
-                behaviour is ValueSelectionHighlighter || behaviour is ValueTypeValidationFeedback ||
-                behaviour is ValueHoverFeedback)
-                Destroy(behaviour);
-        TMP_Text text = row.GetComponentInChildren<TMP_Text>(true);
-        if (text == null) return;
-        Image background = row.GetComponent<Image>();
-        if (background == null) background = row.GetComponentInChildren<Image>(true);
-        PaperInkStyle.StyleFieldRow(background, text, false, null, null);
-        if (background != null) background.raycastTarget = false;
-        text.text = PaperInkStyle.FieldTextStacked("About the taxpayer", profile, false);
-        text.alignment = TextAlignmentOptions.TopLeft;
-        text.textWrappingMode = TextWrappingModes.Normal;
-        // Large and readable, but auto-sized to the space left on the page so it never runs off the paper.
-        text.enableAutoSizing = true;
-        // A fixed height the page's row list always has room for (taller rows overflowed onto the Name row).
-        text.fontSizeMin = 24f;
-        text.fontSizeMax = 38f;
-        text.lineSpacing = 4f;
-        text.overflowMode = TextOverflowModes.Truncate;
-        LayoutElement layout = row.GetComponent<LayoutElement>();
-        if (layout == null) layout = row.AddComponent<LayoutElement>();
-        layout.minHeight = ProfileRowHeight;
-        layout.preferredHeight = ProfileRowHeight;
-        layout.flexibleHeight = 0f;
     }
 
     /// <summary>Marks a held review document as read when its printed paper is opened.</summary>

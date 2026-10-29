@@ -376,10 +376,11 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
     public void PutBack()
     {
         if (state == State.Attached || state == State.Returning) return;
-        // An ID card showing its profile turns back to its front on the way in.
-        if (flip != null && flip.ShowingBack) flip.Toggle();
+        float seconds = !Record.IsCard ? 0.34f : ReturnSeconds;
+        // An ID card showing its profile turns back to its front on the way in, finishing before it lands.
+        flip?.TurnToFront(seconds * 0.85f);
         clipTarget = 1f;
-        StartMotion(State.Returning, !Record.IsCard ? 0.34f : ReturnSeconds);
+        StartMotion(State.Returning, seconds);
     }
 
     /// <summary>Straight back into its holder (closing the folder, an interruption).</summary>
@@ -592,7 +593,8 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
     public void OnBeginDrag(PointerEventData eventData)
     {
         if (eventData == null || eventData.button != PointerEventData.InputButton.Left || !InputAllowed) return;
-        if (state != State.Attached && state != State.Out && state != State.Moving) return;
+        // A record still lifting from a tap can be caught straight away (T28: no input wait).
+        if (state != State.Attached && state != State.Out && state != State.Moving && state != State.Lifting) return;
         eventData.eligibleForClick = false;
         holder.PointerMoved(this);
         if (state != State.Attached && holder.IsGrouped(this))
@@ -603,17 +605,19 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
         }
         if (state == State.Moving) state = State.Out;
         Camera camera = holder.ViewCamera;
-        extractedByDrag = state == State.Attached;
+        bool attached = state == State.Attached;
+        extractedByDrag = attached || state == State.Lifting;
         if (extractedByDrag)
         {
-            // Dragged straight out of its holder: it turns to read and sits under the finger.
-            Detach();
+            // Dragged straight out of its holder (or caught mid-lift): it turns to read and sits under the finger.
+            if (attached) Detach();
             holder.ReadingPose(this, out Vector3 position, out Quaternion rotation, out float scale);
             transform.SetPositionAndRotation(position, rotation);
             SetWorldScale(scale);
             dragDepth = Vector3.Dot(position - camera.transform.position, camera.transform.forward);
             transform.position = camera.ScreenToWorldPoint(new Vector3(eventData.position.x, eventData.position.y, dragDepth));
-            PlayCue(true);
+            // One cue per action: the tap that started the lift already played it.
+            if (attached) PlayCue(true);
         }
         else holder.BroughtToFront(this);
         dragDepth = Vector3.Dot(transform.position - camera.transform.position, camera.transform.forward);

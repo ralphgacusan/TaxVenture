@@ -111,9 +111,12 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
         }
 
         // Level 1 (2026-10-26): with the folder in hand, the hand-in is a conversation.
-        if (TalkFirst && !requiresTaxReturn && FolderInHand() != null)
+        // Level 2 (consistency pass): the same conversation; the level's review decides.
+        if (TalkFirst && (LevelHandIn != null || !requiresTaxReturn) && FolderInHand() != null)
         {
-            StartHandInConversation();
+            string refusal = LevelHandIn != null ? LevelHandIn.Refusal() : null;
+            if (refusal != null) SayNotYet(refusal);
+            else StartHandInConversation();
             return;
         }
 
@@ -142,6 +145,22 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     {
         dialogueSessionActive = false;
         npcState.ChangeState(new NpcIdleState());
+    }
+
+    /// <summary>The folder is in hand but the level's review cannot be handed in yet: he says why and takes nothing.</summary>
+    private void SayNotYet(string reason)
+    {
+        CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+        string client = def != null && def.clientFinale != null && !string.IsNullOrWhiteSpace(def.clientFinale.name) ? def.clientFinale.name : "my client";
+        List<DialogueLine> lines = new DialogueBuilder("Auditor")
+            .Player($"Hi! I have {client}'s folder.")
+            .Npc(reason, "Auditor_Default")
+            .Build();
+        INpcState priorNpcState = npcState.CurrentState;
+        if (!dialogueUI.TryStartDialogue(lines, OnReminderConcluded, () => OnDialogueCancelled(priorNpcState), this)) return;
+        dialogueSessionActive = true;
+        npcState.ChangeState(new NpcInteractState());
+        npcState.ChangeState(new NpcDialogueState());
     }
 
     /// <summary>
@@ -212,6 +231,8 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
 
         // A level with its own review (Level 2) judges the hand-in itself.
         if (LevelAudit != null && LevelAudit(this)) return;
+        // Its folder is handed over only in his conversation (never Level 1's check on its case).
+        if (LevelHandIn != null) return;
 
         CaseData data = CaseManager.Instance.CurrentCase;
         if (lastFailedAnswers != null && AnswerSignature(data) == lastFailedAnswers)
@@ -255,9 +276,37 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
 
     /// <summary>
     /// Optional level rule: handles a final hand-in itself (returns true).
-    /// Null or false keeps the Level 1 audit unchanged.
+    /// Null or false keeps the Level 1 audit unchanged. (Level 2 now uses LevelHandIn.)
     /// </summary>
     public static System.Func<AuditorInteractable, bool> LevelAudit;
+
+    /// <summary>
+    /// A level whose review decides the hand-in (Level 2, consistency pass), inside the same
+    /// talk-first conversation as Level 1: the player drags the folder onto him when he asks,
+    /// the level decides once, the Audit Summary shows, and approval or the return follows.
+    /// </summary>
+    public interface ILevelHandIn
+    {
+        /// <summary>Null when he can take the folder now; otherwise his line saying why (nothing is decided or charged).</summary>
+        string Refusal();
+        /// <summary>The folder is in his hands: decide and record once. Null when nothing could be decided.</summary>
+        LevelHandInDecision Decide();
+        /// <summary>The summary of an approval was read: complete the review through the existing states.</summary>
+        void Approve();
+        /// <summary>The folder went back (the level keeps every bit of the work).</summary>
+        void Returned();
+    }
+
+    /// <summary>One decided hand-in: his explanation, the Audit Summary card and whether it was approved.</summary>
+    public sealed class LevelHandInDecision
+    {
+        public List<DialogueLine> Lines = new List<DialogueLine>();
+        public RewardScreenData Summary;
+        public bool Approved;
+    }
+
+    /// <summary>Set by the level whose review decides hand-ins (Level2Audit); null in Level 1.</summary>
+    public static ILevelHandIn LevelHandIn;
 
     /// <summary>Plays a level's audit lines with the usual NPC dialogue states. False when a dialogue is already running.</summary>
     public bool RunLevelDialogue(List<DialogueLine> lines, System.Action onDone)
@@ -548,8 +597,8 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     /// <summary>The Auditor of the loaded office (one per scene).</summary>
     public static AuditorInteractable Current { get; private set; }
 
-    /// <summary>Level 1 with the hotbar: the folder is handed over in the conversation (Level 2 keeps its own hand-in).</summary>
-    public static bool TalkFirst => LevelAudit == null && HudHotbar.Instance != null;
+    /// <summary>The folder is handed over in the conversation: Level 1 with the hotbar, and Level 2's review (LevelHandIn).</summary>
+    public static bool TalkFirst => LevelAudit == null && (HudHotbar.Instance != null || LevelHandIn != null);
 
     /// <summary>The Auditor's conversation is waiting for the Case Folder.</summary>
     public static bool AwaitingFolder =>
@@ -586,6 +635,7 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
 
         folderTaken = summaryOpened = summaryClosed = sameAnswers = false;
         handInResult = null;
+        levelDecision = null;
         handedFolder = null;
         dropLineIndex = -1;
         dropAction = null;
@@ -646,6 +696,28 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
         folderTaken = true;
 
         CaseData data = CaseManager.Instance.CurrentCase;
+        if (LevelHandIn != null)
+        {
+            // The level's review decides once, now that the folder is in his hands (a cancelled
+            // conversation can never decide again: the summary and its result still follow).
+            levelDecision = LevelHandIn.Decide();
+            if (levelDecision == null)
+            {
+                // Nothing could be decided (the review changed under him): the folder goes straight back.
+                dialogueUI.ContinueWith(SubmitAction, new DialogueBuilder("Auditor")
+                    .Npc("Let me give this back for now. Bring it again when it's ready.", "Auditor_Default").Build());
+                sameAnswers = true;
+                return true;
+            }
+            List<DialogueLine> levelLines = new List<DialogueLine>(levelDecision.Lines);
+            levelLines.AddRange(new DialogueBuilder("Auditor")
+                .Npc(levelDecision.Approved ? "Here's my summary." : "Here's my summary. It shows where to look again.",
+                    levelDecision.Approved ? "Auditor_Happy" : "Auditor_Default")
+                .AwaitAction(SummaryAction, "Read the Audit Summary")
+                .Build());
+            dialogueUI.ContinueWith(SubmitAction, levelLines);
+            return true;
+        }
         if (lastFailedAnswers != null && AnswerSignature(data) == lastFailedAnswers)
         {
             // The same answers that already failed: he does not check them again.
@@ -687,6 +759,11 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     {
         if (!handInConversation || line == null) return;
         if (line.AwaitAction == SubmitAction) GameplayEvents.RaiseGuideCue(CueAsksForFolder);
+        if (line.AwaitAction == SummaryAction && !summaryOpened && levelDecision != null)
+        {
+            summaryOpened = true;
+            OpenLevelSummary();
+        }
         if (line.AwaitAction == SummaryAction && !summaryOpened && handInResult != null)
         {
             summaryOpened = true;
@@ -696,10 +773,50 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
         if (dropAction != null && dropLineIndex >= 0 && dialogueUI.CurrentLineIndex >= dropLineIndex) DropNow();
     }
 
+    // The level's decided hand-in (Level 2): kept until its summary was read and its result applied.
+    private LevelHandInDecision levelDecision;
+
+    /// <summary>The level's Audit Summary card (the same card as Level 1's); without the card the result applies at once.</summary>
+    private void OpenLevelSummary()
+    {
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayEffect(levelDecision.Approved ? "sfx_audit_approved_01" : "sfx_audit_returned_01");
+        GameplayEvents.RaiseGuideCue(levelDecision.Approved ? CueApproved : CueNeedsFix);
+        if (!ShowLevelSummary(levelDecision.Summary, "Audit Summary", OnHandInSummaryClosed)) OnHandInSummaryClosed();
+    }
+
+    /// <summary>The level's summary was read: an approval signs off and completes; a return waits for the end of his lines.</summary>
+    private void OnLevelSummaryClosed()
+    {
+        bool talking = handInConversation && DialogueUI.ActiveAwaitingAction == SummaryAction;
+        if (!levelDecision.Approved)
+        {
+            if (talking)
+                dialogueUI.ContinueWith(SummaryAction, new DialogueBuilder("Auditor")
+                    .Npc("Here's your folder back. Your work is all still in it: fix what I marked, stamp again, then bring it to me.", "Auditor_Default")
+                    .Build());
+            else HandFolderBack(retry: true);
+            return;
+        }
+        if (talking)
+            dialogueUI.ContinueWith(SummaryAction, new DialogueBuilder("Auditor")
+                .Npc("Let me sign this off.", "Auditor_Happy")
+                .AwaitAction(ApprovalAction, null)
+                .Build());
+        handedFolder = null;
+        LevelHandIn.Approve();
+        if (handInConversation && DialogueUI.ActiveAwaitingAction == ApprovalAction) dialogueUI.ContinueWith(ApprovalAction, null);
+    }
+
     private void OnHandInSummaryClosed()
     {
         if (summaryClosed) return;
         summaryClosed = true;
+        if (levelDecision != null)
+        {
+            OnLevelSummaryClosed();
+            return;
+        }
         bool passed = handInResult.VerdictWasCorrect && handInResult.MissedIssues.Count == 0;
         if (!passed)
         {
@@ -757,6 +874,22 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
             npcState.ChangeState(new NpcIdleState());
             return;
         }
+        if (levelDecision != null)
+        {
+            // The level's decision stands: its summary (if still unread) applies it when closed.
+            if (!summaryClosed)
+            {
+                if (!summaryOpened) { summaryOpened = true; OpenLevelSummary(); }
+                return;
+            }
+            if (levelDecision.Approved) npcState.ChangeState(new NpcCompletedState());
+            else
+            {
+                HandFolderBack(retry: true);
+                npcState.ChangeState(new NpcIdleState());
+            }
+            return;
+        }
         if (!summaryClosed)
         {
             // Should not happen (the summary waits): treat as an interrupted audit.
@@ -777,6 +910,12 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     {
         FinishHandIn();
         if (sameAnswers) HandFolderBack(retry: false);
+        else if (levelDecision != null)
+        {
+            // Interrupted after the level decided: the summary still shows and applies the result; a read return gives the folder back.
+            if (!summaryOpened) { summaryOpened = true; OpenLevelSummary(); }
+            else if (summaryClosed && !levelDecision.Approved) HandFolderBack(retry: true);
+        }
         else if (folderTaken && !summaryClosed) UndoHandIn();
         else if (folderTaken && summaryClosed && !(handInResult.VerdictWasCorrect && handInResult.MissedIssues.Count == 0)) HandFolderBack(retry: true);
         RestoreNpcState(priorNpcState);
@@ -795,7 +934,13 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     {
         if (handedFolder != null) handedFolder.RestoreStored();
         handedFolder = null;
-        if (retry) OnSummaryClosed(handInResult);
+        if (retry && levelDecision != null)
+        {
+            // The level keeps all of the work; the folder goes back like Level 1's (to the desk).
+            levelDecision = null;
+            if (LevelHandIn != null) LevelHandIn.Returned();
+        }
+        else if (retry) OnSummaryClosed(handInResult);
         else
         {
             auditPending = false;

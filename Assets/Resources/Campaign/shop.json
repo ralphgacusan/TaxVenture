@@ -175,7 +175,7 @@
       "effect": "Holds two records upright at your desk so you can compare them.",
       "icon": "stand",
       "requires": "pending:comparison_stand",
-      "requiresLabel": "Requires ready Level 2",
+      "requiresLabel": "Coming later",
       "after": "",
       "consumable": false
     },

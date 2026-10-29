@@ -90,6 +90,98 @@ public class DialogueUI : MonoBehaviour
     private readonly Vector3[] boxCorners = new Vector3[4];
     private RectTransform actionPrompt;
     private TextMeshProUGUI actionPromptText;
+    private RectTransform choicesDock;
+    private RectTransform dialogueBox;
+    private Vector2 boxRestMin, boxRestMax, boxRestSize, boxRestPosition;
+    private bool boxRestCached;
+    private float choicesBlend;
+    private readonly List<RectTransform> retiringChoices = new List<RectTransform>();
+
+    /// <summary>Put responses beside the lower dialogue strip, leaving the middle of the shot clear.</summary>
+    public void DockChoices(RectTransform choices)
+    {
+        if (choices == null) return;
+        dialogueBox = dialogueText != null ? dialogueText.transform.parent as RectTransform : null;
+        if (dialogueBox != null && !boxRestCached)
+        {
+            boxRestMin = dialogueBox.anchorMin;
+            boxRestMax = dialogueBox.anchorMax;
+            boxRestSize = dialogueBox.sizeDelta;
+            boxRestPosition = dialogueBox.anchoredPosition;
+            boxRestCached = true;
+        }
+        choicesDock = choices;
+        CanvasGroup group = choices.GetComponent<CanvasGroup>();
+        if (group == null) group = choices.gameObject.AddComponent<CanvasGroup>();
+        group.alpha = 0f;
+        group.interactable = group.blocksRaycasts = false;
+        LayoutChoices();
+    }
+
+    public void ReleaseChoices(RectTransform choices)
+    {
+        if (choices == null) return;
+        if (choicesDock == choices) choicesDock = null;
+        CanvasGroup group = choices.GetComponent<CanvasGroup>();
+        if (group != null) group.interactable = group.blocksRaycasts = false;
+        if (!retiringChoices.Contains(choices)) retiringChoices.Add(choices);
+    }
+
+    private void LateUpdate()
+    {
+        choicesBlend = Mathf.MoveTowards(choicesBlend, choicesDock != null ? 1f : 0f, Time.unscaledDeltaTime / 0.24f);
+        float t = Mathf.SmoothStep(0f, 1f, choicesBlend);
+        if (boxRestCached && dialogueBox != null)
+        {
+            dialogueBox.anchorMin = Vector2.Lerp(boxRestMin, new Vector2(0.03f, boxRestMin.y), t);
+            dialogueBox.anchorMax = Vector2.Lerp(boxRestMax, new Vector2(0.55f, boxRestMax.y), t);
+            dialogueBox.sizeDelta = boxRestSize;
+            dialogueBox.anchoredPosition = boxRestPosition;
+            SyncBackdrop();
+        }
+        LayoutChoices();
+        for (int i = retiringChoices.Count - 1; i >= 0; i--)
+        {
+            RectTransform retiring = retiringChoices[i];
+            CanvasGroup group = retiring != null ? retiring.GetComponent<CanvasGroup>() : null;
+            if (group != null) group.alpha = Mathf.MoveTowards(group.alpha, 0f, Time.unscaledDeltaTime / 0.16f);
+            if (retiring != null && group != null && group.alpha > 0f) continue;
+            if (retiring != null) Destroy(retiring.gameObject);
+            retiringChoices.RemoveAt(i);
+        }
+    }
+
+    private void LayoutChoices()
+    {
+        if (choicesDock == null || !(choicesDock.parent is RectTransform parent)) return;
+        Canvas canvas = parent.GetComponentInParent<Canvas>();
+        Camera view = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, Screen.safeArea.min, view, out Vector2 min);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, Screen.safeArea.max, view, out Vector2 max);
+        float scale = Mathf.Min(1f, (max.x - min.x) * 0.40f / choicesDock.sizeDelta.x,
+            (max.y - min.y) * 0.68f / choicesDock.sizeDelta.y);
+        choicesDock.anchorMin = choicesDock.anchorMax = parent.pivot;
+        choicesDock.pivot = new Vector2(1f, 0f);
+        choicesDock.localScale = Vector3.one * Mathf.Max(0.01f, scale);
+        CanvasGroup group = choicesDock.GetComponent<CanvasGroup>();
+        group.alpha = Mathf.MoveTowards(group.alpha, 1f, Time.unscaledDeltaTime / 0.2f);
+        group.interactable = group.blocksRaycasts = group.alpha >= 0.99f;
+        choicesDock.anchoredPosition = new Vector2(max.x - 18f, min.y + 24f - 32f * (1f - group.alpha));
+    }
+
+    private void ResetChoiceLayout()
+    {
+        if (choicesDock != null) Destroy(choicesDock.gameObject);
+        choicesDock = null;
+        foreach (RectTransform retiring in retiringChoices) if (retiring != null) Destroy(retiring.gameObject);
+        retiringChoices.Clear();
+        choicesBlend = 0f;
+        if (!boxRestCached || dialogueBox == null) return;
+        dialogueBox.anchorMin = boxRestMin;
+        dialogueBox.anchorMax = boxRestMax;
+        dialogueBox.sizeDelta = boxRestSize;
+        dialogueBox.anchoredPosition = boxRestPosition;
+    }
 
     /// <summary>True from admission until controls are released after the return.</summary>
     public bool IsDialogueActive => session.IsActive || handoff.IsPending;
@@ -562,6 +654,7 @@ public class DialogueUI : MonoBehaviour
 
     private void OnDisable()
     {
+        ResetChoiceLayout();
         // Our own hide disables this component (it lives on panelRoot); that is
         // not a cancellation. Any other disable cancels the active conversation;
         // the presentation still returns the view before callbacks run.

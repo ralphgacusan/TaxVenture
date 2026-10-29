@@ -24,7 +24,10 @@ using UnityEngine.SceneManagement;
 /// - Adds the Level 2 parts as children: CaseRetrieval (T02 drawer) and
 ///   FolderHandoff (T02: folder waits in the HUD icon until put on the desk),
 ///   FindingsPage and PreliminaryStamp (T03: finding note, initial Not Ready),
-///   RosaStall (T04: store, Rosa, records desk, envelope and records).
+///   RosaStall (T04: store, Rosa, records desk, envelope and records),
+///   CaseRecords (Supporting Documents with Level 1's physical records) and
+///   RosaConsultation (Rosa's walk to the office and her visits there) and
+///   Town (T32: Level 2's optional plaza cast and Rosa's walk data).
 ///
 /// DOES NOT: grade, award, archive, complete the case or drive the tutorial.
 /// </summary>
@@ -33,7 +36,7 @@ public sealed class Level2OfficeStart : MonoBehaviour
 {
     public const string RootName = "Level2Gameplay";
     /// <summary>Bump when this start changes what it builds, so a later session can tell setups apart.</summary>
-    public const int SetupVersion = 13;
+    public const int SetupVersion = 16;
     public const string ConfigPath = "Levels/Level_02/office_start";
     private const float StartTimeout = 6f;
 
@@ -106,11 +109,14 @@ public sealed class Level2OfficeStart : MonoBehaviour
         BalanceLighting();
         HideUnusedParts();
         DisableUnusedComponents();
+        EnsureOfficeActors();
         EnsurePart<Level2CaseRetrieval>(Level2CaseRetrieval.ChildName);
         EnsurePart<Level2FolderHandoff>(Level2FolderHandoff.ChildName);
         EnsurePart<Level2FindingsPage>(Level2FindingsPage.ChildName);
         EnsurePart<Level2PreliminaryStamp>(Level2PreliminaryStamp.ChildName);
         EnsurePart<Level2DeskStamps>(Level2DeskStamps.ChildName);
+        // T32: load the plaza cast and Rosa's walk data before the stall reads it.
+        EnsurePart<Level2Town>(Level2Town.ChildName);
         EnsurePart<Level2RosaStall>(Level2RosaStall.ChildName);
         EnsurePart<Level2OfficeReview>(Level2OfficeReview.ChildName);
         EnsurePart<Level2Audit>(Level2Audit.ChildName);
@@ -118,6 +124,9 @@ public sealed class Level2OfficeStart : MonoBehaviour
         EnsurePart<Level2Checkpointer>(Level2Checkpointer.ChildName);
         EnsurePart<Level2AnnotatedPapers>(Level2AnnotatedPapers.ChildName);
         EnsurePart<Level2TaxCodeBookIcon>(Level2TaxCodeBookIcon.ChildName);
+        // Level 2 consistency pass: Rosa's Supporting Documents page and her conference-room visits.
+        EnsurePart<Level2CaseRecords>(Level2CaseRecords.ChildName);
+        EnsurePart<Level2RosaConsultation>(Level2RosaConsultation.ChildName);
         Debug.Log($"[Level2] Office start v{SetupVersion}: switched off {HiddenCount} Level 1 object(s) and {DisabledCount} component(s).");
     }
 
@@ -141,6 +150,23 @@ public sealed class Level2OfficeStart : MonoBehaviour
         }
     }
 
+    /// <summary>The copied scene predates Level 1's static-arm rig. Reuse its presentation components once.</summary>
+    private void EnsureOfficeActors()
+    {
+        foreach (ReceptionistInteractable actor in FindObjectsByType<ReceptionistInteractable>(FindObjectsInactive.Include))
+            if (actor.gameObject.scene == gameObject.scene) EnsureOfficeActor(actor.gameObject);
+        foreach (AuditorInteractable actor in FindObjectsByType<AuditorInteractable>(FindObjectsInactive.Include))
+            if (actor.gameObject.scene == gameObject.scene) EnsureOfficeActor(actor.gameObject);
+    }
+
+    private static void EnsureOfficeActor(GameObject actor)
+    {
+        if (actor.GetComponent<NpcAnimationDriver>() == null) actor.AddComponent<NpcAnimationDriver>();
+        StaticArmRig rig = actor.GetComponent<StaticArmRig>();
+        if (rig == null) rig = actor.AddComponent<StaticArmRig>();
+        rig.enabled = true;
+    }
+
     private void OnEnable()
     {
         GameplayEvents.OnNotesUnlockRequested += HandleReceptionistTalkedTo;
@@ -161,13 +187,15 @@ public sealed class Level2OfficeStart : MonoBehaviour
         switch (name)
         {
             case "folderRetrieved": return review.FolderRetrieved;
-            case "bookStored": return review.taxBookStored;
+            // T18: with the campaign hotbar the book is carried in the inventory (Level2TaxCodeBookIcon.Stored reads either).
+            case "bookStored": return Level2TaxCodeBookIcon.Stored;
             case "initialStamped": return review.preliminary != null;
             case "recordsCollected": return review.HandoverDone;
             case "questDone": return review.challenge != null && review.challenge.awarded;
             case "officeReview": return review.phase >= ReviewPhase.OfficeReconciliation;
             case "inFileRoom": return Instance != null && Instance.PlayerInFileRoom();
             case "findingRecorded": return review.preliminary != null || (review.findings != null && review.findings.Exists(f => f != null && f.comparisonConfirmed));
+            case "toolkitDemoSeen": return review.toolkitDemoSeen;
             case "tutorialDone": return review.tutorialCompleted;
             case "firstChecked": return review.challenge != null && review.challenge.firstChecked;
             case "redNotes": return review.challenge != null && review.challenge.firstChecked && !review.challenge.mastered;
@@ -345,7 +373,8 @@ public sealed class Level2OfficeStart : MonoBehaviour
         {
             "Environment/Outside/Plaza/NPCS",
             "Environment/Outside/Plaza/CorkboardSideQuestRoot",
-            "UI/HUD_Canvas/PermanentHUD/IconButtons/TaxpayerProfileIcon"
+            "UI/HUD_Canvas/PermanentHUD/IconButtons/TaxpayerProfileIcon",
+            "Environment/OfficeBuilding/Rooms/Reception/WaitingArea/Client2"
         },
         disableComponents = new List<string> { "TutorialController" }
     };

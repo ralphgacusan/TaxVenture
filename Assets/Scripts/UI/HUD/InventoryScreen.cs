@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 /// <summary>
@@ -480,6 +481,7 @@ public sealed class InventoryScreen : MonoBehaviour
         {
             // Fade and sink away; the panel already let go of the player.
             float c = HudTheme.EaseOutCubic(Mathf.Clamp01((now - closingAt) / 0.18f));
+            if (panel.localRotation != Quaternion.identity) panel.localRotation = Quaternion.identity;
             group.alpha = 1f - c;
             panel.anchoredPosition = new Vector2(0f, Mathf.Lerp(0f, -40f, c));
             panel.localScale = Vector3.one * (panelScale * Mathf.Lerp(1f, 0.96f, c));
@@ -497,11 +499,20 @@ public sealed class InventoryScreen : MonoBehaviour
             Close(force: true);
             return;
         }
+        // Android back does what BACK does (journal first, then a selection, then the Bag), like the Supply Counter.
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            OnBack();
+            if (!isOpen) return;
+        }
         float t = now - openedAt;
         group.alpha = Mathf.Clamp01(t / 0.18f);
         float slide = HudTheme.EaseOutBack(Mathf.Clamp01(t / 0.34f));
         panel.anchoredPosition = new Vector2(0f, Mathf.LerpUnclamped(-80f, 0f, slide));
         panel.localScale = Vector3.one * (panelScale * Mathf.LerpUnclamped(0.95f, 1f, slide));
+        // T18: the Bag opens like a hinged leather folio turning toward the player (about 70 degrees in 0.4 s), then rests flat.
+        if (t < 0.4f) panel.localRotation = Quaternion.Euler(Mathf.Lerp(70f, 0f, HudTheme.EaseOutCubic(t / 0.4f)), 0f, 0f);
+        else if (panel.localRotation != Quaternion.identity) panel.localRotation = Quaternion.identity;
         for (int i = 0; i < bagTiles.Count; i++) bagTiles[i].Fan(t - 0.08f - (i % BagColumns) * 0.03f - (i / BagColumns) * 0.05f);
         for (int i = 0; i < barTiles.Count; i++) barTiles[i].Fan(t - 0.16f - i * 0.03f);
         handTile.Fan(t - 0.2f);

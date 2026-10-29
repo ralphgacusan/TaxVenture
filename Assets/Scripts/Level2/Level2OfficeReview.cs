@@ -205,6 +205,7 @@ public sealed class Level2OfficeReview : MonoBehaviour
 
     private static void DrawSchedule(CaseFolderUI.PageBuilder page)
     {
+        page.FitContentRows();
         CaseReviewState review = Level2OfficeStart.Review;
         CaseDefinition definition = Definition;
         if (review == null || definition == null) return;
@@ -246,6 +247,7 @@ public sealed class Level2OfficeReview : MonoBehaviour
 
     private static void DrawOfficeFindings(CaseFolderUI.PageBuilder page)
     {
+        page.FitContentRows();
         CaseReviewState review = Level2OfficeStart.Review;
         CaseReviewDefinition definition = Definition?.review;
         if (review == null || definition?.officeFindings == null) return;

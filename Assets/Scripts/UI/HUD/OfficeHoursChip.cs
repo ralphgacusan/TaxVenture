@@ -122,6 +122,24 @@ public sealed class OfficeHoursChip : MonoBehaviour
         return hand;
     }
 
+    /// <summary>Gap between the progress card and the chip (this canvas's units).</summary>
+    public const float CardGap = 14f;
+
+    /// <summary>The chip's top (anchored y, top-left of the safe area) just under the progress card's bottom edge.</summary>
+    private float UnderCard(OfficeHudRuntime hud)
+    {
+        var parent = (RectTransform)chip.parent;
+        HudProgressionPanel card = hud.Progression;
+        if (card == null || parent == null) return -HudTheme.Margin;
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, new Vector2(0f, card.ScreenBottom), null, out Vector2 local))
+            return -HudTheme.Margin;
+        return ChipTop(local.y, parent.rect.yMax);
+    }
+
+    /// <summary>Pure: the chip's anchored top for a card bottom at cardBottomLocal (parent space, top edge parentTop). Never above the margin.</summary>
+    public static float ChipTop(float cardBottomLocal, float parentTop) =>
+        Mathf.Min(-HudTheme.Margin, cardBottomLocal - parentTop - CardGap);
+
     /// <summary>A short attention pop (warnings).</summary>
     public void Pop() => pop = 1f;
 
@@ -137,9 +155,11 @@ public sealed class OfficeHoursChip : MonoBehaviour
         group.alpha = alpha;
         if (alpha <= 0f) return;
 
-        // Under the progress card while the HUD is up; in the corner when it steps aside.
+        // Under the progress card while the HUD is up; in the corner when it steps aside. The card's
+        // real bottom edge is read (it grew a wallet row; Level 2's longer level name never covers it),
+        // in this canvas's own units, so any resolution, aspect or safe area keeps the gap.
         OfficeHudRuntime hud = OfficeHudRuntime.Instance;
-        float goal = hud != null && hud.IsShown ? -(HudTheme.Margin + 172f * HudTheme.HudScale + 14f) : -HudTheme.Margin;
+        float goal = hud != null && hud.IsShown ? UnderCard(hud) : -HudTheme.Margin;
         y = Mathf.Lerp(y == 0f ? goal : y, goal, 1f - Mathf.Exp(-10f * dt));
         chip.anchoredPosition = new Vector2(HudTheme.Margin, y);
 

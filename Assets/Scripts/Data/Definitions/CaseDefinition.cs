@@ -228,6 +228,8 @@ public class ClientHandoverDefinition
     public string handoverPrompt = "Drag the client copy to Marie";
     public string retryPrompt = "It didn't save. Drag the client copy to Marie again.";
     public List<DialogueLineDefinition> explain = new List<DialogueLineDefinition>();
+    /// <summary>Level 2: the client's short line when tapped again after the handover (talk only).</summary>
+    public List<DialogueLineDefinition> afterDelivery = new List<DialogueLineDefinition>();
     /// <summary>The client's emote on her closing lines, per result.</summary>
     public string greatEmote = "sparkles";
     public string goodEmote = "heart";

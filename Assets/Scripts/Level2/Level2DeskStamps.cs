@@ -79,9 +79,9 @@ public sealed class Level2DeskStamps : MonoBehaviour
         if (toolLayer != null) return toolLayer;
         toolLayer = Doc3DLayer.Create(null, transform, "Desk stamps");
         toolLayer.PersistentRenderLayer = StampLayer;
-        // The overlay camera already puts the stamps above the 3D world; the
-        // capture is only needed above screen paper windows / captured documents.
-        toolLayer.AlwaysComposite = false;
+        // A folder capture is a screen canvas, above every world camera.
+        // Always capture held tools: conditional overlap depends on LateUpdate order.
+        toolLayer.AlwaysComposite = true;
         toolLayer.CompositeOverDocuments = true;
         toolLayer.gameObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
         toolLayer.AssignSortingOrder(FloatingWindow.TakeTopSortingOrder());
@@ -100,11 +100,15 @@ public sealed class Level2DeskStamps : MonoBehaviour
 
     private Camera stampCamera;
     private Camera stackedOn;
+    private bool mainRenderedStampLayer;
 
     private void LateUpdate()
     {
         bool needed = (ready != null && ready.OnStampLayer) || (notReady != null && notReady.OnStampLayer);
         SyncStampCamera(needed);
+        // Keep the physical model above captured papers for the whole return flight.
+        if (!needed && !Active) ReleaseToolLayer();
+        else if (toolLayer != null) toolLayer.BringToFront(false);
     }
 
     private void SyncStampCamera(bool needed)
@@ -137,6 +141,7 @@ public sealed class Level2DeskStamps : MonoBehaviour
         }
         // First in the stack, so later overlays (settings board) stay above the stamps.
         if (!baseData.cameraStack.Contains(stampCamera)) baseData.cameraStack.Insert(0, stampCamera);
+        if (stackedOn != main) mainRenderedStampLayer = (main.cullingMask & (1 << StampLayer)) != 0;
         stackedOn = main;
         main.cullingMask &= ~(1 << StampLayer);
         stampCamera.orthographic = main.orthographic;
@@ -153,6 +158,11 @@ public sealed class Level2DeskStamps : MonoBehaviour
         {
             UniversalAdditionalCameraData baseData = stackedOn.GetUniversalAdditionalCameraData();
             if (baseData != null) baseData.cameraStack.Remove(stampCamera);
+        }
+        if (stackedOn != null)
+        {
+            if (mainRenderedStampLayer) stackedOn.cullingMask |= 1 << StampLayer;
+            else stackedOn.cullingMask &= ~(1 << StampLayer);
         }
         stackedOn = null;
     }
@@ -428,7 +438,6 @@ public sealed class Level2DeskStamps : MonoBehaviour
             held = null;
             ready.ReturnToStand(ReturnSeconds);
             notReady.ReturnToStand(ReturnSeconds + 0.06f);
-            ReleaseToolLayer();
         }
     }
 
@@ -602,9 +611,22 @@ public sealed class Level2DeskStamps : MonoBehaviour
     {
         if (Folder != null) Folder.Closing -= PutAway;
         Active = false;
+        held = null;
+        ready?.ResetToStand();
+        notReady?.ResetToStand();
         ReleaseToolLayer();
         DestroyStampCamera();
         if (standTapCanvas != null) standTapCanvas.SetActive(false);
+    }
+
+    private void OnApplicationFocus(bool focused)
+    {
+        if (!focused) PutAway();
+    }
+
+    private void OnApplicationPause(bool paused)
+    {
+        if (paused) PutAway();
     }
 
     private void OnEnable()

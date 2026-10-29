@@ -28,7 +28,7 @@
       "description": "Check Aling Rosa's prepared income summary, follow the records back to her market stall and decide if her work is ready.",
       "scene": "Office_Level2",
       "cases": 1,
-      "campaignPending": true
+      "campaignPending": false
     },
     { "id": "Level_03", "number": 3, "noteTitle": "New chapter", "title": "New Chapter", "description": "A new chapter of your career is on its way.", "comingSoon": true },
     { "id": "Level_04", "number": 4, "noteTitle": "New chapter", "title": "New Chapter", "description": "A new chapter of your career is on its way.", "comingSoon": true },

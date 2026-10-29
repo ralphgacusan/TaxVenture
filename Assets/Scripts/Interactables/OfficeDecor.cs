@@ -24,6 +24,11 @@ public sealed class OfficeDecorPiece : MonoBehaviour
 /// runs; other runs replay the arrival once per visit). Nothing moves before
 /// the purchase is saved: pieces only follow the committed save.
 ///
+/// T18: the same pieces follow the player into Level 2's office (a copy of
+/// Level 1's, so the authored anchors resolve there too). A piece with no
+/// usable spot in the loaded office stays owned (nothing is sold, refunded or
+/// moved in the save) and the player is told once per visit.
+///
 /// DOES NOT: decide ownership or anchors (ShopRules / DecorRules), or move
 /// anything in the scene file.
 /// </summary>
@@ -51,6 +56,8 @@ public sealed class OfficeDecor : MonoBehaviour
     private readonly List<Piece> pieces = new List<Piece>();
     private readonly HashSet<string> arrivedThisVisit = new HashSet<string>(System.StringComparer.Ordinal);
     private readonly HashSet<string> warned = new HashSet<string>(System.StringComparer.Ordinal);
+    private readonly HashSet<string> told = new HashSet<string>(System.StringComparer.Ordinal);
+    private readonly List<string> untold = new List<string>();
     private bool dirty = true;
 
     public static OfficeDecor Instance { get; private set; }
@@ -87,7 +94,11 @@ public sealed class OfficeDecor : MonoBehaviour
         ShopCatalogue catalogue = ShopCatalogueAsset.Current;
         var unplaced = new List<string>();
         List<DecorPlacement> shown = data != null && data.HasCampaign ? DecorRules.Resolve(data.campaign, catalogue, unplaced) : new List<DecorPlacement>();
-        foreach (string id in unplaced) Warn(id, "has no free display spot in the office");
+        foreach (string id in unplaced)
+        {
+            Warn(id, "has no free display spot in the office");
+            Unplaced(id);
+        }
 
         // Remove pieces that are gone or moved anchor; keep the rest exactly where they are.
         for (int i = pieces.Count - 1; i >= 0; i--)
@@ -121,6 +132,7 @@ public sealed class OfficeDecor : MonoBehaviour
         if (!placed)
         {
             Warn(placement.itemId + "/" + anchor.id, problem + "; tune \"anchors\" in shop.json");
+            Unplaced(placement.itemId);
             return null;
         }
         GameObject root = DecorModels.Build(placement.itemId, transform);
@@ -145,6 +157,25 @@ public sealed class OfficeDecor : MonoBehaviour
     private void Warn(string key, string problem)
     {
         if (warned.Add(key)) Debug.LogWarning("[OfficeDecor] " + key + " " + problem + ".");
+    }
+
+    /// <summary>T18: an owned piece this office cannot show: the player hears once per visit that it is still theirs.</summary>
+    private void Unplaced(string itemId)
+    {
+        if (!string.IsNullOrEmpty(itemId) && !told.Contains(itemId) && !untold.Contains(itemId)) untold.Add(itemId);
+    }
+
+    /// <summary>The notice waits until the bar can show it (never during loading).</summary>
+    private void TellUnplaced()
+    {
+        HudHotbar hotbar = HudHotbar.Instance;
+        if (untold.Count == 0 || hotbar == null || !hotbar.IsReady || !HudHotbar.CanOpenPanels()) return;
+        string itemId = untold[0];
+        untold.RemoveAt(0);
+        told.Add(itemId);
+        ShopProduct product = ShopCatalogueAsset.Current.products?.Find(p => p != null && (p.id == itemId || p.itemId == itemId));
+        string name = product != null && !string.IsNullOrWhiteSpace(product.title) ? product.title : "decoration";
+        hotbar.Notice($"Your {name} is still yours. This office has no spot to display it.");
     }
 
     // =========================================================
@@ -315,6 +346,7 @@ public sealed class OfficeDecor : MonoBehaviour
             dirty = false;
             Refresh();
         }
+        if (untold.Count > 0) TellUnplaced();
         Camera view = null;
         Plane[] planes = null;
         float now = Time.unscaledTime;

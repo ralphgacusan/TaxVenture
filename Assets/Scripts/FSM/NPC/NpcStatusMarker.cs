@@ -58,6 +58,10 @@ public class NpcStatusMarker : MonoBehaviour
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     private static readonly int ColorId = Shader.PropertyToID("_Color");
     private static readonly RaycastHit[] hits = new RaycastHit[8];
+    private static readonly List<NpcStatusMarker> active = new List<NpcStatusMarker>();
+
+    /// <summary>Every enabled marker, so the minimap never searches the whole scene for them (T28).</summary>
+    public static IReadOnlyList<NpcStatusMarker> Active => active;
 
     private INpcAvailabilitySource source;
     private NpcStateMachine stateMachine;
@@ -97,6 +101,7 @@ public class NpcStatusMarker : MonoBehaviour
 
     private void OnEnable()
     {
+        if (!active.Contains(this)) active.Add(this);
         if (stateMachine != null) stateMachine.OnStateChanged += HandleNpcStateChanged;
         dialogueUI = dialogueUI != null ? dialogueUI : FindFirstObjectByType<DialogueUI>(FindObjectsInactive.Include);
         if (dialogueUI != null)
@@ -112,6 +117,7 @@ public class NpcStatusMarker : MonoBehaviour
 
     private void OnDisable()
     {
+        active.Remove(this);
         if (bodyOutline != null) bodyOutline.SetAffordance(false);
         if (stateMachine != null) stateMachine.OnStateChanged -= HandleNpcStateChanged;
         if (dialogueUI != null)

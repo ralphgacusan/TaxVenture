@@ -14,6 +14,9 @@ public class ReviewClockState
     public bool cutoffPending;
     /// <summary>The first cutoff was missed (the only late consequence, applied once).</summary>
     public bool missed;
+    /// <summary>T18: active seconds a review voucher added on extensionDay (0 = none). Later days get a fresh allowance only.</summary>
+    public int extensionSeconds;
+    public int extensionDay;
 }
 
 /// <summary>
@@ -112,16 +115,63 @@ public static class ReviewClock
     {
         int day = clock != null ? Math.Max(1, clock.day) : 1;
         if (clock == null || !clock.started || definition == null) return MorningStart(day);
-        double elapsed = Math.Max(0.0, definition.allowanceSeconds - (double)clock.remaining);
+        double elapsed = Math.Max(0.0, definition.allowanceSeconds + ExtensionToday(clock) - (double)clock.remaining);
         return MorningStart(day) + elapsed * GameSecondsPerActiveSecond;
     }
 
-    /// <summary>Today's displayed cutoff time for the saved review clock.</summary>
+    /// <summary>Today's displayed cutoff time for the saved review clock (a voucher used today moves it later).</summary>
     public static double DeadlineSeconds(ReviewClockState clock, ReviewClockDefinition definition)
     {
         int day = clock != null ? Math.Max(1, clock.day) : 1;
         double allowance = definition != null ? Math.Max(0.0, definition.allowanceSeconds) : 0.0;
-        return MorningStart(day) + allowance * GameSecondsPerActiveSecond;
+        return MorningStart(day) + (allowance + ExtensionToday(clock)) * GameSecondsPerActiveSecond;
+    }
+
+    /// <summary>Active seconds a voucher added to today's window (0 on any other day).</summary>
+    public static int ExtensionToday(ReviewClockState clock) =>
+        clock != null && clock.extensionSeconds > 0 && clock.extensionDay == Math.Max(1, clock.day) ? clock.extensionSeconds : 0;
+
+    /// <summary>
+    /// T18: the review voucher rules' view of this clock. The cutoff only
+    /// exists once the clock started; a closed window (cutoff pending) is the
+    /// day closing; an approved case is done.
+    /// </summary>
+    public static VoucherClockView VoucherView(ReviewClockState clock, ReviewClockDefinition definition, bool caseDone)
+    {
+        bool started = clock != null && clock.started && definition != null && definition.IsSet;
+        return new VoucherClockView
+        {
+            HasDeadline = started,
+            Announced = started,
+            CaseDone = caseDone,
+            DayClosing = started && clock.cutoffPending,
+            GameSeconds = started ? GameSeconds(clock, definition) : 0.0,
+            DeadlineSeconds = started ? (int)Math.Floor(DeadlineSeconds(clock, definition)) : 0,
+            ExtensionSeconds = ExtensionToday(clock)
+        };
+    }
+
+    /// <summary>
+    /// T18: the clock after one review voucher (a copy): today's window gets
+    /// `seconds` more active time, recorded for today, so the shown time of
+    /// day keeps moving forward and the cutoff moves later. Null when the
+    /// window is closed, the clock has not started or today already has one.
+    /// </summary>
+    public static ReviewClockState Extend(ReviewClockState clock, int seconds)
+    {
+        if (clock == null || !clock.started || clock.cutoffPending || seconds <= 0 || ExtensionToday(clock) > 0) return null;
+        int day = Math.Max(1, clock.day);
+        return new ReviewClockState
+        {
+            started = true,
+            day = day,
+            remaining = clock.remaining + seconds,
+            warned = new List<float>(clock.warned ?? new List<float>()),
+            cutoffPending = false,
+            missed = clock.missed,
+            extensionSeconds = seconds,
+            extensionDay = day
+        };
     }
 
     /// <summary>Formats game seconds since midnight as a 12-hour office clock.</summary>

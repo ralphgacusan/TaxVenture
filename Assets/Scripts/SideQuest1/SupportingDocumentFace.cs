@@ -37,11 +37,22 @@ public static class SupportingDocumentFace
     private static readonly Color BlockLabel = new Color32(146, 100, 34, 255);
     private static readonly Color Shadow = new Color(0f, 0f, 0f, 0.26f);
 
-    public static Vector2 SizeOf(string type) => type == ClientRecord.Identity ? CardSize : SheetSize;
+    /// <summary>Type 5's narrow transaction slip (1 : 1.8 portrait).</summary>
+    public static readonly Vector2 SlipSize = new Vector2(600f, 1080f);
+    /// <summary>Level 2 accents (the standard's restrained sage, ochre and plum; colour marks the type only).</summary>
+    public static readonly Color IncomeSage = new Color32(126, 156, 122, 255);
+    public static readonly Color PaymentOchre = new Color32(200, 151, 62, 255);
+    public static readonly Color AgreementPlum = new Color32(134, 96, 126, 255);
+    public static readonly Color PlainGrey = new Color32(110, 112, 106, 255);
+
+    public static Vector2 SizeOf(string type) =>
+        type == ClientRecord.Identity ? CardSize : type == ClientRecord.Payment ? SlipSize : SheetSize;
 
     /// <summary>The type's header colour (also its sleeve tab).</summary>
     public static Color TypeColor(string type) =>
-        type == ClientRecord.Identity ? IdentityBlue : type == ClientRecord.Compensation ? CompensationBlue : BackgroundOchre;
+        type == ClientRecord.Identity ? IdentityBlue : type == ClientRecord.Compensation ? CompensationBlue :
+        type == ClientRecord.Income ? IncomeSage : type == ClientRecord.Payment ? PaymentOchre :
+        type == ClientRecord.Agreement ? AgreementPlum : type == ClientRecord.Plain ? PlainGrey : BackgroundOchre;
 
     /// <summary>Fills root (sized to SizeOf(record.type)) with the record's face.</summary>
     public static void Build(RectTransform root, ClientRecord record, bool physical = false)
@@ -49,7 +60,16 @@ public static class SupportingDocumentFace
         if (root == null || record == null) return;
         if (record.type == ClientRecord.Identity) BuildIdentity(root, record, physical);
         else if (record.type == ClientRecord.Compensation) BuildCompensation(root, record, physical);
-        else BuildBackground(root, record, physical);
+        else if (record.type == ClientRecord.Background) BuildBackground(root, record, physical);
+        else BuildTransaction(root, record, physical);
+    }
+
+    /// <summary>The printed back: the ID's taxpayer profile, or a paper's continued rows.</summary>
+    public static void BuildBack(RectTransform root, ClientRecord record)
+    {
+        if (root == null || record == null) return;
+        if (record.IsCard) BuildIdentityBack(root, record);
+        else BuildContinued(root, record);
     }
 
     // =========================================================
@@ -211,6 +231,144 @@ public static class SupportingDocumentFace
     }
 
     // =========================================================
+    // TYPES 4, 5, 7: TRANSACTION PAPERS (Level 2, Rosa's records)
+    // =========================================================
+
+    /// <summary>
+    /// Header (icon + title) -> owner/context (issuer, reference, date; Type 7 the second party) -> evidence
+    /// rows -> footer (Type 4 total band, Type 5 large amount and status, Type 7 two signature strokes).
+    /// Same reading order as Types 1-3; only the values change between clients.
+    /// </summary>
+    private static void BuildTransaction(RectTransform root, ClientRecord r, bool physical)
+    {
+        bool slip = r.type == ClientRecord.Payment;
+        Vector2 s = SizeOf(r.type);
+        Color accent = TypeColor(r.type);
+        if (!physical) Paperback(root, s, 18f);
+        else Backing(root, s, 18f, Paper);
+        float inset = slip ? 34f : 40f;
+        float width = s.x - inset * 2f;
+        Box(root, "Header", 0f, 0f, s.x, 122f, accent, 18f);
+        Box(root, "Header Base", 0f, 104f, s.x, 18f, Paper);
+        Icon(root, r.type, 30f, 24f, 56f);
+        TextMeshProUGUI title = Label(root, "Title", Title(r, CaseRecordRules.TypeTitle(r.type)), 100f, 22f, s.x - 120f, 60f, slip ? 34f : 38f,
+            HeaderInk, TextAlignmentOptions.Left, FontStyles.Bold);
+        title.textWrappingMode = TextWrappingModes.NoWrap;
+        title.overflowMode = TextOverflowModes.Ellipsis;
+
+        // Owner / context.
+        float y = 132f;
+        if (r.type == ClientRecord.Agreement)
+        {
+            Party(root, "PARTY", r.issuer, inset, y, width * 0.5f - 8f, accent);
+            Party(root, "WITH", r.party, inset + width * 0.5f + 8f, y, width * 0.5f - 8f, accent);
+            y += 124f;
+        }
+        else
+        {
+            TextMeshProUGUI issuer = Label(root, "Issuer", Value(r.issuer), inset, y, width, 48f, slip ? 34f : 38f, Ink, TextAlignmentOptions.Left, FontStyles.Bold);
+            issuer.textWrappingMode = TextWrappingModes.Normal;
+            y += slip ? 52f : 54f;
+        }
+        Label(root, "Context", Value(r.reference) + "   ·   " + Value(r.date), inset, y, width, 36f, 27f, LabelInk, TextAlignmentOptions.Left);
+        y += 46f;
+        Box(root, "Divider", inset, y, width, 3f, Edge);
+        y += 18f;
+
+        // Evidence rows: a small label over a readable value (long values wrap; nothing shrinks).
+        float footerTop = s.y - (slip ? 300f : r.type == ClientRecord.Income ? 214f : r.type == ClientRecord.Agreement ? 196f : 90f);
+        int count = r.rows != null ? r.rows.Count : 0;
+        float rowHeight = count > 0 ? Mathf.Min(118f, (footerTop - y) / count) : 0f;
+        for (int i = 0; i < count; i++) Row(root, r.rows[i], inset, y + i * rowHeight, width, rowHeight, i);
+        if (count == 0) Label(root, "Empty", "Not applicable", inset, y, width, 40f, 30f, LabelInk, TextAlignmentOptions.Left);
+
+        if (slip) SlipFooter(root, r, inset, footerTop, width, accent);
+        else if (r.type == ClientRecord.Income) TotalBand(root, r, inset, footerTop, width, accent);
+        else if (r.type == ClientRecord.Agreement) Signatures(root, inset, footerTop, width);
+        if (r.backRows != null && r.backRows.Count > 0)
+            Label(root, "Turn Over", "Continued on the back ›", inset, s.y - 60f, width, 34f, 24f, LabelInk, TextAlignmentOptions.Right, FontStyles.Italic);
+    }
+
+    /// <summary>The back of a paper whose table did not fit one face: the same header band and the remaining rows.</summary>
+    private static void BuildContinued(RectTransform root, ClientRecord r)
+    {
+        Vector2 s = SizeOf(r.type);
+        Color accent = TypeColor(r.type);
+        Backing(root, s, 18f, Paper);
+        Box(root, "Header", 0f, 0f, s.x, 96f, accent, 18f);
+        Box(root, "Header Base", 0f, 80f, s.x, 16f, Paper);
+        Label(root, "Title", Title(r, CaseRecordRules.TypeTitle(r.type)) + " (continued)", 34f, 18f, s.x - 68f, 56f, 32f, HeaderInk,
+            TextAlignmentOptions.Left, FontStyles.Bold);
+        float inset = r.type == ClientRecord.Payment ? 34f : 40f;
+        float y = 124f;
+        int count = r.backRows != null ? r.backRows.Count : 0;
+        float rowHeight = count > 0 ? Mathf.Min(118f, (s.y - 80f - y) / count) : 0f;
+        for (int i = 0; i < count; i++) Row(root, r.backRows[i], inset, y + i * rowHeight, s.x - inset * 2f, rowHeight, i);
+    }
+
+    private static void Row(RectTransform root, ClientRecordRow row, float x, float y, float w, float h, int index)
+    {
+        if (row == null) return;
+        if (index % 2 == 1) Box(root, "Row Band " + index, x - 10f, y, w + 20f, h - 6f, BlockFill, 10f);
+        TextMeshProUGUI label = Label(root, "Row Label " + index, string.IsNullOrWhiteSpace(row.label) ? "—" : row.label.Trim().ToUpperInvariant(),
+            x, y + 8f, w, 30f, 22f, LabelInk, TextAlignmentOptions.Left, FontStyles.Bold);
+        label.characterSpacing = 3f;
+        TextMeshProUGUI value = Label(root, "Row Value " + index, Value(row.value), x, y + 40f, w, Mathf.Max(40f, h - 48f), 34f, Ink, TextAlignmentOptions.TopLeft);
+        value.textWrappingMode = TextWrappingModes.Normal;
+    }
+
+    /// <summary>Type 4: the stated total on a band (the client's claim, never a confirmation).</summary>
+    private static void TotalBand(RectTransform root, ClientRecord r, float x, float y, float w, Color accent)
+    {
+        RectTransform band = Box(root, "Total Band", x - 8f, y, w + 16f, 150f, BlockFill, 14f);
+        Box(band, "Rule", 0f, 0f, w + 16f, 5f, accent);
+        TextMeshProUGUI caption = Label(band, "Label", string.IsNullOrWhiteSpace(r.totalLabel) ? "RECORDED TOTAL" : r.totalLabel.Trim().ToUpperInvariant(),
+            22f, 18f, w - 28f, 32f, 24f, LabelInk, TextAlignmentOptions.Left, FontStyles.Bold);
+        caption.characterSpacing = 4f;
+        Label(band, "Amount", Value(r.totalValue), 22f, 60f, w - 28f, 72f, 58f, Ink, TextAlignmentOptions.Right, FontStyles.Bold);
+    }
+
+    /// <summary>Type 5: the large amount and, when the record says so, a clear status label.</summary>
+    private static void SlipFooter(RectTransform root, ClientRecord r, float x, float y, float w, Color accent)
+    {
+        RectTransform band = Box(root, "Amount Band", x - 8f, y, w + 16f, 170f, BlockFill, 14f);
+        TextMeshProUGUI caption = Label(band, "Label", string.IsNullOrWhiteSpace(r.totalLabel) ? "AMOUNT" : r.totalLabel.Trim().ToUpperInvariant(),
+            20f, 16f, w - 24f, 32f, 23f, LabelInk, TextAlignmentOptions.Left, FontStyles.Bold);
+        caption.characterSpacing = 3f;
+        Label(band, "Amount", Value(r.totalValue), 20f, 60f, w - 24f, 84f, 66f, Ink, TextAlignmentOptions.Right, FontStyles.Bold);
+        if (string.IsNullOrWhiteSpace(r.status)) return;
+        RectTransform stamp = Box(root, "Status", x + w - 220f, y + 190f, 220f, 72f, accent, 12f);
+        RectTransform fill = Box(stamp, "Fill", 4f, 4f, 212f, 64f, Paper, 9f);
+        TextMeshProUGUI status = Label(fill, "Text", r.status, 0f, 6f, 212f, 52f, 38f, accent, TextAlignmentOptions.Center, FontStyles.Bold);
+        status.characterSpacing = 8f;
+        stamp.localRotation = Quaternion.Euler(0f, 0f, 4f);
+    }
+
+    /// <summary>Type 7: the two parties' signature lines with simple strokes.</summary>
+    private static void Signatures(RectTransform root, float x, float y, float w)
+    {
+        float half = w * 0.5f - 12f;
+        for (int i = 0; i < 2; i++)
+        {
+            float left = x + i * (half + 24f);
+            RectTransform stroke = Box(root, "Signature " + i, left + 18f, y + 52f, half - 60f, 7f, Ink, 3.5f);
+            stroke.localRotation = Quaternion.Euler(0f, 0f, i == 0 ? 6f : -5f);
+            Box(root, "Signature Line " + i, left, y + 92f, half, 3f, Edge);
+            Label(root, "Signature Caption " + i, i == 0 ? "PARTY" : "WITH", left, y + 104f, half, 30f, 21f, LabelInk, TextAlignmentOptions.Left, FontStyles.Bold);
+        }
+    }
+
+    private static void Party(RectTransform root, string heading, string name, float x, float y, float w, Color accent)
+    {
+        RectTransform block = Box(root, heading + " Block", x, y, w, 112f, Edge, 12f);
+        RectTransform inner = Box(block, "Fill", 2f, 2f, w - 4f, 108f, BlockFill, 10f);
+        TextMeshProUGUI label = Label(inner, "Heading", heading, 16f, 10f, w - 36f, 30f, 22f, accent, TextAlignmentOptions.Left, FontStyles.Bold);
+        label.characterSpacing = 5f;
+        TextMeshProUGUI value = Label(inner, "Name", Value(name), 16f, 44f, w - 36f, 60f, 30f, Ink, TextAlignmentOptions.TopLeft, FontStyles.Bold);
+        value.textWrappingMode = TextWrappingModes.Normal;
+    }
+
+    // =========================================================
     // SHARED PIECES
     // =========================================================
 
@@ -250,10 +408,29 @@ public static class SupportingDocumentFace
             RectTransform coin = Box(icon, "Coin", size * 0.4f, size * 0.58f, size * 0.3f, size * 0.3f, CompensationBlue);
             coin.GetComponent<Image>().sprite = HudTheme.Circle;
         }
+        else if (type == ClientRecord.Payment)
+        {
+            // A narrow slip with a coin: one payment.
+            Box(icon, "Slip", size * 0.24f, 0f, size * 0.52f, size, HeaderInk, size * 0.08f);
+            Box(icon, "Line", size * 0.33f, size * 0.18f, size * 0.34f, size * 0.07f, PaymentOchre);
+            RectTransform coin = Box(icon, "Coin", size * 0.35f, size * 0.52f, size * 0.3f, size * 0.3f, PaymentOchre);
+            coin.GetComponent<Image>().sprite = HudTheme.Circle;
+        }
+        else if (type == ClientRecord.Agreement)
+        {
+            // A page with two lines and a signature stroke.
+            Box(icon, "Page", size * 0.14f, 0f, size * 0.72f, size, HeaderInk, size * 0.1f);
+            for (int i = 0; i < 2; i++) Box(icon, "Line " + i, size * 0.26f, size * (0.2f + i * 0.17f), size * 0.48f, size * 0.07f, AgreementPlum);
+            RectTransform stroke = Box(icon, "Signature", size * 0.26f, size * 0.7f, size * 0.42f, size * 0.08f, AgreementPlum);
+            stroke.localRotation = Quaternion.Euler(0f, 0f, 12f);
+        }
         else
         {
+            // A page of lines; an income record ends in a total bar.
+            Color ink = TypeColor(type);
             Box(icon, "Page", size * 0.14f, 0f, size * 0.72f, size, HeaderInk, size * 0.1f);
-            for (int i = 0; i < 4; i++) Box(icon, "Line " + i, size * 0.26f, size * (0.2f + i * 0.17f), size * (i == 3 ? 0.3f : 0.48f), size * 0.07f, BackgroundOchre);
+            for (int i = 0; i < 4; i++) Box(icon, "Line " + i, size * 0.26f, size * (0.2f + i * 0.17f), size * (i == 3 ? 0.3f : 0.48f), size * 0.07f, ink);
+            if (type == ClientRecord.Income) Box(icon, "Total", size * 0.26f, size * 0.84f, size * 0.48f, size * 0.09f, ink);
         }
     }
 

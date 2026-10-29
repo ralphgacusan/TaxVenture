@@ -4,7 +4,7 @@
     "items: id (stable, saved), label, category (Profiles | Case Files | Tools & Supplies | Keepsakes), icon (HudIconArt picture: notes, folder, profiles, book),",
     "  description (press-and-hold details card), required (never in the drawer, never left behind), stackLimit (1 = one per slot),",
     "  container (one slot holds them all: profiles in the binder, case papers and the Client Copy in the folder),",
-    "  scope (the story level the item belongs to; a fresh run of that level clears it), returnsToWorld (closing Make room puts it back, e.g. the desk book).",
+    "  scope (the story level(s) the item belongs to, comma-separated; a fresh run of a listed level clears it; T18: entering a story level it does not list retires it), returnsToWorld (closing Make room puts it back, e.g. the desk book).",
     "journal: neutral facts the evidence journal lists once learned; sourceItemId is the record it links to. Never an answer or a conclusion.",
     "Content rule (checked by the regression suite): a level never needs more required items at once than the starting 3 + 6 slots (T30: the Bag starts at 6).",
     "reference (T30): a read-only reference kept for good (Arthur's Reviewed File): required (never discarded or sold), scope \"\", never edited or submitted.",
@@ -32,7 +32,7 @@
       "required": true,
       "stackLimit": 1,
       "container": false,
-      "scope": "Level_01",
+      "scope": "Level_01,Level_02",
       "returnsToWorld": false
     },
     {
@@ -44,7 +44,7 @@
       "required": true,
       "stackLimit": 1,
       "container": true,
-      "scope": "Level_01",
+      "scope": "Level_01,Level_02",
       "returnsToWorld": false
     },
     {
@@ -56,7 +56,7 @@
       "required": false,
       "stackLimit": 1,
       "container": false,
-      "scope": "Level_01",
+      "scope": "Level_01,Level_02",
       "returnsToWorld": true
     },
     {
@@ -111,6 +111,18 @@
       "returnsToWorld": false,
       "carryLimit": 0,
       "reference": true
+    },
+    {
+      "id": "marked_records",
+      "label": "Marked Records",
+      "category": "Case Files",
+      "icon": "papers",
+      "description": "Rosa's four records as you marked them at her desk: highlight and cards. Read them anywhere; compare them at your desk.",
+      "required": true,
+      "stackLimit": 1,
+      "container": true,
+      "scope": "Level_02",
+      "returnsToWorld": false
     }
   ],
   "journal": [
@@ -142,6 +154,16 @@
     {
       "id": "client-copy",
       "text": "The Auditor gave you Marie's client copy to deliver.",
+      "sourceItemId": "case_folder"
+    },
+    {
+      "id": "rosa-case-received",
+      "text": "The receptionist gave you Aling Rosa's review for the day.",
+      "sourceItemId": "case_folder"
+    },
+    {
+      "id": "rosa-records",
+      "text": "Aling Rosa handed over her original records at her stall.",
       "sourceItemId": "case_folder"
     }
   ]

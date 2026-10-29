@@ -27,8 +27,8 @@ public class WorkstationUI : MonoBehaviour
 
     /// <summary>
     /// Optional level hook: while it returns true the exit control is hidden
-    /// and does nothing (Level 2: during the Mark the Money! practice and
-    /// challenge). Level 1 never sets it.
+    /// and does nothing (Level 2: brief tool motions and result collection).
+    /// Independent records-desk work remains escapable. Level 1 never sets it.
     /// </summary>
     public static System.Func<bool> ExitBlocked;
 

@@ -52,12 +52,32 @@ public class PlazaLifeFile
 public static class PlazaLifeContent
 {
     public const string ResourcePath = "Levels/Level_01/plaza_life";
+    /// <summary>Level 2's own townspeople (T32): the same format, its own people and words.</summary>
+    public const string Level2ResourcePath = "Levels/Level_02/plaza_life";
     public const string PlayerPortrait = "Auditor_Default";
 
     private static PlazaLifeFile cached;
+    private static string cachedPath;
     private static bool warned;
 
-    public static PlazaLifeFile Current => cached ?? (cached = Load());
+    /// <summary>The file of the level being played (read once per level; Level 1 unless Level 2's office is active).</summary>
+    public static PlazaLifeFile Current
+    {
+        get
+        {
+            string path = PathFor(OfficeLevelProfile.LevelIdFor(UnityEngine.SceneManagement.SceneManager.GetActiveScene()));
+            if (cached == null || cachedPath != path)
+            {
+                cachedPath = path;
+                warned = false;
+                cached = Load(path);
+            }
+            return cached;
+        }
+    }
+
+    /// <summary>The plaza_life file of a level (Level 1's for anything but Level 2).</summary>
+    public static string PathFor(string levelId) => levelId == OfficeLevelCatalog.Level2Id ? Level2ResourcePath : ResourcePath;
 
     /// <summary>Forget the loaded copy (tests and the next level load read the file again).</summary>
     public static void Clear() => cached = null;
@@ -79,13 +99,13 @@ public static class PlazaLifeContent
         }
     }
 
-    private static PlazaLifeFile Load()
+    private static PlazaLifeFile Load(string path)
     {
-        TextAsset asset = Resources.Load<TextAsset>(ResourcePath);
+        TextAsset asset = Resources.Load<TextAsset>(path);
         PlazaLifeFile file = asset != null ? Parse(asset.text) : null;
         if (file == null)
         {
-            Warn("Resources/" + ResourcePath + ".json is missing or unreadable; ambient NPCs use a short built-in line.");
+            Warn("Resources/" + path + ".json is missing or unreadable; ambient NPCs use a short built-in line.");
             return new PlazaLifeFile();
         }
         List<string> problems = Problems(file);

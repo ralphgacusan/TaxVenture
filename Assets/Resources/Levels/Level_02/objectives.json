@@ -8,7 +8,7 @@
       "title": "Check Rosa’s folder",
       "steps": [
         {
-          "text": "Meet the receptionist.",
+          "text": "Check in for today’s review.",
           "trigger": "event:ReceptionistTalkedTo"
         },
         {
@@ -45,7 +45,7 @@
           "trigger": "event:AnnotationTutorialCompleted"
         },
         {
-          "text": "Mark four records, then CHECK.",
+          "text": "Mark four records. CHECK opens Rosa's talk; CHECK again grades.",
           "trigger": "event:AnnotationsChecked"
         },
         {
@@ -67,8 +67,16 @@
           "undoneBy": "event:AuditReturned"
         },
         {
-          "text": "Deliver the folder to the Auditor.",
+          "text": "Talk to the Auditor; hand over the folder for approval.",
           "trigger": "state:CaseCompleteState"
+        },
+        {
+          "text": "Collect the approved Client Copy beside the Auditor.",
+          "trigger": "event:ClientCopyPickedUp"
+        },
+        {
+          "text": "Deliver the Client Copy to Rosa in the conference room.",
+          "trigger": "event:ClientCopyHandedOver"
         }
       ]
     }

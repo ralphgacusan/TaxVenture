@@ -9,7 +9,7 @@
     "Badge tiers: finishing the side quest always earns the badge. Side Quest 1's tier is its corkboard's FIRST check (ClassificationCheck, 2026-10-27): Gold = 4/4, Silver = 2/4 (one swapped pair; one card per corner, so 3/4 cannot happen), Bronze = 0-1/4. Replays keep the best tier.",
     "badgeEmblem: the medal's centre picture (taxpayer_id, receipt, star). badgeRibbon: the ribbon colour (#RRGGBB). Give each side quest its own.",
     "caseFile: full EXP and hearts per case for a first-try, mistake-free audit; per mistake the Auditor finds, and per extra submission (going back to redo), the amounts below are taken off. wrongVerdictExp: EXP for a case finished without an audit whose verdict was wrong.",
-    "The level score never goes above its maximum: bonuses (e.g. on time) only win back lost points. Out-of-range numbers are clamped when the level loads and the Console names each one.",
+    "The level score never goes above its maximum: bonuses (e.g. plaza conversation hearts; on-time submission adds none) only win back lost points. Out-of-range numbers are clamped when the level loads and the Console names each one.",
     "Fields starting with '_' are notes and are ignored by the game."
   ],
   "passingPercent": 80,

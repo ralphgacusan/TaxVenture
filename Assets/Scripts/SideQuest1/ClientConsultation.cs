@@ -191,7 +191,10 @@ public sealed class ClientConsultation : MonoBehaviour
         nextLegAt = Time.time + 1.5f;
     }
 
-    private void StandInStepsAside()
+    private void StandInStepsAside() => StandInStepsAside(spot);
+
+    /// <summary>The conference room's stand-in client at this spot steps aside for the case client (Marie; Level 2: Rosa).</summary>
+    public static void StandInStepsAside(Transform spot)
     {
         // The conference room's stand-in client steps aside for Marie (restored with the scene).
         if (spot == null) return;

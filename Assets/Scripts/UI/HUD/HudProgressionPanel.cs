@@ -132,8 +132,24 @@ public sealed class HudProgressionPanel : MonoBehaviour
     private int walletFrom;
     private float walletElapsed = -1f;
 
+    /// <summary>The card's frame (scaled): HUD pieces that sit under the card read its real bottom edge from here.</summary>
+    public RectTransform Frame => (RectTransform)transform;
+
+    private static readonly Vector3[] FrameCorners = new Vector3[4];
+
+    /// <summary>The card's bottom edge in screen pixels (overlay canvas), whatever its height, scale or safe area.</summary>
+    public float ScreenBottom
+    {
+        get
+        {
+            Frame.GetWorldCorners(FrameCorners);
+            return Mathf.Min(FrameCorners[0].y, FrameCorners[3].y);
+        }
+    }
+
     public RectTransform ExpBar => expBar.Fill != null ? (RectTransform)expBar.Fill.parent : null;
     public RectTransform ReputationBar => repBar.Fill != null ? (RectTransform)repBar.Fill.parent : null;
+    public RectTransform CoinsRow => walletRow;
     /// <summary>The wallet / career line (T09 coin flights land here).</summary>
     public RectTransform WalletLabel => walletIcon;
 

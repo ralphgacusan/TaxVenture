@@ -12,10 +12,12 @@
   "blend": 0.16,
   "fallbackSpawn": "Environment/OfficeBuilding/Rooms/Reception/Doors",
   "fallbackBlend": 0.12,
+  "_hide": "T32: the reception waiting-area client is a copy of Level 1's Marie model; Level 2's office waits for Rosa instead. The plaza's copied quest crowd (NPCS) stays off; the Level 2 cast is built from Levels/Level_02/town_life.json.",
   "hide": [
     "Environment/Outside/Plaza/NPCS",
     "Environment/Outside/Plaza/CorkboardSideQuestRoot",
-    "UI/HUD_Canvas/PermanentHUD/IconButtons/TaxpayerProfileIcon"
+    "UI/HUD_Canvas/PermanentHUD/IconButtons/TaxpayerProfileIcon",
+    "Environment/OfficeBuilding/Rooms/Reception/WaitingArea/Client2"
   ],
   "disableComponents": ["TutorialController"]
 }

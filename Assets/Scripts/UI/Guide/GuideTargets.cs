@@ -12,6 +12,7 @@ using UnityEngine.SceneManagement;
 ///
 /// TARGETS:
 ///   hud:objective  hud:progress  hud:timer  hud:minimap  hud:notes
+///   hud:exp  hud:reputation  hud:coins (individual resource focus)
 ///   hud:folder  hud:profiles  hud:settings  hud:icons  hud:joystick
 ///   hud:look  hud:prompt  hud:exit
 ///   world:&lt;scene path&gt;      a 3D object (its renderers' outline)
@@ -41,7 +42,7 @@ public sealed class GuideTargets
 
     public static readonly string[] HudNames =
     {
-        "objective", "progress", "timer", "minimap", "notes", "folder", "profiles", "settings", "icons",
+        "objective", "progress", "exp", "reputation", "coins", "timer", "minimap", "notes", "folder", "profiles", "settings", "icons",
         "joystick", "look", "prompt", "exit", "card", "continue", "bag", "slot", "book", "reviewed"
     };
 
@@ -375,6 +376,9 @@ public sealed class GuideTargets
                 return hud != null && hud.Objectives != null ? hud.Objectives.transform as RectTransform : null;
             case "progress":
                 return hud != null && hud.Progression != null ? hud.Progression.transform as RectTransform : null;
+            case "exp": return hud != null && hud.Progression != null ? hud.Progression.ExpBar : null;
+            case "reputation": return hud != null && hud.Progression != null ? hud.Progression.ReputationBar : null;
+            case "coins": return hud != null && hud.Progression != null ? hud.Progression.CoinsRow : null;
             case "minimap":
                 return Lookup("hud:minimap", () => FindUi("Office Minimap HUD")).Transform as RectTransform;
             case "card":

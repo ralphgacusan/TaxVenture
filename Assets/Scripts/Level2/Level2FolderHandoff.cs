@@ -7,7 +7,9 @@ using UnityEngine;
 /// folder is in the HUD Case Folder icon (count 1). Its first opening must
 /// happen at the office desk. Presentation then uses the same toggle, drag,
 /// and animated return as Level 1; previewing does not consume stored ownership.
-/// Auditor submission remains gated by the review state.
+/// Auditor submission remains gated by the review state: HandInRefusal is the
+/// line the Auditor says in his conversation when he cannot take it yet
+/// (Level 2 consistency pass: no separate tray gate).
 /// </summary>
 public sealed class Level2FolderHandoff : MonoBehaviour
 {
@@ -27,14 +29,7 @@ public sealed class Level2FolderHandoff : MonoBehaviour
     /// <summary>True once the HUD folder icon is wrapped.</summary>
     public bool Hooked => icon != null;
 
-    private void OnEnable() => AuditorSubmissionTray.SubmissionBlocked = BlockHandIn;
-
-    private void OnDisable()
-    {
-        if (AuditorSubmissionTray.SubmissionBlocked == (System.Func<bool>)BlockHandIn)
-            AuditorSubmissionTray.SubmissionBlocked = null;
-        Unhook();
-    }
+    private void OnDisable() => Unhook();
 
     private void Update()
     {
@@ -43,7 +38,7 @@ public sealed class Level2FolderHandoff : MonoBehaviour
         nextResolve = Time.unscaledTime + 0.25f;
         if (OfficeHudRuntime.Instance == null) return;
 
-        Transform found = PlayerPlacement.Find(gameObject.scene, FolderIconPath);
+        Transform found = FindFolderIcon(gameObject.scene);
         HudSubmittableIcon candidate = found != null ? found.GetComponent<HudSubmittableIcon>() : null;
         if (candidate == null) return;
 
@@ -72,25 +67,31 @@ public sealed class Level2FolderHandoff : MonoBehaviour
         }
     }
 
-    private bool BlockHandIn()
-    {
-        CaseReviewState review = Level2OfficeStart.Review;
-        if (review == null) return false;
-        if (review.FolderRetrieved && !review.folderPlacedOnDesk) return true;
-        return !CanHandInReview(review, true);
-    }
-
     /// <summary>
     /// Level 2 hand-in gate (T08-T10): only a final assessment stamped for the
     /// current review, changed since a returned or held submission, while the
-    /// review window is open. Says why when <paramref name="explain"/>.
+    /// review window is open. Says why (a short line) when <paramref name="explain"/>.
     /// </summary>
     public static bool CanHandInReview(CaseReviewState review, bool explain)
     {
+        string why = HandInRefusal(review);
+        if (why == null) return true;
+        if (explain) Level2Say.Line(why, null, 5f);
+        return false;
+    }
+
+    /// <summary>
+    /// Why the Auditor cannot take Rosa's folder yet (he says it in his conversation),
+    /// or null when he can. The same gate as CanHandInReview; nothing is decided here.
+    /// </summary>
+    public static string HandInRefusal(CaseReviewState review)
+    {
         CaseDefinition definition = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
-        if (review == null || definition == null || !definition.HasReview) return true;
+        if (review == null || definition == null || !definition.HasReview) return null;
         string why = null;
-        if (review.phase < ReviewPhase.OfficeReconciliation)
+        if (review.FolderRetrieved && !review.folderPlacedOnDesk)
+            why = "Open Rosa's folder at your desk first. I review it after your final assessment.";
+        else if (review.phase < ReviewPhase.OfficeReconciliation)
             why = "The Auditor reviews Rosa's folder after your final assessment.";
         else if (!ReviewClock.WindowOpen(review.clock))
             why = definition.review.clock?.missedLine;
@@ -106,9 +107,8 @@ public sealed class Level2FolderHandoff : MonoBehaviour
                     why = definition.review.audit?.unchanged;
                     break;
             }
-        if (why == null) return true;
-        if (explain) Level2Say.Line(why, null, 5f);
-        return false;
+        if (why != null && string.IsNullOrWhiteSpace(why)) why = "Not yet. Bring it back when the review has changed.";
+        return why;
     }
 
     /// <summary>Seated at the office desk (not Rosa's records desk).</summary>
@@ -189,8 +189,28 @@ public sealed class Level2FolderHandoff : MonoBehaviour
         foreach (GameObject root in scene.GetRootGameObjects())
             if ((deskFolder = root.GetComponentInChildren<CaseFolder3DDrag>(true)) != null) break;
         if (deskFolder != null) deskFolder.RestoreAndEnableFolder();
-        Transform folderIcon = PlayerPlacement.Find(scene, FolderIconPath);
+        Transform folderIcon = FindFolderIcon(scene);
         if (folderIcon != null) folderIcon.GetComponent<HudIconButton>()?.SetAvailable(FolderToHUDIcon.GetStoredFolderCount() > 0);
+    }
+
+    /// <summary>
+    /// The Case Folder icon: at its scene path, or (T18) inside the hotbar slot
+    /// wrapper ("Carried case_folder") that now holds it in the icon row.
+    /// </summary>
+    public static Transform FindFolderIcon(UnityEngine.SceneManagement.Scene scene)
+    {
+        Transform direct = PlayerPlacement.Find(scene, FolderIconPath);
+        if (direct != null) return direct;
+        int slash = FolderIconPath.LastIndexOf('/');
+        Transform row = PlayerPlacement.Find(scene, FolderIconPath.Substring(0, slash));
+        string name = FolderIconPath.Substring(slash + 1);
+        if (row == null) return null;
+        foreach (Transform wrapper in row)
+        {
+            Transform icon = wrapper.Find(name);
+            if (icon != null) return icon;
+        }
+        return null;
     }
 
     /// <summary>The live folder store (the enabled FolderToHUDIcon the Auditor tray also uses).</summary>

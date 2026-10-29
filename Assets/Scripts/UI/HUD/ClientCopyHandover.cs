@@ -39,6 +39,16 @@ using UnityEngine.SceneManagement;
 /// received". A conversation interrupted before the drop starts again from
 /// its beginning. After the drop PLAY resumes the saved finale/result flow.
 ///
+/// LEVEL 2 (consistency pass): Rosa's approved review uses this same flow.
+/// The Auditor's hand-in conversation continues with the approval and drops
+/// Rosa's copy; it is carried in the same Case Folder slot (read-only, CLIENT
+/// COPY stamp and tag), and Rosa takes it in the conference room
+/// (Level2RosaConsultation owns her placement and passes taps here). Delivery
+/// commits PlayerProgressManager.CommitLevelTwoFollowThrough (+4 trust and
+/// Chapter 2 once, story runs only; an isolated development run commits no
+/// claim). The phase is saved in Rosa's review (clientCopyPhase) with her
+/// checkpoint, which is kept until she has her copy.
+///
 /// Marie's move to the conference room belongs to ClientConsultation (T23):
 /// she moves after the side quest, and this handover only asks for the move
 /// again at approval and on resume. ClientConsultation also owns taps on her
@@ -60,6 +70,10 @@ public sealed class ClientCopyHandover : MonoBehaviour
     private CaseDefinition definition;
     private ClientHandoverDefinition script;
     private TaxpayerNpcInteractable client;
+    // Level 2 (consistency pass): Rosa, the same actor from her stall, now in the conference room.
+    private RosaInteractable rosa;
+    private bool restorePending;
+    private ClientCopyPhase restorePhase;
     private Transform clientRoot;
     private Transform spot;
     private ClientCopyPickup pickup;
@@ -106,7 +120,9 @@ public sealed class ClientCopyHandover : MonoBehaviour
 
     private static void EnsureForScene(Scene scene)
     {
-        if (!scene.IsValid() || !scene.isLoaded || OfficeLevelProfile.LevelIdFor(scene) != OfficeLevelCatalog.Level1Id) return;
+        if (!scene.IsValid() || !scene.isLoaded) return;
+        string level = OfficeLevelProfile.LevelIdFor(scene);
+        if (level != OfficeLevelCatalog.Level1Id && level != OfficeLevelCatalog.Level2Id) return;
         foreach (GameObject root in scene.GetRootGameObjects())
             if (root.GetComponentInChildren<ClientCopyHandover>(true) != null) return;
         var host = new GameObject("Client Copy Handover");
@@ -137,6 +153,8 @@ public sealed class ClientCopyHandover : MonoBehaviour
     private bool WouldDefer()
     {
         if (phase == ClientCopyPhase.Done) return false;
+        CaseDefinition review = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+        if (review != null && review.HasReview) return LevelTwoExpected(review);
         PlayerProgressManager manager = PlayerProgressManager.Instance;
         if (manager == null || !manager.ClientCopyHandoverExpected) return false;
         CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
@@ -159,7 +177,11 @@ public sealed class ClientCopyHandover : MonoBehaviour
         if (phase == ClientCopyPhase.Done) return false;
         if (phase != ClientCopyPhase.None) return true;
         PlayerProgressManager manager = PlayerProgressManager.Instance;
-        if (manager == null || manager.SavedClientCopyPhase == ClientCopyPhase.None || !Resolve()) return false;
+        CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+        bool expected = def != null && def.HasReview
+            ? LevelTwoExpected(def)
+            : manager != null && manager.SavedClientCopyPhase != ClientCopyPhase.None;
+        if (!expected || !Resolve()) return false;
 
         pendingResult = result;
         phase = ClientCopyPhase.AtAuditor;
@@ -183,9 +205,17 @@ public sealed class ClientCopyHandover : MonoBehaviour
     public void Restore(ClientCopyPhase saved)
     {
         if ((saved != ClientCopyPhase.AtAuditor && saved != ClientCopyPhase.Carried && saved != ClientCopyPhase.Done) ||
-            phase != ClientCopyPhase.None || !Resolve()) return;
+            phase != ClientCopyPhase.None) return;
+        if (!Resolve())
+        {
+            // Level 2: Rosa is built a moment after the checkpoint; the copy comes back once she exists.
+            restorePending = true;
+            restorePhase = saved;
+            return;
+        }
+        restorePending = false;
         phase = saved;
-        pendingResult = LevelCompleteUI.CreateSavedCaseResult();
+        pendingResult = LevelTwo ? null : LevelCompleteUI.CreateSavedCaseResult();
 
         ReceptionistInteractable receptionist = FindAnyObjectByType<ReceptionistInteractable>(FindObjectsInactive.Include);
         if (receptionist != null && definition != null) receptionist.RestoreSpoken(definition.caseId);
@@ -220,8 +250,16 @@ public sealed class ClientCopyHandover : MonoBehaviour
         script = definition.clientHandover;
         ClientFinaleDefinition staging = definition.clientFinale ?? new ClientFinaleDefinition();
         Scene scene = gameObject.scene;
-        clientRoot = FindInScene(scene, staging.modelPath);
         spot = FindInScene(scene, staging.spotPath);
+        if (definition.HasReview)
+        {
+            // Level 2: Rosa herself (one actor; Level2RosaConsultation moves her to the room).
+            rosa = Level2RosaConsultation.Instance != null ? Level2RosaConsultation.Instance.Rosa : null;
+            clientRoot = rosa != null ? rosa.transform : null;
+            client = null;
+            return rosa != null && spot != null;
+        }
+        clientRoot = FindInScene(scene, staging.modelPath);
         client = clientRoot != null ? clientRoot.GetComponentInChildren<TaxpayerNpcInteractable>(true) : null;
         if (client == null || spot == null)
         {
@@ -229,6 +267,42 @@ public sealed class ClientCopyHandover : MonoBehaviour
             return false;
         }
         return true;
+    }
+
+    /// <summary>The current case is Level 2's review (Rosa).</summary>
+    private static bool LevelTwo
+    {
+        get
+        {
+            CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+            return def != null && def.HasReview;
+        }
+    }
+
+    /// <summary>
+    /// Level 2 (consistency pass): Rosa's approved review ends with her Client Copy, unless she
+    /// already has it (a story run's follow-through activity, or this review's saved phase).
+    /// Practice and mastery replays never get one.
+    /// </summary>
+    private static bool LevelTwoExpected(CaseDefinition def)
+    {
+        if (def == null || !def.HasReview || def.clientHandover == null || !def.clientHandover.enabled) return false;
+        CaseReviewState review = CaseManager.Instance != null && CaseManager.Instance.CurrentCase != null ? CaseManager.Instance.CurrentCase.review : null;
+        if (review == null || review.audit == null || !review.audit.approved) return false;
+        if (ClientCopyRules.Parse(review.clientCopyPhase) == ClientCopyPhase.Done) return false;
+        if (TrainingSession.IsPracticing || PlayerProgressManager.CurrentRunMode == CampaignRunMode.MasteryReplay) return false;
+        PlayerProgressManager manager = PlayerProgressManager.Instance;
+        return manager == null || !manager.UsesLevelTwoStory || !Level2CampaignRules.FollowThroughDone(manager.CurrentProgress);
+    }
+
+    /// <summary>The client's name for player-facing prompts ("Marie", "Rosa").</summary>
+    public static string ClientDisplayName
+    {
+        get
+        {
+            CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
+            return def != null && def.clientFinale != null && !string.IsNullOrWhiteSpace(def.clientFinale.name) ? def.clientFinale.name : "your client";
+        }
     }
 
     /// <summary>
@@ -434,16 +508,24 @@ public sealed class ClientCopyHandover : MonoBehaviour
     // MARIE IN THE CONFERENCE ROOM
     // =========================================================
 
-    /// <summary>Marie stands in the conference room (ClientConsultation owns the move, T23).</summary>
-    private static bool Relocated => ClientConsultation.Instance != null && ClientConsultation.Instance.InRoom;
+    /// <summary>The client stands in the conference room (ClientConsultation owns Marie's move, T23; Level2RosaConsultation Rosa's).</summary>
+    private static bool Relocated => LevelTwo
+        ? Level2RosaConsultation.Instance != null && Level2RosaConsultation.Instance.InRoom
+        : ClientConsultation.Instance != null && ClientConsultation.Instance.InRoom;
 
     private static void RelocateClient(bool immediate)
     {
+        if (LevelTwo)
+        {
+            if (Level2RosaConsultation.Instance != null) Level2RosaConsultation.Instance.MoveToRoom(immediate);
+            return;
+        }
         if (ClientConsultation.Instance != null) ClientConsultation.Instance.MoveToRoom(immediate);
     }
 
     private void Update()
     {
+        if (restorePending && Time.frameCount % 10 == 0) Restore(restorePhase);
         // Her "!" once she is in the room with the copy carried (she may arrive after the pickup).
         if (clientAlert == 0 && !inConversation && phase == ClientCopyPhase.Carried && Relocated) HoldClientAlert();
     }
@@ -466,6 +548,27 @@ public sealed class ClientCopyHandover : MonoBehaviour
     public bool HandleClientVisit(TaxpayerNpcInteractable npc)
     {
         if (npc != client || !Relocated || inConversation) return false;
+        return HandleVisit();
+    }
+
+    /// <summary>Level 2: a tap on Rosa in the conference room once her review is approved (Level2RosaConsultation passes it here).</summary>
+    public bool HandleRosaVisit(RosaInteractable npc)
+    {
+        if (npc == null || npc != rosa || !Relocated || inConversation) return false;
+        return HandleVisit();
+    }
+
+    /// <summary>Level 2: Rosa's marker while the copy exists (null = her consultation's own state).</summary>
+    public NpcAvailability? RosaVisitAvailability(RosaInteractable npc)
+    {
+        if (npc == null || npc != rosa || !Relocated) return null;
+        return phase == ClientCopyPhase.Carried ? NpcAvailability.Available
+            : phase == ClientCopyPhase.AtAuditor ? NpcAvailability.Unavailable
+            : phase == ClientCopyPhase.Done ? NpcAvailability.Completed : (NpcAvailability?)null;
+    }
+
+    private bool HandleVisit()
+    {
         if (phase == ClientCopyPhase.Carried)
         {
             StartHandoverConversation();
@@ -473,11 +576,27 @@ public sealed class ClientCopyHandover : MonoBehaviour
         }
         if (phase == ClientCopyPhase.AtAuditor)
         {
-            client.TryStartVisit(Lines(script.waiting, DefaultWaiting, ClientName), null, null);
+            TryStartClientVisit(Lines(script.waiting, DefaultWaiting, ClientName), null, null);
+            return true;
+        }
+        if (phase == ClientCopyPhase.Done && LevelTwo)
+        {
+            // Level 2: after the handover she answers briefly (talk only; nothing is committed again).
+            TryStartClientVisit(Lines(script.afterDelivery, DefaultAfterDelivery, ClientName), null, null);
             return true;
         }
         return false;
     }
+
+    /// <summary>A conversation with the client through the shared dialogue flow (Marie's visit or Rosa's).</summary>
+    private bool TryStartClientVisit(List<DialogueLine> lines, System.Action completed, System.Action cancelled)
+    {
+        if (client != null) return client.TryStartVisit(lines, completed, cancelled);
+        return rosa != null && rosa.TryStartVisit(lines, completed, cancelled);
+    }
+
+    /// <summary>The client's own component (speaker frame, emotes).</summary>
+    private Component ClientComponent => client != null ? (Component)client : rosa;
 
     private bool HandleAuditorTalk(AuditorInteractable auditor)
     {
@@ -505,7 +624,7 @@ public sealed class ClientCopyHandover : MonoBehaviour
     {
         if (OfficeHudRuntime.Instance != null) OfficeHudRuntime.Instance.CloseCaseFolderView();
         ReleaseClientAlert();
-        inConversation = client.TryStartVisit(HandoverLines(), OnConversationEnded, OnConversationEnded);
+        inConversation = TryStartClientVisit(HandoverLines(), OnConversationEnded, OnConversationEnded);
         if (!inConversation) HoldClientAlert();
     }
 
@@ -517,7 +636,7 @@ public sealed class ClientCopyHandover : MonoBehaviour
             ? new List<DialogueLineDefinition> { script.handover } : null, DefaultHandover, ClientName);
         DialogueLine wait = handover[handover.Count - 1];
         wait.AwaitAction = ClientCopyRules.HandoverAction;
-        wait.ActionPrompt = string.IsNullOrWhiteSpace(script.handoverPrompt) ? "Drag the client copy to Marie" : script.handoverPrompt;
+        wait.ActionPrompt = string.IsNullOrWhiteSpace(script.handoverPrompt) ? "Drag the client copy to " + ClientName : script.handoverPrompt;
         lines.AddRange(handover);
         lines.AddRange(Lines(script.explain, DefaultExplain, ClientName));
 
@@ -587,15 +706,23 @@ public sealed class ClientCopyHandover : MonoBehaviour
     {
         if (!ClientCopyRules.CanHandOver(phase)) return false;
         PlayerProgressManager manager = PlayerProgressManager.Instance;
-        PlayerProgressManager.StoryGrants grants = manager != null ? manager.CommitFollowThrough() : default;
+        // Level 2: Rosa's follow-through (+4 trust and Chapter 2, once, story runs only). An isolated
+        // development run has no campaign claim to write: the handover completes and saves nothing more.
+        bool claims = !LevelTwo || (manager != null && manager.UsesLevelTwoStory && !Level2Checkpointer.IsDirectEditorAttempt);
+        PlayerProgressManager.StoryGrants grants;
+        if (!LevelTwo) grants = manager != null ? manager.CommitFollowThrough() : default;
+        else if (claims) grants = manager.CommitLevelTwoFollowThrough();
+        else grants = new PlayerProgressManager.StoryGrants { Saved = true };
         DialogueUI dialogue = DialogueUI.Active;
         if (!grants.Saved)
         {
             Debug.LogWarning("[ClientCopy] The follow-through could not be saved; the copy stays in the folder icon.");
             if (dialogue != null) dialogue.SetActionPrompt(string.IsNullOrWhiteSpace(script.retryPrompt)
-                ? "It didn't save. Drag the client copy to Marie again." : script.retryPrompt);
+                ? "It didn't save. Drag the client copy to " + ClientName + " again." : script.retryPrompt);
             return false;
         }
+
+        if (LevelTwo) Level2Checkpointer.Active?.PublishEthicsFollowThrough();
 
         phase = ClientCopyRules.AfterHandover(phase, saved: true);
         ReleaseWorkingFolder();
@@ -604,17 +731,45 @@ public sealed class ClientCopyHandover : MonoBehaviour
         CaseFolderFieldRow.ReadOnly = true;
         RefreshIcons();
         GameplayEvents.RaiseClientCopyHandedOver();
+        if (LevelTwo) SaveCheckpoint();
         if (!grants.AlreadyDone)
         {
             if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperSFX();
-            WorldEmote.Burst(clientRoot, Emotion.Thankful, 7);
+            CaseReviewState ethicsReview = LevelTwo && CaseManager.Instance != null ? CaseManager.Instance.CurrentCase?.review : null;
+            bool unsupportedPromise = ethicsReview != null && ethicsReview.rosaEthicsChoiceId != null &&
+                                      ethicsReview.rosaEthicsChoiceId.EndsWith("/unsupported-promise", System.StringComparison.Ordinal);
+            if (!unsupportedPromise) WorldEmote.Burst(clientRoot, Emotion.Thankful, 7);
             Vector3 head = clientRoot.position + Vector3.up * 1.6f;
-            if (DialogueSpeakerFrames.TryResolve(client, out DialogueSpeakerFrame frame)) head = frame.Head;
-            HudFeedback.AnnounceCampaign(grants.Trust, default, head);
-            if (OfficeHudRuntime.Instance != null) OfficeHudRuntime.Instance.PeekDuringDialogue(TrustPeekSeconds);
+            if (DialogueSpeakerFrames.TryResolve(ClientComponent, out DialogueSpeakerFrame frame)) head = frame.Head;
+            if (claims)
+            {
+                HudFeedback.AnnounceCampaign(grants.Trust, default, head);
+                if (OfficeHudRuntime.Instance != null) OfficeHudRuntime.Instance.PeekDuringDialogue(TrustPeekSeconds);
+            }
         }
-        Debug.Log($"[ClientCopy] Handed over: Marie has her copy (trust {grants.Trust.After}/100).");
-        if (dialogue != null) dialogue.CompleteAwaitedAction(ClientCopyRules.HandoverAction);
+        Debug.Log($"[ClientCopy] Handed over: {ClientName} has the copy (trust {grants.Trust.After}/100).");
+        if (dialogue != null)
+        {
+            List<DialogueLine> response = new List<DialogueLine>();
+            CaseReviewState review = LevelTwo && CaseManager.Instance != null ? CaseManager.Instance.CurrentCase?.review : null;
+            if (review != null && review.rosaEthicsCommitted &&
+                (review.rosaEthicsChoiceId.EndsWith("/responsible", System.StringComparison.Ordinal) ||
+                 review.rosaEthicsChoiceId.EndsWith("/unsupported-promise", System.StringComparison.Ordinal)))
+            {
+                if (review.rosaEthicsChoiceId.EndsWith("/responsible", System.StringComparison.Ordinal))
+                    response.Add(new DialogueLine(DialogueSpeaker.Npc,
+                        "Thank you for checking the payment with me. I'm relieved we found the records that support it.", "Rosa_Default", ClientName));
+                else
+                {
+                    response.Add(new DialogueLine(DialogueSpeaker.Player,
+                        "I called it ready before the records supported it. I've revised that promise; the supporting records are checked now.", "Auditor_Default", "You"));
+                    response.Add(new DialogueLine(DialogueSpeaker.Npc,
+                        "I understand. Thank you for explaining and bringing me the updated copy.", "Rosa_Default", ClientName));
+                }
+            }
+            if (response.Count > 0) dialogue.ContinueWith(ClientCopyRules.HandoverAction, response);
+            else dialogue.CompleteAwaitedAction(ClientCopyRules.HandoverAction);
+        }
         return true;
     }
 
@@ -630,7 +785,7 @@ public sealed class ClientCopyHandover : MonoBehaviour
     {
         if (finishing) return;
         finishing = true;
-        pendingResult ??= LevelCompleteUI.CreateSavedCaseResult();
+        pendingResult ??= LevelTwo ? LevelCompleteUI.CreateLevelResult() : LevelCompleteUI.CreateSavedCaseResult();
         if (CaseFinale.Instance != null) CaseFinale.Instance.PlayAfterHandover();
         if (LevelCompleteUI.Instance != null) LevelCompleteUI.Instance.ShowAfterHandover(pendingResult);
         else Debug.LogWarning("[ClientCopy] LevelCompleteUI is missing; the case result card cannot show.");
@@ -638,6 +793,14 @@ public sealed class ClientCopyHandover : MonoBehaviour
 
     private void SaveCheckpoint()
     {
+        if (LevelTwo)
+        {
+            // Level 2: the phase lives in Rosa's review, saved with her checkpoint (kept until she has her copy).
+            CaseReviewState review = CaseManager.Instance != null && CaseManager.Instance.CurrentCase != null ? CaseManager.Instance.CurrentCase.review : null;
+            if (review != null) review.clientCopyPhase = ClientCopyRules.ToSaved(phase);
+            if (Level2Checkpointer.Active != null) Level2Checkpointer.Active.RequestSave();
+            return;
+        }
         if (Level1FieldCheckpointer.Active != null) Level1FieldCheckpointer.Active.RequestSave();
     }
 
@@ -661,6 +824,7 @@ public sealed class ClientCopyHandover : MonoBehaviour
     private static readonly string[] DefaultHandover = { "Player", "Here is your copy. The Auditor checked every line.", null };
     private static readonly string[] DefaultExplain = { "Player", "Keep it with your records. It shows what was filed for you and when.", null,
         "Player", "If your work or your pay ever changes, come and see me before the next filing.", "idea" };
+    private static readonly string[] DefaultAfterDelivery = { "Npc", "Thank you again. I'll keep my copy with my records.", "heart" };
 
     /// <summary>The case JSON's lines, or the built-in ones (speaker, text, emote triples) when it has none.</summary>
     private static List<DialogueLine> Lines(List<DialogueLineDefinition> authored, string[] fallback, string npcName)

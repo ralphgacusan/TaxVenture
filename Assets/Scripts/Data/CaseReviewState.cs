@@ -96,6 +96,27 @@ public class CaseReviewState
     /// <summary>Review cutoff (T10).</summary>
     public ReviewClockState clock = new ReviewClockState();
 
+    /// <summary>
+    /// The client's conference-room visits (Level 2 consistency pass): the shared consultation
+    /// record (Level 1's ClientConsultationRules) and the stage moments already said. Talk only.
+    /// </summary>
+    public Level1ConsultationRecord consultation = new Level1ConsultationRecord();
+    public List<string> roomMomentsSaid = new List<string>();
+
+    /// <summary>T32: where Rosa's walk to the office has reached ("" her stall, "reception", "room"; RosaTripRules.ToSaved).</summary>
+    public string rosaLeg = "";
+
+    /// <summary>Where the approved Client Copy is (ClientCopyRules.ToSaved: "" none, then beside the Auditor, carried, delivered).</summary>
+    public string clientCopyPhase = "";
+
+    /// <summary>T19: transient/review snapshot for editor isolation; story commits are duplicated into signed CampaignRecord.rosaEthics.</summary>
+    public string rosaEthicsCaseId = "";
+    public string rosaEthicsCommitmentId = "";
+    public string rosaEthicsChoiceId = "";
+    public string rosaEthicsChoiceText = "";
+    public bool rosaEthicsCommitted;
+    public bool rosaEthicsFollowThroughDone;
+
     /// <summary>Raised when the phase changed (from, to). Not serialized.</summary>
     [field: NonSerialized] public event Action<ReviewPhase, ReviewPhase> PhaseChanged;
 

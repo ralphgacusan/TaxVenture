@@ -40,11 +40,31 @@ public class CaseReviewDefinition
     public string startPhase;
 
     /// <summary>
-    /// Optional Taxpayer Profile page printed right after Taxpayer Information:
-    /// one sentence describing the client, worded so the page-1 answers can be
-    /// worked out with the book (never naming them). Empty = no profile page.
+    /// One sentence describing the client, worded so the page-1 answers can be
+    /// worked out with the book (never naming them). Level 2 consistency pass:
+    /// no longer a folder page of its own; its facts print on the Client
+    /// Background notes (background) on Supporting Documents.
     /// </summary>
     public string profileText;
+
+    /// <summary>
+    /// The office's client background notes (Type 2, "Client interview notes"),
+    /// the first record on Supporting Documents: profileText's facts in the
+    /// three fixed blocks (home, work, income). Never an answer label.
+    /// </summary>
+    public ReviewBackgroundDefinition background = new ReviewBackgroundDefinition();
+
+    /// <summary>
+    /// Short lines the client says once each in the conference room, by stage
+    /// (arrival, reviewing, officeReview, readyToSubmit). Talk only.
+    /// </summary>
+    public List<RoomMomentDefinition> roomMoments = new List<RoomMomentDefinition>();
+
+    /// <summary>
+    /// T32: the client's one-liners when tapped on her way to the office (toOffice), waiting at the
+    /// front desk (atReception) and walking to the conference room (toRoom). Talk only.
+    /// </summary>
+    public MarieTravelDefinition travelLines = new MarieTravelDefinition();
 
     /// <summary>Pages the player can read from the start (the rest arrive through play).</summary>
     public List<string> initialDocumentIds = new List<string>();
@@ -222,6 +242,22 @@ public class ReviewDocumentDefinition
     public string footer;
 
     public List<ReviewLineDefinition> lines = new List<ReviewLineDefinition>();
+
+    /// <summary>
+    /// T18: a record's fixed supporting-document type (Documentation/SupportingDocuments.md:
+    /// 4 income record, 5 invoice / payment record, 6 bank statement, 7 contract / agreement).
+    /// 0 = not mapped: the record prints on a plain readable sheet and a warning names it.
+    /// </summary>
+    public int paperType;
+
+    /// <summary>T18: the accurate title of this variant within its type ("LOAN AGREEMENT"); empty = the type's title.</summary>
+    public string paperTitle;
+
+    /// <summary>T18: a payment status the record itself supports ("PAID"); empty = no status label is printed.</summary>
+    public string paperStatus;
+
+    /// <summary>T18: the semantic key of the row printed in the type's total band (Type 4's recorded total); empty = none.</summary>
+    public string paperTotalKey;
 }
 
 /// <summary>One fixed, readable row of a page.</summary>
@@ -278,6 +314,24 @@ public class PreliminaryRuleDefinition
     public string supportedObservation;
 
     public bool IsSet => !string.IsNullOrWhiteSpace(findingId);
+}
+
+/// <summary>The client's background notes (case JSON review.background; three fixed blocks, never an answer).</summary>
+[Serializable]
+public class ReviewBackgroundDefinition
+{
+    public string period;
+    public string home;
+    public string work;
+    public string income;
+}
+
+/// <summary>One stage line of the client's conference-room visits (said once; the stage ids are fixed by Level2RosaConsultation).</summary>
+[Serializable]
+public class RoomMomentDefinition
+{
+    public string stage;
+    public List<DialogueLineDefinition> lines = new List<DialogueLineDefinition>();
 }
 
 /// <summary>The client's lines at the market stall (ticket T04).</summary>

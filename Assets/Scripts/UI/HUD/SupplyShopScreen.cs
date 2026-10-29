@@ -101,6 +101,7 @@ public sealed class SupplyShopScreen : MonoBehaviour
     private bool confirming;
     private float pageTurnAt = -10f, stampAt = -10f, shakeAt = -10f, ribbonsAt = -10f, padlocksAt = -10f, flyAt = -10f;
     private int walletShown, walletFrom, walletTo;
+    private int walletTextValue = int.MinValue;
     private float walletAt = -10f;
     private int unlockFrom, unlockTo, capacityBefore;
     private Vector2 flyFrom, flyTo;
@@ -997,7 +998,12 @@ public sealed class SupplyShopScreen : MonoBehaviour
             if (w >= 1f) walletAt = -10f;
         }
         else walletShown = Coins();
-        walletText.text = walletShown.ToString();
+        // Only when the number changes (no new string every frame while the counter is open).
+        if (walletShown != walletTextValue)
+        {
+            walletTextValue = walletShown;
+            walletText.text = walletShown.ToString();
+        }
 
         // BUY splits into NOT NOW / YES while confirming; a refusal shakes it.
         primaryRect.anchoredPosition = Vector2.Lerp(primaryRect.anchoredPosition, BuyAt(confirming), Damp(18f));

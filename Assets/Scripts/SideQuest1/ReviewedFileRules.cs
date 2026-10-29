@@ -14,6 +14,14 @@ public class ClientRecord
     public const string Background = "background";
     /// <summary>Type 3, the compensation certificate (2316): Marie's case, T25.</summary>
     public const string Compensation = "compensation";
+    /// <summary>Type 4, income record / collection sheet (Rosa's D1; Level 2 consistency pass).</summary>
+    public const string Income = "income";
+    /// <summary>Type 5, invoice / payment record: the narrow slip (Rosa's D3, D4).</summary>
+    public const string Payment = "payment";
+    /// <summary>Type 7, contract / agreement (Rosa's D5).</summary>
+    public const string Agreement = "agreement";
+    /// <summary>A record with no built type yet: a plain readable sheet under its own title.</summary>
+    public const string Plain = "record";
 
     public string id;
     /// <summary>The client it belongs to (a former client for Arthur's file).</summary>
@@ -50,13 +58,36 @@ public class ClientRecord
     /// <summary>The profile's number on the back header, e.g. "No. 01" (optional).</summary>
     public string profileNumber;
 
+    // Transaction papers (Types 4, 5, 7): the issuer, the second party (Type 7), date, a status label and the
+    // evidence rows in authored order. The total (Type 4) or the amount (Type 5) prints large in its own band.
+    public string issuer;
+    public string party;
+    public string date;
+    public string status;
+    public List<ClientRecordRow> rows = new List<ClientRecordRow>();
+    public string totalLabel;
+    public string totalValue;
+    /// <summary>Rows that did not fit one face: printed on the paper's back (a tap turns it over).</summary>
+    public List<ClientRecordRow> backRows = new List<ClientRecordRow>();
+
     /// <summary>An ID card; every other type is a sheet.</summary>
     public bool IsCard => type == Identity;
 
-    /// <summary>An ID card with a profile on its back: a tap flips it.</summary>
-    public bool HasBack => IsCard && !string.IsNullOrWhiteSpace(profileText);
+    /// <summary>The narrow transaction slip (Type 5).</summary>
+    public bool IsSlip => type == Payment;
+
+    /// <summary>An ID card with a profile on its back, or a paper whose table continues on its back: a tap flips it.</summary>
+    public bool HasBack => (IsCard && !string.IsNullOrWhiteSpace(profileText)) || (backRows != null && backRows.Count > 0);
 
     public ClientRecord Copy() => (ClientRecord)MemberwiseClone();
+}
+
+/// <summary>One printed evidence row of a transaction paper (its label and shown value, never an answer).</summary>
+[Serializable]
+public class ClientRecordRow
+{
+    public string label;
+    public string value;
 }
 
 /// <summary>One completed, read-only entry on the reviewed file's first page (a case folder key and its enum value name).</summary>

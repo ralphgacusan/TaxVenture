@@ -133,7 +133,7 @@ public static class CareerProgressService
         {
             id = "Level_02", number = 2, noteTitle = "One market client", title = "Something Does Not Match",
             description = "Check Aling Rosa's prepared income summary, follow the records back to her market stall and decide if her work is ready.",
-            scene = "Office_Level2", cases = 1, campaignPending = true
+            scene = "Office_Level2", cases = 1, campaignPending = false
         });
         for (int number = 3; number <= 5; number++)
             built.chapters.Add(new CareerChapterDef

@@ -76,9 +76,28 @@ public class LevelCompleteUI : MonoBehaviour
             Hide();
             return;
         }
+        // T18: a story Level 2 result is committed once here too, before any celebration (case claim,
+        // mastery record and the end of its checkpoint in one write); a failed write stays pending for Continue.
+        bool levelTwoStory = manager != null && manager.IsLevelTwoStoryResult(result);
+        bool levelTwoSaved = false;
+        if (levelTwoStory)
+        {
+            levelTwoSaved = manager.CommitLevelTwoResult(result, out bool wroteNow);
+            if (wroteNow) HudFeedback.AnnounceCampaign(manager.LastLevelTwoGrants.Trust, manager.LastLevelTwoGrants.Coins, null);
+        }
+        // Level 2 consistency pass: Rosa's approved review ends with her Client Copy, as Marie's does
+        // (after the case result is saved; isolated runs too). The card shows after she has it.
+        bool levelTwoCase = result.LevelId == Level2CampaignRules.LevelId;
+        if (levelTwoCase && (!levelTwoStory || levelTwoSaved) &&
+            ClientCopyHandover.Instance != null && ClientCopyHandover.Instance.BeginAfterApproval(result))
+        {
+            if (!levelTwoStory && manager != null) manager.SetPendingResult(result);
+            Hide();
+            return;
+        }
         // Saved even if the player never presses Continue (app paused or closed).
         // A story Level 1 result is committed above instead (once, before any celebration).
-        if (manager != null && result != null && !storyCaseResult)
+        if (manager != null && result != null && !storyCaseResult && !levelTwoStory)
             manager.SetPendingResult(result);
 
         Debug.Log($"[LevelCompleteUI] Time: {result.FormattedCompletionTime}");
@@ -175,8 +194,18 @@ public class LevelCompleteUI : MonoBehaviour
 
         Debug.Log("[LevelCompleteUI] All text fields updated.");
 
+        if (levelTwoStory && !levelTwoSaved) congratsText.text = "Your result could not be saved. Press Continue to try again.";
+
+        if (levelTwoStory)
+        {
+            reputationText.text = "";
+            congratsText.text = levelTwoSaved && Level2CampaignRules.ChapterComplete(manager.CurrentProgress)
+                ? "Rosa has her approved Client Copy. Chapter 2 is complete. Return to Career."
+                : "Rosa still needs her approved Client Copy. Continue to retry.";
+        }
+
         // No fanfare for a case result that is not saved yet.
-        if (AudioManager.Instance != null && (!storyCaseResult || caseResultSaved))
+        if (AudioManager.Instance != null && (!storyCaseResult || caseResultSaved) && (!levelTwoStory || levelTwoSaved))
         {
             AudioManager.Instance.PlayAchievementSFX();
         }
@@ -193,10 +222,23 @@ public class LevelCompleteUI : MonoBehaviour
         result ??= CreateSavedCaseResult();
         if (result == null)
         {
-            Debug.LogWarning("[LevelCompleteUI] No saved Level 1 result was available after the handover.");
+            Debug.LogWarning("[LevelCompleteUI] No saved level result was available after the handover.");
             return;
         }
         Show(result);
+    }
+
+    /// <summary>
+    /// Level 2: the level total from this run's ledger (a resumed approved review restores its case
+    /// line first), for the card after Rosa has her copy. Presentation only; claims are once-only.
+    /// </summary>
+    public static LevelTotalResult CreateLevelResult()
+    {
+        CaseProgressionManager progression = CaseProgressionManager.Instance;
+        if (progression == null) return null;
+        LevelTotalResult result = LevelTotalResult.FromLedger(progression.Score, progression.RewardAccumulator);
+        result.LevelId = progression.CurrentLevelId;
+        return result;
     }
 
     /// <summary>Rebuilds a result presentation from the once-only saved result, including its original run time.</summary>
@@ -339,6 +381,8 @@ public class LevelCompleteUI : MonoBehaviour
     /// <summary>The reward card for the level (Office HUD); same values as the text fields.</summary>
     private static RewardScreenData BuildScreen(LevelTotalResult result)
     {
+        PlayerProgressManager manager = PlayerProgressManager.Instance;
+        if (manager != null && manager.IsLevelTwoStoryResult(result)) return BuildChapterTwoScreen(result, manager);
         CaseProgressionManager progression = CaseProgressionManager.Instance;
         LevelRewardRules rules = progression != null ? progression.Score.Rules : null;
         var data = new RewardScreenData
@@ -386,6 +430,38 @@ public class LevelCompleteUI : MonoBehaviour
             data.Footer = best != null
                 ? $"Career {career.totalExp} EXP  ·  Best on this level {best.bestExp} / {best.maxExp} EXP"
                 : $"Career {career.totalExp} EXP";
+        }
+        return data;
+    }
+
+    /// <summary>Story completion follows delivery, independently of the frozen mastery grade.</summary>
+    private static RewardScreenData BuildChapterTwoScreen(LevelTotalResult result, PlayerProgressManager manager)
+    {
+        PlayerProgressData progress = manager.CurrentProgress;
+        bool complete = Level2CampaignRules.ChapterComplete(progress);
+        var data = new RewardScreenData
+        {
+            Title = complete ? "Chapter 2 Complete" : "Rosa’s Review",
+            Subtitle = "Something Does Not Match",
+            Exp = result.TotalExp,
+            MaxExp = result.HasScore ? result.MaxExp : 0,
+            Hearts = 0, MaxHearts = 0, PassingPercent = 0,
+            HasStatus = true, StatusGood = complete,
+            StatusText = complete ? "CLIENT COPY DELIVERED" : "DELIVERY PENDING",
+            Summary = complete ? "Rosa has her approved copy and understands her corrected May summary. Thank you for seeing her case through."
+                : "The review must be saved and Rosa must receive her approved Client Copy. Continue to retry.",
+            Footer = "Return to Career. Future chapters are coming soon."
+        };
+        LevelRewardRules rules = CaseProgressionManager.Instance != null ? CaseProgressionManager.Instance.Score.Rules : null;
+        foreach (BadgeTier tier in result.BadgeTiers)
+            if (tier != BadgeTier.None) data.Medals.Add(HudBadgeArt.For(rules, tier));
+        data.Fact("Time", result.FormattedCompletionTime);
+        if (progress != null && progress.HasCampaign)
+        {
+            data.Fact("Public Trust", $"{progress.campaign.publicTrust}/100");
+            data.Fact("Wallet", $"{progress.campaign.coins} coins");
+            RosaEthicsRecord ethics = progress.campaign.rosaEthics;
+            if (ethics != null && ethics.committed) data.Fact("Rosa’s review", Level2CampaignRules.EthicsStatus(progress, ethics.caseId));
         }
         return data;
     }

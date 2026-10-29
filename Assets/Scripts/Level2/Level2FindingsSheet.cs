@@ -53,7 +53,22 @@ public sealed class Level2FindingsSheet : MonoBehaviour, IPointerDownHandler, IP
     private Image returnGlow;
     private Shadow castShadow;
     private static readonly Vector2 RestShadow = new Vector2(8f, -10f), LiftedShadow = new Vector2(16f, -22f);
+    // T18: a source record prints its fixed supporting-document type (SupportingPaperTypes): header band,
+    // owner/context lines, its rows, then a total band, payment status or signatures; more rows than one
+    // face holds continue on another face of the same paper.
+    private const float SignatureSpace = 92f;
+    private SupportingPaperFace face;
+    private int faceIndex;
+    private int faceCount = 1;
+    private RectTransform totalBand;
+    private TextMeshProUGUI faceTab;
+    private Coroutine faceTurn;
     public bool IsDetached { get; private set; }
+    /// <summary>The face of a long record now showing (0 = the first).</summary>
+    public int FaceIndex => faceIndex;
+    public int FaceCount => faceCount;
+    /// <summary>What this record prints (null for the Findings slip).</summary>
+    public SupportingPaperFace Face => face;
     public string PaperId => paperId;
     public bool CanTransfer => IsDetached && !returning && gameObject.activeInHierarchy;
     internal bool ReadyToCompleteGroupFile => IsDetached && returning && motion == null;
@@ -66,18 +81,22 @@ public sealed class Level2FindingsSheet : MonoBehaviour, IPointerDownHandler, IP
         CreatePaper(page, stack, "Findings", null, Level2FindingsPage.PageTitle, false,
             draw, lifted, check, null);
 
-    /// <summary>Creates a detachable source record using the findings paper's lift, focus and return motion.</summary>
+    /// <summary>
+    /// Creates a detachable source record using the findings paper's lift, focus and return motion.
+    /// T18: face is the record's supporting-document type print; rowCount is the rows one face shows
+    /// and faceCount how many faces its table needs.
+    /// </summary>
     public static Level2FindingsSheet CreateRecord(CaseFolderUI.PageBuilder page, Level2SupportingStack stack,
         string id, string title,
         Action<CaseFolderUI.PageBuilder, RectTransform> draw, Action<Level2FindingsSheet> lifted,
-        Action<Level2FindingsSheet> filed, int rowCount = 0) =>
-        CreatePaper(page, stack, title, id, Level2FindingsPage.PageTitle, true, draw, lifted, null, filed, rowCount);
+        Action<Level2FindingsSheet> filed, int rowCount = 0, SupportingPaperFace face = null, int faceCount = 1) =>
+        CreatePaper(page, stack, title, id, Level2FindingsPage.PageTitle, true, draw, lifted, null, filed, rowCount, face, faceCount);
 
     private static Level2FindingsSheet CreatePaper(CaseFolderUI.PageBuilder page, Level2SupportingStack stack,
         string title, string id,
         string returnPage, bool isRecord, Action<CaseFolderUI.PageBuilder, RectTransform> draw,
         Action<Level2FindingsSheet> lifted, Action<Level2FindingsSheet> check,
-        Action<Level2FindingsSheet> filed, int rowCount = 0)
+        Action<Level2FindingsSheet> filed, int rowCount = 0, SupportingPaperFace face = null, int faceCount = 1)
     {
         RectTransform root = HudTheme.CreateRect(isRecord ? "Attached Record Paper " + id : "Removable Findings Sheet", page.Paper);
         root.sizeDelta = new Vector2(480f, 624f);
@@ -99,6 +118,8 @@ public sealed class Level2FindingsSheet : MonoBehaviour, IPointerDownHandler, IP
         sheet.returnPageTitle = returnPage;
         sheet.recordPaper = isRecord;
         sheet.recordRows = isRecord ? Mathf.Max(0, rowCount) : 0;
+        sheet.face = isRecord ? face : null;
+        sheet.faceCount = Mathf.Max(1, faceCount);
         sheet.boundCase = CaseManager.Instance != null ? CaseManager.Instance.CurrentCase : null;
         sheet.Build();
         stack?.RegisterPaper(sheet);
@@ -115,8 +136,9 @@ public sealed class Level2FindingsSheet : MonoBehaviour, IPointerDownHandler, IP
         visual = HudTheme.CreateRect("Printed Findings Slip", paper);
         visual.sizeDelta = new Vector2(600f, 780f);
         visual.localScale = Vector3.one * 0.8f;
+        Color sheetColor = face != null ? Hex(face.Style.Paper) : (Color)new Color32(253, 247, 226, 255);
         Image background = NotesPaperView.BuildPaperStack(visual,
-            new Color32(224, 214, 190, 255), new Color32(253, 247, 226, 255));
+            new Color32(224, 214, 190, 255), sheetColor);
         foreach (Image sheet in visual.GetComponentsInChildren<Image>())
             sheet.gameObject.AddComponent<FindingsPaperPerspective>();
         background.raycastTarget = true;
@@ -125,10 +147,14 @@ public sealed class Level2FindingsSheet : MonoBehaviour, IPointerDownHandler, IP
         castShadow.effectDistance = new Vector2(8f, -10f);
         Rule(visual, "Lit top edge", 2f, 1f, 596f, 3f, new Color(1f, 1f, 1f, 0.85f));
         Rule(visual, "Paper thickness", 2f, 777f, 596f, 3f, new Color32(178, 160, 126, 255));
-        Label(visual, paperTitle, 56f, 38f, 488f, 57f, 44f, Ink, FontStyles.Bold);
-        var guide = Label(visual, recordPaper ? "Original record. Compare it with the summary." : "A clue may explain something on another page.",
-            56f, 108f, 488f, 52f, 27f, Muted);
-        guide.textWrappingMode = TextWrappingModes.Normal;
+        if (face != null) BuildRecordFace();
+        else
+        {
+            Label(visual, paperTitle, 56f, 38f, 488f, 57f, 44f, Ink, FontStyles.Bold);
+            var guide = Label(visual, recordPaper ? "Original record. Compare it with the summary." : "A clue may explain something on another page.",
+                56f, 108f, 488f, 52f, 27f, Muted);
+            guide.textWrappingMode = TextWrappingModes.Normal;
+        }
         Rule(visual, "Header rule", 56f, 166f, 488f, 2f, Ink);
         rows = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Finding Fields", visual), 56f, 183f, 488f, 275f);
         fieldGroup = rows.gameObject.AddComponent<CanvasGroup>();
@@ -161,13 +187,16 @@ public sealed class Level2FindingsSheet : MonoBehaviour, IPointerDownHandler, IP
             // A record is as tall as its rows plus the footer hint: no empty lower half.
             if (recordRows > 0)
             {
-                extra = RecordRowTop + recordRows * RecordRowStep + 74f - paperHeight;
+                float footer = face != null && face.Style.HasSignatures ? SignatureSpace : 0f;
+                extra = RecordRowTop + recordRows * RecordRowStep + 74f + footer - paperHeight;
                 paperHeight += extra;
                 ((RectTransform)visual.Find("Paper thickness")).anchoredPosition += Vector2.down * extra;
+                if (footer > 0f) BuildSignatures(RecordRowTop + recordRows * RecordRowStep + 6f);
             }
         }
         visual.sizeDelta = new Vector2(600f, paperHeight);
         hint = Label(visual, recordPaper ? "Lift the stack to read" : "Lift to edit", 56f, 738f + extra, 488f, 30f, 22f, Muted);
+        if (face != null && faceCount > 1) BuildFaceTab(738f + extra);
         tape = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Removable tape", visual), 208f, -17f, 184f, 49f);
         tape.localRotation = Quaternion.Euler(0f, 0f, 4f);
         HudTheme.AddImage(tape, null, Tape);
@@ -194,6 +223,7 @@ public sealed class Level2FindingsSheet : MonoBehaviour, IPointerDownHandler, IP
         if (recordPaper)
         {
             draw(page, rows);
+            PlaceTotalBand();
             return;
         }
         bool stamped = boundCase?.review?.preliminary != null;
@@ -906,7 +936,187 @@ public sealed class Level2FindingsSheet : MonoBehaviour, IPointerDownHandler, IP
         if (comparisonStatus != null) comparisonStatus.rectTransform.localScale = Vector3.one;
     }
 
-    private void OnDisable() => StopWriting();
+    private void OnDisable()
+    {
+        StopWriting();
+        // An interrupted face turn leaves the face readable (its rows were already swapped or never faded).
+        if (faceTurn != null)
+        {
+            StopCoroutine(faceTurn);
+            faceTurn = null;
+        }
+        if (fieldGroup != null) fieldGroup.alpha = 1f;
+        if (rows != null) rows.anchoredPosition = new Vector2(56f, -RecordRowTop);
+    }
+
+    // =========================================================
+    // T18: SUPPORTING-DOCUMENT TYPE PRINT (Types 4-7)
+    // =========================================================
+
+    private static Color Hex(uint rgb) =>
+        new Color32((byte)((rgb >> 16) & 0xFF), (byte)((rgb >> 8) & 0xFF), (byte)(rgb & 0xFF), 255);
+
+    /// <summary>Header (icon + short title), then who it is from, its reference and date: the fixed reading order of every type.</summary>
+    private void BuildRecordFace()
+    {
+        SupportingPaperStyle style = face.Style;
+        Color accent = Hex(style.Header);
+        if (style.Shape == SupportingPaperShape.Slip)
+        {
+            // A slip's torn-off top edge: a short perforation, no extra print.
+            Color perforation = new Color(Muted.r, Muted.g, Muted.b, 0.35f);
+            for (int i = 0; i < 22; i++) Rule(visual, "Perforation", 34f + i * 24f, 10f, 12f, 2f, perforation);
+        }
+        RectTransform band = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Type header", visual), 40f, 22f, 520f, 66f);
+        HudTheme.AddImage(band, HudTheme.Rounded, accent, 10f).raycastTarget = false;
+        Image icon = HudTheme.AddImage(HudTheme.PlaceTopLeft(HudTheme.CreateRect("Type icon", band), 14f, 11f, 44f, 44f),
+            HudIconArt.Get("papers"), Color.white);
+        icon.preserveAspect = true;
+        icon.raycastTarget = false;
+        TextMeshProUGUI title = Label(band, face.Title, 70f, 9f, 436f, 48f, 34f, Color.white, FontStyles.Bold);
+        title.alignment = TextAlignmentOptions.MidlineLeft;
+        Fit(title, 24f, wrap: false);
+
+        // Owner / context: long names wrap inside their own box (the box keeps its place; the text never turns into microprint).
+        TextMeshProUGUI from = Label(visual, style.IssuerLabel + ": " + face.Issuer, 56f, 96f, 318f, 36f, 26f, Ink, FontStyles.Bold);
+        Fit(from, 20f, wrap: true);
+        TextMeshProUGUI date = Label(visual, face.Date, 380f, 96f, 164f, 36f, 24f, Muted);
+        date.alignment = TextAlignmentOptions.TopRight;
+        Fit(date, 18f, wrap: true);
+        bool party = style.PartyLabel != null && face.Party.Length > 0;
+        TextMeshProUGUI context = Label(visual, party ? style.PartyLabel + ": " + face.Party : "Ref " + face.Reference,
+            56f, 132f, 318f, 32f, 23f, party ? Ink : Muted);
+        Fit(context, 18f, wrap: true);
+        if (face.Status.Length > 0) BuildStatus(accent);
+        else if (style.HasColumns) RightNote("MONEY IN", FontStyles.Bold);
+        else if (party) RightNote("Ref " + face.Reference, FontStyles.Normal);
+        if (style.HasTotalBand)
+        {
+            // Behind the rows (made before them): the recorded total is the client's claim, not a confirmation.
+            totalBand = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Total band", visual), 44f, RecordRowTop, 512f, RecordRowStep - 4f);
+            HudTheme.AddImage(totalBand, HudTheme.Rounded, new Color(accent.r, accent.g, accent.b, 0.2f), 8f).raycastTarget = false;
+            totalBand.gameObject.SetActive(false);
+        }
+    }
+
+    private void RightNote(string text, FontStyles style)
+    {
+        TextMeshProUGUI note = Label(visual, text, 380f, 134f, 164f, 30f, 21f, Muted, style);
+        note.alignment = TextAlignmentOptions.TopRight;
+        Fit(note, 17f, wrap: true);
+    }
+
+    /// <summary>Type 5: a large, plain status the record itself supports ("PAID"), outlined in the type's colour.</summary>
+    private void BuildStatus(Color accent)
+    {
+        RectTransform box = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Payment status", visual), 424f, 128f, 120f, 36f);
+        Image frame = HudTheme.AddImage(box, HudTheme.Rounded, new Color(accent.r, accent.g, accent.b, 0.16f), 6f);
+        frame.raycastTarget = false;
+        Outline rim = frame.gameObject.AddComponent<Outline>();
+        rim.effectColor = accent;
+        rim.effectDistance = new Vector2(2f, -2f);
+        TextMeshProUGUI label = Label(box, face.Status, 0f, 0f, 120f, 36f, 24f, Ink, FontStyles.Bold);
+        label.alignment = TextAlignmentOptions.Center;
+        label.characterSpacing = 6f;
+        Fit(label, 16f, wrap: false);
+    }
+
+    /// <summary>Type 7: two party blocks with simple signature strokes under the terms.</summary>
+    private void BuildSignatures(float top)
+    {
+        Color ink = new Color(Ink.r, Ink.g, Ink.b, 0.78f);
+        string[] names = { face.Issuer, face.Party.Length > 0 ? face.Party : SupportingPaperTypes.Dash };
+        for (int side = 0; side < 2; side++)
+        {
+            float x = 56f + side * 256f;
+            // A short hand-drawn stroke: three slanted segments, never a real signature.
+            for (int s = 0; s < 3; s++)
+            {
+                RectTransform stroke = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Signature stroke", visual), x + 12f + s * 52f, top + 20f, 62f, 3f);
+                HudTheme.AddImage(stroke, null, ink).raycastTarget = false;
+                stroke.localRotation = Quaternion.Euler(0f, 0f, s % 2 == 0 ? 14f : -12f);
+            }
+            Rule(visual, "Signature line", x, top + 44f, 216f, 2f, new Color(Muted.r, Muted.g, Muted.b, 0.6f));
+            TextMeshProUGUI caption = Label(visual, names[side], x, top + 50f, 216f, 30f, 20f, Muted);
+            Fit(caption, 16f, wrap: true);
+        }
+    }
+
+    /// <summary>A long record's face tab ("Page 1 of 2"): a tap turns to its next face of the same type.</summary>
+    private void BuildFaceTab(float y)
+    {
+        RectTransform tab = HudTheme.PlaceTopLeft(HudTheme.CreateRect("Face tab", visual), 388f, y - 6f, 156f, 40f);
+        Image tabImage = HudTheme.AddImage(tab, HudTheme.Rounded, new Color(Muted.r, Muted.g, Muted.b, 0.16f), 8f);
+        tabImage.raycastTarget = true;
+        Button button = tab.gameObject.AddComponent<Button>();
+        button.targetGraphic = tabImage;
+        button.onClick.AddListener(TurnFace);
+        faceTab = Label(tab, "", 0f, 0f, 156f, 40f, 22f, Ink, FontStyles.Bold);
+        faceTab.alignment = TextAlignmentOptions.Center;
+        UpdateFaceTab();
+    }
+
+    private void UpdateFaceTab()
+    {
+        if (faceTab != null) faceTab.text = $"Page {faceIndex + 1} of {faceCount}  ›";
+    }
+
+    /// <summary>Turns a long record to its next face: the rows slide out and back in (0.24 s), one page sound.</summary>
+    public void TurnFace()
+    {
+        if (faceCount <= 1 || faceTurn != null || !isActiveAndEnabled) return;
+        faceTurn = StartCoroutine(TurnFaceRoutine());
+    }
+
+    private IEnumerator TurnFaceRoutine()
+    {
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayPaper2SFX();
+        var home = new Vector2(56f, -RecordRowTop);
+        for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 0.12f)
+        {
+            fieldGroup.alpha = 1f - t;
+            rows.anchoredPosition = home + Vector2.left * (24f * t);
+            yield return null;
+        }
+        faceIndex = (faceIndex + 1) % faceCount;
+        RefreshContent();
+        UpdateFaceTab();
+        for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 0.12f)
+        {
+            fieldGroup.alpha = t;
+            rows.anchoredPosition = home + Vector2.right * (24f * (1f - t));
+            yield return null;
+        }
+        fieldGroup.alpha = 1f;
+        rows.anchoredPosition = home;
+        faceTurn = null;
+    }
+
+    /// <summary>Type 4: the total band sits behind the row holding the recorded total, on the face that shows it.</summary>
+    private void PlaceTotalBand()
+    {
+        if (totalBand == null || face == null) return;
+        int index = face.TotalKey.Length > 0 ? face.RowKeys.IndexOf(face.TotalKey) : -1;
+        SupportingPaperTypes.FaceRange(face.RowKeys.Count, face.Style.RowsPerFace, faceIndex, out int start, out int count);
+        bool shown = index >= start && index < start + count;
+        totalBand.gameObject.SetActive(shown);
+        if (!shown) return;
+        float y = RecordRowTop + (index - start) * RecordRowStep - 4f;
+        float width = FindingsPaperPerspective.WidthAt((y + RecordRowStep * 0.5f) / Mathf.Max(1f, paperHeight));
+        totalBand.anchoredPosition = new Vector2(300f + (44f - 300f) * width, -y);
+        totalBand.localScale = new Vector3(width, 1f, 1f);
+    }
+
+    /// <summary>Long values shrink only to a readable floor, wrapping inside their own box first.</summary>
+    private static void Fit(TextMeshProUGUI text, float minSize, bool wrap)
+    {
+        text.enableAutoSizing = true;
+        text.fontSizeMax = text.fontSize;
+        text.fontSizeMin = minSize;
+        text.textWrappingMode = wrap ? TextWrappingModes.Normal : TextWrappingModes.NoWrap;
+        text.overflowMode = TextOverflowModes.Ellipsis;
+        text.raycastTarget = false;
+    }
 
     private void OnDestroy() => supportingStack?.PaperDisposed(this);
 
