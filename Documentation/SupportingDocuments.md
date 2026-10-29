@@ -1,10 +1,12 @@
 # TaxVenture — Supporting Document Standard
 
-Status: agreed planning baseline · 26 October 2026 · implementation pending.
+Status: agreed fixed design baseline · incremental implementation by level (user revision 28 October 2026). See CampaignFoundation/PROGRESS.md for implementation evidence.
 
-Current implementation plan: [T30 — Arthur's reviewed file](CampaignFoundation/tickets/T30-arthur-reviewed-file-and-opening-route.md), [T31 — physical record handling](CampaignFoundation/tickets/T31-physical-record-extraction-and-reattachment.md), then revised T25-T29 before T17. Original T24's bench/Jhun-first route was implemented internally but is superseded by this plan; its history stays in CampaignFoundation/PROGRESS.md. No new runtime work is performed by this documentation update.
+Current implementation plan: Level 1 paper work and the T17 internal gate are internally verified; user manual checks remain pending. Next is [T18 — Level 2 integration](CampaignFoundation/tickets/T18-level2-campaign-and-inventory.md). [T27](CampaignFoundation/tickets/T27-eight-document-template-library.md) now retains the incremental roadmap, not a prerequisite to build all eight types.
 
-**Level 1 standard:** after the Supply Counter, meet/click Arthur, collect his teal Reviewed File and inspect its two pages. Then all four regular clients give only their existing taxpayer profiles, in any order. Marie later uses the same two-page folder structure as an editable manila case. Only Types 1–3 enter Level 1; Rosa adopts other types in T18 without losing her existing pages/records.
+**User revision 2026-10-28 — build when needed:** Keep the eight types, their fixed layouts, shapes, fields, visual style and handling rules below as the campaign design plan. Implement and verify only the types/variants needed by the level currently being built. Reuse an implemented type in later levels; do not build every planned type, extra variant, or an all-eight preview in advance. Each level ticket owns the source bindings, relevant fixtures and acceptance for its required documents.
+
+**Level 1:** Arthur and Marie use Types 1–2 only; the four plaza clients hand over flippable IDs. No 2316 or 2307 enters Level 1. **Level 2:** T18 adds Types 4–7 as Rosa needs them, preserving her six separate records and existing page flow. Types 3 and 8 wait for a later authored case that actually needs them.
 
 **Read this file when planning, modeling, designing, or changing supporting documents in any TaxVenture level.** Keep this as the single reference; update it when the user changes a decision.
 
@@ -14,7 +16,7 @@ Current implementation plan: [T30 — Arthur's reviewed file](CampaignFoundation
 
 Simple, stylized 3D office papers or cards that fit TaxVenture's low-poly world, cream paper, manila folders, and physical desk interactions. Recognizable documents, generous empty space, short labels, useful clues. No realistic form reproduction or dense fine print.
 
-- **Eight reusable document types** for the campaign. Each client receives only the relevant subset.
+- **Eight fixed document type designs** for the campaign, implemented incrementally. Each client receives only the relevant subset; unused types stay planned.
 - A type has a fixed layout across all levels. Client names, dates, amounts, and facts change; layout and meaning stay consistent.
 - Types are not paper counts: three invoices are three papers of one type.
 - These are game investigation records, not a universal BIR filing checklist.
@@ -185,6 +187,7 @@ Example packets: Arthur's reference **1/2**; Marie **1/2**; Rosa's investigation
 - Handover, inspection, comparison, and return have smooth consistent motion; documents rest still while being read.
 - Sounds respect effects settings; repeated taps and interrupted animations never duplicate or lose papers.
 - Every paper has a case purpose; the player is not collecting all eight for every client.
+- Unimplemented types are planned, not failed acceptance or a delivery blocker. Validate each type when a level adopts it; fixtures cover only that ticket's types and relevant variants.
 - The standard fixes the library/presentation; T30/T31 and T25 own the approved route, Bag-capacity and two-page changes. Existing case answers/rewards remain unchanged.
 
 Reference anchors for real form names only: [BIR 2316](https://bir-cdn.bir.gov.ph/local/pdf/2316%20Sep%202021%20ENCS_Final_corrected.pdf) · [BIR income-tax instructions including 2307](https://efps.bir.gov.ph/efps-war/EFPSWeb_war/help/help1701_v2.html). Gameplay uses simplified fictional props.

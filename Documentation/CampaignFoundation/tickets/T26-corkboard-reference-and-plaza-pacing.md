@@ -40,4 +40,4 @@ Preserve neutral draft feedback, the 0.45 s full-board check, frozen first resul
 
 ## Non-goals and handoff
 
-No board redesign, new challenge, new classification law, shop reorder, all-client evidence routine, or result economy change. Record before/after page counts and route milestones in PROGRESS. Next: [T28](T28-level1-paper-motion-and-route-polish.md), then [T29](T29-record-route-verification.md) and [T17](T17-delivery-a-verification.md). Carry the unfinished library, fixture and Rosa-map gap to [T27](T27-eight-document-template-library.md) after T17 and before [T18](T18-level2-campaign-and-inventory.md).
+No board redesign, new challenge, new classification law, shop reorder, all-client evidence routine, or result economy change. Record before/after page counts and route milestones in PROGRESS. Next: [T28](T28-level1-paper-motion-and-route-polish.md), then [T29](T29-record-route-verification.md) and [T17](T17-delivery-a-verification.md). Then [T18](T18-level2-campaign-and-inventory.md) implements its required subset; [T27](T27-eight-document-template-library.md) retains the fixed plan for incremental adoption.

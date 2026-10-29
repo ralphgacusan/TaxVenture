@@ -1,6 +1,8 @@
 # T20 — Install a functional comparison stand in Rosa's office
 
-Status: Planned. Blocked by: T18.
+User decision (2026-10-29): T20 comparison stand is deferred to future work, with its design retained in the T20 ticket. It is not required for Delivery B, T33 or T21. Continue T33 -> T21 after implemented T19. Keep ordinary free workstation comparison available; the unimplemented stand remains unavailable for purchase, including after T21 enables Level 2. T21 verifies that unavailable state rather than requiring stand purchase, placement or persistence.
+
+Status: Deferred (2026-10-29); future backlog, excluded from Delivery B. Blocked by: T18.
 
 ## Goal
 
@@ -41,7 +43,7 @@ Purchase checks the ready prerequisite, 120-coin balance, story mode and unique 
 
 ## Handoff
 
-Next ticket: [T21](T21-delivery-b-verification.md) verifies both Delivery B features before enabling the new-campaign route.
+Resume only when the user schedules this deferred feature. Current Delivery B continues with [T33](T33-level2-story-flow-and-polish.md) polishes the continuation, then [T21](T21-delivery-b-verification.md) verifies all Delivery B features before enabling campaign entry.
 
 ## Non-goals and references
 

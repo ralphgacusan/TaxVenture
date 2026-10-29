@@ -144,3 +144,7 @@ Checks: scratch build 0 errors; GuideRegression 733 PASS; Level2Regression 1,267
 - Arthur's coach lines and hints now start voice only for changed popup text, stop when hidden or typing finishes, and yield to active NPC conversations. Hints also play the hint-received cue.
 - DialogueUI selects the female voice set for female speakers and stops voice on player lines, line reveal, finish, or disable.
 - AudioRegression: 195 checks passed. Play Mode/device checks remain user-owned; scratch build is pending the root integration pass.
+
+## 2026-10-29 — resource mechanics and chapter objective intros
+
+Level 1's HUD tour now uses separate `hud:exp`, `hud:reputation` and `hud:coins` blue spotlight targets with short individual explanations of earning/use/continuity. Both chapters have a one-line Arthur portrait-guide opening objective. Observation-only; no reward/save changes from tutorial advancement. Scratch 0 errors / 27 existing warnings, GuideRegression 937 PASS, VerifyGuideTargets 14 paths / 0 missing. Rendered/touch acceptance is user-owned; see CampaignFoundation/POLISH_2026-10-29.md for the related runtime fixes.

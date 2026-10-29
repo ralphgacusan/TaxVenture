@@ -1,12 +1,12 @@
 # T18 — Adapt Rosa's review to campaign state and inventory
 
-Status: Planned. Blocked by: T17, T27.
+Status: Planned. Blocked by: T17.
 
-Scheduling revision 2026-10-28: execute T28 -> T29 -> T17, then resume deferred T27 before this ticket. T29/T17 carry the unbuilt library, fixture and Rosa-map gap; they do not verify it. T27 must complete and verify the library and adapter map before T18 adopts them. The T21 Delivery B gate still verifies the integrated result and controls campaign enablement.
+Scheduling revision 2026-10-28: T17 internal verification is complete; this is the next implementation ticket. T27 retains the fixed eight-type roadmap but is not a dependency. Implement only Rosa's required types here; T21 still verifies the integrated result and controls campaign enablement.
 
 ## Goal
 
-Adapt Rosa's existing review to shared campaign ownership without enabling it.
+Adapt Rosa's review to shared campaign ownership, carried Level 1 equipment and consistent physical case folders without enabling it. Follow the [Level 2 continuation amendment](../LEVEL2_CONTINUATION.md).
 
 ## Visible accomplishment
 
@@ -14,9 +14,15 @@ Before: the Rosa review runs through its existing case checkpoint but is outside
 
 ## Work
 
-Supporting-paper amendment 2026-10-26: after T17 and [T27](T27-eight-document-template-library.md), adopt the [eight-type library](../../SupportingDocuments.md). T27 must have completed and internally verified the library and isolated fixtures before this ticket begins. Bind Rosa's six D1–D6 records to Types 4–7 using the recorded, verified fixture adapter map. Preserve all six individual papers, source IDs, periods, amounts, evidence links, annotations and current review flow. This is presentation adoption within existing case/inventory work, not permission to redesign Rosa or introduce every library type into her case. Keep the paid comparison stand benefit and free inspection paths intact. T21 must verify this adoption as part of Delivery B.
+Supporting-paper amendment — incremental adoption (user revision 2026-10-28): follow the [fixed document standard](../../SupportingDocuments.md) and [T27 roadmap](T27-eight-document-template-library.md), building only Types 4–7 required by Rosa. This ticket owns their reusable physical presentations, source mapping and bounded fixtures; no advance all-eight library or preview is required. Inspect and bind Rosa's six D1–D6 records: collection sheet, bank extract, three transaction records and loan agreement. Record and verify the actual ID-to-type mapping here, preserving all six papers, source IDs, periods, amounts, evidence links, annotations and current review flow. Reuse existing card/sheet/slip builders, safe extraction/return and viewer behavior. Keep the fixed layouts across clients; long values wrap, missing optional values use a dash or “Not applicable”, and table overflow uses another face/page of the same type. Types 3 and 8 and unused variants wait for later relevant cases. Keep paid comparison-stand benefits and free inspection intact. T21 verifies this subset as part of Delivery B.
 
-Keep the existing Level 2 case, annotated papers, clock, records, tutorial and finale content intact while adapting campaign ownership at its boundaries. Continue using the saved Level 2 checkpoint data and stable review/case IDs. Preserve original and working document identity/revision separately and keep answer keys out of bag item snapshots. Add existing acquired records, profile references and annotated/working papers to the same bag as T10/T11; the bag is a catalogue of real models, not a replacement for the desk or a second source of case values. A player can inspect owned records while exploring, with movement locked during the viewer; formal comparison, transfer, filing, stamping, findings submission and approval remain at their existing workstations. Bag viewing follows the active review clock rule, while only the same authored blocking pauses used by the existing review may pause it.
+Preserve Level 2 case facts, annotated-paper identities, review rules, clock and records while adapting ownership. Tutorial, dialogue, folder presentation and finale delivery may improve under the continuation amendment; T33 owns integrated polish. Do not preserve obsolete Arthur-led opening requirements merely because old copy exists. Continue using the saved Level 2 checkpoint data and stable review/case IDs. Preserve original and working document identity/revision separately and keep answer keys out of bag item snapshots. Add existing acquired records, profile references and annotated/working papers to the same bag as T10/T11; the bag is a catalogue of real models, not a replacement for the desk or a second source of case values. A player can inspect owned records while exploring, with movement locked during the viewer; formal comparison, transfer, filing, stamping, findings submission and approval remain at their existing workstations. Bag viewing follows the active review clock rule, while only the same authored blocking pauses used by the existing review may pause it.
+
+### Level 1 items and folder continuity
+
+Carry the same campaign inventory, wallet, trust, mastery, settings and upgrades into Level 2 without clearing/reseeding or replaying acquisition effects. Record an actual item-category eligibility table: references remain optionally readable; chapter-bound Level 1 quest objects cannot become Rosa evidence or reactivate old tasks; bookmarks retain applicable behavior; slot upgrades retain capacity; used supplies stay used. Eligible vouchers extend Rosa's review by the existing +180 active seconds and consume once. Shop ownership prevents repurchases. Purchased decor restores at compatible authored Level 2 office anchors; missing anchors preserve ownership with clear unplaced feedback. Full Bag or failed acquisition leaves required records retrievable without an upgrade purchase. Use existing eligibility/save commands, not a second wallet or inventory.
+
+Bring Rosa's real folder, annotations and source/working papers to Level 1's physical depth, page turns, typography, safe front focus/drag, labels, Bag representation and interrupted return/cleanup. Preserve all six D1–D6 papers and existing packet pages; no forced two-page conversion. Opening Arthur's carried reference never changes Rosa's active case or transfers answers. Improve narrow existing start/guide/shop/item/viewer seams only where continuation needs them, rather than building speculative future-level frameworks.
 
 ### Source starting points
 
@@ -37,15 +43,20 @@ The Level 2 checkpoint and campaign inventory/reward claims must describe the sa
 - [ ] Tests prove 60/100 coin and +2/+4 trust claims exactly once, approved-only completion, retry on failed commit and story/practice/replay isolation.
 - [ ] Static inspection validates source/model links and no new campaign path to Level 2; affected build, campaign-save, Level 2 and bag regressions pass.
 
+- [ ] Types 4–7 preserve all six D1–D6 source identities/values/evidence links through production-viewer inspection and return. Bounded isolated fixtures cover relevant long/missing values, overflow, missing mappings/sources, repeated open/close and interruption; no fixture mutates live campaign state. Existing Level 1 Types 1–2 still pass affected checks.
+
+- [ ] Level 1 completion -> Level 2 entry/resume preserves actual item ownership and eligibility, capacity, settings, wallet/trust/mastery and compatible decor placement. Cover voucher +180 seconds/one consumption, bookmarks, used supplies, references, full Bag, failed save and repeat entry without loss or duplication.
+
 ## USER manual acceptance — Unity/device/visual/feel/listen checks
 
+- [ ] Inspect Types 4–7 for fixed layout, recognizable shape, physical depth/shadows, phone readability and safe return; unused types are not required.
 - [ ] In isolated Level 2 testing, collect/read actual source papers, leave the desk, use the bag, then perform comparison/submission only at the workstation.
 - [ ] Interrupt at review, correction and approved milestones, resume, and verify no duplicate paper, stamp, reward or trust change.
 - [ ] Check bag/book camera framing, document readability, touch/movement lock, clock pause behavior, actor/stamp responses, motion and audio in Unity/on device. No manual setup is requested.
 
 ## Handoff
 
-Next ticket: [T19](T19-rosa-choice-and-trust-consequences.md) adds the explicit, once-only ethics choice.
+Next ticket: [T32](T32-level2-town-and-rosa-animation.md), then T19, T20, T33 and T21. Normal campaign entry remains disabled until T21.
 
 ## Non-goals and references
 

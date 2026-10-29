@@ -1,5 +1,7 @@
 # World, interaction, animation and feedback direction
 
+User decision (2026-10-29): T20 comparison stand is deferred to future work, with its design retained in the T20 ticket. It is not required for Delivery B, T33 or T21. Continue T33 -> T21 after implemented T19. Keep ordinary free workstation comparison available; the unimplemented stand remains unavailable for purchase, including after T21 enables Level 2. T21 verifies that unavailable state rather than requiring stand purchase, placement or persistence.
+
 Status: Planned. These are implementation targets, not claims of rendered or device-tested behavior. Apply alongside SPEC.md and each ticket; the user's manual results determine final framing/feel acceptance.
 
 ## Overall want
@@ -63,3 +65,9 @@ Quax demonstrates only a separate sample. In L1 he can present a fifth practice 
 Route paper lift/return, card placement, confirm/error, stamp, pickup and coin cues through existing AudioManager/AudioLibrary and saved SFX preference. Search supplied clips and map intentional events; document actual selected names during implementation. No new direct play-on-awake sources that bypass SFX OFF. Music/narration choices are not reset by New Game. Do not introduce generated narration assets in this scope; preserve any existing voice settings/hooks and record missing recordings separately.
 
 Use touch wording, readable sans-serif body text, handwriting for short accents only, high contrast, text/icon category cues, sufficient touch margins and safe-area layout. The user tests portrait/wide/tall layouts; source checks only establish anchoring declarations, not readability. Keep token/coin currency visually distinct from PHP tax document values. Independent document reading consumes review time; shop/compulsory teaching/settings pause according to SPEC, with clear resume behavior. Animation flourishes must be short and skippable where existing result controls support it; nothing should demand rapid dragging or reading while a required lesson clock runs.
+
+## Level 2 continuation presentation — 2026-10-28
+
+Follow [LEVEL2_CONTINUATION](LEVEL2_CONTINUATION.md). Preserve familiar office/plaza, Rosa's current stall and core HUD/book/Bag controls. Start with a short next-day reception task, without another Arthur lesson/reference acquisition or corkboard round. Carry owned decor/equipment to compatible placements and keep references optionally readable. Outdoor focus is Rosa plus two new optional residents, with required office staff retained. Reuse Level 1 NPC life, grounded animation, turns, talk/listen gestures, emotes, markers and minimap language. Ambient routines never displace Rosa or interrupt record pickup.
+
+Rosa's short dialogue and restrained concern/thought/relief gestures reflect committed case phase. Source/working papers and folders share Level 1 print/depth/page-turn/front-focus/drag/cleanup quality while preserving the six records and actual packet pages. Keep reading still, controls responsive and action sounds effects-gated. Chapter 2 resolves Rosa's work instead of replaying Chapter 1. T32 authors cast/animation, T33 polishes connected flow and T21 gates all of it. Rendering, navigation, pacing, touch, frame time and sound acceptance remain USER-only.

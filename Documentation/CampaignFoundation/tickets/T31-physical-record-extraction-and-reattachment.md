@@ -24,7 +24,7 @@ The ID has visible thickness, softly beveled edges, matte material and a subtle 
 
 Inspect Level 2 Findings lift/return, `AnnotationPaper` hold/collection, floating focus/input locks, existing mesh builders, `SupportingDocumentFace`, T30's per-folder sources and page decorator. Reuse narrowly; do not fork a separate input/window framework. Any shared fixes retain existing Findings/annotation behavior and receive targeted regression coverage. Preserve GUIDs, record identity, semantic values and active-case binding. No live Level 2 scene/content migration here; T18 later adopts presentation.
 
-Expose enough layout/attachment placement configuration for T25 to put Marie's ID, background and 2316 on her own second page. Two pages is the Level 1 folder shell, not a campaign-wide two-page restriction on Rosa's existing packet. T27 extends the remaining document types through this same physical path.
+Expose enough layout/attachment placement configuration for T25 to put Marie's ID, background and 2316 on her own second page. Two pages is the Level 1 folder shell, not a campaign-wide two-page restriction on Rosa's existing packet. Later adopting level tickets extend only their needed types through this same physical path, following the fixed T27 roadmap.
 
 ## Animation, sound and lifecycle
 

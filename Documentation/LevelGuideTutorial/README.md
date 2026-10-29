@@ -150,3 +150,5 @@ Put your images in `Assets/Resources/Tutorials/Portraits/` with Texture Type **S
 The only change to existing gameplay or UI code is that `OfficeMinimap.cs` now creates and ticks `OfficeMinimapObjective`.
 
 The legacy `TutorialController` / `TutorialPanel` (Resources/Tutorials/level1_tutorial.json, which is empty) is untouched and still does nothing.
+
+Resource focus targets (2026-10-29): `hud:exp`, `hud:reputation` and `hud:coins` resolve the individual progression bars/wallet row through the existing blue spotlight. Each resource uses separate, short tap pages; this observer never grants or spends rewards.

@@ -1,45 +1,44 @@
-# T27 — Complete the reusable eight-type paper library
+# T27 — Fixed document designs and incremental adoption roadmap
 
-Status: Planned — DEFERRED until after T17 by user schedule revision on 2026-10-28; not implemented or accepted. Blocked by: T17.
+Status: Planned — deferred reference/backlog; implement only when an authored level needs a type. Blocked by: None.
 
-## Scheduling revision — 2026-10-28
+## User scheduling revision — 2026-10-28
 
-Proceed with [T28](T28-level1-paper-motion-and-route-polish.md), then [T29](T29-record-route-verification.md) and [T17](T17-delivery-a-verification.md). Those tickets verify the existing Level 1 route only and must carry the unfinished eight-type library, isolated-fixture and Rosa-map gap without claiming it passed. Resume T27 immediately after T17; complete and verify the library and adapter map before [T18](T18-level2-campaign-and-inventory.md) adopts them. All requirements and unchecked acceptance below remain outstanding. This documentation update does not start any ticket or runtime work.
+The user replaced the all-at-once library build with implementation as needed by each level. This supersedes the earlier requirement to complete eight physical types, two records per type, an isolated all-eight viewer and a Rosa adapter map before T18. T27 is retained so the fixed plan is not lost; it is not the next standalone implementation ticket and does not gate Delivery A or Delivery B. T17's internal gate is complete, with user manual acceptance pending. Next implementation is [T18](T18-level2-campaign-and-inventory.md), then T32, T19, T20, T33 and T21 under the Level 2 continuation amendment.
 
 ## Goal and visible accomplishment
 
-All eight types in the [supporting document standard](../../SupportingDocuments.md) can be opened, read, compared where supported, and returned through the physical extraction/return path completed by T31 and adopted by T25. This slice includes source binding and interaction, not disconnected models. Only the three Level 1 types enter its campaign route; the others are ready for later case adoption without crowding the first morning.
+Preserve the [supporting document standard](../../SupportingDocuments.md) as the single fixed design reference. All eight categories, shapes, information zones, fields, restrained colors, readable printing and physical interactions stay planned. Build a document presentation only when a real authored case requires it. A later client reuses the same type layout with changed facts; a new level does not require a new type or an advance library build.
 
-## Work and bounded preview flow
+## Work and ownership
 
-Keep T30/T31's identity/background path and T25's 2316 path. All remaining types need real edge thickness/shape, surface printing and appropriate depth/shadows; a flat UI rectangle is not final. Reuse per-folder source identity, attachment anchors, front ordering, safe bounds and optional grouping; do not duplicate a window system. Arthur and Marie have two visible Level 1 pages, but this does not constrain Rosa's larger existing packet. Add reusable presentations for income collection sheets, transaction records, bank statements, agreements, and 2307. Use the existing card/full-sheet/slip shapes, fixed information zones, restrained header palette, generic silhouette and editable text. A simple passport cover is a Type 1 variant. Source titles, dates, references, issuer/customer direction and paid/unpaid state remain factual, not correctness cues.
+| Type | Adoption owner / timing |
+|---|---|
+| 1 — Identity document | Existing Level 1 implementation; reuse it. Passport variant waits for a case requiring it. |
+| 2 — Client background sheet | Existing Level 1 implementation; reuse it. |
+| 3 — Compensation certificate (2316) | Deferred until a later authored case needs it; absent from Level 1 and not required by Rosa. |
+| 4 — Income record / collection sheet | T18, because Rosa needs it. |
+| 5 — Invoice / payment record | T18, including Rosa's three distinct transaction records. |
+| 6 — Bank statement | T18, for Rosa's bank extract. |
+| 7 — Contract / agreement | T18, for Rosa's loan agreement; other variants wait until needed. |
+| 8 — Creditable withholding certificate (2307) | Deferred until an authored credit case needs it. |
 
-Provide a minimal development-only way to instantiate two named fixtures through the production viewer, inspect, compare, close and switch records. Reuse an existing isolated document/debug entry if available; otherwise add a narrowly scoped development fixture, not a new public menu or gallery framework. It must not read/write the user's campaign, award items, or appear on the normal Level 1 route. Fixture data contains no real personal identifiers. Each type has at least two different fixture records demonstrating the same layout with changed client details, including a long name or a larger amount.
+Each adopting level ticket implements its required physical presentations, canonical source bindings and bounded verification together with the real player flow. Record source IDs, assets, layout decisions, verification evidence and remaining deferred types in PROGRESS. T18 owns the actual D1–D6 mapping and verifies all six separate papers across Types 4–7; do not merge records, change evidence values or rebuild Rosa's packet into Level 1's two-page shell.
 
-Use Rosa's existing D1–D6 and source links as read-only compatibility fixtures for Types 4–7. Her collection sheet, bank extract, three transaction records and loan agreement must remain individually identifiable. Never combine six records into four papers just because there are four categories. Record and verify the future adapter mapping, but do not mutate the live Level 2 case, scene, handover, scoring, or launches here. T18 owns that integration after T17 and T27.
-
-## Source and presentation boundaries
-
-Inspect current `PrintedPaperStyle`, `PaperInkStyle`, floating paper model/text builders, `DocumentViewerManager`, Level 1 presentation adapters, and Level 2 record/annotation source models. Prefer a small optional type/presentation mapping attached to existing stable record IDs. Do not replace all document storage, make a general-purpose UI schema, add packages, or store rendered/answer-key values in campaign saves. Actual records remain canonical; previews are explicitly isolated fixtures.
-
-Fixed layout means consistent information zones, not invented legal fields on every paper. Missing optional facts use a dash or “Not applicable”; long text wraps inside bounds. Table overflow uses another face/page of the same type. 2316 and 2307 remain distinct. Paper type recognition uses shape/title/icon as well as color. No miniature official form scan, seal, barcode, or dense fake terms. No document-specific photo production.
-
-## Failure and lifecycle
-
-Missing type mappings fall back to the existing readable viewer with a diagnostic rather than losing access to records. Unknown/missing source IDs cannot silently display another client's paper. Viewer disposal and interrupted animation clean up only owned instances. Preview entry/exit never overwrites live case selection or registers duplicate handlers. Presentation changes cannot alter semantic keys, references, amounts, required fields, or record annotations.
+Reuse existing physical viewers, extraction/return, safe bounds, focus and same-owner cleanup. Preserve the fixed type layout, readable long values, neutral identity cues and factual paid/unpaid labels. No new framework, packages or speculative models are required. Missing optional facts use a dash or “Not applicable”; table overflow uses another face/page of the same type. Unknown sources must not display another client's record. Missing mappings retain readable fallback access with diagnostics. Interrupted inspection must clean up owned instances without losing papers or changing campaign state.
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] Eight types and documented variants instantiate with stable source identity; two fixture values per type keep field/layout contracts.
-- [ ] Overflow, missing mapping/source, repeated open/close and fixture isolation are covered; current Level 1 bindings still pass.
-- [ ] Rosa fixture IDs/values/evidence links stay unchanged; normal Level 2 and preview launch availability are unchanged; affected builds pass.
+- [ ] For each adopted type, its owning level ticket verifies stable source identity, relevant long/missing values, overflow and readable fallback behavior.
+- [ ] Required physical presentations use the production viewer; repeated open/close, interruption and cleanup preserve source ownership and existing Level 1 behavior.
+- [ ] Development fixtures are limited to the current ticket's types and meaningful edge cases, isolated from live saves, rewards and ownership. No two-per-type or all-eight fixture gate remains.
+- [ ] Owning tickets record implemented versus deferred types honestly; unneeded types do not block delivery or become claimed implementation.
 
 ## USER manual acceptance
 
-- [ ] Inspect all eight types in the isolated production-viewer fixture; compare short/long content on phone framing.
-- [ ] Card, sheet and slip feel related but recognizable; silhouettes, text, contrast, shadows and resting poses are polished.
-- [ ] Level 1 still contains only its intended three types and no debug entry in its player flow.
+- [ ] Inspect only the types introduced by the current level: readable phone framing, recognizable shape, depth, shadows and fixed layout.
+- [ ] Check handling, comparison where supported, return, touch and sound in the real level flow; remaining unused types stay planned.
 
 ## Non-goals and handoff
 
-No additional campaign case, tax-law expansion, Level 2 runtime restyle, future-level progression, paid comparison replacement, or public asset browser. Record real asset paths, fixture entry/exit instructions and T18 adoption map in PROGRESS. When resumed after T17, complete and internally verify the library, all eight-type previews and Rosa adapter map; then hand them directly to [T18](T18-level2-campaign-and-inventory.md) for adoption. [T29](T29-record-route-verification.md) and T17 carry this unfinished scope and do not verify it; [T21](T21-delivery-b-verification.md) verifies the later integration.
+No standalone eight-type build, public gallery, speculative future-level assets, extra campaign cases, tax-law expansion or new launch permission. Types 3 and 8 and unused variants remain intentionally deferred, not completed or cancelled. Existing implementation/internal status and pending manual acceptance are unchanged. Next: T18 builds Rosa's required subset under this standard; T21 verifies that integrated subset before enabling Level 2. When a future case needs a deferred type, add its implementation and acceptance to that case's ticket and update this roadmap.

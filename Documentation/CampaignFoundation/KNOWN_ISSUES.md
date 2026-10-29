@@ -1,5 +1,16 @@
 # Known issues, decisions and risk register
 
+## Current T33 / T21 acceptance boundary (2026-10-29)
+
+T33/T21 implemented and internally verified; Level 2 campaign access enabled. This supersedes earlier pending-T21 launch statements, not earlier manual gaps. See DELIVERY_B_HANDOFF.md.
+
+| ID | Issue | Status / next |
+|---|---|---|
+| CF-219 | Stamp ghost previously could remain visible while the model fell behind the captured folder; return capture ended early | Source compositor/lifecycle fixes and regressions complete. USER must inspect actual body/ghost/ink, focus, clipping and return over all papers; no rendered pass claimed |
+| CF-220 | Chapter 2 guide/objectives/result and interrupted Rosa consultations needed phase-sensitive continuation | T33 implemented; USER checks pacing, all choices/corrections/copy delivery, restored hints and closing |
+| CF-221 | No Unity/device, navigation, animation, audio listening or measured frame-time acceptance | USER-only. Existing CF-37 renderer outline failure, CF-213–216 cast/rig/clips/wait limitations and all earlier manual gaps remain. Existing procedural pose system retained; no dedicated Rosa handover/talk/sit clip added |
+| CF-222 | .NET suite builds refresh Tests/*/obj intermediates even with executable output directed into Temp | No Git commands run; USER owns review of generated intermediates |
+
 Status: planning snapshot, 2026-10-21. A risk is not a request for the user to implement scene wiring. Complete unaffected implementation and record exact internal versus manual evidence.
 
 | ID | Fact/risk | Resolution ticket / acceptance boundary |
@@ -134,7 +145,7 @@ Record new discovered issues with ID, exact source/evidence, owner ticket, impac
 |---|---|---|
 | CF-121 | Two extra document moments could crowd Level 1 if added on top of all current explanation | T24–T26 replace displaced guidance; T28/T29 USER pacing checks target roughly 2–3 minutes combined, with no paper loop for the other three clients. T24 (2026-10-26): +2 guide pages and +1 talk line, -1 profiles-icon page; the other three clients get no papers. Full guide audit stays T26 |
 | CF-122 | New first-client/desk prerequisites could relock compatible progressed saves | T24 part source-implemented 2026-10-26: another client met or any profile collected keeps the free order; his older talk without a sleeve keeps his profile out (no records step); the tracker gets the first-client steps already behind the stage; nobody waits after Side Quest 1. T25 desk part pending; T29 targeted checks |
-| CF-123 | Eight document types could become eight mandatory pickups or accidentally alter Rosa before Delivery B | Three types only in L1. T29/T17 verify the existing route and carry the unbuilt library, fixture and Rosa-map gap; T27 completes and verifies it after T17, before T18 adopts all six unchanged Rosa records. T18 depends on T17 and T27; T21 gates integrated Delivery B. |
+| CF-123 | Eight document types could become eight mandatory pickups or accidentally alter Rosa before Delivery B | Level 1 uses Types 1–2 only. Keep all eight fixed designs, but implement only when an authored level needs them. T18 owns Rosa's Types 4–7 and six unchanged records; T27 is a deferred roadmap, not a gate. Types 3/8 wait for later cases; T21 gates integrated Delivery B. |
 | CF-124 | The sleeve's bench anchor was measured offline (bench.fbx seat slats top 0.559 m local x 0.935 -> world y 0.053; marker at 9.86, 0.053, 116.93, yaw 180), not seen in Unity | USER checks the sleeve rests on the seat (no float, no clipping into the backrest) and the tabs face the side players stand on; move/turn the scene's "Client Records Placement" outside Play Mode and save |
 | CF-125 | Close-up framing is computed (depth near clip + 0.45 m; ID card 62% / sheet 78% of the screen height, at most 60% of the width, 1% below centre); the HUD objective tracker or minimap may touch the sheet's top on short screens; PUT BACK sits lower right (safe area) | USER checks readability and overlap at phone aspects; tune ClientRecordPaper.ReadingPose shares or the button's anchoredPosition |
 | CF-126 | Sleeve, tabs and records are runtime procedural meshes (rounded slab) and world-canvas faces built to the standard's fixed layouts; no texture or final art asset exists | Functional template, not certified final art; USER judges the look (T28 polish) |
@@ -217,6 +228,90 @@ CF-131 to CF-133 and CF-136 are addressed in source and suite checks (instance-b
 | CF-183 | (2026-10-27 follow-up) Printed faces sit on an unlit paper backing so they never grey in shade; the 3D bevel and edge around it are still lit, so a deeply shaded card shows a darker rim | USER judges the rim in the corkboard and binder views |
 | CF-184 | (2026-10-27 follow-up) Side Quest 1 medals changed: Silver is now 2/4 on the first check (3/4 is impossible with one card per corner). Earlier saves keep the tier they recorded | USER confirms the thresholds feel fair |
 
-## T27 deferral and schedule — user decision, 2026-10-28
+## Historical T27 deferral — superseded by incremental adoption below (2026-10-28)
 
 The eight-type library, isolated previews and Rosa adapter map remain unfinished. T28 is next and may polish the existing Level 1 route without them; then T29 and T17 verify the existing route only. Both gates explicitly carry the library/fixture/map gap and cannot certify missing fixtures as passed. Resume T27 immediately after T17, complete and verify the library and map, then let T18 adopt it. T18 depends on both T17 and T27; T21 still gates integrated Delivery B. Documentation only: T28 and T27 have not started.
+
+## T28 / T29 / T17 — 2026-10-28 (internally verified; user manual pending)
+
+T28, T29 and the T17 internal Delivery A gate ran on 2026-10-28 (PROGRESS.md "T28", "T29", "T17"). This superseded the "T28 is next" wording above. Its former T27-next handoff is superseded by the incremental-adoption revision below.
+
+| ID | Issue | Status / next |
+|---|---|---|
+| CF-185 | A corkboard ID now lifts to the finger in 0.08 s and then follows it exactly (it trailed behind a 0.05 s SmoothDamp spring before); the slight tilt reads the finger's smoothed speed | USER checks drag feel and that the card never jitters on a phone |
+| CF-186 | A record can now be dragged while it is still lifting from a tap (it jumps to its reading pose under the finger, as a drag straight out of its holder always did). A record already returning to its page (0.3 s) still cannot be caught | USER judges both; catching a returning record would need its own return-cancel rules |
+| CF-187 | A taken-out record's capture now refreshes its glyph meshes only when the text scale changes or the layer is shown again. Record text never changes while a record is out today; a future record whose text changes while out would need a refresh hook (reset the layer's text scale) | No action now; note for T27/T18 record types |
+| CF-188 | Android back closes the Bag (new), the Supply Counter and Settings, but not open documents (Notes, Client IDs, either folder, the Tax Code Book), which still close from their icon or the desk. Nothing else reacts to back, so there is no double owner | Deliberate minimal scope. Proposed future scope if wanted: one HUD back router that puts away the top document |
+| CF-189 | Observed, not changed (no runtime evidence of cost): PageTurnStage instantiates two page copies per turn; the Client IDs drag ghost builds a new 3D ID studio and MSAA render texture on every drag start; the HUD drag ghost eases behind the finger at 18/s (the direct-follow edit was declined by the user during T28 and not retried); small per-frame GetComponent lookups in the side-quest splash and reward card | Profile on a device first; candidates: pool the turn copies, reuse the ghost portrait while the top ID is unchanged |
+| CF-190 | Page turns take 0.5 s (DeskMotion.PageFlipSeconds), above T28's 0.2-0.3 s page-change target | Kept: the recent user-requested turn with its print fade still awaits the user's verdict. USER decides the speed |
+| CF-191 | T28's performance changes are source-level (no per-frame text rebuild while a record is dragged, no per-capture array, no once-a-second whole-scene search, no per-frame shop string). No profiler, device frame-time or GC measurement exists | USER profiles before any lag or frame-rate claim |
+| CF-192 | Guide 90 -> 89 pages: the failed-audit retry talk is three pages; the side-quest card no longer repeats the reward line the next page gives; the office-hours page no longer says a late hand-in "loses the bonus" (there is none) | USER reads the pacing and tone |
+| CF-193 | T29/T17 verified Level 1 only. Additional type presentations and Rosa bindings remain unbuilt; latest user revision intentionally removes the all-eight advance gate | T18 next: implement/verify Types 4–7 and D1–D6 mapping. Types 3/8 and unused variants remain planned in T27 until needed; no all-eight preview required |
+
+## Current — incremental document adoption (user revision, 2026-10-28)
+
+Latest user revision — incremental physical documents (2026-10-28): keep all eight fixed type designs in [SupportingDocuments](../SupportingDocuments.md), but implement a type or variant only when an authored level needs it. T27 is a deferred reference/backlog, not a standalone build or prerequisite. T18 is next after the completed T17 internal gate; it builds and verifies only Rosa's required Types 4–7 and their D1–D6 bindings as part of Level 2 integration. Types 3 and 8, passport variants and other unused presentations wait for a relevant case. No all-eight fixture/gallery or speculative assets are required. Each adopting ticket owns its source mapping, bounded fixtures, readability, physical handling, failure/cleanup and regression checks. T21 gates the integrated Level 2 result; unused planned types do not block either delivery. Existing Level 1 Types 1–2 and all pending user manual checks remain as recorded. Current order: T18 -> T32 -> T19 -> T33 -> T21. This documentation revision changes no runtime or actual save.
+
+## Planned Level 2 continuation — user direction, 2026-10-28
+
+[LEVEL2_CONTINUATION](LEVEL2_CONTINUATION.md) is planned, not implemented or verified. T18 remains next, expanded to Level 1 item/upgrade/decor carryover and physical folders. T32 adds a quieter cast and animated Rosa at her preserved anchor; T33 improves opening, phase-sensitive dialogue, story closure and polish. T19/T20 retain their rules; T21 waits for all amendments. Actual resident names/models, compatible rigs/clips, decor anchors and item eligibility are implementation choices/inspection work, not user scene assembly. Static bindings do not prove final animation. Old Arthur-led Level 2 guide copy is superseded by contextual help; no compulsory Arthur opening, new reference acquisition or corkboard task. Existing Level 1 evidence/manual status stays unchanged.
+
+## T18 — 2026-10-28 (implemented, internally verified; user manual pending)
+
+T18 supersedes the "T18 next" wording above (CF-193 is resolved for Types 4–7 and D1–D6). CF-07 (Level 2 voucher clock) and the T18 part of CF-09 are implemented; Level 2 campaign launch stays pending until T21. Next ticket: T32.
+
+| ID | Issue | Status / next |
+|---|---|---|
+| CF-194 | Rosa's follow-through (+4 trust, Chapter 2 completion) is a tested command (`PlayerProgressManager.CommitLevelTwoFollowThrough`) but no in-game moment calls it yet: today's Level 2 goes from approval straight to the result card | T19 (responsible follow-through) / T33 (story flow) must call it at Rosa after the approved case. Until then a story run would end "case approved, follow-through pending"; no story run of Level 2 is possible before T21 |
+| CF-195 | Types 4–7 print on Level 2's existing UI record papers (Level2FindingsSheet: lift, stack, drag, file, value-source rows) with depth cues (paper edge, shadow, header band, slip perforation, status box, signature strokes). They are not Level 1's T31 3D-mesh records: that would need Rosa's UI folder pages replaced (forced conversion is out of scope). The slip keeps the shared record width | USER judges the physical look on a phone; a 3D-body pass would be its own follow-up |
+| CF-196 | D2 (Type 6) and D6 (Type 5) stay out of Rosa's handover (data for older saves, as before). Both are mapped and verified in data; D6's five rows need two faces of a four-row slip | No change to the review; their faces only matter if a later revision hands them over |
+| CF-197 | A story Level 2 result now commits its claims before the card celebrates, but the card itself still shows the legacy PASSED / Below passing copy | Chapter 2 card copy belongs to T33/T21 |
+| CF-198 | In Level 2 the Notes, Case Folder, Tax Code Book and Marked Records now live in campaign slots and appear only when owned (Marked Records after Mark the Money!; previously a dim "0" icon from the start). The Supply Counter, decor, voucher card and keepsake reading come with the shared hotbar | USER checks icon timing, the annotated papers' collection flight into the new slot, guide pointers and the Bag icon position |
+| CF-199 | The Tax Code Book's carried state in Level 2 now lives in the campaign inventory (as in Level 1), not `review.taxBookStored`. An old Level 2 checkpoint with only `taxBookStored` restores the book on its desk | Acceptable for development saves; no campaign save can hold a Level 2 checkpoint before T21 |
+| CF-200 | Arthur's file opens in Level 2 through a viewer the hotbar creates (no Arthur comments). Its copy is built from Level 2's desk folder (the copied office) | USER checks it opens, reads and returns in Level 2 without touching Rosa's folder |
+| CF-201 | The Bag's folio hinge (about 70 degrees to flat in 0.4 s) is a UI rotation of the existing panel, shared by both levels | USER tunes or rejects the angle/timing |
+| CF-202 | Five pre-T18 checks in CampaignFoundationRegression asserted the old shape (scope == "Level_01", Level 1-only hotbar, the voucher body before the shared CommitVoucher, the Level 1-only result-card commit). They were updated to the new contracts with the same invariants, not removed | Recorded so later sessions do not read the changed text as lost coverage |
+| CF-203 | The unplaced-decor notice is player-facing but only exercised by source/rules checks; Office_Level2's copied anchors are expected to resolve | USER confirms the pieces appear in Level 2's office |
+| CF-204 | Suite builds with `-o` rewrote `Tests/*/obj` intermediates for CampaignFoundationRegression, CampaignFoundationRuntimeRegression, GuideRegression and Level2Regression (no `bin` file changed) | USER decides whether to keep or restore them in Git |
+
+## Level 2 consistency pass — 2026-10-29 (implemented, internally verified; user manual pending)
+
+CF-194 is resolved by Rosa's Client Copy delivery (it calls `CommitLevelTwoFollowThrough`). CF-195's flat-paper limitation is superseded: Rosa's records now use Level 1's physical record path. Level 2 campaign launch stays pending until T21; next ticket T32.
+
+| ID | Issue | Status / next |
+|---|---|---|
+| CF-205 | Rosa moves to the conference room by instant placement while nothing shows her (or under a resume); there is no walk yet. On a device where some renderer of hers stays visible (shadow casting), she moves once the player looks away | T32 may replace it with a walk through `Level2RosaConsultation`; USER checks no visible pop |
+| CF-206 | `Level2RecordPaper`, `Level2SupportingStack` and the record-face parts of `Level2FindingsSheet` (T18's UI papers) are not called at runtime (they never were); they are left in place, unreferenced by the new page | Retire in a cleanup ticket if the user agrees; do not rewire them |
+| CF-207 | After an approved review is resumed mid-handover, the result card is rebuilt from the run's ledger (the approved case line is restored) rather than the original card instance; the story claims are once-only and unaffected | USER compares the card after a resume |
+| CF-208 | Rosa has no portrait art (`Rosa_Default` falls back) and no NPC status marker; her room visits show no "!" | T32/T33 (animation, emotes, marker) |
+| CF-209 | Rosa's consultation, stage lines, Client Copy and farewell lines are first drafts in the case JSON (validated: no answer names, no amounts, Level 1's validator passes) | T33 polishes wording; USER reads them in context |
+| CF-210 | The Auditor's "not yet" lines come from `Level2FolderHandoff.HandInRefusal` (stamp, unchanged review, cutoff, folder never on the desk); `AuditorSubmissionTray.SubmissionBlocked` remains in the tray but nothing sets it now | No action; recorded so the hook is not mistaken for a live Level 2 gate |
+| CF-211 | Nine Level2Regression and four CampaignFoundationRegression contracts were updated to the new paths with the same invariants (listed in PROGRESS) | Recorded so later sessions do not read them as lost coverage |
+| CF-212 | Suite builds with `-o` rewrote `Tests/*/obj` intermediates again (CampaignFoundationRegression, CampaignFoundationRuntimeRegression, GuideRegression, Level2Regression, TrainingRegression) | USER decides whether to keep or restore them in Git |
+
+## T32 — 2026-10-29 (implemented, internally verified; user manual pending)
+
+T32's walk replaces CF-205's instant placement (it remains only as the fallback without walk data). Next ticket: T19.
+
+| ID | Issue | Status / next |
+|---|---|---|
+| CF-213 | The expanded Level 2 cast (Ernesto, Tess, Arthur, Dante, Marie and Lina) and Rosa's walk use authored world points; the seated fit, loops, guard visits, paired chat, customer's approach/departure and Rosa's doorway crossings are unconfirmed in Play Mode | USER checks in Play Mode; retune `Levels/Level_02/town_life.json` (no scene edit) |
+| CF-214 | Rosa's model is the old Cora mesh on the shared Humanoid controller: idle (`Idle Relaxed`, her previous clip) and walk (`Walking`) only; no record-handover clip, talk clip or sit. Speaking/listening motion is NpcAnimationDriver's procedural layer | Art: a handover gesture would need a clip; USER judges the motion |
+| CF-215 | The Synty PolygonTown townspeople have no source controller in the project (as with Rosa's Synty prefab); they run on `NpcHumanoid.controller`. If an avatar mismatch shows a T-pose, `NpcAnimationDriver` cannot correct it | USER confirms no T-pose; a different PolygonTown model can be named in scene_assets/town_life without code |
+| CF-216 | Rosa's front-desk wait is a fixed 40 s of game time from her arrival (resume restarts it); the review clock is not used for it | Tune `receptionWaitSeconds`; T33 may tie it to story beats |
+| CF-217 | Townsperson talks are per visit (not saved), like Level 1's ambient people | No action |
+| CF-218 | Suite builds with `-o` rewrote `Tests/*/obj` intermediates again (Level2, Level1LivingPlaza, Dialogue, CampaignFoundation, CampaignFoundationRuntime, Guide, Training) | USER decides whether to keep or restore them in Git |
+
+## T19 manual acceptance remaining (2026-10-29)
+
+T19's choice/save/consequence implementation has internal source/build/regression coverage; actual Unity import, choice/confirmation layout, physical folder-note/tab readability, Rosa's existing animation/turn and travel interaction, sound, phone touch targets and interruption/relaunch feel still require user acceptance. The timing declarations are not measured playback evidence. Existing T32 expanded-cast visual/navigation checks and earlier gaps remain pending. No campaign reset or real save manipulation was performed. Normal Level 2 campaign entry remains pending T21.
+
+## CHECK-to-Rosa follow-up (2026-10-29)
+
+| ID | Issue | Status / next |
+|---|---|---|
+| CF-223 | Complete first CHECK required talking to Rosa while the unfinished quest hid Exit Desk; Rosa could already have walked away | Implemented direct saved-draft desk/conversation/desk handoff; independent-work exit restored; departure waits for the committed choice, with legacy first-check compatibility. Source/pure regression coverage added. USER checks camera transitions, Talk later/Back, all choices, saved tab/marks and interruption feel. Prior CF-37 and manual acceptance limits remain. |
+
+## 2026-10-29 gameplay polish acceptance
+
+The screenshot-reported stamp layering, populated schedule expansion, blocked conversation framing, missing Level 2 static-arm rigs and shared Notes reset have source fixes and passing internal checks. Rendered/device acceptance remains pending; see [the follow-up](POLISH_2026-10-29.md). Direct Editor attempts intentionally isolate inventory/checkpoints, so verify cross-chapter saving through the Career story route. Earlier manual limitations remain open.

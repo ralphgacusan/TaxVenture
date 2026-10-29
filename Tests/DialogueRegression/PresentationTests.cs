@@ -223,79 +223,79 @@ public static class PresentationTests
         float[] heights = { 1.7f, 3.5f, 0.9f };
         int configurations = 0;
         foreach (float h in heights)
-        for (int angle = 0; angle < 360; angle += 45)
-        {
-            configurations++;
-            double rad = angle * Math.PI / 180.0;
-            Vector3 elijahFloor = new Vector3(2f, 0.5f, -1f);
-            Vector3 dir = new Vector3((float)Math.Sin(rad), 0f, (float)Math.Cos(rad));
-            Vector3 npcFloor = elijahFloor + dir * (0.7f * h);
-            Vector3 elijahHead = elijahFloor + new Vector3(0, 0.9f * h, 0);
-            Vector3 npcHead = npcFloor + new Vector3(0, 0.88f * h, 0);
-            string where = $"(height {h}, angle {angle})";
+            for (int angle = 0; angle < 360; angle += 45)
+            {
+                configurations++;
+                double rad = angle * Math.PI / 180.0;
+                Vector3 elijahFloor = new Vector3(2f, 0.5f, -1f);
+                Vector3 dir = new Vector3((float)Math.Sin(rad), 0f, (float)Math.Cos(rad));
+                Vector3 npcFloor = elijahFloor + dir * (0.7f * h);
+                Vector3 elijahHead = elijahFloor + new Vector3(0, 0.9f * h, 0);
+                Vector3 npcHead = npcFloor + new Vector3(0, 0.88f * h, 0);
+                string where = $"(height {h}, angle {angle})";
 
-            DialogueShotPose npcShot = DialogueShotMath.NpcLineShot(elijahHead, npcHead, h, s);
-            DialogueShotPose playerShot = DialogueShotMath.PlayerLineShot(elijahHead, npcHead, h, s);
-            DialogueShotPose two = DialogueShotMath.TwoShot(elijahHead, npcHead, h, s, +1f);
+                DialogueShotPose npcShot = DialogueShotMath.NpcLineShot(elijahHead, npcHead, h, s);
+                DialogueShotPose playerShot = DialogueShotMath.PlayerLineShot(elijahHead, npcHead, h, s);
+                DialogueShotPose two = DialogueShotMath.TwoShot(elijahHead, npcHead, h, s, +1f);
 
-            check(Vector3.Dot(DialogueShotMath.Horizontal(npcShot.Position - elijahHead), dir) < 0f,
-                $"NPC-line camera must sit behind Elijah {where}.");
-            check(Vector3.Dot(DialogueShotMath.Horizontal(playerShot.Position - npcHead), -dir) < 0f,
-                $"Player-line camera must sit behind the NPC {where}.");
-            check(Near(npcShot.Position.Y - elijahHead.Y, s.HeightOffset * h) &&
-                  Near(playerShot.Position.Y - npcHead.Y, s.HeightOffset * h),
-                $"Cameras must sit just above the foreground head {where}.");
+                check(Vector3.Dot(DialogueShotMath.Horizontal(npcShot.Position - elijahHead), dir) < 0f,
+                    $"NPC-line camera must sit behind Elijah {where}.");
+                check(Vector3.Dot(DialogueShotMath.Horizontal(playerShot.Position - npcHead), -dir) < 0f,
+                    $"Player-line camera must sit behind the NPC {where}.");
+                check(Near(npcShot.Position.Y - elijahHead.Y, s.HeightOffset * h) &&
+                      Near(playerShot.Position.Y - npcHead.Y, s.HeightOffset * h),
+                    $"Cameras must sit just above the foreground head {where}.");
 
-            int npcSide = DialogueShotMath.SideOfAxis(elijahHead, npcHead, npcShot.Position);
-            int playerSide = DialogueShotMath.SideOfAxis(elijahHead, npcHead, playerShot.Position);
-            int twoSide = DialogueShotMath.SideOfAxis(elijahHead, npcHead, two.Position);
-            check(npcSide == 1 && playerSide == 1 && twoSide == 1,
-                $"All shots must stay on the same side of the Elijah→NPC axis (180° rule) {where}.");
+                int npcSide = DialogueShotMath.SideOfAxis(elijahHead, npcHead, npcShot.Position);
+                int playerSide = DialogueShotMath.SideOfAxis(elijahHead, npcHead, playerShot.Position);
+                int twoSide = DialogueShotMath.SideOfAxis(elijahHead, npcHead, two.Position);
+                check(npcSide == 1 && playerSide == 1 && twoSide == 1,
+                    $"All shots must stay on the same side of the Elijah→NPC axis (180° rule) {where}.");
 
-            // Screen consistency: Elijah stays screen-left, the NPC screen-right, in both shots.
-            check(ScreenX(npcShot, npcHead) > ScreenX(npcShot, elijahHead) &&
-                  ScreenX(playerShot, npcHead) > ScreenX(playerShot, elijahHead),
-                $"Elijah must stay screen-left of the NPC across shot and reverse shot {where}.");
+                // Screen consistency: Elijah stays screen-left, the NPC screen-right, in both shots.
+                check(ScreenX(npcShot, npcHead) > ScreenX(npcShot, elijahHead) &&
+                      ScreenX(playerShot, npcHead) > ScreenX(playerShot, elijahHead),
+                    $"Elijah must stay screen-left of the NPC across shot and reverse shot {where}.");
 
-            // The speaker is framed near the centre; the shoulder is in frame, off to the side.
-            check(AngleDeg(npcShot.LookAt - npcShot.Position, npcHead - npcShot.Position) < 15f &&
-                  AngleDeg(playerShot.LookAt - playerShot.Position, elijahHead - playerShot.Position) < 15f,
-                $"The speaking face must be close to the frame centre {where}.");
-            check(AngleDeg(npcShot.LookAt - npcShot.Position, elijahHead - npcShot.Position) < 50f,
-                $"Elijah's shoulder must remain within a normal field of view in the NPC shot {where}.");
+                // The speaker is framed near the centre; the shoulder is in frame, off to the side.
+                check(AngleDeg(npcShot.LookAt - npcShot.Position, npcHead - npcShot.Position) < 15f &&
+                      AngleDeg(playerShot.LookAt - playerShot.Position, elijahHead - playerShot.Position) < 15f,
+                    $"The speaking face must be close to the frame centre {where}.");
+                check(AngleDeg(npcShot.LookAt - npcShot.Position, elijahHead - npcShot.Position) < 50f,
+                    $"Elijah's shoulder must remain within a normal field of view in the NPC shot {where}.");
 
-            float gap = DialogueShotMath.Horizontal(npcHead - elijahHead).Length();
-            Vector3 mid = (elijahHead + npcHead) * 0.5f;
-            check(Near(Vector3.Dot(DialogueShotMath.Horizontal(two.Position - mid), dir), 0f, 1e-3f) &&
-                  DialogueShotMath.Horizontal(two.Position - mid).Length() >= gap * 1.1f - 1e-4f &&
-                  Vector3.Distance(two.LookAt, mid) < 1e-4f,
-                $"The two-shot must look at the midpoint from the side, far enough to hold both {where}.");
+                float gap = DialogueShotMath.Horizontal(npcHead - elijahHead).Length();
+                Vector3 mid = (elijahHead + npcHead) * 0.5f;
+                check(Near(Vector3.Dot(DialogueShotMath.Horizontal(two.Position - mid), dir), 0f, 1e-3f) &&
+                      DialogueShotMath.Horizontal(two.Position - mid).Length() >= gap * 1.1f - 1e-4f &&
+                      Vector3.Distance(two.LookAt, mid) < 1e-4f,
+                    $"The two-shot must look at the midpoint from the side, far enough to hold both {where}.");
 
-            // Wider side angle: from the OTS camera the speaker's head is well clear
-            // of the foreground listener's head (old defaults gave about 12.7°).
-            check(AngleDeg(npcHead - npcShot.Position, elijahHead - npcShot.Position) >= 18f &&
-                  AngleDeg(elijahHead - playerShot.Position, npcHead - playerShot.Position) >= 18f,
-                $"The listener must not hide the speaker: at least 18° between their heads {where}.");
+                // Wider side angle: from the OTS camera the speaker's head is well clear
+                // of the foreground listener's head (old defaults gave about 12.7°).
+                check(AngleDeg(npcHead - npcShot.Position, elijahHead - npcShot.Position) >= 18f &&
+                      AngleDeg(elijahHead - playerShot.Position, npcHead - playerShot.Position) >= 18f,
+                    $"The listener must not hide the speaker: at least 18° between their heads {where}.");
 
-            // Solo close-ups: only the speaker is in frame, same side of the axis.
-            DialogueShotPose npcClose = DialogueShotMath.NpcCloseUp(elijahHead, npcHead, h, s);
-            DialogueShotPose playerClose = DialogueShotMath.PlayerCloseUp(elijahHead, npcHead, h, s);
-            check(DialogueShotMath.IsBehindCamera(npcClose, elijahHead, 0.08f * h) &&
-                  DialogueShotMath.IsBehindCamera(playerClose, npcHead, 0.08f * h),
-                $"Close-ups must leave the listener behind the camera (out of frame) {where}.");
-            check(!DialogueShotMath.IsBehindCamera(npcClose, npcHead) && !DialogueShotMath.IsBehindCamera(playerClose, elijahHead) &&
-                  Vector3.Distance(npcClose.LookAt, npcHead) < 1e-4f && Vector3.Distance(playerClose.LookAt, elijahHead) < 1e-4f,
-                $"Close-ups must look straight at the speaking face {where}.");
-            check(Near(Vector3.Distance(npcClose.Position, npcHead), (float)Math.Sqrt(0.3 * 0.3 + 0.1 * 0.1) * h, 1e-3f * h),
-                $"Close-up distance must follow the settings and scale with height {where}.");
-            check(DialogueShotMath.SideOfAxis(elijahHead, npcHead, npcClose.Position) == 1 &&
-                  DialogueShotMath.SideOfAxis(elijahHead, npcHead, playerClose.Position) == 1,
-                $"Close-ups must stay on the same side of the axis as the other shots {where}.");
+                // Solo close-ups: only the speaker is in frame, same side of the axis.
+                DialogueShotPose npcClose = DialogueShotMath.NpcCloseUp(elijahHead, npcHead, h, s);
+                DialogueShotPose playerClose = DialogueShotMath.PlayerCloseUp(elijahHead, npcHead, h, s);
+                check(DialogueShotMath.IsBehindCamera(npcClose, elijahHead, 0.08f * h) &&
+                      DialogueShotMath.IsBehindCamera(playerClose, npcHead, 0.08f * h),
+                    $"Close-ups must leave the listener behind the camera (out of frame) {where}.");
+                check(!DialogueShotMath.IsBehindCamera(npcClose, npcHead) && !DialogueShotMath.IsBehindCamera(playerClose, elijahHead) &&
+                      Vector3.Distance(npcClose.LookAt, npcHead) < 1e-4f && Vector3.Distance(playerClose.LookAt, elijahHead) < 1e-4f,
+                    $"Close-ups must look straight at the speaking face {where}.");
+                check(Near(Vector3.Distance(npcClose.Position, npcHead), (float)Math.Sqrt(0.3 * 0.3 + 0.1 * 0.1) * h, 1e-3f * h),
+                    $"Close-up distance must follow the settings and scale with height {where}.");
+                check(DialogueShotMath.SideOfAxis(elijahHead, npcHead, npcClose.Position) == 1 &&
+                      DialogueShotMath.SideOfAxis(elijahHead, npcHead, playerClose.Position) == 1,
+                    $"Close-ups must stay on the same side of the axis as the other shots {where}.");
 
-            DialogueShotPose tight = DialogueShotMath.NpcLineShot(elijahHead, npcHead, h, s, 0.5f);
-            check(Vector3.Distance(tight.Position, elijahHead) < Vector3.Distance(npcShot.Position, elijahHead),
-                $"A shortened pull-back must move the camera closer for tight spaces {where}.");
-        }
+                DialogueShotPose tight = DialogueShotMath.NpcLineShot(elijahHead, npcHead, h, s, 0.5f);
+                check(Vector3.Distance(tight.Position, elijahHead) < Vector3.Distance(npcShot.Position, elijahHead),
+                    $"A shortened pull-back must move the camera closer for tight spaces {where}.");
+            }
         check(configurations == 24, "Shot geometry must be checked across heights and directions.");
 
         // Scale invariance: the same framing at double size.

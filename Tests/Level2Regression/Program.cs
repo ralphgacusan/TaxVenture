@@ -4,6 +4,7 @@
 //   dotnet run --no-restore
 // (build the scratch Assembly-CSharp first; see Level2Regression.csproj).
 // Scene files are checked by Tests/VerifyLevel2Scene.py.
+using Vector3 = UnityEngine.Vector3;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -206,8 +207,9 @@ Check(!handoffSrc.Contains("private void PlaceOnDesk(") && handoffSrc.Contains("
     "only a successful shared view opening records first placement, retaining stored ownership");
 Check(handoffSrc.Contains("bool handled = previousDrop != null && previousDrop(screenPosition);"),
     "dropping uses Level 1's animated view at the drop position");
-Check(handoffSrc.Contains("AuditorSubmissionTray.SubmissionBlocked = BlockHandIn") && handoffSrc.Contains("AuditorSubmissionTray.SubmissionBlocked = null"),
-    "no Auditor hand-in before the folder has been on the desk; the rule is removed with the level");
+Check(!handoffSrc.Contains("AuditorSubmissionTray.SubmissionBlocked = BlockHandIn") && handoffSrc.Contains("public static string HandInRefusal(CaseReviewState review)") &&
+      handoffSrc.Contains("if (review.FolderRetrieved && !review.folderPlacedOnDesk)"),
+    "consistency pass: no tray blocker; the Auditor's conversation refuses a folder that was never on the desk (HandInRefusal)");
 Check(Regex.IsMatch(Src("Scripts/Data/AuditorSubmissionTray.cs"), @"if \(SubmissionBlocked != null && SubmissionBlocked\(\)\)"),
     "the Auditor tray honours an optional level blocker (unset in Level 1)");
 Check(Src("Scripts/Level2/Level2OfficeStart.cs").Contains("EnsurePart<Level2FolderHandoff>(Level2FolderHandoff.ChildName)"), "the handoff is built once under Level2Gameplay/FolderHandoff");
@@ -653,7 +655,7 @@ Check(tutRound.tutorialCompleted && tutRound.toolkitDemoSeen && tutRound.tutoria
 Check(ObjectiveTriggers.Validate("event:AnnotationTutorialCompleted") == null && ObjectiveTriggers.Validate("event:ToolkitDemoFinished") == null,
     "toolkit events are valid objective/guide triggers");
 Check(File.ReadAllText(Res("Levels/Level_02/objectives.json")).Contains("event:AnnotationTutorialCompleted") &&
-      File.ReadAllText(Res("Tutorials/Level_02/guide.json")).Contains("\"when\": \"event:ToolkitDemoFinished\""),
+      File.ReadAllText(Res("Tutorials/Level_02/guide.json")).Contains("event:ToolkitDemoFinished|flag:toolkitDemoSeen"),
     "objective and guide observe the toolkit events (the guide never fills a slot)");
 
 string toolkitSrc = Src("Scripts/Level2/IncomeToolkit.cs");
@@ -1273,7 +1275,7 @@ Check(Src("Scripts/Level2/Level2OfficeReview.cs").Contains("Your recommendation 
       Src("Scripts/Level2/Level2OfficeReview.cs").Contains("ReviewInkMark.SetStyle(ink, ready ? ReviewInkMark.InkGreen : ReviewInkMark.InkRed, current ? 1f : 0.3f)"),
     "the slip says the Auditor decides; stale ink fades instead of stacking");
 Check(Src("Scripts/Level2/Level2FolderHandoff.cs").Contains("case FinalAudit.Outcome.NotStamped:") &&
-      Src("Scripts/Level2/Level2FolderHandoff.cs").Contains("return !CanHandInReview(review, true);"), "hand-in requires a current final stamp");
+      Src("Scripts/Level2/Level2FolderHandoff.cs").Contains("public static string HandInRefusal(CaseReviewState review)"), "hand-in requires a current final stamp (the Auditor says why in his conversation)");
 Check(ObjectiveTriggers.Validate("event:FinalAssessmentStamped") == null && File.ReadAllText(Res("Levels/Level_02/objectives.json")).Contains("event:FinalAssessmentStamped"),
     "objective step observes FinalAssessmentStamped");
 
@@ -1378,10 +1380,13 @@ Check(l1Case.Exp == Math.Max(0, l1CaseRules.caseFile.exp - 2 * l1CaseRules.caseF
 
 string auditSrc = Src("Scripts/Level2/Level2Audit.cs");
 string auditorSrc = Src("Scripts/Interactables/AuditorInteractable.cs");
-Check(auditorSrc.Contains("if (LevelAudit != null && LevelAudit(this)) return;") && auditSrc.Contains("AuditorInteractable.LevelAudit = Handle"),
-    "Level 2 judges hand-ins through a hook; Level 1's audit runs when no level hook handles it");
-Check(Regex.IsMatch(auditSrc, @"FinalAudit\.Result result = FinalAudit\.Submit\([\s\S]*?RunLevelDialogue\("), "the outcome is recorded once, before the dialogue");
-Check(auditSrc.Contains("if (!FinalAudit.TryReward(review)) { inProgress = false; return; }") && auditSrc.Contains("CalculateAndStoreCaseReward(data)") &&
+Check(auditSrc.Contains("AuditorInteractable.LevelHandIn = this") && !auditSrc.Contains("AuditorInteractable.LevelAudit = Handle") &&
+      auditorSrc.Contains("if (LevelHandIn != null) return;") && auditorSrc.Contains("public static bool TalkFirst => LevelAudit == null && (HudHotbar.Instance != null || LevelHandIn != null);"),
+    "consistency pass: Level 2's hand-in is Level 1's talk-first conversation (no tray audit, no Level 1 check on Rosa's case)");
+Check(Regex.IsMatch(auditorSrc, @"levelDecision = LevelHandIn\.Decide\(\);[\s\S]*?AwaitAction\(SummaryAction") &&
+      Regex.IsMatch(auditSrc, @"public AuditorInteractable\.LevelHandInDecision Decide\(\)[\s\S]*?FinalAudit\.Result result = FinalAudit\.Submit\("),
+    "the outcome is recorded once, when the folder is in his hands, before his lines and the summary");
+Check(auditSrc.Contains("if (!FinalAudit.TryReward(review)) return;") && auditSrc.Contains("CalculateAndStoreCaseReward(data)") &&
       Regex.Matches(auditSrc, @"CalculateAndStoreCaseReward\(").Count == 1, "only an accepted packet awards the case, once");
 Check(auditSrc.Contains("RecordAuditAttempt(result.NewlyCharged.Count, false)") && !auditSrc.Contains("ResetCurrentCaseForRetry"),
     "returns charge only new root causes and never reset the review work");
@@ -1533,9 +1538,9 @@ Check(managerSrc.Contains("public bool SaveCheckpoint(LevelCheckpoint checkpoint
       managerSrc.Contains("SaveFileStore.Sign(payload)"), "checkpoints use the existing signed save owner (no second file), never practice runs");
 string cpSrc = Src("Scripts/Level2/Level2Checkpointer.cs");
 Check(managerSrc.Contains("!Level2Checkpointer.IsDirectEditorAttempt"), "completing a direct Editor attempt preserves the career-board checkpoint");
-Check(cpSrc.Contains("if (review.audit != null && review.audit.approved) return true;") && cpSrc.Contains("OnApplicationPause") &&
+Check(cpSrc.Contains("if (!Level2Checkpoint.NeedsCheckpoint(review))") && cpSrc.Contains("OnApplicationPause") &&
       cpSrc.Contains("GameplayEvents.OnReviewDayRolled += SaveNow") && cpSrc.Contains("GameplayEvents.OnAuditReturned += SaveNow"),
-    "milestones, pause/quit and periodic changes save; nothing after approval");
+    "milestones, pause/quit and periodic changes save; after approval only the owed Client Copy (consistency pass)");
 Check(cpSrc.Contains("manager.Score.AddSideQuest(IncomeChallenge.FirstWrongCount(review.challenge), null, tier)") &&
       cpSrc.Contains("manager.RestoreAuditCounters(") && cpSrc.Contains("OfficeObjectives.Instance.MarkDone(trigger)") &&
       !cpSrc.Contains("Raise"), "resume rebuilds score and objectives without raising gameplay events");
@@ -1678,7 +1683,9 @@ Check(assetsYaml.Contains("guid: 0b1fbdea34f261f4eacc93aa45b49b92"), "Rosa's idl
 Check(stallSrc.Contains("Instantiate(assets.storePrefab, transform)") && stallSrc.Contains("Instantiate(assets.rosaPrefab, holder.transform)"),
     "store and Rosa are instances of the originals (prefabs and source scenes untouched)");
 Check(stallSrc.Contains("new Vector3(-scale, scale, scale)") && stallSrc.Contains("StoreHeight / raw.size.y"), "store keeps Building_4 (1)'s X mirror and its proportions");
-Check(stallSrc.Contains("animator.runtimeAnimatorController = assets.rosaIdleController"), "Rosa's Animator gets the idle controller");
+Check(stallSrc.Contains("assets.npcController != null ? assets.npcController : assets.rosaIdleController") &&
+      stallSrc.Contains("animator.runtimeAnimatorController = controller;"),
+    "Rosa's Animator gets the idle controller (T32: the shared Humanoid controller with her same idle clip and a walk; her old idle controller as fallback)");
 Check(stallSrc.Contains("DetectFront(") && stallSrc.Contains("FindSpot(") && stallSrc.Contains("RouteClearance") && stallSrc.Contains("Blocked("),
     "the stall is placed by measured front, free space and route clearance");
 Check(Regex.IsMatch(rosaSrc, @"bool handover = review\.phase == ReviewPhase\.MarketVisit;[\s\S]*\(\) => Finish\(handover\),\s*\(\) => Finish\(false\)"),
@@ -1953,7 +1960,7 @@ Check(Src("Scripts/Level2/Level2StampHitTarget.cs").Contains("Owner.ScreenHit(vi
     "the stamp pointer surface uses the same visual picking and blocks underlying document drags");
 
 Check(deskStampsSrc.Contains("toolLayer.CompositeOverDocuments = true") &&
-      Src("Scripts/UI/HUD/Doc3DLayer.cs").Contains("other.IsComposited && other.sortingOrder < sortingOrder"),
+      Src("Scripts/UI/HUD/Doc3DLayer.cs").Contains("other.IsComposited || other.AlwaysComposite"),
     "lifted stamps also cover composited documents, with existing windows unchanged by default");
 Check(deskStampsSrc.Contains("view.nearClipPlane * 1.6f") && deskStampsSrc.Contains("baseData.cameraStack.Insert(0, stampCamera)") &&
       deskStampsSrc.Contains("stampCamera.nearClipPlane = Mathf.Max(0.005f, main.nearClipPlane * 0.1f)"),
@@ -1984,9 +1991,23 @@ Check(slipSource.Contains("observation.GetPreferredValues") && slipSource.Contai
       slipSource.Contains("observation.enableAutoSizing = false"),
     "handwriting height is measured at its actual fixed font size and extends the sheet");
 Check(slipSource.Contains("StartCoroutine(SettleOnDesk())"), "dropping the loose slip on the desk settles its printed face");
-Check(deskStampsSrc.Contains("toolLayer.AlwaysComposite = false") && deskStampsSrc.Contains("SetDeskAffordance(CanUseDesk)") &&
-      stampDragSrc.Contains("if (documentLayer != null && lifted) documentLayer.BringToFront(false)"),
-    "the overlay camera covers world occluders; the capture only steps in (on top) above paper windows");
+Check(deskStampsSrc.Contains("toolLayer.AlwaysComposite = true") && deskStampsSrc.Contains("SetDeskAffordance(CanUseDesk)") &&
+      stampDragSrc.Contains("if (documentLayer != null && onStampLayer) documentLayer.BringToFront(false)"),
+    "the overlay camera covers world occluders; held and returning stamps always composite above captured folders");
+// Filled and empty schedules share exactly the same bounded row budget.
+foreach (float pageRoom in new[] { 640f, 820f, 966f })
+    foreach (int rows in new[] { 5, 7, 9 })
+    {
+        float rowHeight = CaseFolderUI.FittedRowHeight(pageRoom, 0f, 0f, 20f, rows, rows);
+        Check(rowHeight > 0f && rowHeight <= CaseFolderUI.RowTargetHeight &&
+              rowHeight * rows + 20f * (rows - 1) <= pageRoom + 0.001f,
+            $"populated review layout: {rows} rows stay inside {pageRoom} units above navigation");
+    }
+Check(CaseFolderUI.FittedRowHeight(800f, 0f, 0f, 20f, 0, 0) == 0f &&
+      CaseFolderUI.FittedRowHeight(10f, 0f, 0f, 20f, 9, 9) == 1f &&
+      folderUiSrc.Contains("listFitter.enabled = !boundContentRows") &&
+      folderUiSrc.Contains("viewportLayout.ignoreLayout = true") && folderUiSrc.Contains("RectMask2D"),
+    "review layout handles empty/tiny space and bounds the actual fitted container, including overflow");
 Check(folderUiSrc.Contains("StopPageTurn(false)") && folderUiSrc.Contains("target == currentPageIndex"),
     "automatic folder turns share cancellation/restoration and skip an already selected page");
 Check(Src("Scripts/TaxCodeBook/TaxCodeBook3DDrag.cs").Contains("VisualCentre(openTaxCodeBook)") &&
@@ -2034,8 +2055,8 @@ Check(Math.Abs(Level2StampDrag.PadWidth - 0.94f) < 0.0001f && deskStampsSrc.Cont
     "the stamp is sized so its pad covers the imprint");
 Check(stampDragSrc.Contains("PinToContact(local, stampSize, wobble)") && stampDragSrc.Contains("body.localPosition = new Vector3(0f, -FaceOffset, 0f)"),
     "impact keeps the pad pinned on the imprint while the squash, wobble and paper thump animate");
-Check(stampDragSrc.Contains("bool onFront = aimValid || TryAim(screen, out aimLocal)") && stampDragSrc.Contains("touchDrag ? screen + Vector2.up * (Screen.height * TouchAimLift)"),
-    "the press lands on the last ghost shown, aimed above the finger on touch");
+Check(stampDragSrc.Contains("bool onFront = TryAim(screen, out aimLocal)") && stampDragSrc.Contains("touchDrag ? screen + Vector2.up * (Screen.height * TouchAimLift)"),
+    "the release validates the current paper aim, above the finger on touch");
 Check(Regex.IsMatch(stampDragSrc, @"Travel\(restPosition, restRotation, restSize, seconds, size \* 0\.4f\);\s*SetModelLayer\(Level2DeskStamps\.DragLayer\)"),
     "returning stamps stay above the folder until they land on the stand");
 Check(Src("Scripts/UI/HUD/HudWindowFocus.cs").Contains("!HitsDocument(layer.transform)"),
@@ -2205,10 +2226,10 @@ Check(Src("Scripts/Level2/Level2RecordPaper.cs").Contains("StyleRecordRow") && S
 string toolkitSrcR = Src("Scripts/Level2/IncomeToolkit.cs");
 Check(Src("Scripts/UI/WorkstationUI.cs").Contains("public static System.Func<bool> ExitBlocked;") &&
       Src("Scripts/UI/WorkstationUI.cs").Contains("if (ExitBlocked != null && ExitBlocked()) return;") &&
-      toolkitSrcR.Contains("WorkstationUI.ExitBlocked = () => QuestInProgress || HoldingExitAfterQuest;") &&
+      toolkitSrcR.Contains("WorkstationUI.ExitBlocked = () => HoldingExitAfterQuest ||") &&
       toolkitSrcR.Contains("AtRecordsDesk() && (HudRewardScreen.AnyOpen || (Level2AnnotatedPapers.Instance != null && Level2AnnotatedPapers.Instance.IsCollecting))") &&
       toolkitSrcR.Contains("(active.mode == Mode.Tutorial || active.mode == Mode.Challenge)"),
-    "no Exit Desk during the Mark the Money! practice and challenge; it returns once the quest is done");
+    "CHECK flow: Exit Desk is available during independent work and blocked only by transient actions/results");
 Check(Src("Scripts/UI/Guide/GuideCoachView.cs").Contains("public static System.Func<bool> HintAtBottom;") &&
       toolkitSrcR.Contains("GuideCoachView.HintAtBottom = () => AtRecordsDesk() && active.mode != Mode.Done;") && toolkitSrcR.Contains("WorkstationUI.ExitBlocked = null;"),
     "at the records desk Arthur's lines sit at the bottom, and both hooks are released when the desk is disabled");
@@ -2226,10 +2247,10 @@ Check(toolkitSrcR.Contains("private const float BoxScale = 0.02f;") && !toolkitS
       toolkitSrcR.Contains("card.body.gameObject.SetActive(!stowed)"),
     "cards kept in the case shrink away and hide: no small leftover cards at the start or after packing up");
 string auditTalkSrc = Src("Scripts/Level2/Level2Audit.cs");
-Check(auditTalkSrc.Contains("instance.StartCoroutine(instance.TalkWhenFree(auditor, lines, after, result.Outcome))") &&
+Check(Regex.IsMatch(Src("Scripts/Interactables/AuditorInteractable.cs"), @"new List<DialogueLine>\(levelDecision\.Lines\)[\s\S]*?AwaitAction\(SummaryAction") &&
       auditTalkSrc.Contains("I checked your Reviewed Schedule against Rosa's records") &&
       !auditTalkSrc.Contains("Level2Say.Line(definition.clock?.onTimeLine"),
-    "the Auditor always explains the audit first (waiting for any open conversation), then the Audit Summary; no separate on-time line from Arthur");
+    "the Auditor always explains the audit first (in his hand-in conversation), then the Audit Summary; no separate on-time line from Arthur");
 Check(toolkitSrcR.Contains("StartCoroutine(LeaveDeskAfterCollection());") && toolkitSrcR.Contains("SideQuestCompleteUI.Instance.ShowScreen(data, afterContinue)") &&
       toolkitSrcR.Contains("camera.ExitFirstPerson();"),
     "Continue on Side Quest Complete collects the annotated papers, then leaves the records desk automatically");
@@ -2242,10 +2263,10 @@ Check(!bookIconSrcR.Contains("OverOfficeDesk(") && bookIconSrcR.Contains("else i
       bookIconSrcR.Contains("desk.UnparkClosedBook();") && Src("Scripts/TaxCodeBook/TaxCodeBook3DDrag.cs").Contains("public void UnparkClosedBook()"),
     "the carried book always opens first when dragged out of its icon; the open book goes back onto its desk stack only when released over its own stack spot (2026-10-26)");
 string auditWaitSrc = Src("Scripts/Level2/Level2Audit.cs");
-Check(auditWaitSrc.Contains("instance.StartCoroutine(AfterDialogueCloses(conclude))") &&
-      auditWaitSrc.Contains("if (!DialogueUI.IsAnyDialogueActive && !AnyDialoguePanelShowing()) break;") &&
+Check(Src("Scripts/Interactables/AuditorInteractable.cs").Contains("if (line.AwaitAction == SummaryAction && !summaryOpened && levelDecision != null)") &&
+      !auditWaitSrc.Contains("AfterDialogueCloses") &&
       Src("Scripts/UI/DialogueUI.cs").Contains("public bool IsPanelShowing =>"),
-    "the Audit Summary appears only after the Auditor's last line is closed and his dialogue box has left the screen");
+    "the Audit Summary opens on the Auditor's summary line, as in Level 1 (his conversation waits for it)");
 var summaryDef = rosa.review;
 var approvedResult = new FinalAudit.Result { Outcome = FinalAudit.Outcome.Approved, MayTotal = 20000f, AnnualTotal = 140000f };
 var approvedState = new CaseReviewState { audit = new AuditTrackState { failedSubmissions = 1 }, clock = new ReviewClockState { started = true, day = 1 } };
@@ -2261,8 +2282,8 @@ Check(returnedCard.Title == "Audit Summary" && !returnedCard.StatusGood && retur
       returnedCard.ButtonLabel == "Review the case" && returnedCard.Issues.Count >= 1 && returnedCard.AutoContinueSeconds == 0f,
     "a returned review shows the same card with what to fix, and waits for the player");
 string auditSrcR = Src("Scripts/Level2/Level2Audit.cs");
-Check(auditSrcR.Contains("auditor.ShowLevelSummary(Summary(result, review, definition), \"Audit Summary\", Finish)") &&
-      auditSrcR.IndexOf("CalculateAndStoreCaseReward") > auditSrcR.IndexOf("void Finish()") &&
+Check(Src("Scripts/Interactables/AuditorInteractable.cs").Contains("if (!ShowLevelSummary(levelDecision.Summary, \"Audit Summary\", OnHandInSummaryClosed)) OnHandInSummaryClosed();") &&
+      auditSrcR.IndexOf("CalculateAndStoreCaseReward") > auditSrcR.IndexOf("public void Approve()") &&
       Src("Scripts/Interactables/AuditorInteractable.cs").Contains("summaryPopupUI.ShowScreen(data, plainText, closed);"),
     "the case reward and level completion follow when the Audit Summary closes, as in Office Level 1");
 
@@ -2276,7 +2297,8 @@ Check(Src("Scripts/Level2/Level2OfficeStart.cs").Contains("blend = 0.16f,") && S
     "the built-in start matches office_start.json");
 Check(Regex.Matches(Src("Scripts/Data/AuditorSubmissionTray.cs"), @"auditor\.BeginFinalAudit\(\);").Count == 1,
     "the tray starts the audit once (a second call replayed the Auditor's lines)");
-Check(Src("Scripts/Level2/Level2Audit.cs").Contains("if (inProgress) return true;"), "Level 2 handles one hand-in at a time");
+Check(Src("Scripts/Level2/Level2Audit.cs").Contains("decided = null;") && Src("Scripts/Level2/Level2Audit.cs").Contains("if (!FinalAudit.TryReward(review)) return;") &&
+      Src("Scripts/Interactables/AuditorInteractable.cs").Contains("if (!AwaitingFolder || CaseManager.Instance == null"), "Level 2 handles one hand-in at a time (decided once, rewarded once)");
 Check(File.ReadAllText(Res("Tutorials/Level_02/guide.json")).Contains("flag:questDone") && File.ReadAllText(Res("Tutorials/Level_02/guide.json")).Contains("flag:redNotes") && File.ReadAllText(Res("Tutorials/Level_02/guide.json")).Contains("flag:finalStamped"),
     "guide waits also accept the already-done state, so a fast player never leaves Arthur stuck");
 Check(Src("Scripts/UI/HUD/FloatingWindow.cs").Contains("DebugTrace.Log(") && !Src("Scripts/UI/HUD/FloatingWindow.cs").Contains(" Debug.Log("),
@@ -2351,7 +2373,7 @@ string guideText = File.ReadAllText(Res("Tutorials/Level_02/guide.json"));
 Check(!guideText.Contains("Follow the arrows to the receptionist") && !guideText.Contains("\"revealArrows\":"),
     "no arrows to the receptionist or the office");
 
-// Taxpayer Profile page.
+// Client background notes (consistency pass: the profile's facts, no separate profile page).
 string profile = rosa.review.profileText ?? "";
 Check(profile.Length > 40 && profile.Split('.').Count(s => s.Trim().Length > 0) == 1, "the Taxpayer Profile is one sentence");
 foreach (string answer in new[] { "Resident Citizen", "resident", "Self-Employed", "self-employed", "Business Income", "business income", "Compensation" })
@@ -2359,10 +2381,9 @@ foreach (string answer in new[] { "Resident Citizen", "resident", "Self-Employed
 foreach (string clue in new[] { "Filipino", "no boss", "runs her own", "customers" })
     Check(profile.Contains(clue), "the profile carries the clue: " + clue);
 string folderSrcP = Src("Scripts/UI/CaseFolderUI.cs");
-Check(folderSrcP.Contains("public const string TaxpayerProfilePageTitle = \"Taxpayer Profile\";") &&
-      folderSrcP.IndexOf("TaxpayerProfilePageTitle, \"\")") < folderSrcP.IndexOf("string title = captured.kind == \"summary\"") &&
-      folderSrcP.Contains("BuildProfileRows(data, profile)") && folderSrcP.Contains("\"About the taxpayer\""),
-    "the Taxpayer Profile page comes right after Taxpayer Information, printed like the other rows");
+Check(!folderSrcP.Contains("TaxpayerProfilePageTitle") && !folderSrcP.Contains("BuildProfileRows") &&
+      folderSrcP.IndexOf("List<CaseFolderPageContent> own = InstancePages(data);") < folderSrcP.IndexOf("AddReviewPages(list, data);"),
+    "consistency pass: no Taxpayer Profile page; the folder's own Supporting Documents page follows page 1, the working pages after it");
 
 // Guide cues and flags.
 Check(GuideTriggers.TryParse("cue:FindingsPaperLifted", out var cueT, out _) && cueT.Kind == GuideTriggers.Kind.Event && cueT.Key == "cue:FindingsPaperLifted",
@@ -2378,7 +2399,7 @@ var cueNames = Regex.Matches(guideText, "cue:([A-Za-z]+)").Select(m => m.Groups[
 string allSrc = string.Join("\n", Directory.GetFiles(Path.Combine(root, "Assets", "Scripts"), "*.cs", SearchOption.AllDirectories).Select(File.ReadAllText));
 foreach (string cue in cueNames)
     Check(allSrc.Contains("RaiseGuideCue(\"" + cue + "\")"), "the guide's cue is raised by gameplay: " + cue);
-Check(cueNames.Count >= 6, "the guide waits on the new cues");
+Check(new[] { "FindingsPaperLifted", "FindingsPaperFiled", "StampsUp", "ScheduleLineFilled" }.All(cueNames.Contains), "the concise guide retains the new tool action cues");
 string startSrcF = Src("Scripts/Level2/Level2OfficeStart.cs");
 foreach (string flag in Regex.Matches(guideText, "flag:([A-Za-z]+)").Select(m => m.Groups[1].Value).Distinct())
     Check(startSrcF.Contains("case \"" + flag + "\":"), "Level2OfficeStart provides the guide flag: " + flag);
@@ -2412,7 +2433,8 @@ Check(openSignal > folderOpenFlow.IndexOf("if (!pages.ShowFor3DView(Close))") &&
     "a successful HUD folder open reports the same gameplay event as opening the desk folder");
 Check(Lesson("file-room").Contains("file storage room") && Str(lessonList.Single(l => Str(l, "id") == "file-room"), "when").Contains("flag:inFileRoom"),
     "Arthur introduces the file storage room when the player walks in");
-Check(Lesson("profile").Contains("Taxpayer Profile") && Lesson("profile").Contains("Section 1") && Lesson("profile").Contains("Section 3"),
+Check(Lesson("profile").Contains("Client Background") && Lesson("profile").Contains("Supporting Documents") && !Lesson("profile").Contains("Taxpayer Profile") &&
+      Lesson("profile").Contains("Section 1") && Lesson("profile").Contains("Section 3"),
     "Arthur sends the player from the profile to book Sections 1 to 3");
 Check(Lesson("findings-paper").Contains("Section 7") && Lesson("prepared-pages").Contains("Payment Note"),
     "the Findings lessons name the pages and the reasons section");
@@ -2699,5 +2721,750 @@ Check(RecordEase(0f) == 0f && RecordEase(1f) == 1f && RecordEase(0.5f) == 0.5f &
     "record lift/landing ease reaches its exact endpoints with gentle start/stop acceleration");
 Check(Enumerable.Range(1, 100).All(i => RecordEase(i / 100f) >= RecordEase((i - 1) / 100f)),
     "record motion ease stays monotone without an endpoint bounce");
+
+// ================= T18: Rosa's review in the campaign =================
+int t18Start = checks, t18Fails = fails;
+// Types 4-7: the actual D1-D6 mapping, values and links from Rosa's case.
+var expectedTypes = new Dictionary<string, (SupportingPaperType type, string title, string status)>
+{
+    ["D1"] = (SupportingPaperType.IncomeRecord, "COLLECTION SHEET", ""),
+    ["D2"] = (SupportingPaperType.BankStatement, "BANK STATEMENT", ""),
+    ["D3"] = (SupportingPaperType.PaymentRecord, "RECEIPT", "PAID"),
+    ["D4"] = (SupportingPaperType.PaymentRecord, "RENTAL RECEIPT", "PAID"),
+    ["D5"] = (SupportingPaperType.Agreement, "LOAN AGREEMENT", ""),
+    ["D6"] = (SupportingPaperType.PaymentRecord, "CASH RECEIPT", "PAID")
+};
+var rosaRecords = rosa.review.documents.Where(d => d.kind == "record").ToList();
+Check(rosaRecords.Select(d => d.id).SequenceEqual(new[] { "D1", "D2", "D3", "D4", "D5", "D6" }),
+    "T18: Rosa keeps six separate records D1-D6 in their original order");
+Check(SupportingPaperTypes.MappingProblems(rosa.review.documents).Count == 0, "T18: every Rosa record maps to an implemented type (no fallback)");
+foreach (ReviewDocumentDefinition record in rosaRecords)
+{
+    SupportingPaperFace face = SupportingPaperTypes.Face(record, rosa.fullName);
+    var want = expectedTypes[record.id];
+    DocumentDefinition doc = rosa.documents.Find(d => d.documentName == record.documentName);
+    Check(face.Style.Type == want.type && face.Title == want.title && face.Status == want.status && !face.Fallback,
+        $"T18: {record.id} prints as Type {(int)want.type} \"{want.title}\"{(want.status.Length > 0 ? " marked " + want.status : "")}");
+    Check(face.RecordId == record.id && face.Issuer == record.issuer && face.Reference == record.reference && face.Date == record.date,
+        $"T18: {record.id} face keeps its own issuer, reference and date");
+    // D6 (five rows, kept for older saves) is the real overflow case: its fifth row continues on a second slip face.
+    int wantFaces = record.id == "D6" ? 2 : 1;
+    Check(doc != null && doc.fields.Count > 0 && SupportingPaperTypes.FaceCount(doc.fields.Count, face.Style.RowsPerFace) == wantFaces,
+        $"T18: {record.id} has its case document and prints on {wantFaces} face(s) of its type ({doc?.fields.Count} rows)");
+}
+var d1Face = SupportingPaperTypes.Face(rosaRecords[0], rosa.fullName);
+Check(d1Face.Style.HasTotalBand && rosa.documents.Find(d => d.documentName == rosaRecords[0].documentName).fields.Exists(f => f.semanticKey == d1Face.TotalKey),
+    "T18: D1's total band names a row it really prints (D1Total)");
+var d5Face = SupportingPaperTypes.Face(rosaRecords[4], rosa.fullName);
+Check(d5Face.Style.HasSignatures && d5Face.Party == rosa.fullName && d5Face.Issuer == "Bayan Credit Coop",
+    "T18: D5's agreement shows both parties (the coop and Rosa) with signature lines");
+Check(rosa.review.handoverDocumentIds.SequenceEqual(new[] { "D1", "D3", "D4", "D5" }),
+    "T18: Rosa still hands over D1, D3, D4 and D5 (D2/D6 stay data for older saves)");
+// Every record's value-transfer keys are unchanged by the type print (rows are the same CaseFolderFieldRow sources).
+Check(rosa.documents.Find(d => d.documentName == "Laundry Receipt (D3)").fields.Exists(f => f.semanticKey == "D3Amount" && f.displayValue == "₱5,000") &&
+      rosa.documents.Find(d => d.documentName == "Loan Agreement (D5)").fields.Exists(f => f.semanticKey == "D5Principal" && f.displayValue == "₱20,000"),
+    "T18: D3 and D5 keep their evidence values and semantic keys");
+Check(rosa.review.annotation.entries.Count == 4, "T18: Mark the Money! keeps its four annotated entries");
+
+// Bounded fixtures (isolated: plain definitions, no save, no scene).
+var longIssuer = new ReviewDocumentDefinition { id = "FX-long", kind = "record", paperType = 6,
+    issuer = "Cooperative Rural Bank of the Northern Island Municipalities", reference = "", date = null };
+var longFace = SupportingPaperTypes.Face(longIssuer, null);
+Check(longFace.Issuer == longIssuer.issuer && longFace.Reference == SupportingPaperTypes.Dash && longFace.Date == SupportingPaperTypes.Dash,
+    "T18 fixture: a long value is kept whole (it wraps on the paper); missing values print a dash");
+var unmapped = new ReviewDocumentDefinition { id = "FX-plain", kind = "record", title = "Mystery Slip", paperType = 0 };
+var unmappedFace = SupportingPaperTypes.Face(unmapped, null);
+Check(unmappedFace.Fallback && unmappedFace.Title == "MYSTERY SLIP" && unmappedFace.Problem.Contains("FX-plain"),
+    "T18 fixture: an unmapped record prints as a plain sheet under its own title and is named in the warning");
+foreach (int planned in new[] { 3, 8, 42 })
+{
+    var rec = new ReviewDocumentDefinition { id = "FX-" + planned, kind = "record", title = "Planned", paperType = planned };
+    Check(SupportingPaperTypes.Face(rec, null).Fallback && SupportingPaperTypes.MappingProblems(new[] { rec }).Count == 1,
+        $"T18 fixture: Type {planned} is not built here (readable fallback + diagnostic, never another record)");
+}
+Check(SupportingPaperTypes.Implemented(SupportingPaperType.Identity) && SupportingPaperTypes.Implemented(SupportingPaperType.Background) &&
+      !SupportingPaperTypes.Implemented(SupportingPaperType.Compensation2316) && !SupportingPaperTypes.Implemented(SupportingPaperType.Withholding2307),
+    "T18: implemented types are Level 1's 1-2 plus Rosa's 4-7; 3 and 8 stay planned");
+SupportingPaperTypes.FaceRange(7, SupportingPaperTypes.SlipRows, 0, out int f18s0, out int f18c0);
+SupportingPaperTypes.FaceRange(7, SupportingPaperTypes.SlipRows, 1, out int f18s1, out int f18c1);
+SupportingPaperTypes.FaceRange(7, SupportingPaperTypes.SlipRows, 9, out int f18s9, out int f18c9);
+Check(SupportingPaperTypes.FaceCount(7, SupportingPaperTypes.SlipRows) == 2 && f18s0 == 0 && f18c0 == 4 && f18s1 == 4 && f18c1 == 3 && f18s9 == 4 && f18c9 == 3 &&
+      SupportingPaperTypes.FaceCount(0, 5) == 1 && SupportingPaperTypes.FaceCount(5, 5) == 1,
+    "T18 fixture: a seven-row slip continues on a second face of the same type (4 + 3); out-of-range faces clamp");
+var styles = new[] { 4, 5, 6, 7 }.Select(t => SupportingPaperTypes.Style((SupportingPaperType)t)).ToList();
+Check(styles.Select(s => s.Header).Distinct().Count() == 4 && styles.All(s => s.Title.Length > 0) &&
+      styles[1].Shape == SupportingPaperShape.Slip && styles[2].Paper != styles[0].Paper,
+    "T18: each type has its own title and accent; the payment record is a slip; the bank statement is pale blue");
+
+// The record paper wiring (source contracts; rendering is the user's Unity check).
+string recordPaperSrc = Src("Scripts/Level2/Level2RecordPaper.cs");
+string sheetSrc = Src("Scripts/Level2/Level2FindingsSheet.cs");
+Check(recordPaperSrc.Contains("SupportingPaperTypes.Face(candidate, definition.fullName)") && recordPaperSrc.Contains("InitializeSourceOnly(field.label, value, type, field.semanticKey)") &&
+      recordPaperSrc.Contains("it is not printed"),
+    "T18: record papers print their type face over the same value-source rows; a missing document is never replaced by another");
+Check(sheetSrc.Contains("private void BuildRecordFace()") && sheetSrc.Contains("faceTurn = null;") && sheetSrc.Contains("fieldGroup.alpha = 1f;"),
+    "T18: the sheet builds the type face and an interrupted face turn leaves the rows readable");
+
+// Review clock: one voucher on Rosa's review (+180 active seconds today, cutoff later, time never rewinds).
+var clockDef = rosa.review.clock;
+var live = new ReviewClockState();
+Check(ReviewClock.Start(live, clockDef), "T18: Rosa's clock starts");
+ReviewClock.Advance(live, clockDef, 300f, false, out _);
+double before = ReviewClock.GameSeconds(live, clockDef), cutoffBefore = ReviewClock.DeadlineSeconds(live, clockDef);
+ReviewClockState extended = ReviewClock.Extend(live, VoucherRules.ExtensionSeconds);
+Check(extended != null && Math.Abs(extended.remaining - (live.remaining + 180f)) < 0.001f && extended.extensionSeconds == 180 && extended.extensionDay == 1 &&
+      Math.Abs(ReviewClock.GameSeconds(extended, clockDef) - before) < 0.001 &&
+      Math.Abs(ReviewClock.DeadlineSeconds(extended, clockDef) - (cutoffBefore + 180 * ReviewClock.GameSecondsPerActiveSecond)) < 0.001,
+    "T18: a voucher adds 180 active seconds; the shown time holds and today's cutoff moves 30 game minutes later");
+Check(live.extensionSeconds == 0 && ReviewClock.Extend(extended, 180) == null, "T18: Extend returns a copy, and a second extension the same day is refused");
+var view = ReviewClock.VoucherView(extended, clockDef, false);
+Check(VoucherRules.Check(1, "case_rosa_001", view, false) == VoucherUseStatus.AlreadyUsed &&
+      VoucherRules.Check(1, "case_rosa_001", ReviewClock.VoucherView(live, clockDef, false), false) == VoucherUseStatus.Ready &&
+      VoucherRules.Check(1, "case_rosa_001", ReviewClock.VoucherView(live, clockDef, true), false) == VoucherUseStatus.CaseDone &&
+      VoucherRules.Check(0, "case_rosa_001", ReviewClock.VoucherView(live, clockDef, false), false) == VoucherUseStatus.NoVoucher,
+    "T18: Rosa's clock gives the voucher rules ready / already used / case done / no voucher");
+var unstarted = new ReviewClockState();
+Check(VoucherRules.Check(1, "case_rosa_001", ReviewClock.VoucherView(unstarted, clockDef, false), false) == VoucherUseStatus.NoDeadline &&
+      ReviewClock.Extend(unstarted, 180) == null, "T18: no voucher before the cutoff is announced");
+var closing = ReviewClock.Extend(live, 180);
+ReviewClock.Advance(closing, clockDef, closing.remaining + 1f, false, out _);
+Check(closing.cutoffPending && ReviewClock.Extend(closing, 180) == null &&
+      VoucherRules.Check(1, "case_rosa_001", ReviewClock.VoucherView(closing, clockDef, false), false) == VoucherUseStatus.AlreadyUsed,
+    "T18: a missed (extended) cutoff cannot be extended again");
+Check(ReviewClock.TryRollover(closing, clockDef, false, false, out bool firstMiss18) && firstMiss18 && closing.day == 2 &&
+      ReviewClock.ExtensionToday(closing) == 0 && Math.Abs(closing.remaining - clockDef.allowanceSeconds) < 0.001f &&
+      ReviewClock.DeadlineSeconds(closing, clockDef) == 8 * 3600 + clockDef.allowanceSeconds * ReviewClock.GameSecondsPerActiveSecond,
+    "T18: the next morning has a fresh allowance and its normal cutoff (the voucher belonged to day 1)");
+var savedClock = JsonSerializer.Deserialize<ReviewClockState>(JsonSerializer.Serialize(extended, fieldJson), fieldJson);
+Check(savedClock.extensionSeconds == 180 && savedClock.extensionDay == 1 && Math.Abs(savedClock.remaining - extended.remaining) < 0.001f,
+    "T18: the extended clock round-trips through its saved fields");
+
+// Campaign facts read from the review (never an answer).
+var factsReview = new CaseReviewState { reviewId = "rosa", challenge = new ChallengeState { firstChecked = true, firstCorrect = 13, firstTotal = 16, mastered = true, awarded = false } };
+Check(!Level2Checkpoint.Facts(factsReview, "case_rosa_001").QuestCorrected, "T18: a mastered check is not corrected field work until its award is given");
+factsReview.challenge.awarded = true;
+factsReview.audit = new AuditTrackState { approved = true };
+Level2CaseFacts facts18 = Level2Checkpoint.Facts(factsReview, "case_rosa_001");
+Check(facts18.QuestCorrected && facts18.Approved && facts18.FirstCorrect == 13 && facts18.FirstTotal == 16 && facts18.CaseId == "case_rosa_001",
+    "T18: facts carry the frozen first check, the corrected quest and the actual approval");
+Check(!Level2Checkpoint.Facts(null, "x").HasReview, "T18: no review, no facts");
+
+// Wiring contracts: one save owner, story-only claims, Level 2 still closed to the campaign.
+string ppmSrc = Src("Scripts/RewardsSystem/PlayerProgressManager.cs");
+string checkpointerSrc = Src("Scripts/Level2/Level2Checkpointer.cs");
+Check(checkpointerSrc.Contains("progress.CommitLevelTwoCheckpoint(Capture(data, review.clock), CurrentFacts())") && !checkpointerSrc.Contains("progress.SaveCheckpoint(checkpoint)"),
+    "T18: every Level 2 checkpoint save goes through the milestone commit (checkpoint + due claims in one write)");
+Check(ppmSrc.Contains("if (IsLevelTwoStoryResult(levelTotal))") && ppmSrc.Contains("else if (facts.Approved) candidate.SetCheckpoint(approvedCopy);") &&
+      ppmSrc.Contains("pendingResult = levelTotal;"),
+    "T18: a story Level 2 result commits once; an approved review keeps its Client Copy checkpoint until delivery; a failed write stays pending");
+Check(ppmSrc.Contains("PlayerProgressData candidate = CloneProgress();\r\n        candidate.SetCheckpoint(checkpoint);\r\n        return TryWriteCandidate(candidate);") ||
+      ppmSrc.Contains("PlayerProgressData candidate = CloneProgress();\n        candidate.SetCheckpoint(checkpoint);\n        return TryWriteCandidate(candidate);"),
+    "T18: a failed checkpoint write keeps the previous checkpoint in memory");
+Check(HudHotbar.UsesHotbar("Level_02") && HudHotbar.UsesHotbar("Level_01") && !HudHotbar.UsesHotbar("Level_03"),
+    "T18: Level 2 uses the campaign hotbar and Bag (Level 3 does not exist yet)");
+string careerSrc = Src("Scripts/RewardsSystem/CareerProgressService.cs");
+Check(Regex.IsMatch(careerSrc, "id = \"Level_02\"[^}]*campaignPending = false", RegexOptions.Singleline),
+    "T21: fallback career content enables the same integrated Level 2 chapter");
+string hotbarSrc = Src("Scripts/UI/HUD/HudHotbar.cs");
+Check(hotbarSrc.Contains("Level2CampaignRules.RetireOtherChapters") && hotbarSrc.Contains("if (LevelTwo) resumedRun = review != null && review.Resumed;") &&
+      hotbarSrc.Contains("Level2CampaignRules.ResetsOnFreshAttempt(def, levelId)"),
+    "T18: Level 2 entry retires only other chapters' objects, keeps a resumed run's items and never recollects Arthur's file");
+Check(Src("Scripts/Level2/Level2FolderHandoff.cs").Contains("public static Transform FindFolderIcon") &&
+      !Src("Scripts/Level2/Level2FolderHandoff.cs").Contains("PlayerPlacement.Find(gameObject.scene, FolderIconPath)"),
+    "T18: Rosa's folder hand-off still finds its icon inside the hotbar slot");
+Console.WriteLine($"T18 checks: {checks - t18Start}, failures {fails - t18Fails} (data, rules and source contracts; Unity rendering, touch and Play Mode not run).");
+
+// ================= Level 2 consistency pass (Level 1 foundation for Rosa) =================
+int lcStart = checks, lcFails = fails;
+string[] answerWords = { "Resident Citizen", "ResidentCitizen", "Self-Employed", "Self Employed", "SelfEmployed", "Business Income", "BusinessIncome" };
+bool NamesAnswer(string text) => text != null && answerWords.Any(a => text.IndexOf(a, StringComparison.OrdinalIgnoreCase) >= 0);
+IEnumerable<string> LineTexts(IEnumerable<DialogueLineDefinition> lines) => (lines ?? Enumerable.Empty<DialogueLineDefinition>()).Where(l => l != null).Select(l => l.text ?? "");
+
+// Folder: page 2 is Supporting Documents with Level 1's physical records.
+var bgIn = Level2CaseRecords.Background(rosa);
+var lcReview = CaseReviewState.Seed(rosa.review);
+var beforeHandover = CaseRecordRules.BuildReview(rosa.caseId, rosa.fullName, bgIn, Level2CaseRecords.HandoverRecords(rosa, lcReview));
+Check(beforeHandover.Count == 1 && beforeHandover[0].type == ClientRecord.Background && beforeHandover[0].footer == "Client interview notes" &&
+      beforeHandover[0].id == rosa.caseId + "/background",
+    "consistency: before the handover Supporting Documents holds only the office's Client Background notes");
+var bgRec = beforeHandover[0];
+Check(bgRec.living.Contains("Filipino") && bgRec.living.Contains("always lived") && bgRec.work.Contains("no boss") && bgRec.work.IndexOf("runs her own", StringComparison.OrdinalIgnoreCase) >= 0 &&
+      bgRec.income.Contains("Customers pay her"),
+    "consistency: the retired profile page's facts (Filipino, lives here, no boss, runs her own stall, customers pay her) are on the background notes");
+Check(!NamesAnswer(bgRec.living + bgRec.work + bgRec.income), "consistency: the background notes never name an answer");
+lcReview.phase = ReviewPhase.MarketVisit;
+Check(lcReview.TryCollectHandover(rosa.review.handoverDocumentIds), "consistency fixture: Rosa's handover collected");
+var lcRecords = CaseRecordRules.BuildReview(rosa.caseId, rosa.fullName, bgIn, Level2CaseRecords.HandoverRecords(rosa, lcReview));
+Check(string.Join(",", lcRecords.Select(r => r.tab)) == "Background,D1,D5,D3,D4",
+    "consistency: background, then her sheets (D1, D5), then her slips (D3, D4); legacy D2/D6 never join");
+Check(lcRecords.Skip(1).All(r => r.id == rosa.caseId + "/" + r.tab) && lcRecords.Select(r => r.id).Distinct().Count() == lcRecords.Count,
+    "consistency: every record keeps its canonical id (case/D1 ...), each once");
+Check(lcRecords.Skip(1).All(r => rosa.review.FindDocument(r.tab).documentName == r.source),
+    "consistency: each paper reads its own case document (the read mark and consultation clues use it)");
+var d1 = lcRecords.Single(r => r.tab == "D1");
+var d3 = lcRecords.Single(r => r.tab == "D3");
+var d4 = lcRecords.Single(r => r.tab == "D4");
+var d5 = lcRecords.Single(r => r.tab == "D5");
+Check(d1.type == ClientRecord.Income && d1.totalValue == "₱12,000" && d1.title == "COLLECTION SHEET" && !d1.rows.Any(r => r.value == "₱12,000"),
+    "consistency: D1 is a Type 4 income record with its ₱12,000 total in the band");
+Check(d3.type == ClientRecord.Payment && d3.IsSlip && d3.totalValue == "₱5,000" && d3.status == "PAID" && d3.reference == "CM-0526" &&
+      d4.type == ClientRecord.Payment && d4.totalValue == "₱3,000" && d4.status == "PAID",
+    "consistency: D3/D4 are Type 5 slips with their large amounts (₱5,000 / ₱3,000) and PAID labels");
+Check(d5.type == ClientRecord.Agreement && d5.issuer == "Bayan Credit Coop" && d5.party == rosa.fullName && d5.rows.Any(r => r.value == "₱20,000") &&
+      d5.rows.Any(r => r.value == "Monthly, 10 months"),
+    "consistency: D5 is a Type 7 agreement between the coop and Rosa, with its ₱20,000 and repayment terms");
+var allDocValues = rosa.documents.Where(d => d?.fields != null).SelectMany(d => d.fields).Select(f => f.displayValue).ToHashSet();
+Check(lcRecords.Skip(1).All(r => r.rows.All(row => allDocValues.Contains(row.value)) && (r.totalValue == null || allDocValues.Contains(r.totalValue))),
+    "consistency: every printed value comes straight from the case documents (no new amount)");
+Check(lcRecords.All(r => !r.HasBack), "consistency: Rosa's records fit one face each (no back needed)");
+var longInput = new ReviewRecordInput { id = "X9", paperType = 4, documentName = "X", totalKey = "T",
+    fields = Enumerable.Range(1, 7).Select(i => new CaseRecordField { label = "Row " + i, value = "v" + i, key = "K" + i })
+        .Append(new CaseRecordField { label = "Total", value = "₱1", key = "T" }).ToList() };
+var longRec = CaseRecordRules.FromReviewRecord("c", "N", longInput);
+Check(longRec.rows.Count == 4 && longRec.backRows.Count == 3 && longRec.HasBack && !longRec.IsCard && longRec.totalValue == "₱1",
+    "consistency fixture: a long table keeps 4 rows beside its total band and continues on the paper's back (a tap turns it)");
+var oddInput = new ReviewRecordInput { id = "X8", paperType = 3, title = "Mystery paper", fields = new List<CaseRecordField> { new CaseRecordField { label = "A", value = " " } } };
+var oddRec = CaseRecordRules.FromReviewRecord("c", "N", oddInput);
+Check(oddRec.type == ClientRecord.Plain && oddRec.title == "MYSTERY PAPER" && oddRec.rows[0].value == null && oddRec.issuer == null &&
+      CaseRecordRules.FromReviewRecord("c", "N", null) == null && CaseRecordRules.FromReviewRecord("c", "N", new ReviewRecordInput()) == null,
+    "consistency fixture: an unbuilt type prints plainly under its own title, a blank value prints a dash, a missing record is skipped");
+Check(SupportingDocumentFace.SizeOf(ClientRecord.Payment).y / SupportingDocumentFace.SizeOf(ClientRecord.Payment).x > 1.79f &&
+      SupportingDocumentFace.SizeOf(ClientRecord.Income) == SupportingDocumentFace.SheetSize &&
+      SupportingDocumentFace.SizeOf(ClientRecord.Identity) == SupportingDocumentFace.CardSize,
+    "consistency: the slip face is 1 : 1.8; sheets and ID cards keep their sizes");
+Check(new[] { ClientRecord.Income, ClientRecord.Payment, ClientRecord.Agreement, ClientRecord.Background, ClientRecord.Identity }
+          .Select(SupportingDocumentFace.TypeColor).Distinct().Count() == 5,
+    "consistency: each type keeps its own accent (colour marks the type only)");
+var slots = ClientRecordRules.LayoutPage(1f, 1.3f, lcRecords.Select(r => r.type).ToList(), RecordPageLayout.ReviewRecords);
+bool overlap = false;
+for (int i = 0; i < slots.Count; i++)
+    for (int j = i + 1; j < slots.Count; j++)
+        if (Math.Abs(slots[i].x - slots[j].x) < (slots[i].width + slots[j].width) / 2f - 1e-4f &&
+            Math.Abs(slots[i].z - slots[j].z) < (slots[i].height + slots[j].height) / 2f - 1e-4f) overlap = true;
+Check(slots.Count == 5 && !overlap && slots.All(s => Math.Abs(s.x) + s.width / 2f <= 0.5f && Math.Abs(s.z) + s.height / 2f <= 0.65f) &&
+      slots.Take(3).Select(s => Math.Round(s.z, 4)).Distinct().Count() == 1 && slots.Skip(3).Select(s => Math.Round(s.z, 4)).Distinct().Count() == 1 &&
+      slots[3].z < slots[0].z,
+    "consistency: page 2 lays the three sheets in one row and the two slips below, inside the page, none overlapping");
+var l1Slots = ClientRecordRules.LayoutPage(1f, 1.3f, new List<string> { ClientRecord.Identity, ClientRecord.Background }, RecordPageLayout.CaseRecords);
+Check(l1Slots.Count == 2 && l1Slots[0].x == 0f && l1Slots[1].x == 0f && l1Slots[0].z > l1Slots[1].z,
+    "consistency: Level 1's ID above background layout is unchanged");
+string folderSrcC = Src("Scripts/UI/CaseFolderUI.cs");
+string recordsSrc = Src("Scripts/Level2/Level2CaseRecords.cs");
+Check(recordsSrc.Contains("AttachedRecordsPage.Create(") && recordsSrc.Contains("CaseFolderPageContent.SupportingRecordsRole") &&
+      recordsSrc.Contains("if (pages.IsShowing || (records != null && records.AnyOut)) return;") && recordsSrc.Contains("records.Dispose();"),
+    "consistency: Rosa's page uses Level 1's attached records, rebuilt only on a closed, idle folder (no orphan or duplicate)");
+Check(Src("Scripts/SideQuest1/AttachedRecordsPage.cs").Contains("public void Dispose()") && Regex.IsMatch(Src("Scripts/SideQuest1/AttachedRecordsPage.cs"), @"GatherAll\(\);\s*if \(recordsRoot != null\) Destroy\(recordsRoot\.gameObject\);"),
+    "consistency: disposing a record page gathers everything first and leaves nothing behind");
+Check(!recordsSrc.Contains("InitializeSourceOnly") && !recordsSrc.Contains("AddSourceRow"), "consistency: record faces are never value sources");
+
+// Rosa in the conference room: phase-based, one actor, talk only.
+var stageReview = CaseReviewState.Seed(rosa.review);
+Check(!Level2RosaConsultation.BelongsInRoom(stageReview), "consistency: Rosa stays at her stall until her records are handed over (T32: until Mark the Money! begins)");
+stageReview.phase = ReviewPhase.MarketVisit;
+stageReview.TryCollectHandover(rosa.review.handoverDocumentIds);
+Check(!Level2RosaConsultation.BelongsInRoom(stageReview), "T32: after the handover she stays at her stall for the toolkit tutorial beside her");
+Check(Level2RosaConsultation.NextStage(stageReview) == "arrival", "consistency: her first room visit is her arrival line");
+stageReview.roomMomentsSaid.Add("arrival");
+Check(Level2RosaConsultation.NextStage(stageReview) == "reviewing", "consistency: while the records are worked she asks about them");
+stageReview.roomMomentsSaid.Add("reviewing");
+Check(Level2RosaConsultation.NextStage(stageReview) == null, "consistency: each stage line is said once, then the shared consultation rules");
+stageReview.phase = ReviewPhase.OfficeReconciliation;
+Check(Level2RosaConsultation.StageOf(stageReview) == "officeReview" && Level2RosaConsultation.NextStage(stageReview) == "officeReview",
+    "consistency: the office review stage has its own line");
+stageReview.audit.approved = true;
+Check(Level2RosaConsultation.StageOf(stageReview) == null, "consistency: after approval her lines belong to the Client Copy");
+Check(rosa.review.roomMoments.Select(m => m.stage).OrderBy(s => s).SequenceEqual(new[] { "arrival", "correction", "hold", "officeReview", "readyToSubmit", "reviewing" }),
+    "consistency: Rosa's case authors one line set for each room stage");
+var rosaConsult = rosa.consultation;
+var docNames = rosa.documents.Where(d => d != null).Select(d => d.documentName).ToList();
+var answerValues = rosa.GradedFields().Select(f => CaseFieldRules.AnswerValue(rosa.answerKey, f.key)).Where(v => !string.IsNullOrWhiteSpace(v))
+    .SelectMany(v => new[] { v, Regex.Replace(v, "(?<=[a-z])(?=[A-Z])", " ") }).ToList();
+Check(rosaConsult != null && rosaConsult.enabled && ClientConsultationRules.HasContent(rosaConsult) &&
+      ClientConsultationRules.Problems(rosaConsult, docNames, Level1CaseCheckpoint.FieldKeys, answerValues).Count == 0,
+    "consistency: Rosa's consultation passes Level 1's own validator (real documents and fields, no answer named)");
+var consultTexts = rosaConsult.clues.SelectMany(c => LineTexts(c.lines))
+    .Concat(rosaConsult.failedAudit.SelectMany(v => LineTexts(v.lines))).Concat(rosaConsult.laterDay.SelectMany(v => LineTexts(v.lines)))
+    .Concat(rosaConsult.ladder.SelectMany(s => s.variants).SelectMany(v => LineTexts(v.lines))).Concat(LineTexts(rosaConsult.fallback))
+    .Concat(rosa.review.roomMoments.SelectMany(m => LineTexts(m.lines))).ToList();
+Check(consultTexts.Count > 20 && consultTexts.All(t => !NamesAnswer(t) && !t.Contains("₱")),
+    "consistency: her questions and answers never name an answer or state an amount");
+Check(rosaConsult.clues.Where(c => !string.IsNullOrEmpty(c.document)).All(c => rosa.review.handoverDocumentIds.Any(id => rosa.review.FindDocument(id).documentName == c.document)),
+    "consistency: record clues name only records she actually handed over");
+var consultRecord = new Level1ConsultationRecord();
+var firstPick = ClientConsultationRules.Next(rosaConsult, consultRecord, new ConsultationContext { Day = 1, CaseOpen = true,
+    DocumentUnread = n => n == "Loan Agreement (D5)", Field = k => ConsultationFieldState.Filled });
+Check(firstPick.Kind == ConsultationKind.Clue && firstPick.Id == "clue-loan-agreement", "consistency: an unread record gets its clue first");
+var afterReturn = ClientConsultationRules.Next(rosaConsult, consultRecord, new ConsultationContext { Day = 1, FailedAudits = 1, CaseOpen = true,
+    DocumentUnread = n => false, Field = k => ConsultationFieldState.Filled });
+Check(afterReturn.Kind == ConsultationKind.FailedAudit, "consistency: after a returned audit she says a correction line");
+string consultSrc = Src("Scripts/Level2/Level2RosaConsultation.cs");
+Check(!Regex.IsMatch(consultSrc.Substring(consultSrc.IndexOf("private bool StartConsultation(")), @"Commit|AddTrust|Coins|RecordStoryFact|AwardConversation|TryAdvance|CompleteActivity"),
+    "consistency: ordinary Rosa consultations remain talk only; T19 choice is a separate explicit command");
+Check(consultSrc.Contains("if ((begun || hurry) && !Visible()) PlaceInRoomNow();") && consultSrc.Contains("rosa.Life.PlaceForQuest(feet, facing)") &&
+      consultSrc.Contains("if (rosa == null || rosa.Talking || inVisit || DialogueUI.IsAnyDialogueActive) return;") &&
+      !consultSrc.Contains("Instantiate("),
+    "consistency: the same Rosa moves (never a copy): on foot (T32), out of view only without walk data, or under a resume; never mid-conversation");
+Check(Src("Scripts/Level2/RosaInteractable.cs").Contains("Level2RosaConsultation.Instance.HandleTap(this)") &&
+      Src("Scripts/Level2/RosaInteractable.cs").Contains("public bool TryStartVisit(List<DialogueLine> lines"),
+    "consistency: taps on Rosa in the room go to her consultation / Client Copy through the shared dialogue flow");
+
+// Auditor hand-in: Level 1's awaited-folder conversation.
+string auditorSrcC = Src("Scripts/Interactables/AuditorInteractable.cs");
+Check(auditorSrcC.Contains("string refusal = LevelHandIn != null ? LevelHandIn.Refusal() : null;") && auditorSrcC.Contains("SayNotYet(refusal)"),
+    "consistency: a folder that cannot be handed in yet is refused in conversation, nothing decided or charged");
+Check(auditorSrcC.Contains(".AwaitAction(SubmitAction, \"Drag the Case Folder to the Auditor\")") &&
+      Regex.IsMatch(auditorSrcC, @"if \(LevelHandIn != null\)\s*\{\s*// The level's review decides once"),
+    "consistency: he pauses on the handover line; the decision happens only once Rosa's folder is dropped on him");
+Check(Regex.IsMatch(auditorSrcC, @"if \(retry && levelDecision != null\)[\s\S]*?LevelHandIn\.Returned\(\);") &&
+      Regex.IsMatch(auditorSrcC, @"handedFolder = null;\s*LevelHandIn\.Approve\(\);"),
+    "consistency: a return hands the working folder back with its work; an approval completes through the level");
+Check(Regex.IsMatch(auditorSrcC, @"else if \(levelDecision != null\)\s*\{[\s\S]*?OpenLevelSummary\(\);"),
+    "consistency: an interrupted hand-in still shows its decided summary (never decided twice, never lost)");
+string trayC = Src("Scripts/Data/AuditorSubmissionTray.cs");
+Check(trayC.Contains("if (AuditorInteractable.TalkFirst)") && !Src("Scripts/Level2/Level2FolderHandoff.cs").Contains("SubmissionBlocked"),
+    "consistency: the old tray drop no longer audits Level 2 (one hand-in path)");
+
+// Client Copy and follow-through.
+string copySrc = Src("Scripts/UI/HUD/ClientCopyHandover.cs");
+Check(copySrc.Contains("level != OfficeLevelCatalog.Level1Id && level != OfficeLevelCatalog.Level2Id") &&
+      copySrc.Contains("else if (claims) grants = manager.CommitLevelTwoFollowThrough();") &&
+      copySrc.Contains("if (!grants.Saved)") && copySrc.Contains("ClientCopyRules.CanHandOver(phase)"),
+    "consistency: Level 2 uses the same Client Copy flow; delivery commits Rosa's follow-through once and a failed save stays retryable");
+Check(copySrc.Contains("rosa = Level2RosaConsultation.Instance != null ? Level2RosaConsultation.Instance.Rosa : null;"),
+    "consistency: the copy goes to the one Rosa in the conference room");
+Check(Src("Scripts/UI/LevelCompleteUI.cs").Contains("bool levelTwoCase = result.LevelId == Level2CampaignRules.LevelId;") &&
+      Src("Scripts/UI/LevelCompleteUI.cs").Contains("(!levelTwoStory || levelTwoSaved)"),
+    "consistency: the copy begins only after Rosa's approved result is saved; the card waits for her copy");
+Check(ppmSrc.Contains("candidate.ClearCheckpoint(Level2CampaignRules.LevelId);\r\n        grants.Saved = TryWriteCandidate(candidate);") ||
+      Src("Scripts/RewardsSystem/PlayerProgressManager.cs").Contains("candidate.ClearCheckpoint(Level2CampaignRules.LevelId);\n        grants.Saved = TryWriteCandidate(candidate);"),
+    "consistency: the follow-through write also ends the checkpoint kept for the copy");
+var hand = rosa.clientHandover;
+Check(hand != null && hand.enabled && hand.afterDelivery.Count > 0 && hand.handoverPrompt.Contains("Rosa") && hand.auditorGive.Count > 0 &&
+      new[] { hand.approvalGreat, hand.approvalGood, hand.approvalOkay, hand.opening, hand.explain, hand.waiting }.All(l => l.Count > 0) &&
+      !string.IsNullOrWhiteSpace(hand.handover?.text) && rosa.clientFinale.farewellGreat.Count > 0,
+    "consistency: Rosa's case authors every Client Copy line (approval, give, wait, handover, explain, after) and her farewell");
+var handTexts = new[] { hand.approvalGreat, hand.approvalGood, hand.approvalOkay, hand.auditorGive, hand.auditorRemind, hand.waiting, hand.opening, hand.explain, hand.afterDelivery }
+    .SelectMany(LineTexts).Append(hand.handover.text).ToList();
+Check(handTexts.All(t => !NamesAnswer(t) && !t.Contains("Marie")), "consistency: Rosa's copy lines are hers (no Level 1 client, no answer label)");
+
+// Checkpoint rules for the copy.
+var kept = CaseReviewState.Seed(rosa.review);
+kept.phase = ReviewPhase.Completed;
+kept.audit.approved = true;
+kept.clientCopyPhase = ClientCopyRules.ToSaved(ClientCopyPhase.Carried);
+Check(Level2Checkpoint.KeepsHandover(kept) && Level2Checkpoint.NeedsCheckpoint(kept) && Level2Checkpoint.Usable(kept, kept.reviewId),
+    "consistency: an approved review still owing the copy keeps (and resumes) its checkpoint");
+kept.clientCopyPhase = ClientCopyRules.ToSaved(ClientCopyPhase.Done);
+Check(!Level2Checkpoint.KeepsHandover(kept) && !Level2Checkpoint.NeedsCheckpoint(kept) && !Level2Checkpoint.Usable(kept, kept.reviewId),
+    "consistency: once Rosa has her copy nothing is resumed (no second copy, trust or completion)");
+kept.audit.approved = false;
+kept.clientCopyPhase = ClientCopyRules.ToSaved(ClientCopyPhase.Carried);
+Level2Checkpoint.Normalize(kept);
+Check(kept.clientCopyPhase == "" && kept.consultation != null && kept.roomMomentsSaid != null,
+    "consistency: a copy never survives in an unapproved review; old checkpoints gain an empty visit record");
+var work = CaseReviewState.Seed(rosa.review);
+work.phase = ReviewPhase.OfficeReconciliation;
+Check(Level2Checkpoint.NeedsCheckpoint(work) && !Level2Checkpoint.KeepsHandover(work), "consistency: review work in progress still saves as before");
+Check(checkpointerSrc.Contains("if (approved) RestoreApproved(restored, data);") && checkpointerSrc.Contains("new LevelCompleteState(restoredApprovedResult: true)") &&
+      checkpointerSrc.Contains("ClientCopyHandover.Instance.Restore(ClientCopyRules.Parse(review.clientCopyPhase))"),
+    "consistency: resuming an approved review restores the copy quietly (no audit, summary or reward replay)");
+
+// HUD: the cutoff chip sits under the progress card's real bottom edge.
+string chipSrc = Src("Scripts/UI/HUD/OfficeHoursChip.cs");
+Check(!chipSrc.Contains("172f") && chipSrc.Contains("card.ScreenBottom") && chipSrc.Contains("ScreenPointToLocalPointInRectangle"),
+    "consistency: the cutoff chip reads the progress card's actual bottom (it was a stale 172-unit guess under a 208-unit card)");
+Check(OfficeHoursChip.ChipTop(-300f, 0f) == -300f - OfficeHoursChip.CardGap && OfficeHoursChip.ChipTop(-5f, 0f) == -20f &&
+      OfficeHoursChip.ChipTop(-500f, 40f) == -540f - OfficeHoursChip.CardGap,
+    "consistency: the chip keeps its gap below any card height or safe-area top, never above the margin");
+Check(Src("Scripts/UI/HUD/HudProgressionPanel.cs").Contains("public float ScreenBottom"), "consistency: the progress card exposes its real bottom edge");
+Console.WriteLine($"Consistency checks: {checks - lcStart}, failures {fails - lcFails}.");
+
+// ================= T32 quieter town and walking Rosa =================
+int t32Start = checks, t32Fails = fails;
+var townFile = JsonSerializer.Deserialize<TownLifeFile>(File.ReadAllText(Res("Levels/Level_02/town_life.json")), fieldJson);
+string sceneAssets = File.ReadAllText(Res("Levels/Level_02/scene_assets.asset"));
+int modelCount = Regex.Matches(sceneAssets, @"\n  - \{fileID: \d+, guid: [0-9a-f]{32}, type: 3\}").Count;
+Check(sceneAssets.Contains("npcController: {fileID: 9100000, guid: 2e8c12097e1e471a86e5e5d07745decd, type: 2}") && modelCount == 6 &&
+      File.ReadAllText(Path.Combine(root, "Assets", "AssetIntegration", "NpcHumanoid.controller.meta")).Contains("2e8c12097e1e471a86e5e5d07745decd"),
+    "T32: Level 2 reuses Level 1's shared Humanoid controller and names the six currently authored townspeople models");
+string l1Scene = File.ReadAllText(Path.Combine(root, "Assets", "Scenes", "Office_Level1.unity"));
+foreach (string guid in new[] { "7d4d82511439be645bea1229f6c97998", "0774b3aa9983d294e859db07a1f79702" })
+    Check(sceneAssets.Contains(guid) && !l1Scene.Contains(guid) && !sceneAssets.Contains("rosaPrefab: {fileID: 919132149155446097, guid: " + guid),
+        "T32: a townsperson model is unused by Level 1 and is not Rosa's: " + guid);
+Check(RosaTripRules.Problems(townFile, modelCount).Count == 0, "T32: town_life.json passes its own content checks");
+Check(townFile.residents.Select(r => r.id).OrderBy(id => id).SequenceEqual(new[] { "arthur_l2", "dante_l2", "ernesto", "marie_l2", "rosa_customer", "tess" }), "T32: the approved expanded cast has six distinct optional townspeople");
+var plaza2 = JsonSerializer.Deserialize<PlazaLifeFile>(File.ReadAllText(Res("Levels/Level_02/plaza_life.json")), fieldJson);
+var plaza1 = JsonSerializer.Deserialize<PlazaLifeFile>(File.ReadAllText(Res("Levels/Level_01/plaza_life.json")), fieldJson);
+Check(PlazaLifeContent.Problems(plaza2).Count == 0 && townFile.residents.All(r => plaza2.npcs.Any(n => n.id == r.id)),
+    "T32: each townsperson has a name and talks in Level 2's own plaza_life.json");
+Check(plaza2.npcs.Select(n => n.id).Distinct().Count() == 6 && plaza2.npcs.All(n => n.id != RosaInteractable.NpcId) && new[] { "ernesto", "tess" }.All(id => !plaza1.npcs.Any(o => o.id == id)),
+    "T32: the expanded optional roster keeps its own identities and the required Rosa separate");
+Check(plaza2.npcs.All(n => PlazaLifeContent.Talks(n).Count >= 3), "T32: each townsperson rotates through at least three short talks");
+string[] blameWords = { "fraud", "cheat", "corrupt", "scam", "crook", "lied", "steal", "stole", "illegal" };
+var townTexts = plaza2.npcs.SelectMany(n => n.talks).SelectMany(t => t.lines).Select(l => l.text ?? "")
+    .Concat(new[] { rosa.review.travelLines.toOffice, rosa.review.travelLines.atReception, rosa.review.travelLines.toRoom }.SelectMany(LineTexts)).ToList();
+Check(townTexts.Count > 12 && townTexts.All(t => !NamesAnswer(t) && !t.Contains("₱") && !blameWords.Any(w => t.IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0)),
+    "T32: town and travel lines name no answer, state no amount and accuse nobody");
+Check(new[] { rosa.review.travelLines.toOffice, rosa.review.travelLines.atReception, rosa.review.travelLines.toRoom }.All(l => l != null && l.Count > 0),
+    "T32: Rosa has a line for each part of her walk (on the way, at the front desk, to the room)");
+var idleNames = townFile.residents.Select(r => r.idle).Append(townFile.rosa.idle).ToList();
+string controllerText = File.ReadAllText(Path.Combine(root, "Assets", "AssetIntegration", "NpcHumanoid.controller"));
+Check(idleNames.Distinct().Count() == 3 && idleNames.All(i => controllerText.Contains("m_Name: " + i)) &&
+      controllerText.Contains("m_Name: Walking") && controllerText.Contains("m_Name: Strolling") && townFile.rosa.idle == "Idle Relaxed",
+    "T32: Rosa keeps her own idle clip; the two townspeople use the controller's other idles, so no two move in step");
+
+// The original two residents retain their authored separation. The later approved
+// forecourt/visiting cast intentionally crosses these areas; navigation is USER-only.
+var rosaAnchor = new Vector3(-1.35f, 0f, 131.07f);
+var walkPoints = new List<Vector3> { rosaAnchor };
+walkPoints.AddRange(townFile.rosa.toReception.Select(p => new Vector3(p.x, 0f, p.z)));
+double SegDist(Vector3 p, Vector3 a, Vector3 b)
+{
+    Vector3 ab = b - a; float t = Math.Clamp(Vector3.Dot(p - a, ab) / Math.Max(1e-6f, Vector3.Dot(ab, ab)), 0f, 1f);
+    Vector3 c = a + ab * t; return Math.Sqrt((p.x - c.x) * (p.x - c.x) + (p.z - c.z) * (p.z - c.z));
+}
+foreach (TownResident r in townFile.residents.Where(r => r.id == "ernesto" || r.id == "tess"))
+{
+    var spots = (r.seat != null && r.seat.IsSet ? new[] { r.seat } : r.route.ToArray()).Select(p => new Vector3(p.x, 0f, p.z)).ToList();
+    Check(spots.All(s => (s - rosaAnchor).magnitude >= 8f && (s - new Vector3(4.55f, 0f, 106.4f)).magnitude >= 8f),
+        "T32: " + r.id + " stays at least 8 m from Rosa's stall and the office entrance");
+    Check(spots.All(s => Enumerable.Range(0, walkPoints.Count - 1).All(i => SegDist(s, walkPoints[i], walkPoints[i + 1]) >= 3.0)),
+        "T32: " + r.id + " never stands on Rosa's walk to the office");
+}
+var tess = townFile.residents.Single(r => r.id == "tess");
+var ernesto = townFile.residents.Single(r => r.id == "ernesto");
+Check(tess.activity == "Patrol" && tess.route.Count >= 3 && tess.loop && tess.pauseSeconds.Length == 2 && ernesto.seat.IsSet && ernesto.activity == "Stand",
+    "T32: one townsperson reads on a bench, the other strolls a short loop with pauses");
+Check(Math.Abs(townFile.rosa.toReception.Last().x - 6.45f) < 0.01f && Math.Abs(townFile.rosa.toReception.Last().z - 101.6f) < 0.01f &&
+      townFile.rosa.toRoom.Count == 4 && townFile.rosa.receptionWaitSeconds > 0f && townFile.rosa.leaveDelaySeconds >= 0f,
+    "T32: Rosa's walk uses Marie's tuned door and front-desk points and a fixed front-desk wait");
+
+// Rosa's trip rules (pure).
+var Leg = new { Plaza = MarieTripRules.Leg.Plaza, ToReception = MarieTripRules.Leg.ToReception, AtReception = MarieTripRules.Leg.AtReception,
+    ToRoom = MarieTripRules.Leg.ToRoom, InRoom = MarieTripRules.Leg.InRoom };
+var tripReview = CaseReviewState.Seed(rosa.review);
+tripReview.phase = ReviewPhase.Tutorial;
+Check(!RosaTripRules.MarkTheMoneyStarted(tripReview) && !Level2RosaConsultation.BelongsInRoom(tripReview),
+    "T32: during the toolkit tutorial Rosa stays at her stall, beside the records desk");
+tripReview.phase = ReviewPhase.Challenge;
+tripReview.rosaEthicsCommitted = true;
+Check(RosaTripRules.MarkTheMoneyStarted(tripReview) && Level2RosaConsultation.BelongsInRoom(tripReview), "CHECK flow: after the explicit choice she can leave for the office");
+Check(RosaTripRules.Next(Leg.Plaza, false, true, true, false) == Leg.Plaza &&
+      RosaTripRules.Next(Leg.Plaza, true, false, false, false) == Leg.Plaza &&
+      RosaTripRules.Next(Leg.Plaza, true, true, false, false) == Leg.ToReception,
+    "T32: she leaves her stall only after Mark the Money! begins and her short beat has passed");
+Check(RosaTripRules.Next(Leg.AtReception, true, true, false, false) == Leg.AtReception &&
+      RosaTripRules.Next(Leg.AtReception, true, true, true, false) == Leg.ToRoom &&
+      RosaTripRules.Next(Leg.AtReception, true, true, false, true) == Leg.ToRoom,
+    "T32: she waits at the front desk until her set time (an approval sends her on at once)");
+Check(RosaTripRules.Next(Leg.ToReception, true, true, true, true) == Leg.ToReception && RosaTripRules.Next(Leg.ToRoom, true, true, true, true) == Leg.ToRoom &&
+      RosaTripRules.Next(Leg.InRoom, true, true, true, true) == Leg.InRoom,
+    "T32: a walk under way is never restarted or redirected (NpcLife finishes it)");
+Check(RosaTripRules.Next(Leg.Plaza, false, false, false, true) == Leg.ToRoom, "T32: an approval before she set off sends her straight to the room");
+var resumeReview = CaseReviewState.Seed(rosa.review);
+resumeReview.phase = ReviewPhase.Tutorial;
+Check(RosaTripRules.Resume("", resumeReview) == Leg.Plaza, "T32: resume before Mark the Money!: her stall");
+resumeReview.phase = ReviewPhase.Challenge;
+resumeReview.rosaEthicsCommitted = true;
+Check(RosaTripRules.Resume("", resumeReview) == Leg.AtReception && RosaTripRules.Resume("reception", resumeReview) == Leg.AtReception &&
+      RosaTripRules.Resume("room", resumeReview) == Leg.InRoom,
+    "T32: resume mid-walk puts her at the front desk (her wait starts again) or in the room, never mid-route");
+resumeReview.phase = ReviewPhase.OfficeReconciliation;
+Check(RosaTripRules.Resume("", resumeReview) == Leg.InRoom, "T32: an older checkpoint past the field work places her in the room");
+Check(RosaTripRules.ToSaved(Leg.ToReception) == "reception" && RosaTripRules.ToSaved(Leg.ToRoom) == "room" && RosaTripRules.ToSaved(Leg.Plaza) == "" &&
+      RosaTripRules.Parse("garbage") == Leg.Plaza,
+    "T32: walking legs save as where they lead; unknown values mean her stall");
+var legNorm = CaseReviewState.Seed(rosa.review);
+legNorm.rosaLeg = "  room ";
+Level2Checkpoint.Normalize(legNorm);
+Check(legNorm.rosaLeg == "room", "T32: a saved leg is normalised on restore");
+var badTown = new TownLifeFile { residents = new List<TownResident> { new TownResident { id = "x", model = 5, activity = "Patrol" }, new TownResident { id = "x", model = 0 } } };
+Check(RosaTripRules.Problems(badTown, 2).Count >= 4, "T32 fixture: duplicate ids, a missing model, a one-point patrol, no spot and no Rosa walk are all reported");
+
+// Wiring (source contracts; Play Mode motion is the user's check).
+string townSrc = Src("Scripts/Level2/Level2Town.cs");
+Check(townSrc.Contains("holder.SetActive(false);") && townSrc.IndexOf("holder.SetActive(false);") < townSrc.IndexOf("AddComponent<AmbientNpcInteractable>()") &&
+      townSrc.Contains("talk.Configure(") && townSrc.Contains("driver.ConfigureStates(") && townSrc.Contains("life.ConfigureRuntime(") &&
+      townSrc.Contains("if (transform.Find(\"Resident \" + resident.id) != null) continue;") && townSrc.Contains("if (built) return;"),
+    "T32: townspeople are built once on Level 1's NpcLife / driver / ambient talk, configured before their first frame");
+Check(!Regex.IsMatch(townSrc.Split("public sealed class Level2Town")[1], @"Commit|AddTrust|Coins|RecordStoryFact|AwardConversation|TryAdvance|CompleteActivity|RequestSave") &&
+      !Src("Scripts/SideQuest1/AmbientNpcInteractable.cs").Contains("PlayerProgressManager"),
+    "T32: a townsperson talk awards, saves and advances nothing");
+Check(townSrc.Contains("AnimatorCullingMode.CullUpdateTransforms") && !Regex.IsMatch(townSrc, @"void (Update|LateUpdate)\("),
+    "T32: the town builder does no per-frame work; animators cull when unseen");
+string consultSrcW = Src("Scripts/Level2/Level2RosaConsultation.cs");
+Check(consultSrcW.Contains("life.TravelForQuest(stops, wait.Facing,") && consultSrcW.Contains("life.TravelForQuest(stops, RoomFacing(), ArriveInRoom);") &&
+      consultSrcW.Contains("RosaTripRules.Next(leg, begun,") && consultSrcW.Contains("if (leg == MarieTripRules.Leg.ToReception || leg == MarieTripRules.Leg.ToRoom) return;"),
+    "T32: Rosa walks through Level 1's quest travel (one owner); a walk under way is never restarted");
+Check(consultSrcW.Contains("if (rosa == null || rosa.Talking || inVisit || DialogueUI.IsAnyDialogueActive) return;") &&
+      consultSrcW.Contains("if (!inRoom && leg != MarieTripRules.Leg.Plaza) return StartTravelAside();"),
+    "T32: she never sets off mid-conversation; a tap on the way gets one line while NpcLife pauses her walk");
+Check(!consultSrcW.Contains("Instantiate(") && !consultSrcW.Contains("Waypoint") && !consultSrcW.Contains("GuideArrow"),
+    "T32: one Rosa and no route indicator for her walk");
+Check(Src("Scripts/Level2/Level2RosaStall.cs").Contains("holder.AddComponent<NpcLife>().ConfigureRuntime(NpcLife.Activity.Stand") &&
+      Src("Scripts/Level2/RosaInteractable.cs").Contains("if (life != null) return;   // NpcLife turns her"),
+    "T32: Rosa's body has one owner (NpcLife), never her old turn coroutine as well");
+Check(Src("Scripts/FSM/NPC/NpcLife.cs").Contains("public void ConfigureRuntime(") && Src("Scripts/FSM/NPC/NpcLife.cs").Contains("if (started) return;") &&
+      Src("Scripts/FSM/NPC/NpcAnimationDriver.cs").Contains("public void ConfigureStates("),
+    "T32: the shared NPC components only gain runtime-configure hooks (Level 1's scene NPCs keep their Inspector setup)");
+Check(PlazaLifeContent.PathFor("Level_02") == "Levels/Level_02/plaza_life" && PlazaLifeContent.PathFor("Level_01") == PlazaLifeContent.ResourcePath &&
+      PlazaLifeContent.ResourcePath == "Levels/Level_01/plaza_life",
+    "T32: Level 2 reads its own townspeople; Level 1 keeps its file");
+var startCfgT = Json("Levels/Level_02/office_start.json");
+var hides = startCfgT.GetProperty("hide").EnumerateArray().Select(h => h.GetString()).ToList();
+Check(hides.Contains("Environment/Outside/Plaza/NPCS") && hides.Contains("Environment/Outside/Plaza/CorkboardSideQuestRoot") &&
+      hides.Contains("Environment/OfficeBuilding/Rooms/Reception/WaitingArea/Client2") &&
+      Src("Scripts/Level2/Level2OfficeStart.cs").Contains("\"Environment/OfficeBuilding/Rooms/Reception/WaitingArea/Client2\""),
+    "T32: the copied Level 1 crowd stays off (plaza quest cast and the Marie-model waiting client); the built-in start matches");
+Check(Src("Scripts/Level2/Level2OfficeStart.cs").IndexOf("EnsurePart<Level2Town>") < Src("Scripts/Level2/Level2OfficeStart.cs").IndexOf("EnsurePart<Level2RosaStall>"),
+    "T32: the town (Rosa's walk data) exists before her stall builds her");
+Console.WriteLine($"T32 checks: {checks - t32Start}, failures {fails - t32Fails}.");
+
+// ================= T19 real review snapshot / canonical resume =================
+var note19 = CaseReviewState.Seed(rosa.review);
+Level2Checkpoint.SetEthicsChoice(note19, Level2EthicsChoice.UnsupportedPromise, rosa.caseId);
+string json19 = JsonSerializer.Serialize(note19, fieldJson);
+var resumed19 = JsonSerializer.Deserialize<CaseReviewState>(json19, fieldJson);
+Level2Checkpoint.Normalize(resumed19);
+Check(Level2Checkpoint.EthicsChoiceCommitted(resumed19, rosa.caseId) &&
+      resumed19.rosaEthicsChoiceText == Level2CampaignRules.UnsupportedChoiceText &&
+      !resumed19.rosaEthicsFollowThroughDone,
+    "T19: the real review checkpoint round-trips the explicit words, choice ID and pending response");
+var canonical19 = PlayerProgressData.CreateNewCampaign("canonical-rosa", "2026-10-29T00:00:00Z");
+Level2CampaignRules.CommitEthicsChoice(canonical19, Level2EthicsChoice.Responsible, rosa.caseId);
+Level2Checkpoint.SyncEthicsReview(canonical19, resumed19, rosa.caseId);
+Check(resumed19.rosaEthicsChoiceText == Level2CampaignRules.ResponsibleChoiceText &&
+      resumed19.rosaEthicsChoiceId == canonical19.campaign.rosaEthics.choiceId,
+    "T19: signed campaign choice overrides a stale checkpoint snapshot without another trust mutation");
+var approved19 = new Level2CaseFacts { HasReview = true, CaseId = rosa.caseId, QuestCorrected = true, Approved = true };
+Level2CampaignRules.ApplyCaseResult(canonical19, approved19);
+Level2CampaignRules.ApplyFollowThrough(canonical19);
+int finalTrust19 = canonical19.campaign.publicTrust;
+Level2Checkpoint.SyncEthicsReview(canonical19, resumed19, rosa.caseId);
+Level2Checkpoint.SyncEthicsReview(canonical19, resumed19, rosa.caseId);
+Check(resumed19.rosaEthicsFollowThroughDone && Level2Checkpoint.EthicsStatus(resumed19) == "RECORDS CHECKED." &&
+      canonical19.campaign.publicTrust == finalTrust19,
+    "T19: the case-folder snapshot restores the completed record-check tab without paying again");
+var fresh19 = CaseReviewState.Seed(rosa.review);
+Level2Checkpoint.SyncEthicsReview(canonical19, fresh19, rosa.caseId);
+Check(Level2Checkpoint.EthicsChoiceCommitted(fresh19, rosa.caseId) && fresh19.rosaEthicsFollowThroughDone,
+    "T19: canonical choice also reconciles into a fresh review when a checkpoint is absent");
+
+// T33: resumed guide/objectives follow durable domain facts, not animation callbacks.
+var resume33 = CaseReviewState.Seed(rosa.review);
+Check(Level2Checkpoint.ImpliedLessons(resume33).Count == 0, "T33: a fresh chapter retains its brief welcome");
+resume33.phase = ReviewPhase.RetrieveFolder;
+Check(Level2Checkpoint.ImpliedLessons(resume33).SequenceEqual(new[] { "welcome" }), "T33: checked-in resume omits the next-day welcome");
+resume33.phase = ReviewPhase.OfficeReconciliation;
+resume33.officeReviewAnnounced = false;
+var lessons33 = Level2Checkpoint.ImpliedLessons(resume33);
+Check(lessons33.Contains("annotated-papers") && !lessons33.Contains("office-review"), "T33: resumed office review skips completed handling and retains schedule help");
+resume33.roomMomentsSaid.Clear();
+Check(Level2RosaConsultation.NextStage(resume33) == "officeReview", "T33: late first consultation addresses the saved review, not an obsolete arrival");
+resume33.audit.approved = true;
+resume33.clientCopyPhase = ClientCopyRules.ToSaved(ClientCopyPhase.Carried);
+var triggers33 = Level2Checkpoint.ImpliedTriggers(resume33);
+Check(triggers33.Contains("state:CaseCompleteState") && triggers33.Contains("event:ClientCopyPickedUp") &&
+      !triggers33.Contains("event:ClientCopyHandedOver"), "T33: approved resume points to Rosa while delivery remains outstanding");
+Check(Level2Checkpoint.ImpliedLessons(resume33).Contains("to-auditor"), "T33: approved resume cannot teach submission again");
+resume33.clientCopyPhase = ClientCopyRules.ToSaved(ClientCopyPhase.Done);
+Check(Level2Checkpoint.ImpliedTriggers(resume33).Contains("event:ClientCopyHandedOver"), "T33: only delivered copies complete the final objective");
+Check(guide.GetProperty("lessons").EnumerateArray().Any(l => Str(l, "id") == "client-copy" && Str(l, "when") == "flag:auditApproved"),
+    "T33: approval leads to contextual physical copy guidance");
+Check(Src("Scripts/UI/Guide/GuideDirector.cs").Contains("!checkpoint.IsReady") &&
+      Src("Scripts/UI/Guide/GuideDirector.cs").Contains("Level2Checkpoint.ImpliedLessons"), "T33: guide waits for restore before selecting a lesson");
+string consult33 = Src("Scripts/Level2/Level2RosaConsultation.cs");
+Check(consult33.Contains("Level1ConsultationRecord candidate") && consult33.Contains("review.consultation = before;") &&
+      consult33.Contains("}, () => { inVisit = false; });"), "T33: completed talk consumes a visit, cancellation and failed saving leave it repeatable");
+string card33 = Src("Scripts/UI/LevelCompleteUI.cs");
+Check(card33.Contains("BuildChapterTwoScreen(result, manager)") && card33.Contains("Chapter 2 Complete") &&
+      card33.Contains("Hearts = 0, MaxHearts = 0, PassingPercent = 0") && card33.Contains("Future chapters are coming soon."),
+    "T33: story closing uses delivery and actual wallet/trust without a mastery pass or future-chapter unlock claim");
+
+// T33 physical stamp ownership and screen-overlay ordering.
+string layers33 = Src("Scripts/UI/HUD/Doc3DLayer.cs");
+string stamps33 = Src("Scripts/Level2/Level2DeskStamps.cs");
+string hand33 = Src("Scripts/Level2/Level2StampDrag.cs");
+Check(layers33.Contains("other.IsComposited || other.AlwaysComposite") && layers33.Contains("if (!footprintValid && IsVisible && AlwaysComposite)"),
+    "T33: a held physical stamp captures above the always-composited folder even before its LateUpdate");
+Check(stamps33.Contains("if (!needed && !Active) ReleaseToolLayer();") && !stamps33.Contains("ReturnSeconds + 0.06f);\n            ReleaseToolLayer();"),
+    "T33: shared model capture survives until both return flights land");
+Check(stamps33.Contains("mainRenderedStampLayer") && stamps33.Contains("ready?.ResetToStand();") && stamps33.Contains("if (!focused) PutAway();"),
+    "T33: disabled/focus-lost stamp owner restores models and the camera culling bit");
+Check(hand33.Contains("bool onFront = TryAim(screen, out aimLocal);") && hand33.Contains("packetRevision != targetRevision"),
+    "T33: releasing elsewhere or changing page/revision before impact cannot commit a stale impression");
+Check(layers33.Contains("source.GetComponentsInChildren(false, pageCanvases);"),
+    "T33: the active document footprint reuses its canvas list instead of allocating an array per frame");
+
+Check(Src("Scripts/Level2/RosaInteractable.cs").Contains("DialogueUI.Active.CancelDialogueFor(this)") &&
+      hand33.Contains("if (thumpedPaper != null) thumpedPaper.localScale = paperRestScale;") && hand33.Contains("Destroy(impactRing.gameObject)"),
+    "T21: actor disable cancels its conversation and stamp-owner disable restores impact paper/effects");
+
+// T21 integrated real-case rules + signed candidate commits (no Unity execution).
+string Encode21(PlayerProgressData data)
+{
+    data.Normalize();
+    string payload = JsonSerializer.Serialize(data, fieldJson);
+    return JsonSerializer.Serialize(new Dictionary<string, string> { ["payload"] = payload, ["signature"] = SaveFileStore.Sign(payload) });
+}
+PlayerProgressData Read21(SaveFileStore store)
+{
+    string text = store.Read(v =>
+    {
+        var e = JsonDocument.Parse(v).RootElement;
+        return SaveFileStore.SignatureMatches(e.GetProperty("payload").GetString(), e.GetProperty("signature").GetString());
+    }, out _, out _);
+    var envelope = JsonDocument.Parse(text).RootElement;
+    var data = JsonSerializer.Deserialize<PlayerProgressData>(envelope.GetProperty("payload").GetString(), fieldJson);
+    data.Normalize();
+    return data;
+}
+void Snapshot21(PlayerProgressData data, CaseReviewState review)
+{
+    data.SetCheckpoint(new LevelCheckpoint { levelId = Level2CampaignRules.LevelId, caseId = rosa.caseId,
+        reviewJson = JsonSerializer.Serialize(review, fieldJson) });
+}
+CaseReviewState Review21(PlayerProgressData data)
+{
+    var r = JsonSerializer.Deserialize<CaseReviewState>(data.activeCheckpoint.reviewJson, fieldJson);
+    Level2Checkpoint.Normalize(r);
+    Level2Checkpoint.SyncEthicsReview(data, r, rosa.caseId);
+    return r;
+}
+foreach (Level2EthicsChoice choice21 in new[] { Level2EthicsChoice.Responsible, Level2EthicsChoice.UnsupportedPromise, Level2EthicsChoice.DismissiveHold })
+foreach (bool corrected21 in new[] { false, true })
+{
+    string fixture21 = Path.Combine(root, "Temp", "T21Checks", "fixtures", Guid.NewGuid().ToString("N"));
+    Directory.CreateDirectory(fixture21);
+    var store21 = new SaveFileStore(Path.Combine(fixture21, "campaign.json"));
+    var live21 = PlayerProgressData.CreateNewCampaign("integration-" + choice21 + corrected21, "2026-10-29T00:00:00Z");
+    live21.campaign.MarkChapterCompleted("Level_01");
+    var r21 = CaseReviewState.Seed(ro);
+    r21.TryAdvance(ReviewPhase.RetrieveFolder); r21.TryRetrieveFolder(); r21.TryPlaceFolderOnDesk();
+    r21.SetFindingPart("F1", ReviewFindingState.Concern, "S1", "SummarySubtotal", "May total");
+    r21.SetFindingPart("F1", ReviewFindingState.Evidence, "N1", "ReferralNote", "Blanket washing");
+    r21.SetFindingPart("F1", ReviewFindingState.Reason, null, "unaccounted-payment", "Unlisted payment");
+    FindingComparison.Check(r21, ro.preliminaryRule);
+    Check(PreliminaryReview.TryStamp(r21, ro.preliminaryRule, true) == PreliminaryReview.Outcome.Recorded,
+        "T21: actual Rosa preliminary finding admits the initial hold");
+    r21.TryCollectHandover(ro.handoverDocumentIds);
+    r21.TryMarkToolkitDemoSeen();
+    var tutorial21 = ro.annotation.tutorial;
+    var work21 = r21.TutorialWork(tutorial21);
+    AnnotationActions.Highlight(work21, tutorial21, tutorial21.demo.highlightLineId);
+    AnnotationActions.Place(work21, ro.annotation, tutorial21, AnnotationSlot.Type, AnnotationSlot.Type, tutorial21.demo.typeId, out _);
+    AnnotationActions.Place(work21, ro.annotation, tutorial21, AnnotationSlot.Treatment, AnnotationSlot.Treatment, tutorial21.demo.treatmentId, out _);
+    foreach (string evidence21 in tutorial21.demo.evidenceIds)
+        AnnotationActions.Place(work21, ro.annotation, tutorial21, AnnotationSlot.Evidence, AnnotationSlot.Evidence, evidence21, out _);
+    Check(r21.TryCompleteTutorial(tutorial21), "T21: real record collection and toolkit demonstration reach the challenge");
+    IncomeChallenge.Ensure(r21, ro); Answer(r21, corrected21 ? 16 : 0);
+    Snapshot21(live21, r21); store21.Write(Encode21(live21));
+    var candidate21 = JsonSerializer.Deserialize<PlayerProgressData>(JsonSerializer.Serialize(live21, fieldJson), fieldJson);
+    Level2CampaignRules.CommitEthicsChoice(candidate21, choice21, rosa.caseId);
+    Level2Checkpoint.SetEthicsChoice(r21, choice21, rosa.caseId); Snapshot21(candidate21, r21);
+    Directory.CreateDirectory(store21.TempPath);
+    bool blocked21 = false;
+    try { store21.Write(Encode21(candidate21)); } catch (IOException) { blocked21 = true; } catch (UnauthorizedAccessException) { blocked21 = true; }
+    Check(blocked21 && !Read21(store21).campaign.rosaEthics.committed && live21.campaign.publicTrust == 40,
+        "T21: failed atomic choice write preserves prior signed checkpoint and live trust");
+    Directory.Delete(store21.TempPath);
+    store21.Write(Encode21(candidate21)); live21 = Read21(store21); r21 = Review21(live21);
+    Check(Level2Checkpoint.EthicsChoiceCommitted(r21, rosa.caseId), "T21: retried choice reloads from the same signed checkpoint");
+    IncomeChallenge.TryCheck(r21, ro, out _, out _);
+    int frozen21 = r21.challenge.firstCorrect;
+    if (corrected21) { Answer(r21, 0); IncomeChallenge.TryCheck(r21, ro, out _, out _); }
+    Check(IncomeChallenge.TryAward(r21) && !IncomeChallenge.TryAward(r21) && r21.challenge.firstCorrect == frozen21,
+        "T21: corrections preserve the frozen first grade and award once");
+    var facts21 = Level2Checkpoint.Facts(r21, rosa.caseId);
+    Level2CampaignRules.ApplyCheckpointClaims(live21, facts21);
+    Check(!Level2CampaignRules.ApplyFollowThrough(live21).Changed && !Level2CampaignRules.ChapterComplete(live21),
+        "T21: completed field service alone cannot approve or complete Rosa's chapter");
+    Put(r21, 0, "E1"); Put(r21, 1, "E3"); Put(r21, 2, corrected21 ? "E4" : "E2");
+    OfficeReview.SetPart(r21, ro, "F1", "conclusion", null, "corrected-included", "Corrected: included");
+    FinalAssessment.TryStamp(r21, ro, true);
+    if (corrected21)
+    {
+        Check(FinalAudit.Submit(r21, ro, Array.Empty<string>()).Returned && !r21.audit.approved,
+            "T21: the loan/missing-payment trap is returned without early approval");
+        Snapshot21(live21, r21); store21.Write(Encode21(live21)); live21 = Read21(store21); r21 = Review21(live21);
+        Check(Level2RosaConsultation.StageOf(r21) == "correction", "T21: returned checkpoint restores correction dialogue");
+        Put(r21, 2, "E2"); FinalAssessment.TryStamp(r21, ro, true);
+    }
+    Check(FinalAudit.Submit(r21, ro, Array.Empty<string>()).Outcome == FinalAudit.Outcome.Approved,
+        "T21: actual corrected schedule, finding and final stamp receive Auditor approval");
+    facts21 = Level2Checkpoint.Facts(r21, rosa.caseId); Level2CampaignRules.ApplyCaseResult(live21, facts21);
+    r21.clientCopyPhase = ClientCopyRules.ToSaved(ClientCopyPhase.Carried);
+    Snapshot21(live21, r21); store21.Write(Encode21(live21)); live21 = Read21(store21); r21 = Review21(live21);
+    Check(live21.campaign.coins == 160 && !Level2CampaignRules.ChapterComplete(live21) && Level2Checkpoint.KeepsHandover(r21) &&
+        Level2Checkpoint.ImpliedTriggers(r21).Contains("event:ClientCopyPickedUp"),
+        "T21: approved carried copy reloads with exactly 60+100 coins and delivery still required");
+    candidate21 = JsonSerializer.Deserialize<PlayerProgressData>(JsonSerializer.Serialize(live21, fieldJson), fieldJson);
+    Level2CampaignRules.ApplyFollowThrough(candidate21); candidate21.ClearCheckpoint(Level2CampaignRules.LevelId);
+    Directory.CreateDirectory(store21.TempPath); blocked21 = false;
+    try { store21.Write(Encode21(candidate21)); } catch (IOException) { blocked21 = true; } catch (UnauthorizedAccessException) { blocked21 = true; }
+    Check(blocked21 && Level2CampaignRules.FollowThroughPending(Read21(store21)) && !Level2CampaignRules.ChapterComplete(live21),
+        "T21: failed delivery write retains the carried copy and pending service/ethics consequences");
+    Directory.Delete(store21.TempPath); store21.Write(Encode21(candidate21)); live21 = Read21(store21);
+    int expectedTrust21 = choice21 == Level2EthicsChoice.Responsible ? 48 : choice21 == Level2EthicsChoice.UnsupportedPromise ? 38 : 43;
+    Check(Level2CampaignRules.ChapterComplete(live21) && live21.campaign.IsChapterCompleted("Level_02") &&
+        live21.campaign.coins == 160 && live21.campaign.publicTrust == expectedTrust21 && !live21.activeCheckpoint.IsSet,
+        "T21: signed delivery completes each ethics branch with independent +2/+4 service trust and exact wallet");
+    string after21 = JsonSerializer.Serialize(live21, fieldJson);
+    Level2CampaignRules.ApplyCheckpointClaims(live21, facts21); Level2CampaignRules.ApplyCaseResult(live21, facts21);
+    Level2CampaignRules.ApplyFollowThrough(live21); Level2CampaignRules.CommitEthicsChoice(live21, choice21, rosa.caseId);
+    Check(JsonSerializer.Serialize(live21, fieldJson) == after21,
+        "T21: repeated entry/results/delivery/choice cannot repeat coins, trust or completion after reload");
+}
+
+// CHECK-to-Rosa: regression for the reported trapped records-desk route.
+var pendingTalk = CaseReviewState.Seed(rosa.review);
+pendingTalk.phase = ReviewPhase.Challenge;
+pendingTalk.challenge = new ChallengeState();
+Check(!RosaTripRules.MarkTheMoneyStarted(pendingTalk), "CHECK flow: Rosa waits at her stall until the explicit choice is recorded");
+Check(RosaTripRules.Resume("reception", pendingTalk) == MarieTripRules.Leg.Plaza &&
+      RosaTripRules.Resume("room", pendingTalk) == MarieTripRules.Leg.Plaza,
+    "CHECK flow: older pre-choice checkpoints restore Rosa beside the records desk");
+Check(!Src("Scripts/Level2/IncomeToolkit.cs").Contains("ExitBlocked = () => QuestInProgress ||"),
+    "CHECK flow: unfinished independent work cannot permanently hide Exit Desk");
+
+var deskDraft = Challenger();
+Answer(deskDraft, 0);
+deskDraft.challenge.currentEntryId = "E4";
+string beforeTalk = JsonSerializer.Serialize(deskDraft, fieldJson);
+var backAtDesk = JsonSerializer.Deserialize<CaseReviewState>(beforeTalk, fieldJson);
+Check(!backAtDesk.challenge.firstChecked && backAtDesk.challenge.currentEntryId == "E4" &&
+      IncomeChallenge.Missing(backAtDesk.challenge, annotation).Count == 0 &&
+      JsonSerializer.Serialize(backAtDesk, fieldJson) == beforeTalk,
+    "CHECK flow: cancelled conversation/reload preserves the selected fourth record, all annotations and unfrozen grade");
+foreach (var spokenChoice in new[] { Level2EthicsChoice.Responsible, Level2EthicsChoice.UnsupportedPromise, Level2EthicsChoice.DismissiveHold })
+{
+    var returnedDraft = JsonSerializer.Deserialize<CaseReviewState>(beforeTalk, fieldJson);
+    Level2Checkpoint.SetEthicsChoice(returnedDraft, spokenChoice, rosa.caseId);
+    Check(RosaTripRules.MarkTheMoneyStarted(returnedDraft) && !returnedDraft.challenge.firstChecked &&
+          returnedDraft.challenge.currentEntryId == "E4" && IncomeChallenge.Missing(returnedDraft.challenge, annotation).Count == 0,
+        "CHECK flow: every committed choice permits departure but cannot grade or erase the marked current record");
+    Check(IncomeChallenge.TryCheck(returnedDraft, ro, out _, out _) == IncomeChallenge.CheckResult.Checked && returnedDraft.challenge.firstChecked,
+        "CHECK flow: a later explicit grading command freezes the first check");
+}
+var legacyTalk = Challenger(); legacyTalk.challenge.firstChecked = true;
+Check(RosaTripRules.MarkTheMoneyStarted(legacyTalk) && RosaTripRules.Resume("reception", legacyTalk) == MarieTripRules.Leg.AtReception,
+    "CHECK flow: legacy frozen-first-check runs keep their walk and receive no retroactive choice");
+string discussSource = Src("Scripts/Level2/Level2RosaConsultation.cs");
+string discussionBody = discussSource.Split("private IEnumerator DiscussFromDesk(")[1].Split("private bool StartEthicsChoice()")[0];
+Check(discussionBody.Contains("SuspendForRosaDiscussion()") && discussionBody.Contains("camera.ExitFirstPerson()") &&
+      discussionBody.Contains("StartEthicsChoice()") && discussionBody.Contains("while (!deskDialogueFinished") &&
+      discussionBody.IndexOf("PlayerControlHold.Release(this)") < discussionBody.IndexOf("desk.OnInteract()") &&
+      !discussionBody.Contains("TryCheck("),
+    "CHECK flow: one existing dialogue owner returns to the desk after its camera callback, releases its hold first and never grades");
+Check(discussSource.IndexOf("!Level2Checkpointer.Active.RequestSave()") < discussSource.IndexOf("deskDiscussion = StartCoroutine(") &&
+      discussSource.Contains("if (deskDiscussion != null) StopCoroutine(deskDiscussion)") &&
+      discussSource.Contains("escapeKey.wasPressedThisFrame") &&
+      discussSource.Split("private void EndEthicsDialogue()")[1].Split("private void UnhookEthicsDialogue()")[0].Contains("PlayerControlHold.Refresh();"),
+    "CHECK flow: save-before-leave, duplicate-admission guard, owned disable cleanup and Back cancellation remain connected");
+string checkBody = Src("Scripts/Level2/IncomeToolkit.cs").Split("private IEnumerator PressCheck()")[1].Split("private IEnumerator ShowMissing")[0];
+Check(checkBody.Contains("TryDiscussFromDesk(desk)") && checkBody.IndexOf("TryDiscussFromDesk(desk)") < checkBody.IndexOf("IncomeChallenge.TryCheck") &&
+      checkBody.Split("TryDiscussFromDesk(desk)")[1].Split("busy++;")[0].Contains("yield break;"),
+    "CHECK flow: complete pre-choice CHECK starts Rosa and exits before any scoring; missing drafts retain normal feedback");
+
 Console.WriteLine(fails == 0 ? $"Level2Regression: {checks} checks PASS" : $"Level2Regression: {fails} of {checks} checks FAILED");
 return fails == 0 ? 0 : 1;

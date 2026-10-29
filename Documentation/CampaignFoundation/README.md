@@ -1,12 +1,14 @@
 # Campaign Foundation — Menu, Level 1, then Level 2
 
-A detailed implementation ticket pack for the approved TaxVenture campaign systems. Created 2026-10-21. **Implementation evidence lives in PROGRESS.md. Original T24 is implemented internally; its opening is superseded by T30 and T31 (implemented internally 2026-10-26, user manual pending). T25 and T26 implemented internally 2026-10-27 (user manual pending), followed the same day by a user revision (no BIR form in Level 1, clients hand over flippable 3D IDs, printed background sheet, guided file reading; see PROGRESS). Next: T28 -> T29 -> T17 -> return to deferred T27 -> Delivery B (T18) -> T19/T20 -> T21. T27 is unfinished; T29/T17 carry its library, fixture and Rosa-map gap without claiming it passed; T27 must verify that scope before T18. T28 remains not started.**
+User decision (2026-10-29): T20 comparison stand is deferred to future work, with its design retained in the T20 ticket. It is not required for Delivery B, T33 or T21. Continue T33 -> T21 after implemented T19. Keep ordinary free workstation comparison available; the unimplemented stand remains unavailable for purchase, including after T21 enables Level 2. T21 verifies that unavailable state rather than requiring stand purchase, placement or persistence.
+
+A detailed implementation ticket pack for the approved TaxVenture campaign systems. Created 2026-10-21. Implementation evidence lives in [PROGRESS](PROGRESS.md). T28, T29, T17 and T18 are internally verified; user manual acceptance remains pending. **T33 and T21 implemented, internally verified; user manual pending. Level 2 campaign access enabled.** T19 is implemented; see PROGRESS for current internal/manual verification. Physical documents are implemented only as the current level needs them; T27 retains the fixed roadmap and is not a prerequisite.
 
 ## Overall want
 
 The player is Elijah, a new arrival helping Coast Tales with income-tax work. Arthur, Senior Tax Consultant, is the guide and teaches in person (the Mayor Quax guide planned in T15 was reverted by user decision on 2026-10-25). The game should reward corrected learning, earn public trust through responsible follow-through, give collected records an organized home, and let first-completion coins visibly improve Elijah's office. Later reputation-driven endings must be supportable without converting mastery hearts into social trust or creating separate competing save/UI frameworks.
 
-**Delivery A:** existing main menu and L1 become a coherent fresh campaign with New Game/Continue, safe campaign initialization, persistent L1 progress, first-check mastery, public trust, once-only currency, bag/collectibles, physical/menu shop, bookmarks/decor and review vouchers. **Delivery B:** integrate the existing one-case Rosa L2, add its knowing-choice consequences and functional comparison stand, then enable campaign continuation. Future computer benefits unlock after L3; future cases and endings are not implemented now.
+**Delivery A:** existing main menu and L1 become a coherent fresh campaign with New Game/Continue, safe campaign initialization, persistent L1 progress, first-check mastery, public trust, once-only currency, bag/collectibles, physical/menu shop, bookmarks/decor and review vouchers. **Delivery B:** carry Level 1 systems/items forward, simplify the opening/town, animate Rosa and two new optional residents, update case folders and polish dialogue/story/flow alongside ethics and the stand, then enable continuation. Future computer benefits unlock after L3; future cases and endings are not implemented now.
 
 **Fresh-start decision:** existing development progress will not be imported or retained in an in-game archive. New campaigns start with 0 XP, no earned badges, 40/100 Public Trust, 0 coins, no collected items/purchased upgrades, and Level 1 available. Essential starter tools and all new earning systems remain. Settings survive; normal backups/recovery protect progress earned in the updated game. This documentation update does not reset any actual save file.
 
@@ -15,17 +17,21 @@ The player is Elijah, a new arrival helping Coast Tales with income-tax work. Ar
 1. [AGENTS](AGENTS.md): ownership, internal-only verification, user manual acceptance and preservation rules.
 2. [SPEC](SPEC.md): approved behavior, inspected baseline, saved-state/transaction contracts, release scope and starting fixtures.
 3. [WORLD_AND_FEEDBACK](WORLD_AND_FEEDBACK.md): physical assets, player gestures, motion, sound and presentation.
-4. [TICKETS](TICKETS.md): 31 bounded, dependency-linked slices (T22-T31 are Delivery A amendments; T30/T31 precede T25/T26, T28, T29 and T17; deferred T27 follows T17 and gates T18).
+4. [TICKETS](TICKETS.md): 33 numbered plans; T27 is a deferred incremental-adoption roadmap, not a delivery dependency. T18 follows T17 directly.
 5. [VERIFICATION](VERIFICATION.md): actual internal checks and separate USER manual scripts.
 6. [PROGRESS](PROGRESS.md) and [KNOWN_ISSUES](KNOWN_ISSUES.md): truth of work/evidence and blockers.
 7. Selected ticket under tickets/; inspect referenced current code before implementing.
 
 ## Ticket navigation
 
-- **Current next:** [T30 — Arthur's reviewed file](tickets/T30-arthur-reviewed-file-and-opening-route.md) and [T31 — physical record extraction](tickets/T31-physical-record-extraction-and-reattachment.md) are implemented (internally verified, user manual pending), and so are [T25 — Marie's desk records](tickets/T25-marie-desk-record-connection.md) and [T26 — the corkboard reference](tickets/T26-corkboard-reference-and-plaza-pacing.md) (2026-10-27); next [T28 — paper motion and route polish](tickets/T28-level1-paper-motion-and-route-polish.md), then [T29](tickets/T29-record-route-verification.md), [T17](tickets/T17-delivery-a-verification.md), [T27 — the deferred eight-type paper library](tickets/T27-eight-document-template-library.md), and Delivery B starting with [T18](tickets/T18-level2-campaign-and-inventory.md). T28 remains planned and has not started; T29/T17 verify the existing Level 1 route and carry the unfinished library, fixture and Rosa-map gap to T27, which must complete and verify it before T18. Read the [supporting document standard](../SupportingDocuments.md).
+- [Current Level 2 continuation direction](LEVEL2_CONTINUATION.md).
+- [T32 — quieter town and animated Rosa](tickets/T32-level2-town-and-rosa-animation.md).
+- [T33 — story flow, dialogue and polish](tickets/T33-level2-story-flow-and-polish.md).
+
+- **Current handoff:** [Delivery B Unity/device acceptance](DELIVERY_B_HANDOFF.md). T20 remains deferred and unavailable for purchase. T19 follows the implemented T32 and retains its movement owner. [T18](tickets/T18-level2-campaign-and-inventory.md) (shared items, claims and Rosa's Types 4–7) is internally verified; user manual pending. [T27](tickets/T27-eight-document-template-library.md) retains the incremental roadmap; Types 3 and 8 and unused variants wait for relevant cases. Read the [supporting document standard](../SupportingDocuments.md).
 - [Start T01](tickets/T01-mastery-boundary.md).
 - [Delivery A acceptance gate](tickets/T17-delivery-a-verification.md).
-- [Level 2 integration after T27](tickets/T18-level2-campaign-and-inventory.md).
+- [Level 2 integration and its required documents](tickets/T18-level2-campaign-and-inventory.md).
 - [Delivery B acceptance gate](tickets/T21-delivery-b-verification.md).
 
 ## Existing systems to extend

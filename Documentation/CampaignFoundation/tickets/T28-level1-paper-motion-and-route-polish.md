@@ -1,10 +1,10 @@
 # T28 — Polish the first-morning paper interactions and transitions
 
-Status: Planned — NEXT; not started. Blocked by: T26.
+Status: Planned -> Implemented, internally verified; user manual pending (2026-10-28; evidence in PROGRESS.md "T28"). Blocked by: T26.
 
 ## Scheduling amendment — 2026-10-28
 
-The user deferred [T27](T27-eight-document-template-library.md), selected T28 as the next ticket, and then placed T27 after the T17 gate. Polish only the existing Level 1 papers and interactions; the missing eight-type library and its isolated fixtures are outside this pass. Existing T26 implementation permits this work to proceed; user manual acceptance remains separately pending. This documentation update does not begin T28. Next run [T29](T29-record-route-verification.md), then [T17](T17-delivery-a-verification.md); carry the library, fixture and Rosa-map gap to T27 after T17 and before T18.
+Polish only existing Level 1 papers and interactions; no additional document types or isolated all-eight preview belongs to this pass. T26 permits this work. Next T29, then T17; after that T18 owns Rosa's required Types 4–7. The latest user revision keeps T27 as a fixed-design roadmap without an advance library build. User manual acceptance remains separate.
 
 ## Goal and visible accomplishment
 
@@ -42,4 +42,4 @@ Keep the combined two new sequences within the approximate 2–3 minute target t
 
 ## Non-goals and handoff
 
-No whole-game art replacement, new rendering pipeline, NPC locomotion, legal content revision, economy rebalance, or Level 2 rollout. Record internal results and exact user-only polish checks in PROGRESS. Next: [T29](T29-record-route-verification.md), then [T17](T17-delivery-a-verification.md). T27 follows T17 and completes the library before T18 adoption; T29 does not wait for or verify T27.
+No whole-game art replacement, new rendering pipeline, NPC locomotion, legal content revision, economy rebalance, or Level 2 rollout. Record internal results and exact user-only polish checks in PROGRESS. Next: [T29](T29-record-route-verification.md), then [T17](T17-delivery-a-verification.md). T18 follows T17 and builds only its needed types; T27 is a roadmap, not a gate.

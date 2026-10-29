@@ -17,5 +17,8 @@ assert "Config.lateExpPerDay * daysLate, Config.lateHeartsPerDay * daysLate" in 
 assert settings.get("onTimeBonusExp", 0) == 0 and settings.get("onTimeBonusHearts", 0) == 0
 assert settings["lateExpPerDay"] == 15 and settings["lateHeartsPerDay"] == 1 and settings["lateMaxDays"] == 3
 assert "on-time bonus" not in json.dumps(guide).lower() and "bonus" not in settings["arthurOnTime"].lower()
+# T28: no player line may promise or mention a bonus that office hours never grant.
+guide_lines = [page.get("text", "") for lesson in guide["lessons"] for page in lesson.get("pages", [])]
+assert not any("bonus" in line.lower() for line in guide_lines), "A Level 1 guide line still mentions a bonus"
 assert "onTimeBonus" not in summary
 print("PASS: on-time submission grants nothing; once-only capped late consequences and corrected wording remain wired")

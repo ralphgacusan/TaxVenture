@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="../T19Regression.cs" Link="T19Regression.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/PlayerProgressData.cs" Link="PlayerProgressData.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/MasteryBoundary.cs" Link="MasteryBoundary.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/CareerProgress.cs" Link="CareerProgress.cs" />
@@ -21,6 +22,7 @@
     <Compile Include="../../Assets/Scripts/Data/ClientConsultationRules.cs" Link="ClientConsultationRules.cs" />
     <Compile Include="ConsultationStubs.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignRewards.cs" Link="CampaignRewards.cs" />
+    <Compile Include="../../Assets/Scripts/RewardsSystem/Level2CampaignRules.cs" Link="Level2CampaignRules.cs" />
     <Compile Include="../../Assets/Scripts/SideQuest1/TaxpayerProfileData.cs" Link="TaxpayerProfileData.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignMenu.cs" Link="CampaignMenu.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignPickups.cs" Link="CampaignPickups.cs" />

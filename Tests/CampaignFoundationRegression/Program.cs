@@ -431,8 +431,8 @@ Check(newView.Chapters[0].Launchable && CareerProgress.LaunchMode(newView.Chapte
 using (JsonDocument chaptersDoc = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Career", "chapters.json"))))
 {
     var level2 = chaptersDoc.RootElement.GetProperty("chapters").EnumerateArray().First(c => c.GetProperty("id").GetString() == "Level_02");
-    Check(level2.TryGetProperty("campaignPending", out JsonElement pendingFlag) && pendingFlag.GetBoolean() && level2.GetProperty("scene").GetString() == "Office_Level2",
-        "chapters.json marks Level 2 campaignPending and keeps its scene for isolated development");
+    Check(level2.TryGetProperty("campaignPending", out JsonElement pendingFlag) && !pendingFlag.GetBoolean() && level2.GetProperty("scene").GetString() == "Office_Level2",
+        "T21: chapters.json enables the integrated Level 2 scene after the internal gate");
 }
 
 // ---------- wiring (source contracts; the Unity menu itself is a manual check) ----------
@@ -1404,9 +1404,12 @@ Check(!awake8.Contains("CommitFollowThrough(") && !awake8.Contains("AcknowledgeL
     "a result saved before closing is never completed or acknowledged automatically during load");
 string levelUi = Src("UI", "LevelCompleteUI.cs").Replace("\r\n", "\n");
 string show = Between(levelUi, "public void Show(LevelTotalResult result)", "private const string CaseResultSaveFailedText");
+// T18: Rosa's story result follows the same rule (committed before the card celebrates).
 Check(Index(show, "caseResultSaved = storyCaseResult && TryCommitCaseResult();") < Index(show, "PlayAchievementSFX") &&
-      show.Contains("if (AudioManager.Instance != null && (!storyCaseResult || caseResultSaved))") && show.Contains("if (manager != null && result != null && !storyCaseResult)"),
-    "the case result is committed before any celebration; an unsaved result plays no fanfare");
+      Index(show, "levelTwoSaved = manager.CommitLevelTwoResult(result, out bool wroteNow);") < Index(show, "PlayAchievementSFX") &&
+      show.Contains("if (AudioManager.Instance != null && (!storyCaseResult || caseResultSaved) && (!levelTwoStory || levelTwoSaved))") &&
+      show.Contains("if (manager != null && result != null && !storyCaseResult && !levelTwoStory)"),
+    "the case result (Level 1, and Level 2 since T18) is committed before any celebration; an unsaved result plays no fanfare");
 string resultCard = Between(levelUi, "private static RewardScreenData BuildCaseResultScreen(", "/// <summary>The reward card for the level");
 Check(resultCard.Contains("Title = delivered ? CaseResultRules.CompletedTitle : \"Case Approved\"") && resultCard.Contains("MaxHearts = 0,") && resultCard.Contains("PassingPercent = 0,") &&
       resultCard.Contains("CaseResultRules.NextStepText") && resultCard.Contains("CampaignRewards.IsActivityCompleted(career, CampaignRewards.Level1, CampaignRewards.FollowThrough)") &&
@@ -1930,10 +1933,11 @@ Check(old10.campaign.inventory != null && old10.campaign.inventory.hotbarCapacit
     "a v5 save written before T10 loads with the empty starting inventory");
 
 // ---------- catalogue and content rule ----------
-Check(cat10.Problems().Count == 0 && cat10.items.Count(i => i.scope == "Level_01") == 4 && cat10.IsRequired(InventoryCatalogue.Notes) && cat10.IsRequired(InventoryCatalogue.CaseFolder) &&
+// T18: scope became a chapter list (Notes, the folder and the book serve Level 1 and Level 2), so these read InScope.
+Check(cat10.Problems().Count == 0 && cat10.items.Count(i => i.InScope("Level_01")) == 4 && cat10.IsRequired(InventoryCatalogue.Notes) && cat10.IsRequired(InventoryCatalogue.CaseFolder) &&
       cat10.IsRequired(InventoryCatalogue.ProfileBinder) && !cat10.IsRequired(InventoryCatalogue.TaxCodeBook) &&
       cat10.Find(InventoryCatalogue.ProfileBinder).container && cat10.Find(InventoryCatalogue.CaseFolder).container &&
-      cat10.Find(InventoryCatalogue.TaxCodeBook).returnsToWorld && cat10.items.Where(i => i.required && !i.reference).All(i => i.scope == "Level_01"),
+      cat10.Find(InventoryCatalogue.TaxCodeBook).returnsToWorld && cat10.items.Where(i => i.required && !i.reference).All(i => !i.CampaignWide),
     "built-in catalogue: binder and folder are required containers, Notes required, the book optional and returnable");
 var file10 = JsonSerializer.Deserialize<InventoryCatalogue>(File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Campaign", "inventory.json")), json);
 bool sameCatalogue10 = file10 != null && file10.items.Count == cat10.items.Count && file10.journal.Count == cat10.journal.Count &&
@@ -2204,7 +2208,8 @@ string auditor26 = Src("Interactables", "AuditorInteractable.cs");
 string tray26 = Src("Data", "AuditorSubmissionTray.cs");
 string handIn26 = Between(auditor26, "private bool TryHandInFolder()", "private void OnHandInLine(");
 Check(auditor26.Contains(".AwaitAction(SubmitAction, \"Drag the Case Folder to the Auditor\")") &&
-      auditor26.Contains("if (TalkFirst && !requiresTaxReturn && FolderInHand() != null)") &&
+      // Level 2 consistency pass: the same condition also admits a level hand-in (LevelHandIn); Level 1's is unchanged.
+      auditor26.Contains("if (TalkFirst && (LevelHandIn != null || !requiresTaxReturn) && FolderInHand() != null)") &&
       handIn26.Contains("if (!AwaitingFolder") && handIn26.Contains("folder.ReleaseQuietly();") &&
       Index(handIn26, "folder.ReleaseQuietly();") < Index(handIn26, "dialogueUI.ContinueWith(SubmitAction, lines);") &&
       tray26.Contains("if (AuditorInteractable.TalkFirst)") && tray26.Contains("public bool AcceptFromConversation()") &&
@@ -2228,13 +2233,14 @@ Check(folderView10.Contains("HudSlotDrop.Active ? HudSlotDrop.IsOver(data.positi
       folderView10.Contains("toPosition = HeldOnScreen.FitOnScreen(folder, main);") && Src("CaseFolder", "CaseFolder3DDrag.cs").Contains("HeldOnScreen.FitOnScreen(openFolder.transform, view)") &&
       hotbar10.Contains("OfficeHudRuntime.Instance.CaseFolderViewOut"),
     "the floating Case Folder uses the desk-open pose, closes into any slot or the Bag, goes back on the desk stack, and its icon dims while it is out (2026-10-26)");
-Check(hotbar10.Contains("public static bool UsesHotbar(string levelId) => levelId == OfficeLevelCatalog.Level1Id;") &&
+// T18 (2026-10-28): Level 2 joins the same hotbar and Bag; Level 1's icons and places are unchanged.
+Check(hotbar10.Contains("public static bool UsesHotbar(string levelId) => levelId == OfficeLevelCatalog.Level1Id || levelId == OfficeLevelCatalog.Level2Id;") &&
       hud10.Contains("if (HudHotbar.UsesHotbar(OfficeLevelProfile.LevelIdFor(this)))") &&
       hotbar10.Contains("Wrap(InventoryCatalogue.Notes, buttons.Find(\"NotesIconButton\"));") &&
       hotbar10.Contains("Wrap(InventoryCatalogue.CaseFolder, buttons.Find(\"CaseFolderIconButton\"));") &&
       hotbar10.Contains("Wrap(InventoryCatalogue.ProfileBinder, buttons.Find(\"TaxpayerProfileIcon\"));") &&
       hotbar10.Contains("public static readonly Vector2 FirstSlot = new Vector2(10f, -20f);") && hotbar10.Contains("public const float SlotStep = 140f;"),
-    "Level 1 only: the three scene icons keep their places (x 10, y -20 / -160 / -300) and travel with their items inside slot wrappers");
+    "Levels 1-2 (T18): the scene icons keep their places (x 10, y -20 / -160 / -300) and travel with their items inside slot wrappers");
 Check(hud10.Contains("caseFolderIcon.IsChildOf(sibling)") && hotbar10.Contains("if (awaiting)"),
     "Marie's handover gate keeps the folder's slot wrapper visible and the hotbar leaves the other icons to the gate");
 string folderStore10 = Src("CaseFolder", "FolderToHUDIcon.cs");
@@ -2765,7 +2771,7 @@ ShopProduct standTeaser13 = shop13.Find(ShopCatalogue.ComparisonStand), computer
 // ---------- catalogue ----------
 Check(cup13.IsDecor && cup13.price == 30 && cup13.section == ShopCatalogue.SectionOffice && cup13.anchors.SequenceEqual(new[] { "desk_corner" }) &&
       print13.IsDecor && print13.price == 60 && print13.anchors.SequenceEqual(new[] { "wall_above_filing" }) &&
-      standTeaser13.requires.StartsWith("pending:") && standTeaser13.requiresLabel == "Requires ready Level 2" && standTeaser13.price == 120 &&
+      standTeaser13.requires.StartsWith("pending:") && standTeaser13.requiresLabel == "Coming later" && standTeaser13.price == 120 &&
       computer13.requires.StartsWith("pending:") && computer13.requiresLabel == "Requires corrected Level 3" && computer13.price == 250 &&
       shop13.InSection(ShopCatalogue.SectionSupplies).Select(p => p.id).SequenceEqual(new[] { "bookmark_set", "review_voucher", "satchel", "belt_pouch", "big_satchel", "second_pouch" }) &&
       shop13.InSection(ShopCatalogue.SectionOffice).Select(p => p.id).SequenceEqual(new[] { "pencil_cup", "island_print", "comparison_stand", "office_computer" }) &&
@@ -2804,7 +2810,7 @@ string richSnap13 = Save12(rich13);
 PurchaseResult standBuy13 = ShopRules.Purchase(rich13, shop13, items13, ShopCatalogue.ComparisonStand, "s1");
 PurchaseResult computerBuy13 = ShopRules.Purchase(rich13, shop13, items13, ShopCatalogue.OfficeComputer, "s2");
 Check(ShopRules.StatusOf(rich13, shop13, standTeaser13, true) == ShopStatus.Teaser && ShopRules.StatusOf(rich13, shop13, computer13, true) == ShopStatus.Teaser &&
-      standBuy13.Outcome == InventoryOutcome.Rejected && standBuy13.Message == "Requires ready Level 2" &&
+      standBuy13.Outcome == InventoryOutcome.Rejected && standBuy13.Message == "Coming later" &&
       computerBuy13.Outcome == InventoryOutcome.Rejected && computerBuy13.Message == "Requires corrected Level 3" && Save12(rich13) == richSnap13,
     "the comparison stand and computer stay locked teasers (even with 1000 coins and later chapters done) and cannot be bought");
 
@@ -3104,12 +3110,14 @@ Check(repairClock14.campaign.levelOne.clock.extensionSeconds <= 180, "a saved ex
 
 // ---------- save owner, command and presentation contracts ----------
 string manager14 = Src("RewardsSystem", "PlayerProgressManager.cs");
-string commit14 = Between(manager14, "public VoucherUseResult CommitVoucherUse(", "/// <summary>\r\n    /// T13: the office has shown");
-if (commit14.Length == 0) commit14 = Between(manager14, "public VoucherUseResult CommitVoucherUse(", "public bool MarkDecorArrived(");
-Check(Index(commit14, "VoucherRules.Use(candidate.campaign") < Index(commit14, "candidate.campaign.levelOne = checkpoint;") &&
-      Index(commit14, "candidate.campaign.levelOne = checkpoint;") < Index(commit14, "TryWriteCandidate(candidate)") &&
+// T18: Level 1 and Level 2 share one voucher transaction (CommitVoucher); each level attaches its own checkpoint to the candidate.
+string commit14 = Between(manager14, "private VoucherUseResult CommitVoucher(", "public bool MarkDecorArrived(");
+string attach14 = Between(manager14, "public VoucherUseResult CommitVoucherUse(", "private VoucherUseResult CommitVoucher(");
+Check(Index(commit14, "VoucherRules.Use(candidate.campaign") < Index(commit14, "attachCheckpoint?.Invoke(candidate);") &&
+      Index(commit14, "attachCheckpoint?.Invoke(candidate);") < Index(commit14, "TryWriteCandidate(candidate)") &&
       Index(commit14, "TryWriteCandidate(candidate)") < Index(commit14, "InventoryChanged?.Invoke()") && commit14.Contains("Outcome = InventoryOutcome.SaveFailed") &&
-      commit14.Contains("SessionClaims.Add(claim);") && commit14.Contains("sessionInventory = inventory;"),
+      commit14.Contains("SessionClaims.Add(claim);") && commit14.Contains("sessionInventory = inventory;") &&
+      attach14.Contains("candidate.campaign.levelOne = checkpoint;") && attach14.Contains("candidate.SetCheckpoint(checkpoint)"),
     "story: voucher, claim and checkpoint clock are written in one candidate before anything is shown (a failed write changes nothing); other runs use temporary supplies");
 string card14 = Src("UI", "HUD", "VoucherUseCard.cs");
 string useCmd14 = Between(card14, "public static VoucherUseResult Use(HudHotbar hotbar)", "/// <summary>\r\n/// PURPOSE:");
@@ -3750,7 +3758,7 @@ Check(retired30.All(f => !File.Exists(Path.Combine(root, "Assets", "Scripts", "S
 
 // Restart and copied-folder input regressions (user report, 2026-10-26).
 string resetFileFix = Between(Src("UI", "HUD", "HudHotbar.cs"), "private void Reconcile()", "private bool? WorldOwns(");
-Check(resetFileFix.Contains("def.scope != levelId && def.id != InventoryCatalogue.ReviewedFile") && resetFileFix.Contains("!resumedRun"),
+Check(resetFileFix.Contains("Level2CampaignRules.ResetsOnFreshAttempt(def, levelId)") && resetFileFix.Contains("!resumedRun"),
     "restart removes the previous attempt's reviewed file before Arthur's new handover, while Continue preserves it");
 string startFileFix = Body(opening30, "private IEnumerator Start()");
 Check(startFileFix.Contains("HudHotbar.Instance.IsReady"),
@@ -3886,10 +3894,10 @@ Check(arthur25.Count == slots31.Count && arthur25.Zip(slots31, (a, b) => a.x == 
 string cfui25 = Src("UI", "CaseFolderUI.cs");
 string build25 = Between(cfui25, "private List<CaseFolderPageContent> BuildPages(CaseData data)", "// LEVEL PAGES");
 Check(cfui25.Contains("[System.NonSerialized] public System.Func<CaseData, List<CaseFolderPageContent>> InstancePages;") &&
-      Index(build25, "if (IsReference)") < Index(build25, "InstancePages(data)") && Index(build25, "AddReviewPages(list, data);") < Index(build25, "InstancePages(data)") &&
+      Index(build25, "if (IsReference)") < Index(build25, "InstancePages(data)") && Index(build25, "InstancePages(data)") < Index(build25, "AddReviewPages(list, data);") &&
       Index(build25, "InstancePages(data)") < Index(build25, "ExtraPages(data)") &&
       cfui25.Contains("public int FindPageIndexByRole(string role)") && Src("UI", "CaseFolderPageContent.cs").Contains("public string Role;"),
-    "CaseFolderUI: a page of THIS folder instance only (never on a reference copy), after the case's pages, found by its role");
+    "CaseFolderUI: a page of THIS folder instance only (never on a reference copy), right after the front page (Level 2 consistency pass: before a review case's working pages), found by its role");
 string link25 = Src("UI", "SupportingDocumentsPageLink.cs");
 Check(!link25.Contains("SUPPORTING_DOCUMENTS_PAGE_INDEX") && !System.Text.RegularExpressions.Regex.IsMatch(link25, @"PAGE_INDEX|==\s*5\b|= 5;") &&
       link25.Contains("public void OnFolderPageChanged(\r\n        bool isDocumentsPage") &&
@@ -3968,8 +3976,9 @@ JsonElement consultation25 = case25.GetProperty("consultation");
 Check(consultation25.GetProperty("clues").EnumerateArray().Where(c => c.TryGetProperty("document", out _)).All(c => records25.Any(r => r.source == c.GetProperty("document").GetString())),
     "every consultation clue about a document names one of the three records, so reading the record answers it (existing read mark)");
 string[] level2Sources25 = Directory.GetFiles(Path.Combine(root, "Assets", "Scripts", "Level2"), "*.cs");
-Check(level2Sources25.All(f => !File.ReadAllText(f).Contains("CaseRecordsDesk") && !File.ReadAllText(f).Contains("InstancePages")),
-    "Level 2 keeps its current page structure (no Level 2 code uses Marie's page)");
+Check(level2Sources25.All(f => !File.ReadAllText(f).Contains("CaseRecordsDesk")) &&
+      level2Sources25.Count(f => File.ReadAllText(f).Contains("InstancePages = SupportingPages")) == 1,
+    "Level 2 never uses Marie's page; Rosa's own Supporting Documents page (Level2CaseRecords) is the one Level 2 instance page (consistency pass)");
 
 // =====================================================================
 // T26: the corkboard follows naturally from the client rounds
@@ -4075,10 +4084,11 @@ string LessonText26(string id) => string.Join(" ", lessons26.First(l => l.GetPro
     .Select(p => p.TryGetProperty("text", out JsonElement t) ? t.GetString() : ""));
 // 2026-10-27 revision: 95 -> 94 (Arthur's file +4 hands-on steps, binder +1 flip, board +1 flip, desk +1 flip;
 // welcome -1, notes -2, office welcome -2, book pages -1, investigate -2, desk orientation merged).
-Check(lessons26.Sum(l => l.GetProperty("pages").GetArrayLength()) == 90 &&
+// T28 (2026-10-28): 90 -> 89, the retry talk's first and last pages merged.
+Check(lessons26.Sum(l => l.GetProperty("pages").GetArrayLength()) == 97 && Pages26("hud-tour") == 12 && Pages26("audit-retry") == 3 &&
       Pages26("case-folder") == 5 && Pages26("profiles-icon") == 3 && Pages26("guide-appears") == 2 && Pages26("corkboard") == 3 &&
       Pages26("investigate") == 1 && Pages26("reviewed-inspect") == 6,
-    "guide pages: the shorter route keeps the file and ID hands-on pages, three board practice pages, and removes the repeated medal page");
+    "guide pages: individual resource explanations keep the file, ID and board hands-on route intact");
 string corkboardText26 = Text24(Between(guide30, "\"id\": \"corkboard\"", "\"id\": \"sidequest-card\""));
 string resultCardText26 = Text24(Between(guide30, "\"id\": \"sidequest-card\"", "\"id\": \"to-office\""));
 Check(introLower26.Contains("four right earns gold") && introLower26.Contains("two earns silver") && introLower26.Contains("zero or one earns bronze") &&
@@ -4139,13 +4149,13 @@ Check(Src("SideQuest1", "CaseRecordsDesk.cs").Contains("source.profileText = id.
 string model27 = Src("SideQuest1", "IdCardModel.cs");
 Check(model27.Contains("public static readonly Quaternion TurnOver = Quaternion.AngleAxis(180f, Vector3.forward);") &&
       model27.Contains("back.localScale = new Vector3(1f, -1f, 1f);") && model27.Contains("\"Laminate Core\"") &&
-      model27.Contains("SupportingDocumentFace.BuildIdentityBack(face, record);") && model27.Contains("if (!hasBack) return false;") &&
+      model27.Contains("SupportingDocumentFace.BuildBack(face, record);") && Src("SideQuest1", "SupportingDocumentFace.cs").Contains("if (record.IsCard) BuildIdentityBack(root, record);") && model27.Contains("if (!hasBack) return false;") &&
       new[] { "SaveNow", "PlayerProgressManager", "Commit", "Reward", "CaseManager", "ValueTransfer" }.All(w => Code30(model27).IndexOf(w, StringComparison.Ordinal) < 0),
     "one ID card model: bevelled both sides around a laminated core, the profile printed on its back, a half-turn flip that saves, rewards and transfers nothing");
 string paper27 = Src("SideQuest1", "ClientRecordPaper.cs");
 Check(paper27.Contains("CardFlip flip = IdCardModel.Build(root.transform, record, size, layer, out Canvas canvas, out _);") &&
       paper27.Contains("else if (state == State.Out && holder.BroughtToFront(this)) Flip();") &&
-      Body(paper27, "public void PutBack()").Contains("if (flip != null && flip.ShowingBack) flip.Toggle();") &&
+      Body(paper27, "public void PutBack()").Contains("flip?.TurnToFront(seconds * 0.85f);") &&
       Body(paper27, "public void Gather()").Contains("flip?.ShowFront();") && paper27.Contains("windowLayer?.MarkDirty();") &&
       Between(paper27, "public bool Flip()", "private void HandleFlipChanged()").Contains("state != State.Out"),
     "records: the first tap takes a record out, a later tap turns an ID over (never attached, never the lift that ends a hold); it turns back on the way in; its window redraws while turning");
@@ -4226,10 +4236,243 @@ Check(new[] { "teaching", "learning", "lesson", "quiz", "test", "assessment", "t
           !System.Text.RegularExpressions.Regex.IsMatch(allText27, @"\b" + System.Text.RegularExpressions.Regex.Escape(w), System.Text.RegularExpressions.RegexOptions.IgnoreCase)),
     "the whole Level 1 route reads as a job (no teaching, test or tutorial words) and never mentions a BIR form");
 
+// ---------- T28: paper motion, input response and capture cost (source contracts; feel and frame time are USER checks) ----------
+string paper28 = Src("SideQuest1", "ClientRecordPaper.cs");
+string beginDrag28 = Between(paper28, "public void OnBeginDrag(PointerEventData eventData)", "public void OnDrag(PointerEventData eventData)");
+Check(beginDrag28.Contains("state != State.Lifting) return;") && beginDrag28.Contains("extractedByDrag = attached || state == State.Lifting;") &&
+      beginDrag28.Contains("if (attached) Detach();") && beginDrag28.Contains("if (attached) PlayCue(true);") &&
+      Between(paper28, "public void OnEndDrag(PointerEventData eventData)", "private void OnDisable()").Contains("if (extractedByDrag) holder?.PaperSettled(this);"),
+    "T28: a record still lifting from a tap can be dragged at once (one detach, one lift cue) and still counts as shown when released");
+string flip28 = Between(Src("SideQuest1", "IdCardModel.cs"), "public sealed class CardFlip", "private void Apply(float turn, float arc)");
+Check(flip28.Contains("duration = FlipSeconds * Mathf.Clamp(Mathf.Abs(to - from), 0.35f, 1f);") && flip28.Contains("elapsed / duration") &&
+      !flip28.Contains("elapsed / FlipSeconds") && flip28.Contains("public void TurnToFront(float seconds)") &&
+      flip28.Contains("if (!quiet && AudioManager.Instance != null)") && Body(paper28, "public void PutBack()").Contains("flip?.TurnToFront(seconds * 0.85f);"),
+    "T28: a second tap mid-flip reverses only the part turned; an ID going back turns front up before it lands, silently (the landing plays the one place cue)");
+string card28 = Src("SideQuest1", "ProfileDragCard.cs");
+Check(!card28.Contains("SmoothDamp") && Between(card28, "private void UpdateDrag()", "private void BeginTransition(").Contains("pickup >= 1f ? dragTargetPosition") &&
+      card28.Contains("private const float PickupSeconds = 0.08f;") &&
+      Between(card28, "public void OnDrag(PointerEventData eventData)", "public void OnPointerUp(").Contains("if (PickedUp) transform.position = dragTargetPosition;"),
+    "T28: a board ID lifts to the finger in 0.08 s, then stays exactly under it (no spring lag); pinning and returning still settle after release");
+string layer28 = Src("UI", "HUD", "Doc3DLayer.cs");
+string refresh28 = Between(layer28, "private void RefreshText()", "private void SwapLayers()");
+Check(!layer28.Contains("GetComponentsInChildren<TMPro.TMP_Text>(false)") && refresh28.Contains("source.GetComponentsInChildren(false, Texts);") &&
+      refresh28.Contains("refreshedTextScale * 0.002f) return;") && refresh28.Contains("Texts[i].ForceMeshUpdate();") &&
+      Body(layer28, "private void SetComposited(bool on)").Contains("refreshedTextScale = -1f;") && layer28.Contains("if (RefreshTextBeforeCapture) RefreshText();"),
+    "T28: a taken-out record rebuilds its glyph meshes only when its scale changed (lift, return, stack, flip pop), not on every dragged frame, and without a new array per capture");
+string minimap28 = Src("UI", "OfficeMinimapMarkers.cs");
+string marker28 = Src("FSM", "NPC", "NpcStatusMarker.cs");
+Check(!minimap28.Contains("FindObjectsByType") && minimap28.Contains("NpcStatusMarker.Active") &&
+      Body(marker28, "private void OnEnable()").Contains("if (!active.Contains(this)) active.Add(this);") &&
+      Body(marker28, "private void OnDisable()").Contains("active.Remove(this);"),
+    "T28: the minimap finds people through the markers' own registry instead of searching the whole scene every second");
+Check(Src("UI", "HUD", "SupplyShopScreen.cs").Contains("if (walletShown != walletTextValue)") &&
+      Body(Src("UI", "HUD", "InventoryScreen.cs"), "// Android back does what BACK does").Contains("Keyboard.current.escapeKey.wasPressedThisFrame") &&
+      Body(Src("UI", "HUD", "InventoryScreen.cs"), "// Android back does what BACK does").Contains("OnBack();"),
+    "T28: the counter's wallet label is rewritten only when the number changes; Android back closes the Bag exactly like its BACK button");
+string retry28 = Between(guide30, "\"id\": \"audit-retry\"", "\"id\": \"bag-full\"");
+Check(!System.Text.RegularExpressions.Regex.IsMatch(allText27, @"\bbonus", System.Text.RegularExpressions.RegexOptions.IgnoreCase) &&
+      LessonText26("office-hours").Contains("He'll be back the next morning, and your work stays put.") &&
+      !LessonText26("sidequest-card").Contains("go to your progress") && LessonText26("to-office").Contains("See your EXP and hearts go up?") &&
+      Regex24(retry28, "\"text\":") == 3 && retry28.Contains("\"point\": \"hud:notes\""),
+    "T28: no guide line promises an on-time bonus; the reward card and the walk to the office no longer repeat the same reward explanation; the retry talk is three pages");
+
 static int Regex24(string text, string token) => System.Text.RegularExpressions.Regex.Matches(text, System.Text.RegularExpressions.Regex.Escape(token)).Count;
 static string Text24(string lessonJson) => string.Join(" ", System.Text.RegularExpressions.Regex.Matches(lessonJson, "\"text\": \"([^\"]*)\"").Select(m => m.Groups[1].Value));
 
+// =========================================================
+// T18: Rosa's review inside the campaign (pure rules)
+// =========================================================
+int t18Start = checks, t18Fails = failures;
+var items18 = InventoryCatalogue.BuiltIn();
+var shop18 = ShopCatalogue.BuiltIn();
+Check(CampaignRewards.Total(Level2CampaignRules.LevelId, CampaignRewards.TrustKind) == 6 &&
+      CampaignRewards.Total(Level2CampaignRules.LevelId, CampaignRewards.CoinsKind) == 160 &&
+      CampaignRewards.Amount("Level_02", CampaignRewards.IncomeReview, CampaignRewards.CoinsKind) == 60 &&
+      CampaignRewards.Amount("Level_02", CampaignRewards.CaseApproved, CampaignRewards.CoinsKind) == 100 &&
+      CampaignRewards.Amount("Level_02", CampaignRewards.IncomeReview, CampaignRewards.TrustKind) == 2 &&
+      CampaignRewards.Amount("Level_02", CampaignRewards.RosaFollowThrough, CampaignRewards.TrustKind) == 4 &&
+      CampaignRewards.Total("Level_01", CampaignRewards.CoinsKind) == 160 && CampaignRewards.Total("Level_01", CampaignRewards.TrustKind) == 6,
+    "T18: Level 2 grants 60 + 100 coins and +2 / +4 trust; Level 1's catalogue is unchanged");
+
+// A campaign that finished Level 1 (46 trust, 160 coins) and bought a voucher, bookmarks, a bag upgrade and a pencil cup.
+var l1Done = PlayerProgressData.CreateNewCampaign("c-t18", "2026-10-28T00:00:00Z");
+foreach (var (activity, kind) in new[] { (CampaignRewards.FieldAssignment, CampaignRewards.TrustKind), (CampaignRewards.FieldAssignment, CampaignRewards.CoinsKind),
+             (CampaignRewards.CaseApproved, CampaignRewards.CoinsKind), (CampaignRewards.FollowThrough, CampaignRewards.TrustKind) })
+    CampaignRewards.Grant(l1Done, CampaignRewards.Level1, activity, kind);
+l1Done.campaign.MarkChapterCompleted("Level_01");
+l1Done.campaign.shopIntroduced = true;
+l1Done.campaign.coins += 200;   // a richer fixture wallet so every purchase below is affordable
+int buyNo = 0;
+foreach (string product in new[] { ShopCatalogue.ReviewVoucher, ShopCatalogue.BookmarkSet, ShopCatalogue.Satchel, ShopCatalogue.PencilCup })
+    Check(ShopRules.Purchase(l1Done, shop18, items18, product, "t18-buy-" + buyNo++).Outcome == InventoryOutcome.Applied, "T18 fixture: bought " + product);
+InventoryRules.Acquire(l1Done.campaign.inventory, items18, InventoryCatalogue.ReviewedFile, 1, "t18-ref", null, new InventoryItemRecord { source = "arthur" });
+InventoryRules.Acquire(l1Done.campaign.inventory, items18, InventoryCatalogue.Postcard, 1, "t18-card");
+InventoryRules.Acquire(l1Done.campaign.inventory, items18, InventoryCatalogue.ProfileBinder, 1, "t18-ids", null, new InventoryItemRecord { contents = new List<string> { "profile_marie" } });
+InventoryRules.Pin(l1Done.campaign.inventory, items18, InventoryCatalogue.ReviewedFile);
+l1Done.Normalize();
+string before18 = Snap(l1Done);
+int trustL1 = l1Done.campaign.publicTrust, coinsL1 = l1Done.campaign.coins, bagL1 = l1Done.campaign.inventory.bagCapacity, barL1 = l1Done.campaign.inventory.hotbarCapacity;
+Check(trustL1 == 46 && l1Done.campaign.IsChapterCompleted("Level_01"), "T18 fixture: Level 1 finished at 46/100 trust");
+
+// Eligibility table (the documented T18 rows).
+Check(Level2CampaignRules.Eligibility(items18, InventoryCatalogue.ReviewedFile, "Level_02") == CarryEligibility.Reference &&
+      Level2CampaignRules.Eligibility(items18, InventoryCatalogue.ReviewVoucher, "Level_02") == CarryEligibility.Supply &&
+      Level2CampaignRules.Eligibility(items18, InventoryCatalogue.BookmarkSet, "Level_02") == CarryEligibility.Bookmark &&
+      Level2CampaignRules.Eligibility(items18, InventoryCatalogue.Postcard, "Level_02") == CarryEligibility.Keepsake &&
+      Level2CampaignRules.Eligibility(items18, InventoryCatalogue.Notes, "Level_02") == CarryEligibility.ChapterTool &&
+      Level2CampaignRules.Eligibility(items18, InventoryCatalogue.CaseFolder, "Level_02") == CarryEligibility.ChapterTool &&
+      Level2CampaignRules.Eligibility(items18, InventoryCatalogue.TaxCodeBook, "Level_02") == CarryEligibility.ChapterTool &&
+      Level2CampaignRules.Eligibility(items18, InventoryCatalogue.MarkedRecords, "Level_02") == CarryEligibility.ChapterTool &&
+      Level2CampaignRules.Eligibility(items18, InventoryCatalogue.ProfileBinder, "Level_02") == CarryEligibility.ChapterBound &&
+      Level2CampaignRules.Eligibility(items18, InventoryCatalogue.MarkedRecords, "Level_01") == CarryEligibility.ChapterBound &&
+      Level2CampaignRules.Eligibility(items18, "no_such_item", "Level_02") == CarryEligibility.Unknown,
+    "T18 eligibility: reference readable, voucher usable, bookmarks pin, keepsake readable, chapter tools re-issued, Level 1's Client IDs bound to Level 1");
+Check(items18.Find(InventoryCatalogue.Notes).InScope("Level_02") && items18.Find(InventoryCatalogue.Notes).InScope("Level_01") &&
+      !items18.Find(InventoryCatalogue.ProfileBinder).InScope("Level_02") && !items18.Find(InventoryCatalogue.ReviewedFile).InScope("Level_02") &&
+      items18.Find(InventoryCatalogue.MarkedRecords).required && items18.Find(InventoryCatalogue.MarkedRecords).container &&
+      InventoryRules.RequiredCapacityProblems(items18, "Level_02").Count == 0 && InventoryRules.RequiredCapacityProblems(items18, "Level_01").Count == 0,
+    "T18: chapter scopes are lists; Rosa's marked records are a required container; neither chapter needs more required slots than it starts with");
+
+// Shared tool continuity is independent of whether Chapter 2 has a checkpoint yet.
+Check(!Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.Notes), "Level_02") &&
+      !Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.TaxCodeBook), "Level_02") &&
+      Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.CaseFolder), "Level_02") &&
+      Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.MarkedRecords), "Level_02"),
+    "polish: Chapter 2 keeps carried Notes/book; Rosa's own folder and marked evidence still follow the new case");
+Check(Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.Notes), "Level_01") &&
+      Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.ReviewedFile), "Level_01") &&
+      !Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.ReviewVoucher), "Level_02") &&
+      !Level2CampaignRules.ResetsOnFreshAttempt(null, "Level_02"),
+    "polish: Level 1 fresh attempts still reset quest tools; supplies and unknown definitions are safe");
+InventoryRules.Acquire(l1Done.campaign.inventory, items18, InventoryCatalogue.Notes, 1, "polish-notes");
+InventoryRules.Acquire(l1Done.campaign.inventory, items18, InventoryCatalogue.TaxCodeBook, 1, "polish-book");
+before18 = Snap(l1Done);
+
+// Entry: only another chapter's quest object leaves; everything else (wallet, trust, upgrades, decor, supplies, pins) stays.
+PlayerProgressData entry18 = Clone(l1Done);
+InventoryResult retire18 = Level2CampaignRules.RetireOtherChapters(entry18.campaign.inventory, items18, "Level_02", "enter");
+CampaignInventoryRecord inv18 = entry18.campaign.inventory;
+Check(retire18.Outcome == InventoryOutcome.Applied && !InventoryRules.Owns(inv18, InventoryCatalogue.ProfileBinder) &&
+      InventoryRules.Owns(inv18, InventoryCatalogue.ReviewedFile) && InventoryRules.Owns(inv18, InventoryCatalogue.BookmarkSet) &&
+      InventoryRules.Owns(inv18, InventoryCatalogue.Postcard) && InventoryRules.CarriedCount(inv18, InventoryCatalogue.ReviewVoucher) == 1 &&
+      inv18.pins.Contains(InventoryCatalogue.ReviewedFile) && inv18.bagCapacity == bagL1 && inv18.hotbarCapacity == barL1 && bagL1 == 9 &&
+      entry18.campaign.coins == coinsL1 && entry18.campaign.publicTrust == trustL1 &&
+      DecorRules.AnchorOf(entry18.campaign, ShopCatalogue.PencilCup).Length > 0 &&
+      entry18.campaign.ownedUpgradeIds.Contains(ShopCatalogue.Satchel),
+    "T18 entry: Level 1's Client IDs retire; reference, supplies, pins, the 9-slot Bag (Satchel), wallet, trust, decor anchor and ownership carry over");
+Check(InventoryRules.Find(inv18, InventoryCatalogue.Notes).Equals(InventoryRules.Find(l1Done.campaign.inventory, InventoryCatalogue.Notes)) &&
+      InventoryRules.Find(inv18, InventoryCatalogue.TaxCodeBook).Equals(InventoryRules.Find(l1Done.campaign.inventory, InventoryCatalogue.TaxCodeBook)),
+    "polish: Notes and book retain their actual carried locations across chapter retirement");
+string enteredOnce = Snap(entry18);
+Check(Level2CampaignRules.RetireOtherChapters(entry18.campaign.inventory, items18, "Level_02", "enter-again").Outcome == InventoryOutcome.NoChange &&
+      Snap(entry18) == enteredOnce && Snap(l1Done) == before18,
+    "T18 entry: repeat entry changes nothing; the source campaign is untouched until a candidate is written");
+Check(ShopRules.Purchase(entry18, shop18, items18, ShopCatalogue.BookmarkSet, "t18-again").Outcome != InventoryOutcome.Applied &&
+      ShopRules.Purchase(entry18, shop18, items18, ShopCatalogue.Satchel, "t18-again2").Outcome != InventoryOutcome.Applied &&
+      entry18.campaign.coins == coinsL1,
+    "T18: shared shop ownership refuses repurchasing bookmarks or the Satchel in Level 2 (no coin moves)");
+List<DecorPlacement> shown18 = DecorRules.Resolve(entry18.campaign, shop18, new List<string>());
+Check(shown18.Exists(p => p.itemId == ShopCatalogue.PencilCup && p.anchorId.Length > 0),
+    "T18: the purchased pencil cup resolves to its authored anchor in Level 2's office (the same desk anchor; no repurchase)");
+
+// Voucher on Rosa's case: one per case (claim shared across days), separate from Marie's, consumed once.
+VoucherUseResult rosaVoucher = VoucherRules.Use(entry18.campaign, items18, "Level_02", "case_rosa_001", "v1");
+Check(rosaVoucher.Outcome == InventoryOutcome.Applied && InventoryRules.CarriedCount(entry18.campaign.inventory, InventoryCatalogue.ReviewVoucher) == 0 &&
+      entry18.campaign.rewardClaims.Contains(VoucherRules.UseClaimId("c-t18", "Level_02", "case_rosa_001")),
+    "T18 voucher: one voucher is used on Rosa's review with its per-case claim");
+InventoryRules.Acquire(entry18.campaign.inventory, items18, InventoryCatalogue.ReviewVoucher, 1, "v-restock");
+VoucherUseResult rosaAgain = VoucherRules.Use(entry18.campaign, items18, "Level_02", "case_rosa_001", "v2");
+Check(rosaAgain.Outcome == InventoryOutcome.AlreadyApplied && InventoryRules.CarriedCount(entry18.campaign.inventory, InventoryCatalogue.ReviewVoucher) == 1 &&
+      VoucherRules.UseClaimId("c-t18", "Level_02", "case_rosa_001") != VoucherRules.UseClaimId("c-t18", "Level_01", "case_001"),
+    "T18 voucher: a second use on Rosa's case is refused and keeps the carried voucher; Rosa's claim is not Marie's");
+
+// Claims: corrected income review, approved corrected case, follow-through; each once; approved-only completion.
+PlayerProgressData story18 = Clone(entry18);
+var notCorrected = new Level2CaseFacts { HasReview = true, CaseId = "case_rosa_001", FirstChecked = true, FirstCorrect = 12, FirstTotal = 16 };
+Check(!Level2CampaignRules.ApplyCheckpointClaims(story18, notCorrected).Changed && !Level2CampaignRules.QuestClaimed(story18),
+    "T18: a first check with mistakes (not yet corrected) earns no claim");
+var corrected = notCorrected; corrected.QuestCorrected = true;
+var quest18 = Level2CampaignRules.ApplyCheckpointClaims(story18, corrected);
+Check(quest18.Changed && quest18.Trust.Amount == 2 && quest18.Coins.Amount == 60 && story18.campaign.publicTrust == 48 && story18.campaign.coins == coinsL1 + 60,
+    "T18: the corrected income review gives +2 trust and 60 coins with its checkpoint");
+string afterQuest = Snap(story18);
+Check(!Level2CampaignRules.ApplyCheckpointClaims(story18, corrected).Changed && Snap(story18) == afterQuest,
+    "T18: later checkpoint saves and restores of the corrected review never pay it again");
+Check(!Level2CampaignRules.ApplyFollowThrough(story18).Changed && !Level2CampaignRules.FollowThroughPending(story18),
+    "T18: no follow-through trust before the approved case is saved");
+Check(!Level2CampaignRules.ApplyCaseResult(story18, corrected).Changed, "T18: no case coins without the Auditor's actual approval");
+var approvedUncorrected = notCorrected; approvedUncorrected.Approved = true;
+Check(!Level2CampaignRules.ApplyCaseResult(Clone(story18), approvedUncorrected).Changed, "T18: no case coins while the income review is uncorrected");
+var approved = corrected; approved.Approved = true;
+var case18 = Level2CampaignRules.ApplyCaseResult(story18, approved);
+Check(case18.Changed && case18.Coins.Amount == 100 && story18.campaign.coins == coinsL1 + 160 && !case18.ChapterCompleted &&
+      Level2CampaignRules.FollowThroughPending(story18) && !story18.campaign.IsChapterCompleted("Level_02"),
+    "T18: the approved corrected case gives 100 coins once; Chapter 2 waits for the follow-through");
+Check(!Level2CampaignRules.ApplyCaseResult(story18, approved).Changed && story18.campaign.coins == coinsL1 + 160,
+    "T18: a repeated result (relaunch, second card, replayed audit) pays nothing more");
+var follow18 = Level2CampaignRules.ApplyFollowThrough(story18);
+Check(follow18.Changed && follow18.Trust.Amount == 4 && follow18.ChapterCompleted && story18.campaign.publicTrust == 52 &&
+      story18.campaign.IsChapterCompleted("Level_02") && Level2CampaignRules.ChapterComplete(story18),
+    "T18: Rosa's follow-through gives +4 trust once and completes Chapter 2 (46 -> 52 trust, +160 coins for the chapter)");
+Check(!Level2CampaignRules.ApplyFollowThrough(story18).Changed && story18.campaign.publicTrust == 52 &&
+      story18.campaign.ledger.Count(e => e.claimId.Contains("/Level_02/")) == 4,
+    "T18: every Level 2 claim is in the ledger exactly once");
+// A failed earlier quest save: the case result writes both claims in one candidate.
+PlayerProgressData late18 = Clone(entry18);
+var both18 = Level2CampaignRules.ApplyCaseResult(late18, approved);
+Check(both18.Changed && Level2CampaignRules.QuestClaimed(late18) && Level2CampaignRules.CaseClaimed(late18) && late18.campaign.coins == coinsL1 + 160 &&
+      late18.campaign.publicTrust == 48,
+    "T18: if the quest claim's save failed earlier, the approved result records it with the case (no claim is lost)");
+// Story-only and replay isolation are enforced by the save owner (run mode); the rules refuse a save without a campaign.
+var noCampaign = new PlayerProgressData(); noCampaign.Normalize();
+Check(!Level2CampaignRules.ApplyCheckpointClaims(noCampaign, approved).Changed && !Level2CampaignRules.ApplyCaseResult(noCampaign, approved).Changed &&
+      !Level2CampaignRules.ApplyFollowThrough(noCampaign).Changed,
+    "T18: without a committed campaign nothing is claimed");
+// Full Bag: a required record still has a place (held for Make room, never refused; no upgrade purchase needed).
+PlayerProgressData full18 = Clone(entry18);
+CampaignInventoryRecord fullInv = full18.campaign.inventory;
+var fillCat = InventoryCatalogue.BuiltIn();
+for (int f = 0; f < 20; f++) fillCat.items.Add(new InventoryItemDefinition { id = "filler_" + f, label = "Filler " + f, category = InventoryCatalogue.Keepsakes });
+for (int f = 0; f < 20 && (InventoryRules.FirstEmpty(fullInv.hotbar, fullInv.hotbarCapacity) >= 0 || InventoryRules.FirstEmpty(fullInv.bag, fullInv.bagCapacity) >= 0); f++)
+    InventoryRules.Acquire(fullInv, fillCat, "filler_" + f, 1, "fill" + f);
+bool trulyFull = InventoryRules.FirstEmpty(fullInv.hotbar, fullInv.hotbarCapacity) < 0 && InventoryRules.FirstEmpty(fullInv.bag, fullInv.bagCapacity) < 0;
+InventoryResult folderFull = InventoryRules.Acquire(fullInv, fillCat, InventoryCatalogue.CaseFolder, 1, "rosa-folder", null,
+    new InventoryItemRecord { originalDocumentId = "case_rosa_001/original", workingDocumentId = "case_rosa_001/working" });
+Check(!trulyFull || (folderFull.Outcome == InventoryOutcome.NeedsRoom && InventoryRules.Owns(fullInv, InventoryCatalogue.CaseFolder)),
+    "T18 full Bag: Rosa's required folder is held for Make room (owned, never refused) without buying an upgrade");
+Check(trulyFull, "T18 fixture: the bar and the 9-slot Bag were really full for that check");
+Console.WriteLine($"T18 campaign rules: {checks - t18Start} checks, {failures - t18Fails} failures (pure rules; Unity runtime not run).");
+
 Console.WriteLine();
+T19Regression.Run(Check, root);
+
+// T21 readiness candidate: test supported chapter availability before publishing it as content.
+var ready21 = JsonSerializer.Deserialize<CareerCatalog>(File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Career", "chapters.json")), json);
+ready21.chapters.Single(c => c.id == "Level_02").campaignPending = false;
+var start21 = PlayerProgressData.CreateNewCampaign("ready21", "");
+var scoresOnly21 = Clone(start21);
+scoresOnly21.RecordLevelResult("Level_01", 150, 12, 150, 12, true, null);
+Check(!CareerProgress.Build(start21, ready21, Rules).FindChapter("Level_02").Launchable &&
+      !CareerProgress.Build(scoresOnly21, ready21, Rules).FindChapter("Level_02").Launchable,
+    "T21: ready content still requires actual Chapter 1 story completion, never mastery/score hearts alone");
+scoresOnly21.campaign.MarkChapterCompleted("Level_01");
+var chapter21 = CareerProgress.Build(Clone(scoresOnly21), ready21, Rules).FindChapter("Level_02");
+Check(chapter21.Launchable && chapter21.StoryLaunch && CareerProgress.LaunchMode(chapter21) == CampaignRunMode.Story &&
+      chapter21.Def.scene == "Office_Level2", "T21: completed Chapter 1 reloads into the supported Level 2 story scene");
+var closing21 = Clone(scoresOnly21);
+closing21.campaign.MarkChapterCompleted("Level_02");
+var final21 = CareerProgress.Build(closing21, ready21, Rules);
+Check(final21.FindChapter("Level_02").StoryCompleted && CareerProgress.LaunchMode(final21.FindChapter("Level_02")) == CampaignRunMode.MasteryReplay &&
+      final21.Chapters.Where(c => c.Def.number >= 3).All(c => !c.Launchable && c.Status == CareerChapterStatus.ComingSoon),
+    "T21: completion offers isolated mastery replay while all future chapters remain coming soon");
+var shop21 = ShopCatalogue.BuiltIn(); var inv21 = InventoryCatalogue.BuiltIn();
+closing21.campaign.shopIntroduced = true; closing21.campaign.coins = 1000;
+string locked21 = Snap(closing21);
+Check(ShopRules.StatusOf(closing21, shop21, shop21.Find(ShopCatalogue.ComparisonStand), true) == ShopStatus.Teaser &&
+      ShopRules.Purchase(closing21, shop21, inv21, ShopCatalogue.ComparisonStand, "deferred21").Outcome != InventoryOutcome.Applied && Snap(closing21) == locked21 &&
+      ShopRules.StatusOf(closing21, shop21, shop21.Find(ShopCatalogue.OfficeComputer), true) == ShopStatus.Teaser,
+    "T21: ready/completed Level 2 cannot buy the deferred stand or the future computer, or spend coins on them");
+
 Console.WriteLine($"{checks - failures}/{checks} checks passed");
 return failures == 0 ? 0 : 1;
 
