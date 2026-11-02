@@ -1,0 +1,165 @@
+{
+  "_readme": [
+    "Level 3 plaza people (Level3TownContent, read by Level3BeaTable). T04: Bea at her worktable beside her Level 1 bench; Nina arrives with T11.",
+    "Lines follow CONTENT.md 'Dialogue content and transitions'. The introduction works whether or not the player met Bea in Level 1.",
+    "Completing the introduction hands her records over once (saved before anything shows). Cancelling it changes nothing; the next talk starts it again.",
+    "inquiries: repeatable questions after the handover; contextSources puts a question first when the player last read that record. Answers never decide a worksheet treatment; every graded fact is also printed on the papers.",
+    "T08: once her worksheet is collected Bea walks (toOffice doorway points, then officeSpotPath, the conference room's client spot) and waits there; a resumed chapter finds her there already. When her tax due is on the sheet, certificateHandover hands B-WHT over (saved before it shows), certificateReadLine holds it up to read, then creditQuestion offers creditAnswers: 'credit' is saved (it fills in nothing), 'income' opens the book's Credit Versus Expense help and comes back, 'inspect' shows the certificate again. No trust, ethics or grade comes from any answer.",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "bea": {
+    "id": "bea",
+    "speakerName": "Bea",
+    "fullName": "Beatriz Mendoza",
+    "portraitId": "default",
+    "height": 1.6,
+    "idle": "Idle Relaxed",
+    "anchorPath": "Env/Town/bench (1)",
+    "beforeAssignment": [
+      "Hi! I have a computation appointment with your office. Check in with your receptionist first."
+    ],
+    "duringPractice": [
+      "Take your time with the calculator. I'll be right here with my records."
+    ],
+    "introduction": [
+      {
+        "speaker": "Npc",
+        "text": "Hi again, or properly hello! I'm Beatriz, Bea. I design logos and menus for shops around town.",
+        "emote": "sparkles"
+      },
+      {
+        "speaker": "Npc",
+        "text": "I kept the receipts this time. That means I can subtract all of them, right?",
+        "emote": "question"
+      },
+      {
+        "speaker": "Player",
+        "text": "Let's look at what each record supports."
+      },
+      {
+        "speaker": "Npc",
+        "text": "Here's my whole 2026: my income sheet, my cost list, the receipts, and a rough list of what I hoped to claim."
+      },
+      {
+        "speaker": "Npc",
+        "text": "I'll spread them out on my table. Sit down and read them, and ask me anything.",
+        "emote": "heart"
+      }
+    ],
+    "inquiryPrompt": "What would you like to know?",
+    "inquiryAgain": "Anything else?",
+    "inquiries": [
+      {
+        "id": "purpose",
+        "question": "What was this purchase for?",
+        "answer": "My birthday dinner and decorations. The studio wasn't involved.",
+        "contextSources": [
+          "B-PERSONAL",
+          "B-DRAFT"
+        ]
+      },
+      {
+        "id": "invoice",
+        "question": "Does this invoice belong to the annual total?",
+        "answer": "Yes, that supplier bill is in the printing summary.",
+        "contextSources": [
+          "B-PRINT",
+          "B-EXP"
+        ]
+      },
+      {
+        "id": "period",
+        "question": "Show me the period these records cover.",
+        "answer": "These are the records for the whole year shown on the sheets.",
+        "contextSources": [
+          "B-REV",
+          "B-RENT",
+          "B-SUB",
+          "B-ID",
+          "B-BG"
+        ]
+      }
+    ],
+    "leaveChoice": "I'll review the papers first.",
+    "leaveAnswer": "Take your time. I'll be right here.",
+    "envelopeLabel": "BEA MENDOZA\n2026 RECORDS",
+    "toOffice": [
+      {
+        "x": 4.55,
+        "y": -0.4,
+        "z": 106.4,
+        "yaw": 180
+      },
+      {
+        "x": 4.55,
+        "y": -0.4,
+        "z": 102.9,
+        "yaw": 180
+      },
+      {
+        "x": 4.57,
+        "y": -0.4,
+        "z": 98.2,
+        "yaw": 180
+      },
+      {
+        "x": 4.57,
+        "y": -0.4,
+        "z": 96.0,
+        "yaw": 180
+      },
+      {
+        "x": 3.0,
+        "y": -0.42,
+        "z": 92.69,
+        "yaw": -90
+      },
+      {
+        "x": 1.0,
+        "y": -0.42,
+        "z": 92.69,
+        "yaw": -90
+      }
+    ],
+    "_toOffice": "The same doorway points Level 2's Rosa walks (Office_Level3 is Office_Level2's office): outside the doors, inside them, the corridor, the conference room door. The room spot comes last.",
+    "officeSpotPath": "Environment/OfficeBuilding/Rooms/ConferenceRoom/Client",
+    "leaveDelaySeconds": 2.5,
+    "onTheWayPrompt": "I'm heading to your office. Ask me anything on the way.",
+    "officeWaitPrompt": "I'll wait here while you work out the tax. Anything about my records?",
+    "certificateHandover": [
+      {
+        "speaker": "Npc",
+        "text": "Oh! Before you finish, one more paper. Harbor Menu withheld some tax when they paid me for their menus.",
+        "emote": "sparkles"
+      },
+      {
+        "speaker": "Npc",
+        "text": "They gave me this certificate for it. That payment is already in my menu fees, by the way."
+      },
+      {
+        "speaker": "Player",
+        "text": "Thanks. Let me see it."
+      }
+    ],
+    "certificateReadLine": "Here it is. Read it, then lower it when you're ready.",
+    "creditQuestion": "A client withheld some tax from a payment. Is that another business expense?",
+    "creditAnswers": [
+      {
+        "id": "credit",
+        "text": "It reduces the remaining tax when supported by the certificate.",
+        "reply": "So it comes off the tax at the very end, as long as the certificate backs it. I'll leave the numbers to you."
+      },
+      {
+        "id": "income",
+        "text": "It reduces the income amount before the tax calculation.",
+        "reply": "Hmm, I'm not sure. Let's see what your Tax Code Book says about it."
+      },
+      {
+        "id": "inspect",
+        "text": "Let's inspect the certificate together.",
+        "reply": "Sure, here it is again."
+      }
+    ],
+    "helpBack": "Back to Bea's question"
+  }
+}

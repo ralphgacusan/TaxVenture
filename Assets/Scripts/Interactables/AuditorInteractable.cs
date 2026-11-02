@@ -112,7 +112,7 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
 
         // Level 1 (2026-10-26): with the folder in hand, the hand-in is a conversation.
         // Level 2 (consistency pass): the same conversation; the level's review decides.
-        if (TalkFirst && (LevelHandIn != null || !requiresTaxReturn) && FolderInHand() != null)
+        if (TalkFirst && (LevelHandIn != null || !requiresTaxReturn) && FolderReadyToHand())
         {
             string refusal = LevelHandIn != null ? LevelHandIn.Refusal() : null;
             if (refusal != null) SayNotYet(refusal);
@@ -307,6 +307,19 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
 
     /// <summary>Set by the level whose review decides hand-ins (Level2Audit); null in Level 1.</summary>
     public static ILevelHandIn LevelHandIn;
+
+    /// <summary>
+    /// Level 3 (T09): a level whose Case Folder is the carried inventory folder
+    /// (no desk folder is stored in a HUD icon). Its hand-in implements this
+    /// too: FolderReady says the folder is in the player's bar to give.
+    /// </summary>
+    public interface ILevelFolder
+    {
+        bool FolderReady { get; }
+    }
+
+    /// <summary>The folder can be handed over: the level's own folder (Level 3), else a stored desk folder (Levels 1-2).</summary>
+    private static bool FolderReadyToHand() => LevelHandIn is ILevelFolder level ? level.FolderReady : FolderInHand() != null;
 
     /// <summary>Plays a level's audit lines with the usual NPC dialogue states. False when a dialogue is already running.</summary>
     public bool RunLevelDialogue(List<DialogueLine> lines, System.Action onDone)
@@ -687,11 +700,13 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
     private bool TryHandInFolder()
     {
         if (!AwaitingFolder || CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null) return false;
-        FolderToHUDIcon folder = FolderInHand();
-        if (folder == null) return false;
+        // Level 3: the carried inventory folder (nothing is stored in a HUD icon to release).
+        bool levelFolder = LevelHandIn is ILevelFolder;
+        FolderToHUDIcon folder = levelFolder ? null : FolderInHand();
+        if (levelFolder ? !FolderReadyToHand() : folder == null) return false;
         if (submissionTray != null && !submissionTray.AcceptFromConversation()) return false;
         if (OfficeHudRuntime.Instance != null) OfficeHudRuntime.Instance.CloseCaseFolderView();
-        folder.ReleaseQuietly();
+        if (folder != null) folder.ReleaseQuietly();
         handedFolder = folder;
         folderTaken = true;
 

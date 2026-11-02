@@ -48,7 +48,7 @@ public sealed class InGameSettings : MonoBehaviour
     [Serializable]
     public class Config
     {
-        public string[] scenes = { "Office_Level1", "Office_Level2" };
+        public string[] scenes = { "Office_Level1", "Office_Level2", "Office_Level3" };
         public bool pauseGameWhenOpen = true;
         public string pauseMode = "FreezeTime";
         public bool hideHudWhileOpen = true;
@@ -219,6 +219,8 @@ public sealed class InGameSettings : MonoBehaviour
         {
             Level2Checkpointer checkpoint = FindAnyObjectByType<Level2Checkpointer>();
             if (checkpoint != null && !checkpoint.PrepareSettingsExit(replay)) return false;
+            // Level 3 (T02): the chapter snapshot is saved (a replay clears it); a failed write keeps the player here.
+            if (Level3Checkpointer.Active != null && !Level3Checkpointer.Active.PrepareSettingsExit(replay)) return false;
             // Level 1 story: save the town/board progress (a replay starts over and clears it) (T04).
             if (Level1FieldCheckpointer.Active != null && !Level1FieldCheckpointer.Active.PrepareSettingsExit(replay)) return false;
         }

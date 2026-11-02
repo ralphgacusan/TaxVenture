@@ -1,0 +1,47 @@
+{
+  "_readme": [
+    "How Office_Level3 starts (Level3OfficeStart). Office_Level3 is a one-time copy of the saved Office_Level2 (T02); Rosa's Level 2 parts are built at runtime only in Office_Level2, so none of them exist here. The copy still holds Level 1's plaza quest crowd, corkboard side quest and popup tutorial, switched off below.",
+    "spawn / face / blend: the same reception placement as Level 2 (about 1 m inside the street entrance, facing the receptionist).",
+    "hide: scene objects switched off before anything starts (deactivated, never deleted). Office_Level1 and Office_Level2 are not touched.",
+    "disableComponents: component class names switched off in this scene before they start.",
+    "receptionHistory: the receptionist's first line ({history} in case_bea_001's greeting), chosen from the saved Rosa history (CONTENT 'First reception'). Read only: no Rosa consequence is applied again.",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "spawn": "Environment/OfficeBuilding/Rooms/Reception/Doors/Office_Entrance_Door_2",
+  "face": "Environment/OfficeBuilding/Rooms/Reception/Receptionist",
+  "blend": 0.16,
+  "fallbackSpawn": "Environment/OfficeBuilding/Rooms/Reception/Doors",
+  "fallbackBlend": 0.12,
+  "_hide": "Level 1's plaza quest crowd (NPCS, including Marie and the tutorial guide), the corkboard side quest, the Client IDs icon and the waiting-area copy of Marie. Bea's plaza table arrives with T04.",
+  "hide": [
+    "Environment/Outside/Plaza/NPCS",
+    "Environment/Outside/Plaza/CorkboardSideQuestRoot",
+    "UI/HUD_Canvas/PermanentHUD/IconButtons/TaxpayerProfileIcon",
+    "Environment/OfficeBuilding/Rooms/Reception/WaitingArea/Client2"
+  ],
+  "_disableComponents": "TutorialController: Level 1's tutorial. StampSetInteractable (T09): the inherited Level 1 stamp set would open Level 1's stamp flow; Bea's sheet has its own desk stamps standing on the same stand (Level3DeskCalculatorReview).",
+  "disableComponents": [
+    "TutorialController",
+    "StampSetInteractable"
+  ],
+  "_hideDeskFolder": "The desk Case Folder would open Level 1's folder flow; it is hidden the same way Level 2 hides it before retrieval (CaseFolder3DDrag.HideAndDisableFolder). Later tickets hand Bea's papers over their own way.",
+  "hideDeskFolder": true,
+  "receptionHistory": [
+    {
+      "id": "responsible",
+      "text": "Rosa appreciated getting her checked copy. Bea has booked a computation appointment."
+    },
+    {
+      "id": "unsupported-resolved",
+      "text": "Rosa's corrected copy is delivered. Bea needs a checked computation before making plans."
+    },
+    {
+      "id": "dismissive",
+      "text": "Rosa's case is closed. Bea has brought her records and would like you to explain the result."
+    },
+    {
+      "id": "neutral",
+      "text": "Bea has booked a computation appointment. Her records are ready in the plaza."
+    }
+  ]
+}

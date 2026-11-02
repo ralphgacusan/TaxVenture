@@ -301,10 +301,13 @@ public static class CaseRecordRules
     /// <summary>Rows one face of a paper shows (SupportingPaperTypes.SheetRows / SlipRows); the rest go on its back.</summary>
     public const int SheetRowsPerFace = 5;
     public const int SlipRowsPerFace = 4;
+    /// <summary>Type 8 prints its payments above its own tax-withheld band: two per face (one shows in its large band).</summary>
+    public const int WithholdingRowsPerFace = 2;
 
-    /// <summary>The fixed physical type of an authored supporting-paper type number (4, 5, 7; anything else prints plain).</summary>
+    /// <summary>The fixed physical type of an authored supporting-paper type number (4, 5, 7, 8; anything else prints plain).</summary>
     public static string TypeForPaper(int paperType) =>
-        paperType == 4 ? ClientRecord.Income : paperType == 5 ? ClientRecord.Payment : paperType == 7 ? ClientRecord.Agreement : ClientRecord.Plain;
+        paperType == 4 ? ClientRecord.Income : paperType == 5 ? ClientRecord.Payment : paperType == 7 ? ClientRecord.Agreement :
+        paperType == 8 ? ClientRecord.Withholding : ClientRecord.Plain;
 
     /// <summary>A review record's stable id: the case id and its canonical record id ("L2-ROSA-001/D1").</summary>
     public static string ReviewRecordId(string caseId, string recordId) => (caseId ?? "case") + "/" + (recordId ?? "");
@@ -392,9 +395,9 @@ public static class CaseRecordRules
             record.totalLabel = Clean(total.label);
             record.totalValue = Clean(total.value);
         }
-        int perFace = type == ClientRecord.Payment ? SlipRowsPerFace : SheetRowsPerFace;
-        // A total band takes one row's room on its face.
-        if (total != null && type != ClientRecord.Payment) perFace = Math.Max(1, perFace - 1);
+        int perFace = type == ClientRecord.Payment ? SlipRowsPerFace : type == ClientRecord.Withholding ? WithholdingRowsPerFace : SheetRowsPerFace;
+        // A total band takes one row's room on its face (Type 8 keeps its own band).
+        if (total != null && type != ClientRecord.Payment && type != ClientRecord.Withholding) perFace = Math.Max(1, perFace - 1);
         record.rows = rows.Count > perFace ? rows.GetRange(0, perFace) : rows;
         record.backRows = rows.Count > perFace ? rows.GetRange(perFace, rows.Count - perFace) : new List<ClientRecordRow>();
         return record;
@@ -403,7 +406,7 @@ public static class CaseRecordRules
     /// <summary>The printed header of a type when the record has no title of its own.</summary>
     public static string TypeTitle(string type) =>
         type == ClientRecord.Income ? "INCOME RECORD" : type == ClientRecord.Payment ? "PAYMENT RECORD" :
-        type == ClientRecord.Agreement ? "AGREEMENT" : "RECORD";
+        type == ClientRecord.Agreement ? "AGREEMENT" : type == ClientRecord.Withholding ? "WITHHOLDING CERTIFICATE" : "RECORD";
 
     private static bool IsAmount(string value) => !string.IsNullOrWhiteSpace(value) && value.TrimStart().StartsWith("₱", StringComparison.Ordinal);
 

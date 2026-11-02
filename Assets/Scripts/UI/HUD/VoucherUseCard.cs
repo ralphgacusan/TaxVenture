@@ -26,15 +26,19 @@ public static class ReviewVoucherCommand
         public bool Extended;
     }
 
-    /// <summary>Level 2's Auditor stays all day: its card speaks of today's review cutoff instead of his leaving time.</summary>
-    public static bool ReviewCutoff => Level2ReviewClock.Active != null;
+    /// <summary>The active case review clock: Rosa's (Level 2) or the active Level 3 case's (T09); null in Level 1 (Office Hours).</summary>
+    public static IReviewCutoffClock ReviewClockNow =>
+        Level2ReviewClock.Active != null ? Level2ReviewClock.Active : (IReviewCutoffClock)Level3ReviewClock.Active;
+
+    /// <summary>A case review clock's Auditor stays all day: its card speaks of today's review cutoff instead of his leaving time.</summary>
+    public static bool ReviewCutoff => ReviewClockNow != null;
     public static string CaptionNow => ReviewCutoff ? "TODAY'S REVIEW CUTOFF" : "THE AUDITOR LEAVES AT";
     public static string CaptionWill => ReviewCutoff ? "THE CUTOFF WILL MOVE TO" : "THE AUDITOR WILL LEAVE AT";
     public static string CaptionAfter => ReviewCutoff ? "TODAY'S CUTOFF IS NOW" : "THE AUDITOR NOW LEAVES AT";
 
     public static ClockInfo Clock()
     {
-        Level2ReviewClock rosa = Level2ReviewClock.Active;
+        IReviewCutoffClock rosa = ReviewClockNow;
         if (rosa != null)
             return new ClockInfo
             {
@@ -53,12 +57,12 @@ public static class ReviewVoucherCommand
     {
         PlayerProgressManager manager = PlayerProgressManager.Instance;
         string caseId = ActiveCaseId;
-        Level2ReviewClock rosa = Level2ReviewClock.Active;
+        IReviewCutoffClock rosa = ReviewClockNow;
         if (rosa != null)
         {
             if (hotbar == null || manager == null) return VoucherUseStatus.NoCase;
             return VoucherRules.Check(InventoryRules.CarriedCount(hotbar.Inventory, InventoryCatalogue.ReviewVoucher), caseId, rosa.VoucherView,
-                manager.IsVoucherUsed(Level2CampaignRules.LevelId, caseId));
+                manager.IsVoucherUsed(rosa.LevelId, caseId));
         }
         OfficeHours hours = OfficeHours.Instance;
         if (hotbar == null || hours == null || !hours.Running || manager == null) return VoucherUseStatus.NoCase;
@@ -80,6 +84,17 @@ public static class ReviewVoucherCommand
             VoucherUseResult used = PlayerProgressManager.Instance.CommitLevelTwoVoucherUse(hotbar.Catalogue, ActiveCaseId, reviewCheckpoint,
                 "voucher/" + Guid.NewGuid().ToString("N"));
             if (used.Outcome == InventoryOutcome.Applied) rosa.ApplyExtension(extendedReview);
+            return used;
+        }
+        Level3ReviewClock bea = Level3ReviewClock.Active;
+        if (bea != null)
+        {
+            // Level 3 (T09): the active case's extended clock goes into the chapter snapshot saved with the voucher and its claim.
+            Level3ChapterCheckpoint chapter = bea.ExtendedChapter();
+            if (chapter == null) return new VoucherUseResult { Message = VoucherRules.ReasonFor(VoucherUseStatus.AlreadyUsed) };
+            VoucherUseResult used = PlayerProgressManager.Instance.CommitLevelThreeVoucherUse(hotbar.Catalogue, ActiveCaseId, chapter,
+                "voucher/" + Guid.NewGuid().ToString("N"));
+            if (used.Outcome == InventoryOutcome.Applied) bea.ApplyExtension(chapter);
             return used;
         }
         OfficeHours hours = OfficeHours.Instance;

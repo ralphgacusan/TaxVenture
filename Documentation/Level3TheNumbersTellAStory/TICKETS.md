@@ -1,6 +1,6 @@
 # Ordered Level 3 implementation tickets
 
-Status: **All 18 Planned — documentation only**. Read [README](README.md), [AGENTS](AGENTS.md), [SPEC](SPEC.md), [CONTENT](CONTENT.md), [source map](REUSE_AND_ARCHITECTURE.md) and the selected ticket. Local IDs do not continue or change Campaign Foundation's completed numbering.
+Status,30 October2026: **T01–T08 implemented, internally verified; user manual pending. T09–T18 Planned**. T01's content-authority release gate remains open; T02 delivers only the isolated entry/resume seam (see PROGRESS), not chapter gameplay. Read [README](README.md), [AGENTS](AGENTS.md), [SPEC](SPEC.md), [CONTENT](CONTENT.md), [source map](REUSE_AND_ARCHITECTURE.md) and the selected ticket. Local IDs do not continue or change Campaign Foundation's completed numbering.
 
 The recommended serial order is T01→T02→T03→T04→T05→T06→T07→T08→T09→T10→T11→T12→T13→T14→T15→T16→T17→T18. True blockers below are deliberately narrower; they do not authorize parallel implementation or simultaneous shared-scene edits. Every feature slice includes its actual interaction, data/state, persistence and acceptance. T01 is a bounded preparatory content-authority/fixture exception, not an unnecessary generic refactor.
 

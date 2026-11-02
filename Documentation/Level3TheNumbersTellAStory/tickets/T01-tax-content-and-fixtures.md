@@ -1,6 +1,6 @@
 # T01 — Validate and bind the bounded tax content fixtures
 
-Status: **Planned**. Blocked by: None.
+Status: **Implemented, internally verified; user manual pending**. Blocked by: None.
 
 Priority: P1. Phase: A — Content preparation. Estimated scope: M; bounded preparatory exception; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
 
@@ -8,7 +8,7 @@ Priority: P1. Phase: A — Content preparation. Estimated scope: M; bounded prep
 
 Give subsequent tickets canonical, traceable annual records, rule constants and expected results without presenting prototype rates or unapproved assumptions as current tax law.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Current request is documentation only; future implementation requires an implementation instruction.
+This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. T01 is content/schema preparation only; subsequent runtime tickets require their own execution instruction.
 
 ## Existing systems to reuse
 
@@ -47,11 +47,11 @@ Use the existing candidate→save→publish command boundary and stable chapter/
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] Canonical IDs, periods, sources and expected chains are documented without conflicting amounts.
-- [ ] Exact arithmetic verifies Bea600,000/62,500/50,000 and company6,000,000/1,500,000/1,200,000; current applicability and rounding status are explicit.
-- [ ] All12 worksheet decisions and independent/dependent mistake treatment are specified; source keys are excluded from player data.
-- [ ] Content-authority gate has an actual reviewed status or named pending reviewer/source, never a presumed pass.
-- [ ] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count.
+- [x] Canonical IDs, periods, sources and expected chains are documented without conflicting amounts.
+- [x] Exact arithmetic verifies Bea600,000/62,500/50,000 and company6,000,000/1,500,000/1,200,000; current applicability and rounding status are explicit.
+- [x] All12 worksheet decisions and independent/dependent mistake treatment are specified; answer keys are excluded from player data (acquired source IDs remain valid player state).
+- [x] Content-authority gate has an actual reviewed status or named pending reviewer/source, never a presumed pass.
+- [x] Run documentation/content checks appropriate to actual changes: verify_pack and verify_content pass; exact results and validator rejection checks are in PROGRESS. No production path changed, so runtime build/serialization/failure suites are not applicable to T01; no Unity launch or runtime pass claimed.
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 
@@ -60,6 +60,6 @@ Use the existing candidate→save→publish command boundary and stable chapter/
 
 ## Handoff and completion definition
 
-Canonical content/schema decisions and authority evidence in CONTENT/KNOWN_ISSUES/PROGRESS. No gameplay changes required. Next T02.
+Canonical content/schema decisions and authority evidence are in [FIXTURE_CONTRACT](../FIXTURE_CONTRACT.md), [TAX_AUTHORITY](../TAX_AUTHORITY.md), CONTENT/KNOWN_ISSUES/PROGRESS. Educator review L3-CONTENT-AUTHORITY is pending, especially Marine credit provenance and the rounding policy; this does not block T02 isolated development. No gameplay changes required. Next T02.
 
 Direct dependents: T02, T07, T12. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Mark implemented/internal-verified only after real entry points and checks work; Git operations and user acceptance remain user-owned. No commits, scene edits or gameplay implementation are performed by authoring this ticket.

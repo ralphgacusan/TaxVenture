@@ -24,6 +24,7 @@ using UnityEngine.UI;
 /// </summary>
 public sealed class HudProfileCards : MonoBehaviour
 {
+    public static HudProfileCards Instance { get; private set; }
     // 2026-10-27: each window holds the client's 3D ID card (IdCardPortrait), ID proportions, large
     // enough to read on a phone (four fit as a 2 x 2 fan).
     private const float CardWidth = 720f;
@@ -62,6 +63,7 @@ public sealed class HudProfileCards : MonoBehaviour
         RectTransform layer = HudTheme.CreateRect("Profile Cards", hudCanvas);
         HudTheme.Stretch(layer);
         var view = layer.gameObject.AddComponent<HudProfileCards>();
+        Instance = view;
         view.layer = layer;
         view.profileIcon = profileIcon;
         view.BuildHoldRing(hudCanvas);
@@ -76,6 +78,7 @@ public sealed class HudProfileCards : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (Instance == this) Instance = null;
         GuideFlags.Remove(Flag);
         if (TaxpayerProfileCollectionHUD.IconClickOverride == (System.Func<bool>)HandleIconTapped)
             TaxpayerProfileCollectionHUD.IconClickOverride = null;
@@ -86,6 +89,14 @@ public sealed class HudProfileCards : MonoBehaviour
     // =========================================================
     // OPEN / CLOSE
     // =========================================================
+
+    public void SetReturnIcon(RectTransform target)
+    {
+        if (target == null) return;
+        profileIcon = target;
+        foreach (FloatingWindow card in cards)
+            if (card != null) card.SetReturnIcon(target);
+    }
 
     private bool HandleIconTapped()
     {
@@ -118,6 +129,19 @@ public sealed class HudProfileCards : MonoBehaviour
 
     public static List<TaxpayerProfile> CurrentProfiles()
     {
+        // Reading retained IDs is independent of the current chapter's board/filter.
+        HudHotbar hotbar = HudHotbar.Instance;
+        InventoryItemRecord binder = hotbar != null ? InventoryRules.Record(hotbar.Inventory, InventoryCatalogue.ProfileBinder) : null;
+        if (binder?.contents != null && binder.contents.Count > 0)
+        {
+            var retained = new List<TaxpayerProfile>();
+            foreach (string id in binder.contents)
+            {
+                TaxpayerProfile profile = TaxpayerProfileDatabase.GetById(id);
+                if (profile != null && !retained.Contains(profile)) retained.Add(profile);
+            }
+            if (retained.Count > 0) return retained;
+        }
         if (CollectedProfilesWorldPanel.Instance != null)
             return CollectedProfilesWorldPanel.Instance.GetProfilesToShow();
 

@@ -83,6 +83,28 @@ public static class GameplayEvents
     public static event Action OnAuditReturned;
     public static event Action OnReviewDayRolled;
 
+    // Level 3 (T02): the reception assignment was committed (saved in a story
+    // run) and the first task is the desk calculator; T03 raises the second
+    // after its practice tape is attached and saved. Notification only.
+    public static event Action OnChapterAssignmentReceived;
+    public static event Action OnCalculatorPracticeAttached;
+    // Level 3 (T04): a client's records were handed over and saved. Notification only.
+    public static event Action OnClientRecordsCollected;
+    // Level 3 (T05): the worksheet draft was first filled in (every strip placed, both notes answered) and saved. Notification only; never a grade.
+    public static event Action OnWorksheetDrafted;
+    // Level 3 (T06): a saved check found every worksheet decision right (ready to collect); the
+    // worksheet was then collected, saved with its rewards. Notification only.
+    public static event Action OnWorksheetReady;
+    public static event Action OnWorksheetCollected;
+    // Level 3 (T07): Bea's taxable income and tax due first both had current tapes (saved). Notification only; never a grade.
+    public static event Action OnTaxDueAttached;
+    // Level 3 (T08): Bea handed over her withholding certificate (saved); a credit was linked and the remaining
+    // payable first had a current tape (saved). Notification only; never a grade.
+    public static event Action OnWithholdingCertificateReceived;
+    public static event Action OnRemainingPayableAttached;
+    // Level 3 (T09): the Auditor approved Bea's computation (saved with its 100 coins). Notification only.
+    public static event Action OnBeaCaseApproved;
+
     // Small observation-only cues for the guide ("cue:<name>" in guide.json),
     // e.g. FindingsPaperLifted. They never change gameplay state.
     public static event Action<string> OnGuideCue;
@@ -153,6 +175,36 @@ public static class GameplayEvents
 
     public static void RaiseReviewDayRolled()
         => OnReviewDayRolled?.Invoke();
+
+    public static void RaiseChapterAssignmentReceived()
+        => OnChapterAssignmentReceived?.Invoke();
+
+    public static void RaiseCalculatorPracticeAttached()
+        => OnCalculatorPracticeAttached?.Invoke();
+
+    public static void RaiseClientRecordsCollected()
+        => OnClientRecordsCollected?.Invoke();
+
+    public static void RaiseWorksheetDrafted()
+        => OnWorksheetDrafted?.Invoke();
+
+    public static void RaiseWorksheetReady()
+        => OnWorksheetReady?.Invoke();
+
+    public static void RaiseWorksheetCollected()
+        => OnWorksheetCollected?.Invoke();
+
+    public static void RaiseTaxDueAttached()
+        => OnTaxDueAttached?.Invoke();
+
+    public static void RaiseWithholdingCertificateReceived()
+        => OnWithholdingCertificateReceived?.Invoke();
+
+    public static void RaiseRemainingPayableAttached()
+        => OnRemainingPayableAttached?.Invoke();
+
+    public static void RaiseBeaCaseApproved()
+        => OnBeaCaseApproved?.Invoke();
 
     public static void RaiseGuideCue(string name)
     {

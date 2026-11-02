@@ -20,6 +20,8 @@ public class ClientRecord
     public const string Payment = "payment";
     /// <summary>Type 7, contract / agreement (Rosa's D5).</summary>
     public const string Agreement = "agreement";
+    /// <summary>Type 8, creditable withholding certificate (2307): Bea's B-WHT (Level 3 T08), later the company's packet.</summary>
+    public const string Withholding = "withholding";
     /// <summary>A record with no built type yet: a plain readable sheet under its own title.</summary>
     public const string Plain = "record";
 
@@ -69,6 +71,8 @@ public class ClientRecord
     public string totalValue;
     /// <summary>Rows that did not fit one face: printed on the paper's back (a tap turns it over).</summary>
     public List<ClientRecordRow> backRows = new List<ClientRecordRow>();
+    /// <summary>Type 8: where the certificate's income payment is already counted (printed under it; never an answer).</summary>
+    public string includedIn;
 
     /// <summary>An ID card; every other type is a sheet.</summary>
     public bool IsCard => type == Identity;

@@ -1,6 +1,6 @@
 # T07 — Compute Bea’s taxable income and graduated tax using supported tapes
 
-Status: **Planned**. Blocked by: T01, T06.
+Status: **Implemented, internally verified; user manual pending**. Blocked by: T01, T06.
 
 Priority: P1. Phase: C — Individual computation. Estimated scope: M; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
 
@@ -8,7 +8,7 @@ Priority: P1. Phase: C — Individual computation. Estimated scope: M; target on
 
 At the office, players explicitly select supported totals, choose the annual bracket and construct a traceable base-plus-excess tax calculation.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Current request is documentation only; future implementation requires an implementation instruction.
+This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Implemented 30 October 2026 on an implementation instruction; evidence in [PROGRESS](../PROGRESS.md), limitations in [KNOWN_ISSUES](../KNOWN_ISSUES.md).
 
 ## Existing systems to reuse
 
@@ -48,11 +48,11 @@ Use the existing candidate→save→publish command boundary and stable chapter/
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] Actual worksheet selection and rule→tape→field chain yields600,000 and62,500; input/rule/source identities persist.
-- [ ] All individual bracket boundaries/rounding per T01 and equivalent valid chains have tests; wrong whole-base marginal calculation cannot approve.
-- [ ] Edit/read/credit-independent revision cases invalidate only affected dependents and retain old work.
-- [ ] Exit/reload/failure preserves tape/destination/manual provenance and current phase; earlier levels unaffected.
-- [ ] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count.
+- [x] Actual worksheet selection and rule→tape→field chain yields600,000 and62,500; input/rule/source identities persist. (Picking the collected worksheet's subtotals, the real calculator's Gross − Expenses tape, IND-20 and step tapes, one chain or an equivalent combined expression give 600,000 and 62,500, all supported; picks, band, tape sources and typed flags round-trip without repair.)
+- [x] All individual bracket boundaries/rounding per T01 and equivalent valid chains have tests; wrong whole-base marginal calculation cannot approve. (Every boundary at −0.01/exact/+0.01, every raw value in FIXTURE_CONTRACT's table, the cents cases; flat 120,000, whole-base 142,500, base subtracted 17,500, floor taken from the tax, typed numbers, the wrong band and Bea's draft costs never support.)
+- [x] Edit/read/credit-independent revision cases invalidate only affected dependents and retain old work. (A new band leaves Taxable income current and marks excess/tax lines; a new total marks Taxable income and everything after it; old tapes stay; reading changes nothing; a stale tape cannot be a source. Credits are T08's and touch none of these lines.)
+- [x] Exit/reload/failure preserves tape/destination/manual provenance and current phase; earlier levels unaffected. (Signed round trip; a T06 save without a sheet resumes empty; an injected write failure keeps disk and live state; Level 1/2 suites unchanged.)
+- [x] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count. (Commands and counts in PROGRESS; suites built out of tree; mutation runs recorded.)
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 

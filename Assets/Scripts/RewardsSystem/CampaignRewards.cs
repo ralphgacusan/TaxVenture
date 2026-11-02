@@ -16,6 +16,12 @@ using System;
 ///   corrected case gives 100 coins; her follow-through gives Public Trust +4
 ///   (T19 adds its authored ethics on top, never these again): 6 trust and
 ///   160 coins for the chapter.
+/// - Level 3 T06: Bea's corrected, collected worksheet (Worth the Tax?) gives
+///   Public Trust +2 and 60 coins, in the same write as the collection
+///   (Level3WorksheetCheck.ApplyAcquisitionGrants). T09: Bea's approved
+///   computation gives 100 coins in the same write as the approval
+///   (Level3ReviewRules.ApplyApprovalGrants); no trust. Her follow-through and
+///   the company case arrive with T10/T12.
 /// - Each grant is claimed once by the stable tuple
 ///   campaignId/levelId/activityId/kind (never a run, scene or animation id).
 ///   A claimed grant returns AlreadyClaimed and changes nothing, so a replay,
@@ -38,9 +44,19 @@ public static class CampaignRewards
     /// <summary>Level 2's required field work: Rosa's income review, corrected (Mark the Money! mastered).</summary>
     public const string IncomeReview = "income-review";
     public const string RosaFollowThrough = "rosa-follow-through";
+    /// <summary>Level 3 (T02); T06 adds Bea's worksheet, T09/T10/T12 the cases and follow-throughs.</summary>
+    public const string Level3 = "Level_03";
+    /// <summary>Level 3's required side quest: Bea's corrected worksheet, collected (Worth the Tax?).</summary>
+    public const string BeaWorksheet = "bea-worksheet";
+    public const string BeaCaseApproved = "bea-case-approved";
     public const string TrustKind = "trust";
     public const string CoinsKind = "coins";
     public const string RepairKind = "repair";
+    /// <summary>
+    /// A once-only mastery award marker (Level 3 T06: the worksheet's frozen first-check XP/badge).
+    /// It changes no balance and has no catalogue amount; the frozen values live in the chapter snapshot.
+    /// </summary>
+    public const string MasteryKind = "mastery";
 
     /// <summary>Future community support target (presentation only; it unlocks nothing).</summary>
     public const int SupportTarget = 65;
@@ -78,7 +94,10 @@ public static class CampaignRewards
         new Reward(Level2, IncomeReview, TrustKind, 2, "Rosa's income review completed"),
         new Reward(Level2, IncomeReview, CoinsKind, 60, "Corrected income review"),
         new Reward(Level2, CaseApproved, CoinsKind, 100, "Rosa's corrected case approved"),
-        new Reward(Level2, RosaFollowThrough, TrustKind, 4, "Aling Rosa Santos: follow-through")
+        new Reward(Level2, RosaFollowThrough, TrustKind, 4, "Aling Rosa Santos: follow-through"),
+        new Reward(Level3, BeaWorksheet, TrustKind, 2, "Bea's records organized and checked"),
+        new Reward(Level3, BeaWorksheet, CoinsKind, 60, "Bea's corrected worksheet"),
+        new Reward(Level3, BeaCaseApproved, CoinsKind, 100, "Bea's computation approved")
     };
 
     /// <summary>The catalogued amount (0 when there is no such reward).</summary>

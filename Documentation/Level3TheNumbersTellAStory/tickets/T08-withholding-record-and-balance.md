@@ -1,6 +1,6 @@
 # T08 — Inspect the 2307 credit and compute Bea’s remaining balance
 
-Status: **Planned**. Blocked by: T07.
+Status: **Implemented, internally verified; user manual pending**. Blocked by: T07.
 
 Priority: P1. Phase: C — Credit and balance. Estimated scope: M; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
 
@@ -8,7 +8,7 @@ Priority: P1. Phase: C — Credit and balance. Estimated scope: M; target one fr
 
 Players acquire a real Type 8 source, distinguish credit from expense and attach the remaining 50,000 balance without duplicating certificate income.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Current request is documentation only; future implementation requires an implementation instruction.
+This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Implemented 31 October 2026 on an implementation instruction; evidence in [PROGRESS](../PROGRESS.md), limitations in [KNOWN_ISSUES](../KNOWN_ISSUES.md).
 
 ## Existing systems to reuse
 
@@ -48,11 +48,11 @@ Use the existing candidate→save→publish command boundary and stable chapter/
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] B-WHT actual admission/acquisition/view/return/Bag link and Type 8 field mapping are correct and recoverable.
-- [ ] Credit entry stays separate from expense/revenue;250,000 not duplicated; result50,000 and current source/year required.
-- [ ] Wrong explanations/missing source/manual value/cross-case certificate cannot grant approval or penalize trust.
-- [ ] Credit-only edit preserves unrelated calculations; failure/reload does not duplicate paper or reset draft.
-- [ ] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count.
+- [x] B-WHT actual admission/acquisition/view/return/Bag link and Type 8 field mapping are correct and recoverable. (Handed over only at the credit step, saved before it shows, one action id, a repeat or resume is quiet; prints as Type 8 with payer, payee, period, reference, purpose, the income payment with where it is counted and the tax withheld band; listed in the Case Folder by source id; never on her table; the company's packet prints with the same builder.)
+- [x] Credit entry stays separate from expense/revenue;250,000 not duplicated; result50,000 and current source/year required. (Tax credits takes only the acquired certificate's printed amounts; the 250,000 is never a total choice, a sheet source or a strip; 62,500 − 12,500 = 50,000 supported; another payee or a period outside the year never supports.)
+- [x] Wrong explanations/missing source/manual value/cross-case certificate cannot grant approval or penalize trust. (A wrong answer saves nothing and opens Section 9; no linked credit, a typed balance or another case's certificate is refused or kept unsupported; nothing in the credit step touches trust, ethics, coins or a grade; there is no approval before T09.)
+- [x] Credit-only edit preserves unrelated calculations; failure/reload does not duplicate paper or reset draft. (A new credit marks only the payable stale and moves the revision; signed round trip; a T07 save resumes with the certificate still due; an injected write failure keeps disk and live state and the handover can be retried once.)
+- [x] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count. (Commands and counts in PROGRESS; suites built out of tree; mutation runs recorded.)
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 

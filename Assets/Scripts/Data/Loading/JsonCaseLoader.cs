@@ -175,7 +175,7 @@ public static class JsonCaseLoader
         }
 
         string validationError =
-            ValidateCaseDefinition(parsed, resourcePath);
+            ValidateCaseDefinition(parsed, resourcePath, levelId, caseId);
 
         if (validationError != null)
         {
@@ -200,7 +200,9 @@ public static class JsonCaseLoader
     /// </summary>
     private static string ValidateCaseDefinition(
         CaseDefinition def,
-        string sourcePath)
+        string sourcePath,
+        string levelId,
+        string resourceCaseId)
     {
         if (string.IsNullOrEmpty(def.caseId))
         {
@@ -226,8 +228,19 @@ public static class JsonCaseLoader
 
         // Every graded field must exist and have a usable answer, otherwise
         // the case could never be passed.
+        // Level 3 (T02): its own content block replaces the individual-only
+        // default graded fields; a missing or invalid block fails closed.
+        bool level3 = levelId == Level3ChapterRules.LevelId || def.HasLevel3;
+        if (level3)
+        {
+            System.Collections.Generic.List<string> level3Problems = Level3ContentValidator.Validate(def,
+                levelId == Level3ChapterRules.LevelId ? Level3ChapterRules.CaseIdForResource(resourceCaseId) : def.caseId);
+            if (level3Problems.Count > 0)
+                return $"Case '{def.caseId}': {string.Join("; ", level3Problems)}.";
+        }
+
         var seenKeys = new System.Collections.Generic.HashSet<string>();
-        foreach (RequiredFieldDefinition field in def.GradedFields())
+        foreach (RequiredFieldDefinition field in level3 ? new System.Collections.Generic.List<RequiredFieldDefinition>() : def.GradedFields())
         {
             if (!seenKeys.Add(field.key))
                 return $"Case '{def.caseId}' lists requiredFields '{field.key}' twice.";

@@ -45,6 +45,14 @@ public class GameStateMachine : MonoBehaviour
 
     public IGameState CurrentState { get; private set; }
 
+    /// <summary>
+    /// Optional level guard (Level 3, T02): asked before every transition and
+    /// queued transition; false refuses it like a locked step (nothing exits
+    /// or enters). Null = every transition is allowed (Levels 1 and 2). The
+    /// owner sets it while enabled and clears only its own guard.
+    /// </summary>
+    public static Func<IGameState, bool> TransitionGuard;
+
     // A state's Enter (or an OnStateChanged listener) may ask for the next
     // state, e.g. CaseCompleteState -> LevelCompleteState. Those requests
     // wait here until the current transition has fully finished, so
@@ -98,6 +106,12 @@ public class GameStateMachine : MonoBehaviour
             return;
         }
 
+        if (TransitionGuard != null && !TransitionGuard(newState))
+        {
+            Debug.LogWarning($"[GameStateMachine] Ignored ChangeState({newState.StateName}) — refused by this level's chapter.");
+            return;
+        }
+
         if (transitioning)
         {
             pendingStates.Enqueue(newState);
@@ -111,6 +125,11 @@ public class GameStateMachine : MonoBehaviour
             if (progressionLocked && !IsForwardLockedState(next))
             {
                 Debug.LogWarning($"[GameStateMachine] Ignored queued ChangeState({next.StateName}) — progression is locked.");
+                continue;
+            }
+            if (TransitionGuard != null && !TransitionGuard(next))
+            {
+                Debug.LogWarning($"[GameStateMachine] Ignored queued ChangeState({next.StateName}) — refused by this level's chapter.");
                 continue;
             }
             Transition(next);

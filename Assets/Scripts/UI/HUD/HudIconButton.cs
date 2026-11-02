@@ -150,7 +150,7 @@ public class HudIconButton : MonoBehaviour
     /// <summary>Restores UI availability on resume without replaying gameplay events.</summary>
     public void SetAvailable(bool available)
     {
-        if (available && (unlockTrigger != UnlockTrigger.CaseFolderOpened || FolderToHUDIcon.GetStoredFolderCount() > 0)) Unlock();
+        if (available && (unlockTrigger != UnlockTrigger.CaseFolderOpened || FolderToHUDIcon.GetStoredFolderCount() > 0 || HasRetainedFolder)) Unlock();
         else SetLocked();
     }
 
@@ -162,8 +162,11 @@ public class HudIconButton : MonoBehaviour
 
     private void RefreshFolderAvailability()
     {
-        SetAvailable(FolderToHUDIcon.GetStoredFolderCount() > 0);
+        SetAvailable(FolderToHUDIcon.GetStoredFolderCount() > 0 || HasRetainedFolder);
     }
+
+    private static bool HasRetainedFolder => HudHotbar.Instance != null &&
+        InventoryRules.Owns(HudHotbar.Instance.Inventory, InventoryCatalogue.CaseFolder);
 
     private void SetLocked()
     {
@@ -232,7 +235,7 @@ public class HudIconButton : MonoBehaviour
         );
 
 
-        SetLocked();
+        RefreshFolderAvailability();
     }
 }
 

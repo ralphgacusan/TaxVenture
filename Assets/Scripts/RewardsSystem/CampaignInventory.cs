@@ -197,17 +197,17 @@ public class InventoryCatalogue
         });
         catalogue.items.Add(new InventoryItemDefinition
         {
-            id = Notes, label = "Notes", category = ToolsAndSupplies, icon = "notes", required = true, scope = "Level_01,Level_02",
+            id = Notes, label = "Notes", category = ToolsAndSupplies, icon = "notes", required = true, scope = "Level_01,Level_02,Level_03",
             description = "Today's objectives and every step, ticked off as you go."
         });
         catalogue.items.Add(new InventoryItemDefinition
         {
-            id = CaseFolder, label = "Case Folder", category = CaseFiles, icon = "folder", required = true, container = true, scope = "Level_01,Level_02",
+            id = CaseFolder, label = "Case Folder", category = CaseFiles, icon = "folder", required = true, container = true, scope = "Level_01,Level_02,Level_03",
             description = "Your client's case papers. Hand it to the Auditor from your bar."
         });
         catalogue.items.Add(new InventoryItemDefinition
         {
-            id = TaxCodeBook, label = "Tax Code Book", category = ToolsAndSupplies, icon = "book", scope = "Level_01,Level_02", returnsToWorld = true,
+            id = TaxCodeBook, label = "Tax Code Book", category = ToolsAndSupplies, icon = "book", scope = "Level_01,Level_02,Level_03", returnsToWorld = true,
             description = "The rules, section by section. Read it anywhere; it can go back on its desk stand."
         });
         catalogue.items.Add(new InventoryItemDefinition
@@ -562,6 +562,23 @@ public static class InventoryRules
         if (SameList(next, record.contents)) return new InventoryResult { Outcome = InventoryOutcome.NoChange, ItemId = itemId };
         record.contents = next;
         return new InventoryResult { Outcome = InventoryOutcome.Applied, ItemId = itemId, Location = Find(r, itemId) };
+    }
+
+    /// <summary>Retain a readable acquired page without changing ownership, slots or live case data.</summary>
+    public static InventoryResult KeepReference(CampaignInventoryRecord r, string itemId, InventoryReferencePage page)
+    {
+        InventoryItemRecord record = Record(r, itemId);
+        if (!Owns(r, itemId) || record == null || page == null || string.IsNullOrWhiteSpace(page.id))
+            return new InventoryResult { Outcome = InventoryOutcome.NoChange, ItemId = itemId };
+        if (record.referencePages == null) record.referencePages = new List<InventoryReferencePage>();
+        InventoryReferencePage old = record.referencePages.Find(p => p != null && p.id == page.id);
+        var lines = new List<string>(page.lines ?? new List<string>());
+        if (old != null && old.title == page.title && SameList(old.lines, lines))
+            return new InventoryResult { Outcome = InventoryOutcome.NoChange, ItemId = itemId };
+        var copy = new InventoryReferencePage { id = page.id, title = page.title ?? "", lines = lines };
+        if (old == null) record.referencePages.Add(copy);
+        else record.referencePages[record.referencePages.IndexOf(old)] = copy;
+        return new InventoryResult { Outcome = InventoryOutcome.Applied, ItemId = itemId };
     }
 
     // =========================================================

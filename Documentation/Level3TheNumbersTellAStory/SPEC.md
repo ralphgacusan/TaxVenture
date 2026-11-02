@@ -1,12 +1,19 @@
 # Level 3 implementation specification
 
-Authority: [proposal](../Level3DesignProposal.md), the user's two attached requirements, latest existing campaign amendments, and verified live behavior. This pack resolves implementation details without authorizing runtime edits now. Stable IDs below are **proposed**, not existing APIs/assets.
+## Current continuation rule — 30 October 2026
+
+The user explicitly requires every collected Bag/hotbar item to stay across Levels 1 → 2 → 3, whether useful in the next chapter or not. This supersedes older retirement instructions in this pack/proposal/tickets. Keep ownership, quantities, slots, contents, pins, capacities and readable prior records; scope limits current-case use, never ownership. Consumed supplies stay consumed, explicit put-back remains deliberate, and confirmed New Game is still a new campaign. Replay/Practice/Editor remain isolated from live story inventory. Already deleted historical data is not fabricated from answer keys.
+
+Level 3 now adopts the shared Bag/hotbar with its own checkpoint branch. Prior IDs open in the actual card reader; retained acquired-paper/player-annotation text uses read-only saved-paper pages, without CaseManager rebinding or value transfer. No global historical filing/archive gameplay is introduced.
+
+
+Authority: [proposal](../Level3DesignProposal.md), the user's two attached requirements, latest existing campaign amendments, and verified live behavior. T01 completes content/schema preparation only; runtime work remains in subsequent tickets. Stable IDs below are **proposed**, not existing APIs/assets.
 
 ## Identity and resources
 
 Chapter `Level_03`; proposed scene `Assets/Scenes/Office_Level3.unity`; owned root `Level3Gameplay`; cases `L3-BEA-001` and `L3-MARINE-001`; badge `worth_the_tax_3`. Planned level-specific runtime paths: `Assets/Scripts/Level3/`; pure data/rules in existing Data/RewardsSystem conventions as appropriate; resources under `Assets/Resources/Levels/Level_03/` and `Assets/Resources/Tutorials/Level_03/`. All are proposed destinations. Preserve serialized enum values and original GUIDs; each new asset needs a unique .meta.
 
-Planned content files: level.json, office_start.json, objectives.json, book.json, rewards.json, town_life.json, scene_assets.asset, two case JSONs, worksheet/rules content as a small authored structure, and guide.json. Reuse actual loaders where compatible; do not create files that no production entry point reads. T01/T02 decide the smallest compatible shape and record it before later adoption.
+Planned content files: level.json, office_start.json, objectives.json, book.json, rewards.json, town_life.json, scene_assets.asset, two case JSONs, worksheet/rules content as a small authored structure, and guide.json. Reuse actual loaders where compatible; do not create files that no production entry point reads. T01 fixes the smallest compatible shape in [FIXTURE_CONTRACT](FIXTURE_CONTRACT.md): two existing case envelopes each gain an optional L3-only content block with exact decimal strings, explicit source/field/transaction bindings and separate immutable expected answers. T02 implements and validates that contract; no production resources exist from T01.
 
 ## Deterministic chapter phases
 

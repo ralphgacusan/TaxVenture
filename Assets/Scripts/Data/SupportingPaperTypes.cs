@@ -63,9 +63,10 @@ public sealed class SupportingPaperFace
 /// (icon + short title) -> owner/context (issuer, reference, date) ->
 /// evidence rows -> footer (total band / payment status / signatures).
 /// Level 1 owns Types 1-2 (ClientRecordPaper); T18 adds Rosa's Types 4-7
-/// on Level 2's record papers. Types 3 and 8 stay planned: a record mapped
-/// to them, or not mapped at all, prints as a plain readable sheet with a
-/// diagnostic, never as another client's record.
+/// on Level 2's record papers; Level 3 T08 adds Type 8, the creditable
+/// withholding certificate (Bea's B-WHT, later the company's packet). Type 3
+/// stays planned here: a record mapped to it, or not mapped at all, prints as
+/// a plain readable sheet with a diagnostic, never as another client's record.
 ///
 /// RULES: missing context values print a dash; long values wrap (the paper
 /// grows, text never shrinks into microprint); a table longer than one face
@@ -79,10 +80,10 @@ public static class SupportingPaperTypes
 
     private const uint Ivory = 0xFDF7E2;
 
-    /// <summary>Implemented physical presentations (Level 1: 1-2; T18: 4-7). 3 and 8 wait for a case that needs them.</summary>
+    /// <summary>Implemented physical presentations (Level 1: 1-2; T18: 4-7; Level 3 T08: 8). 3 waits for a case that needs it here.</summary>
     public static bool Implemented(SupportingPaperType type) =>
         type == SupportingPaperType.Identity || type == SupportingPaperType.Background ||
-        (type >= SupportingPaperType.IncomeRecord && type <= SupportingPaperType.Agreement);
+        (type >= SupportingPaperType.IncomeRecord && type <= SupportingPaperType.Agreement) || type == SupportingPaperType.Withholding2307;
 
     public static SupportingPaperStyle Style(SupportingPaperType type)
     {
@@ -111,6 +112,13 @@ public static class SupportingPaperTypes
                 {
                     Type = type, Shape = SupportingPaperShape.Sheet, Title = "AGREEMENT", Header = 0x86607E, Paper = Ivory,
                     IssuerLabel = "Party", PartyLabel = "With", RowsPerFace = SheetRows, HasSignatures = true
+                };
+            case SupportingPaperType.Withholding2307:
+                // Blue header (deeper and greener than the ID card's and the 2316's): payer, payee, period, income payment, tax withheld.
+                return new SupportingPaperStyle
+                {
+                    Type = type, Shape = SupportingPaperShape.Sheet, Title = "WITHHOLDING CERTIFICATE", Header = 0x346884, Paper = Ivory,
+                    IssuerLabel = "Payer", PartyLabel = "Payee", RowsPerFace = 2, HasTotalBand = true
                 };
             default:
                 // Unmapped or not implemented here: a plain readable sheet in the record's own words.

@@ -1,6 +1,6 @@
 # T05 — Reconstruct a reversible source-linked worksheet at Bea’s table
 
-Status: **Planned**. Blocked by: T04.
+Status: **Implemented, internally verified; user manual pending**. Blocked by: T04.
 
 Priority: P1. Phase: B — Side-quest drafting. Estimated scope: M; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
 
@@ -8,7 +8,7 @@ Priority: P1. Phase: B — Side-quest drafting. Estimated scope: M; target one f
 
 Players lift seven working strips from originals, place them into four sections and explain two questionable claims without answer-revealing snapping.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Current request is documentation only; future implementation requires an implementation instruction.
+This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Implemented 30 October 2026 on an implementation instruction; evidence in [PROGRESS](../PROGRESS.md), limitations in [KNOWN_ISSUES](../KNOWN_ISSUES.md).
 
 ## Existing systems to reuse
 
@@ -48,11 +48,11 @@ Use the existing candidate→save→publish command boundary and stable chapter/
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] All7 rows extract once, wrong plausible trays accept, original sources stay unchanged, R7/R5 remain distinct.
-- [ ] Tap-place/drag/Undo/source tabs change the same saved model; foreign-case sources and mechanical invalidity give explicit safe refusal.
-- [ ] Both reasons and related link remain reachable on every wrong destination; no per-drop correctness leak.
-- [ ] Exit/reentry/reload/failed draft commit restore stable placements and release holds, no mastery/reward events.
-- [ ] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count.
+- [x] All7 rows extract once, wrong plausible trays accept, original sources stay unchanged, R7/R5 remain distinct. (R1-R7 resolve from the real case file; each lifts once and a repeat only focuses its strip; all 28 row/section pairs are accepted with the same outcome; R5 (B-EXP) and R7 (B-PRINT) share PRINT-26 but stay separate strips; Undo returns a strip to its untouched record.)
+- [x] Tap-place/drag/Undo/source tabs change the same saved model; foreign-case sources and mechanical invalidity give explicit safe refusal. (Tap-tap and drag-drop both call the one Place command through Level3Checkpointer.CommitWorksheet; non-rows, other-case rows, sources not handed over, unknown sections/notes/reasons, self-links and edits outside WorksheetDraft/WorksheetCorrections are refused with a plain reason and no change.)
+- [x] Both reasons and related link remain reachable on every wrong destination; no per-drop correctness leak. (Both notes take all five reasons and the link with R6/R7 in every section or none, even before lifting; a fully wrong and the right draft get identical outcomes and messages edit by edit; the saved draft holds only player keys; the worksheet code never reads the answer key.)
+- [x] Exit/reentry/reload/failed draft commit restore stable placements and release holds, no mastery/reward events. (Draft round-trips through the signed save and resumes; a T04 save without a draft resumes empty; an injected write failure keeps disk and live state; leaving, settings, dialogue, pause and focus loss settle the board and any held strip; drafting changes no coins, trust, XP or mastery.)
+- [x] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count. (Commands and counts in PROGRESS; suites built out of tree.)
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 

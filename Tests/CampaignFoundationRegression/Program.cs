@@ -2186,7 +2186,8 @@ Check(commit10.Contains("if (!result.Changed) return result;") && Index(commit10
       Index(commit10, "TryWriteCandidate(next)") < Index(commit10, "InventoryChanged?.Invoke()") && commit10.Contains("InventoryOutcome.SaveFailed") &&
       commit10.Contains("else sessionInventory = candidate;"),
     "inventory commands run on a candidate copy, are written before they are published, and a failed write changes nothing");
-Check(manager10.Contains("CampaignRun.AllowsStoryWrites(CurrentRunMode) && !TrainingSession.IsPracticing") && manager10.Contains("A temporary run never sees or spends the story's items."),
+Check(manager10.Contains("CampaignRun.AllowsStoryWrites(CurrentRunMode) && !TrainingSession.IsPracticing") && manager10.Contains("Level3ChapterRules.UsesInventoryPreview(CurrentRunMode") &&
+      manager10.Contains("JsonUtility.FromJson<CampaignInventoryRecord>(JsonUtility.ToJson(progress.campaign.inventory))"),
     "practice, mastery replays and Editor runs use a temporary inventory; only story runs write the campaign's");
 string[] forbidden10 = { "CommitFieldAssignment", "CommitFollowThrough", "CampaignRewards", "LevelScoreLedger", "Time.timeScale", "OfficeHours.", "LevelGate.Mark", "AddExp" };
 Check(forbidden10.All(w => hotbar10.IndexOf(w, StringComparison.Ordinal) < 0 && screen10.IndexOf(w, StringComparison.Ordinal) < 0),
@@ -2234,7 +2235,7 @@ Check(folderView10.Contains("HudSlotDrop.Active ? HudSlotDrop.IsOver(data.positi
       hotbar10.Contains("OfficeHudRuntime.Instance.CaseFolderViewOut"),
     "the floating Case Folder uses the desk-open pose, closes into any slot or the Bag, goes back on the desk stack, and its icon dims while it is out (2026-10-26)");
 // T18 (2026-10-28): Level 2 joins the same hotbar and Bag; Level 1's icons and places are unchanged.
-Check(hotbar10.Contains("public static bool UsesHotbar(string levelId) => levelId == OfficeLevelCatalog.Level1Id || levelId == OfficeLevelCatalog.Level2Id;") &&
+Check(hotbar10.Contains("public static bool UsesHotbar(string levelId) => levelId == OfficeLevelCatalog.Level1Id || levelId == OfficeLevelCatalog.Level2Id || levelId == OfficeLevelCatalog.Level3Id;") &&
       hud10.Contains("if (HudHotbar.UsesHotbar(OfficeLevelProfile.LevelIdFor(this)))") &&
       hotbar10.Contains("Wrap(InventoryCatalogue.Notes, buttons.Find(\"NotesIconButton\"));") &&
       hotbar10.Contains("Wrap(InventoryCatalogue.CaseFolder, buttons.Find(\"CaseFolderIconButton\"));") &&
@@ -4195,12 +4196,10 @@ Check(Body(boardCard27, "public void OnPointerDown(PointerEventData eventData)")
     "board IDs: a tap turns the card over and never changes the draft; only a real drag picks it up (checked-right cards stay pinned but can still be read)");
 string board27 = Src("SideQuest1", "CorkboardSideQuestManager.cs");
 string hotbar27 = Src("UI", "HUD", "HudHotbar.cs");
-Check(board27.Contains("spawnedCards.TrueForAll(card => card != null && !card.IsBeingMoved))") && Body(board27, "private void CompleteSideQuest()").Contains("IdsOnBoard = true;") &&
-      Between(board27, "private void ClearRuntimeObjects()", "RestoreSlotLabels();").Contains("if (!sideQuestCompleted) IdsOnBoard = false;") &&
-      hotbar27.Contains("private static bool IdsRetired => CorkboardSideQuestManager.IdsOnBoard || LevelGate.SideQuestDone;") &&
-      hotbar27.Contains("else if (IdsRetired && InventoryRules.Owns(r, InventoryCatalogue.ProfileBinder))") &&
-      Between(hotbar27, "// 2026-10-27: once the IDs are on the corkboard", "case InventoryCatalogue.Notes:").Contains("!IdsRetired"),
-    "the Client IDs leave the bar and Bag once all four have flown into the tray, stay gone after the side quest (office included) and come back only if the board is closed unsolved");
+Check(!hotbar27.Contains("RemoveWorld(InventoryCatalogue.ProfileBinder)") &&
+      hotbar27.Contains("LevelOne && TaxpayerProfileCollectionHUD.Instance != null") &&
+      hotbar27.Contains("Compatibility command now preserves every collected item across chapters"),
+    "Client IDs remain owned after the board and chapter changes; current board admission stays Level 1-only");
 Check(InventoryCatalogue.BuiltIn().Find(InventoryCatalogue.ProfileBinder).label == "Client IDs" &&
       File.ReadAllText(Path.Combine(root, "Assets", "Resources", "Campaign", "inventory.json")).Contains("\"label\": \"Client IDs\"") &&
       Src("UI", "HUD", "HudIconArt.cs").Contains("// 2026-10-27: the clients' ID cards (IdCardModel's look)"),
@@ -4336,8 +4335,8 @@ Check(items18.Find(InventoryCatalogue.Notes).InScope("Level_02") && items18.Find
 // Shared tool continuity is independent of whether Chapter 2 has a checkpoint yet.
 Check(!Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.Notes), "Level_02") &&
       !Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.TaxCodeBook), "Level_02") &&
-      Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.CaseFolder), "Level_02") &&
-      Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.MarkedRecords), "Level_02"),
+      !Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.CaseFolder), "Level_02") &&
+      !Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.MarkedRecords), "Level_02"),
     "polish: Chapter 2 keeps carried Notes/book; Rosa's own folder and marked evidence still follow the new case");
 Check(Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.Notes), "Level_01") &&
       Level2CampaignRules.ResetsOnFreshAttempt(items18.Find(InventoryCatalogue.ReviewedFile), "Level_01") &&
@@ -4352,7 +4351,7 @@ before18 = Snap(l1Done);
 PlayerProgressData entry18 = Clone(l1Done);
 InventoryResult retire18 = Level2CampaignRules.RetireOtherChapters(entry18.campaign.inventory, items18, "Level_02", "enter");
 CampaignInventoryRecord inv18 = entry18.campaign.inventory;
-Check(retire18.Outcome == InventoryOutcome.Applied && !InventoryRules.Owns(inv18, InventoryCatalogue.ProfileBinder) &&
+Check(retire18.Outcome == InventoryOutcome.NoChange && InventoryRules.Owns(inv18, InventoryCatalogue.ProfileBinder) &&
       InventoryRules.Owns(inv18, InventoryCatalogue.ReviewedFile) && InventoryRules.Owns(inv18, InventoryCatalogue.BookmarkSet) &&
       InventoryRules.Owns(inv18, InventoryCatalogue.Postcard) && InventoryRules.CarriedCount(inv18, InventoryCatalogue.ReviewVoucher) == 1 &&
       inv18.pins.Contains(InventoryCatalogue.ReviewedFile) && inv18.bagCapacity == bagL1 && inv18.hotbarCapacity == barL1 && bagL1 == 9 &&

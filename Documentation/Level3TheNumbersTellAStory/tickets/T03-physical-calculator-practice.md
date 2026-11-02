@@ -1,6 +1,6 @@
 # T03 — Operate the physical calculator and attach an unscored practice tape
 
-Status: **Planned**. Blocked by: T02.
+Status: **Implemented, internally verified; user manual pending**. Blocked by: T02.
 
 Priority: P1. Phase: A — New tool introduction. Estimated scope: M; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
 
@@ -8,7 +8,7 @@ Priority: P1. Phase: A — New tool introduction. Estimated scope: M; target one
 
 At the actual desk the player selects values, performs subtraction and attaches persistent calculation tape using the same tool later used for tax work.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Current request is documentation only; future implementation requires an implementation instruction.
+This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Implemented 30 October 2026 on an implementation instruction; evidence in [PROGRESS](../PROGRESS.md), limitations in [KNOWN_ISSUES](../KNOWN_ISSUES.md).
 
 ## Existing systems to reuse
 
@@ -50,11 +50,11 @@ Use the existing candidate→save→publish command boundary and stable chapter/
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] Real key/source→expression→Equals→attached tape path gives 80 and72; no wallet/XP/trust/first-check mutation.
-- [ ] Percent/arithmetic bounds, repeated tap/held key, manual input and malformed operation have deterministic tests.
-- [ ] Exit/reopen/save/reload preserve intended practice state without duplicated tape or held pointer.
-- [ ] Modal/camera/audio ownership cleans up on cancel/disable/settings and advances only after actual player work.
-- [ ] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count.
+- [x] Real key/source→expression→Equals→attached tape path gives 80 and72; no wallet/XP/trust/first-check mutation. (Level3Regression drives Level3Calculator with the card's sources and attaches through Level3PracticeRules: 80, then tape 1 − courier = 72 → BeaRecords; the candidate save equals the fixture except `campaign.levelThree`.)
+- [x] Percent/arithmetic bounds, repeated tap/held key, manual input and malformed operation have deterministic tests. (Precedence, A×20%, A+20% = A+0.20, exact 0.1+0.2, ÷0, overflow, 12/6-digit limits, trailing/leading operators, backspace, CE/C, typed path; tap-release entry with no time-based repeat checked in source.)
+- [x] Exit/reopen/save/reload preserve intended practice state without duplicated tape or held pointer. (Tapes round-trip without repair; repair keeps one tape per slot; filled slots are quiet duplicates; implied lessons skip finished steps; pointer released on disable/focus/pause.)
+- [x] Modal/camera/audio ownership cleans up on cancel/disable/settings and advances only after actual player work. (Leaving the desk, settings, dialogue or pause puts the tools away; taps on the tools suppress the desk behind; guide steps wait on player cues; the objective ticks only from the saved ToolPractice → BeaRecords.)
+- [x] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count. (Commands and counts in PROGRESS; existing suites built out of tree.)
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 
@@ -63,6 +63,6 @@ Use the existing candidate→save→publish command boundary and stable chapter/
 
 ## Handoff and completion definition
 
-Free shared L3 calculator/tape interaction and completed protected introduction. Next T04.
+Delivered: `Level3Calculator` (exact-decimal engine, provenance, draft tape), `Level3PracticeRules` (card sources, two slots, attach command), tape records in `Level3ChapterCheckpoint`, `Level3Checkpointer.CommitPracticeTape`, and the physical tools: `Level3DeskCalculator` (desk rest poses, lift-to-view, tap-release input, attach flight, PUT CALCULATOR AWAY), `Level3CalculatorModel` (scaled Synty SM_Prop_Calculator_01 body via `Resources/Levels/Level_03/scene_assets.asset` + faceplate, display, 20 keycaps, roll, tape), `Level3PracticeCardModel` (clipboard card), `Level3DeskProps`, and guide lessons `calculator-practice`/`own-turn`/`done`. Free shared calculator for later tickets; the protected introduction is complete. Next T04, after L3-18's Bag/hotbar branch.
 
 Direct dependents: T04, T06. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Mark implemented/internal-verified only after real entry points and checks work; Git operations and user acceptance remain user-owned. No commits, scene edits or gameplay implementation are performed by authoring this ticket.

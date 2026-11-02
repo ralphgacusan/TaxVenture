@@ -143,6 +143,13 @@ public class CaseDefinition
     /// <summary>True when this case carries review data (review.reviewId set).</summary>
     public bool HasReview => review != null && review.IsReview;
 
+    // Optional Level 3 content (FIXTURE_CONTRACT). A Level_03 case must carry
+    // a valid block (Level3ContentValidator); other levels leave it out.
+    public Level3CaseContent level3 = new Level3CaseContent();
+
+    /// <summary>True when this case carries the Level 3 content block.</summary>
+    public bool HasLevel3 => level3 != null && level3.IsSet;
+
     /// <summary>The fields this case grades (its requiredFields, or the Level 1 defaults).</summary>
     public List<RequiredFieldDefinition> GradedFields()
     {

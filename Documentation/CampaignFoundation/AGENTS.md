@@ -1,5 +1,12 @@
 # Campaign foundation agent instructions
 
+## Current continuation rule — 30 October 2026
+
+The user explicitly requires every collected Bag/hotbar item to stay across Levels 1 → 2 → 3, whether useful in the next chapter or not. This supersedes older retirement instructions in this pack/proposal/tickets. Keep ownership, quantities, slots, contents, pins, capacities and readable prior records; scope limits current-case use, never ownership. Consumed supplies stay consumed, explicit put-back remains deliberate, and confirmed New Game is still a new campaign. Replay/Practice/Editor remain isolated from live story inventory. Already deleted historical data is not fabricated from answer keys.
+
+Level 3 now adopts the shared Bag/hotbar with its own checkpoint branch. Prior IDs open in the actual card reader; retained acquired-paper/player-annotation text uses read-only saved-paper pages, without CaseManager rebinding or value transfer. No global historical filing/archive gameplay is introduced.
+
+
 User decision (2026-10-29): T20 comparison stand is deferred to future work, with its design retained in the T20 ticket. It is not required for Delivery B, T33 or T21. Continue T33 -> T21 after implemented T19. Keep ordinary free workstation comparison available; the unimplemented stand remains unavailable for purchase, including after T21 enables Level 2. T21 verifies that unavailable state rather than requiring stand purchase, placement or persistence.
 
 This initiative was planned on 2026-10-21; actual implementation status is recorded in PROGRESS.md. T28, T29 and T17 internal verification are complete (2026-10-28), user manual pending. T18 is implemented and internally verified (2026-10-28), user manual pending; the Level 2 consistency pass (2026-10-29: Level 1 folder/records, Rosa's conference-room consultation, talk-first Auditor hand-in, Client Copy delivery, HUD chip) is implemented and internally verified, user manual pending; T32 (quieter town, two townspeople, Rosa's walk to the office) is implemented and internally verified (2026-10-29), user manual pending; T19 is implemented (2026-10-29), internal verification recorded in PROGRESS and user manual pending; T33/T21 are implemented and internally verified (2026-10-29), with Level 2 campaign access enabled and user manual acceptance pending; see DELIVERY_B_HANDOFF.md. T27 is a deferred incremental-adoption roadmap. Read README.md, SPEC.md, WORLD_AND_FEEDBACK.md, VERIFICATION.md, TICKETS.md, PROGRESS.md, KNOWN_ISSUES.md and the selected ticket before work.

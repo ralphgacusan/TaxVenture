@@ -4,6 +4,31 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
+/// A case review cutoff clock the chip and the review voucher card read
+/// (Level 2's Rosa clock, Level 3's per-case clock, T09). Plain values only.
+/// </summary>
+public interface IReviewCutoffClock
+{
+    /// <summary>The level whose voucher claims this clock uses ("Level_02", "Level_03").</summary>
+    string LevelId { get; }
+    bool Announced { get; }
+    bool CaseDone { get; }
+    bool InNextMorning { get; }
+    int MinutesLeft { get; }
+    int Day { get; }
+    string DeadlineText { get; }
+    double GameSeconds { get; }
+    float RealSecondsLeft { get; }
+    float AmberSeconds { get; }
+    float RedSeconds { get; }
+    bool HasDeadline { get; }
+    int DeadlineSeconds { get; }
+    int ExtendedDeadlineSeconds { get; }
+    int ExtensionSeconds { get; }
+    VoucherClockView VoucherView { get; }
+}
+
+/// <summary>
 /// PURPOSE:
 /// The Office Hours countdown: a small navy chip under the progress card
 /// (top-left; it slides to the corner when the HUD steps aside at the desk)
@@ -18,7 +43,7 @@ public sealed class OfficeHoursChip : MonoBehaviour
     private const float Height = 78f;
 
     private OfficeHours hours;
-    private Level2ReviewClock reviewClock;
+    private IReviewCutoffClock reviewClock;
     private RectTransform chip;
     private CanvasGroup group;
     private Image rim;
@@ -38,12 +63,13 @@ public sealed class OfficeHoursChip : MonoBehaviour
         return Create(owner, null, owner.gameObject.scene);
     }
 
-    public static OfficeHoursChip Create(Level2ReviewClock owner)
+    /// <summary>A case review clock's chip (Level 2's Rosa clock, Level 3's per-case clock).</summary>
+    public static OfficeHoursChip Create<T>(T owner) where T : MonoBehaviour, IReviewCutoffClock
     {
         return Create(null, owner, owner.gameObject.scene);
     }
 
-    private static OfficeHoursChip Create(OfficeHours hours, Level2ReviewClock reviewClock, UnityEngine.SceneManagement.Scene scene)
+    private static OfficeHoursChip Create(OfficeHours hours, IReviewCutoffClock reviewClock, UnityEngine.SceneManagement.Scene scene)
     {
         var host = new GameObject("Office Hours Canvas", typeof(RectTransform));
         SceneManager.MoveGameObjectToScene(host, scene);

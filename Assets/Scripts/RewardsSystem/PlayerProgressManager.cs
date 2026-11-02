@@ -434,8 +434,14 @@ public class PlayerProgressManager : MonoBehaviour
             UnityEngine.SceneManagement.Scene scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
             if (sessionInventory == null || sessionInventoryScene != scene)
             {
-                // A temporary run never sees or spends the story's items.
-                sessionInventory = new CampaignInventoryRecord();
+                // Direct Level 3 testing previews completed Chapter 2 possessions through a deep local copy.
+                // CommitInventory still updates sessionInventory only; it cannot spend/change the saved inventory.
+                bool preview = CampaignSave.CanContinue(campaignState) &&
+                    Level3ChapterRules.UsesInventoryPreview(CurrentRunMode, TrainingSession.IsPracticing, progress,
+                        OfficeLevelCatalog.LevelIdForScene(scene.name));
+                sessionInventory = preview
+                    ? JsonUtility.FromJson<CampaignInventoryRecord>(JsonUtility.ToJson(progress.campaign.inventory))
+                    : new CampaignInventoryRecord();
                 sessionInventoryScene = scene;
             }
             return sessionInventory;
@@ -1048,6 +1054,107 @@ public class PlayerProgressManager : MonoBehaviour
         Level2Checkpointer.Active?.PublishEthicsFollowThrough();
         Debug.Log($"[PlayerProgressManager] Rosa's follow-through done: trust {progress.campaign.publicTrust}/100; chapter complete {due.ChapterCompleted}.");
         return grants;
+    }
+
+    // =========================================================
+    // LEVEL 3 CHAPTER (Level3 T02, inside the v5 campaign)
+    // =========================================================
+
+    /// <summary>
+    /// A story run of a campaign that completed Chapter 2: Level 3's chapter
+    /// snapshot is the campaign's own. Editor, replay and practice attempts
+    /// keep their chapter state in memory only.
+    /// </summary>
+    public bool UsesLevelThreeStory => progress != null && CampaignSave.CanContinue(campaignState) &&
+                                       Level3ChapterRules.UsesStoryCheckpoint(CurrentRunMode, TrainingSession.IsPracticing, progress);
+
+    /// <summary>A copy of the saved Level 3 chapter snapshot (null when there is none or this run does not use it).</summary>
+    public Level3ChapterCheckpoint GetLevelThreeCheckpoint()
+    {
+        if (!UsesLevelThreeStory || progress.campaign.levelThree == null || !progress.campaign.levelThree.IsSet) return null;
+        return progress.campaign.levelThree.Copy();
+    }
+
+    /// <summary>
+    /// One Level 3 chapter command: the snapshot goes into a candidate copy of
+    /// the whole save and is written before it becomes live. Wallet, trust,
+    /// Rosa history, mastery, inventory, upgrades and decor are carried as
+    /// they are. A failed write changes nothing (memory and disk keep the
+    /// previous snapshot) and the caller may retry.
+    /// </summary>
+    public bool CommitLevelThreeCheckpoint(Level3ChapterCheckpoint state)
+    {
+        if (!UsesLevelThreeStory) return false;
+        PlayerProgressData candidate = Level3ChapterRules.WithCheckpoint(CloneProgress(), state);
+        return candidate != null && TryWriteCandidate(candidate);
+    }
+
+    /// <summary>
+    /// T06: Bea's worksheet is collected. ONE candidate holds the collected
+    /// chapter (BeaComputation, the worksheet in her folder, the frozen first
+    /// check), the once-only claims (60 coins, +2 Public Trust, the worksheet's
+    /// mastery award) and the Worth the Tax? badge tier; it is written
+    /// before anything becomes live. False (grants empty) when this run does not
+    /// write the story or the write failed: memory and disk keep the ready
+    /// worksheet and the player can collect again. A campaign already paid
+    /// writes the chapter only (grants.AlreadyClaimed).
+    /// </summary>
+    public bool CommitLevelThreeWorksheet(Level3ChapterCheckpoint state, out Level3WorksheetGrants grants)
+    {
+        grants = default;
+        if (!UsesLevelThreeStory) return false;
+        PlayerProgressData candidate = Level3ChapterRules.WithCheckpoint(CloneProgress(), state);
+        if (candidate == null) return false;
+        Level3WorksheetGrants due = Level3WorksheetCheck.ApplyAcquisitionGrants(candidate, state);
+        if (!TryWriteCandidate(candidate)) return false;
+        grants = due;
+        Debug.Log($"[PlayerProgressManager] Bea's worksheet collected: first check {state.worksheetCheck.firstCorrect}/{state.worksheetCheck.firstTotal}, " +
+                  $"XP {due.Xp} (kept for the chapter result), trust {progress.campaign.publicTrust}/100, coins {progress.campaign.coins}{(due.AlreadyClaimed ? " (already paid)" : "")}.");
+        return true;
+    }
+
+    /// <summary>
+    /// T09: Bea's computation is approved. ONE candidate holds the approved
+    /// chapter (BeaDelivery, the frozen case XP and sheet values, her copy at
+    /// the Auditor) and the once-only 100 coins and case mastery claim; it is
+    /// written before anything becomes live. False (grants empty) when this
+    /// run does not write the story or the write failed: memory and disk keep
+    /// the unapproved review and the hand-in can be repeated. A campaign
+    /// already paid writes the chapter only (grants.AlreadyClaimed).
+    /// </summary>
+    public bool CommitLevelThreeApproval(Level3ChapterCheckpoint state, out Level3ReviewGrants grants)
+    {
+        grants = default;
+        if (!UsesLevelThreeStory) return false;
+        PlayerProgressData candidate = Level3ChapterRules.WithCheckpoint(CloneProgress(), state);
+        if (candidate == null) return false;
+        Level3ReviewGrants due = Level3ReviewRules.ApplyApprovalGrants(candidate, state);
+        if (!TryWriteCandidate(candidate)) return false;
+        grants = due;
+        Debug.Log($"[PlayerProgressManager] Bea's computation approved: case XP {due.Xp} (kept for the chapter result), coins {progress.campaign.coins}" +
+                  $"{(due.AlreadyClaimed ? " (already paid)" : "")}.");
+        return true;
+    }
+
+    /// <summary>
+    /// T09: a review voucher on a Level 3 case. Story: the voucher, the
+    /// per-case claim and the chapter snapshot holding that case's extended
+    /// clock in one write (a failed write changes nothing). Other runs:
+    /// temporary supplies and a claim for this visit only, as in Levels 1-2.
+    /// </summary>
+    public VoucherUseResult CommitLevelThreeVoucherUse(InventoryCatalogue items, string caseId, Level3ChapterCheckpoint chapter, string actionId) =>
+        CommitVoucher(items, Level3ChapterRules.LevelId, caseId, actionId, candidate =>
+        {
+            if (chapter != null && UsesLevelThreeStory) Level3ChapterRules.WithCheckpoint(candidate, chapter);
+        });
+
+    /// <summary>Replay from the start: drops the Level 3 chapter snapshot (a failed write keeps it).</summary>
+    public bool ClearLevelThreeCheckpoint()
+    {
+        if (!UsesLevelThreeStory || progress.campaign.levelThree == null || !progress.campaign.levelThree.IsSet) return true;
+        PlayerProgressData candidate = CloneProgress();
+        candidate.campaign.levelThree = new Level3ChapterCheckpoint();
+        return TryWriteCandidate(candidate);
     }
 
     // =========================================================

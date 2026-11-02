@@ -33,14 +33,18 @@ public static class OfficeLevelCatalog
 {
     public const string Level1Scene = "Office_Level1";
     public const string Level2Scene = "Office_Level2";
+    /// <summary>Level 3 (T02): a one-time copy of the saved Office_Level2, specialized by Level3OfficeStart.</summary>
+    public const string Level3Scene = "Office_Level3";
     public const string Level1Id = "Level_01";
     public const string Level2Id = "Level_02";
+    public const string Level3Id = "Level_03";
 
     private static readonly Dictionary<string, string> SceneLevels =
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
             [Level1Scene] = Level1Id,
-            [Level2Scene] = Level2Id
+            [Level2Scene] = Level2Id,
+            [Level3Scene] = Level3Id
         };
 
     private static readonly OfficeFeature[] AllFeatures =

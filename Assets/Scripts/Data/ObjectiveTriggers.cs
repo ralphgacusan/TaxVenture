@@ -50,6 +50,16 @@ public static class ObjectiveTriggers
     public const string FinalAssessmentStamped = "FinalAssessmentStamped"; // GameplayEvents.OnFinalAssessmentStamped
     public const string AuditReturned = "AuditReturned";                   // GameplayEvents.OnAuditReturned
     public const string ReviewDayRolled = "ReviewDayRolled";               // GameplayEvents.OnReviewDayRolled
+    public const string ChapterAssignmentReceived = "ChapterAssignmentReceived";   // GameplayEvents.OnChapterAssignmentReceived (Level 3)
+    public const string CalculatorPracticeAttached = "CalculatorPracticeAttached"; // GameplayEvents.OnCalculatorPracticeAttached (Level 3)
+    public const string ClientRecordsCollected = "ClientRecordsCollected";         // GameplayEvents.OnClientRecordsCollected (Level 3)
+    public const string WorksheetDrafted = "WorksheetDrafted";                     // GameplayEvents.OnWorksheetDrafted (Level 3)
+    public const string WorksheetReady = "WorksheetReady";                         // GameplayEvents.OnWorksheetReady (Level 3)
+    public const string WorksheetCollected = "WorksheetCollected";                 // GameplayEvents.OnWorksheetCollected (Level 3)
+    public const string TaxDueAttached = "TaxDueAttached";                         // GameplayEvents.OnTaxDueAttached (Level 3)
+    public const string WithholdingCertificateReceived = "WithholdingCertificateReceived"; // GameplayEvents.OnWithholdingCertificateReceived (Level 3)
+    public const string RemainingPayableAttached = "RemainingPayableAttached";     // GameplayEvents.OnRemainingPayableAttached (Level 3)
+    public const string BeaCaseApproved = "BeaCaseApproved";                       // GameplayEvents.OnBeaCaseApproved (Level 3)
 
     public static readonly string[] Events =
     {
@@ -60,7 +70,9 @@ public static class ObjectiveTriggers
         ClientCopyPickedUp, ClientCopyHandedOver,
         FindingRecorded, PreliminaryHoldStamped, RosaRecordsCollected, MarketDeskOpened,
         ToolkitDemoFinished, AnnotationTutorialCompleted, AnnotationsChecked, IncomeQuestCompleted,
-        OfficeReviewCompleted, FinalAssessmentStamped, AuditReturned, ReviewDayRolled
+        OfficeReviewCompleted, FinalAssessmentStamped, AuditReturned, ReviewDayRolled,
+        ChapterAssignmentReceived, CalculatorPracticeAttached, ClientRecordsCollected, WorksheetDrafted,
+        WorksheetReady, WorksheetCollected, TaxDueAttached, WithholdingCertificateReceived, RemainingPayableAttached, BeaCaseApproved
     };
 
     /// <summary>Live counters a step may show next to its text.</summary>

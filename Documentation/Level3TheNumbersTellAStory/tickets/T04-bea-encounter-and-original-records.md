@@ -1,6 +1,6 @@
 # T04 — Meet Bea and acquire her physical annual records
 
-Status: **Planned**. Blocked by: T02, T03.
+Status: **Implemented, internally verified; user manual pending**. Blocked by: T02, T03.
 
 Priority: P1. Phase: B — Client field encounter. Estimated scope: M; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
 
@@ -8,7 +8,7 @@ Priority: P1. Phase: B — Client field encounter. Estimated scope: M; target on
 
 Bea returns as a coherent client with contextual questions and actual readable records at the plaza worktable, leading into Worth the Tax?
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Current request is documentation only; future implementation requires an implementation instruction.
+This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Implemented 30 October 2026 on an implementation instruction; evidence in [PROGRESS](../PROGRESS.md), limitations in [KNOWN_ISSUES](../KNOWN_ISSUES.md).
 
 ## Existing systems to reuse
 
@@ -50,11 +50,11 @@ Use the existing candidate→save→publish command boundary and stable chapter/
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] Required records and inquiries open only after correct admission and remain available after cancel/resume.
-- [ ] B IDs/type/source/period/duplicate relationship and withheld-not-yet-visible status are correct in real viewer bindings.
-- [ ] Acquisition duplicate/full Bag/write failure preserves source and same case identity, no coin/trust.
-- [ ] One Bea owner handles handover/travel/conversation and stable resume; no arrival reward.
-- [ ] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count.
+- [x] Required records and inquiries open only after correct admission and remain available after cancel/resume. (Handover refused before practice is complete; the handover runs only when her introduction completes; questions are repeatable, in any order, and resume at WorksheetDraft.)
+- [x] B IDs/type/source/period/duplicate relationship and withheld-not-yet-visible status are correct in real viewer bindings. (Level3RecordRules on the real case file: nine typed papers with case/source ids, periods, issuers, totals 900,000/300,000/354,000, PRINT-26 on three papers; B-WHT never built, and a snapshot holding it early is refused.)
+- [x] Acquisition duplicate/full Bag/write failure preserves source and same case identity, no coin/trust. (A repeat is a quiet duplicate; an injected write failure keeps BeaRecords and no sources; the save equals the fixture except the chapter; papers go into the owned, required Case Folder, so no Bag slot is needed.)
+- [x] One Bea owner handles handover/travel/conversation and stable resume; no arrival reward. (One BeaTable part and one NpcLife; papers re-lay quietly on resume. Her optional walk to the office is deferred to T05 per L3-28.)
+- [x] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count. (Commands and counts in PROGRESS; suites built out of tree.)
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 
@@ -63,6 +63,6 @@ Use the existing candidate→save→publish command boundary and stable chapter/
 
 ## Handoff and completion definition
 
-Physical client records and inquiry encounter, worksheet-admission objective. Next T05.
+Delivered: `Level3BeaTable` (measured placement beside Bea's Level 1 bench, Palmov park wooden table fitted to 0.76 m, kraft mat, manila envelope, ClientRecordPaper holder, seat view "Leave Table"), `Level3BeaInteractable` (phase lines, introduction → saved handover, docked question card), `Level3BeaTableSeat`, `Level3RecordRules`, `Level3TownContent` + `town_life.json`, `Level3ChapterRules.CollectBeaRecords` (BeaRecords → WorksheetDraft), `Level3Checkpointer.CommitBeaRecords`, the `ClientRecordsCollected` objective, the `bea-records` lesson and the Bea's-table waypoint. Physical client records and inquiry encounter; the worksheet is admitted. Next T05.
 
 Direct dependents: T05. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Mark implemented/internal-verified only after real entry points and checks work; Git operations and user acceptance remain user-owned. No commits, scene edits or gameplay implementation are performed by authoring this ticket.

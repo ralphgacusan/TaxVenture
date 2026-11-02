@@ -19,7 +19,7 @@ REQUIRED = [
     'README.md', 'AGENTS.md', 'REUSE_AND_ARCHITECTURE.md', 'SPEC.md',
     'CONTENT.md', 'SCENE_REUSE.md', 'WORLD_AND_FEEDBACK.md',
     'REWARDS_AND_VALIDATION.md', 'VERIFICATION.md', 'PROGRESS.md',
-    'KNOWN_ISSUES.md', 'TICKETS.md',
+    'KNOWN_ISSUES.md', 'TICKETS.md', 'TAX_AUTHORITY.md', 'FIXTURE_CONTRACT.md',
 ]
 HEADINGS = [
     'Goal and visible accomplishment', 'Existing systems to reuse',
@@ -29,6 +29,28 @@ HEADINGS = [
     'USER manual acceptance — Unity/device/visual/feel/listening only',
     'Handoff and completion definition',
 ]
+STATUSES = {'Planned', 'In progress',
+            'Implemented, internally verified; user manual pending', 'User accepted'}
+
+
+def status_problems(body):
+    match = re.search(r'^Status: \*\*([^*]+)\*\*\.', body, re.M)
+    status = match.group(1) if match else None
+    problems = []
+    if status not in STATUSES:
+        problems.append('missing or unsupported implementation status')
+    internal = body.split('## Internal checks — AI source/build/regressions only', 1)[-1].split('## USER manual acceptance', 1)[0]
+    manual = body.split('## USER manual acceptance', 1)[-1].split('## Handoff', 1)[0]
+    if status == 'Planned' and '- [x]' in body.lower():
+        problems.append('Planned ticket has prechecked acceptance')
+    if status in {'Implemented, internally verified; user manual pending', 'User accepted'}:
+        if '- [ ]' in internal or '- [x]' not in internal.lower():
+            problems.append('implemented status needs completed internal checks')
+    if status == 'User accepted' and '- [ ]' in manual:
+        problems.append('User accepted needs completed manual acceptance')
+    return problems
+
+
 errors = []
 for name in REQUIRED:
     if not (PACK / name).is_file():
@@ -70,8 +92,8 @@ for path in sorted((PACK / 'tickets').glob('T*.md')):
     body = bodies.get(path, '')
     if not body.startswith(f'# {key} — '):
         errors.append(f'{key}: wrong heading')
-    if 'Status: **Planned**.' not in body:
-        errors.append(f'{key}: unearned status or missing Planned')
+    for problem in status_problems(body):
+        errors.append(f'{key}: {problem}')
     for field in ['Priority:', 'Phase:', 'Estimated scope:']:
         if field not in body:
             errors.append(f'{key}: missing {field}')
@@ -82,9 +104,7 @@ for path in sorted((PACK / 'tickets').glob('T*.md')):
     deps = re.findall(r'T\d{2}', match.group(1)) if match else None
     if deps != EXPECTED.get(key):
         errors.append(f'{key}: dependencies {deps}, expected {EXPECTED.get(key)}')
-    if '- [x]' in body.lower():
-        errors.append(f'{key}: prechecked acceptance before implementation')
-    if body.count('- [ ]') < 6:
+    if len(re.findall(r'- \[[ xX]\]', body)) < 6:
         errors.append(f'{key}: missing atomic acceptance checks')
     source_block = body.split('## Existing systems to reuse', 1)[-1].split('## Work', 1)[0]
     for source in re.findall(r'^- `([^`]+)`', source_block, re.M):
@@ -145,10 +165,20 @@ for name, (actual_value, expected) in fixtures.items():
     if actual_value != expected:
         errors.append(f'Bad documentation fixture {name}: {actual_value} != {expected}')
 
+from verify_content import verify
+try:
+    content_checks = verify()
+except (ValueError, KeyError, IndexError) as error:
+    content_checks = 0
+    errors.append(f'T01 content: {error}')
+
 if errors:
     print('\n'.join('FAIL: ' + message for message in errors))
     sys.exit(1)
 words = sum(len(bodies[path].split()) for path in actual.values())
-print(f'PASS: {len(actual)} planned tickets; dependency DAG/order; {link_count} local links; '
+status_counts = {status: sum(f'Status: **{status}**.' in bodies[path] for path in actual.values())
+                 for status in sorted(STATUSES)}
+print(f'PASS: {len(actual)} tickets; statuses {status_counts}; dependency DAG/order; {link_count} local links; '
       f'{source_count} existing source references; {len(fixtures)} arithmetic fixtures; '
-      f'{words} ticket words. Documentation only; no gameplay/Unity verification.')
+      f'{content_checks} T01 content assertions; {words} ticket words. '
+      'Documentation only; no gameplay/Unity verification.')

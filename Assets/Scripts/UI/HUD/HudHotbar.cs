@@ -130,11 +130,11 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
     public static bool BookOpenedOnce { get; private set; }
 
     /// <summary>
-    /// Levels whose HUD row is a hotbar. T18: Level 2 too, with the same
-    /// campaign bar, Bag, drawer, upgrades and supplies; Rosa's chapter wraps its
+    /// Levels whose HUD row is a hotbar. Levels 1-3 share the same
+    /// campaign bar, Bag, upgrades and supplies; Rosa's chapter wraps its
     /// own tool icons (Notes, Case Folder, the Tax Code Book and Rosa's marked records).
     /// </summary>
-    public static bool UsesHotbar(string levelId) => levelId == OfficeLevelCatalog.Level1Id || levelId == OfficeLevelCatalog.Level2Id;
+    public static bool UsesHotbar(string levelId) => levelId == OfficeLevelCatalog.Level1Id || levelId == OfficeLevelCatalog.Level2Id || levelId == OfficeLevelCatalog.Level3Id;
 
     private sealed class ItemView
     {
@@ -199,6 +199,8 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
     private bool dirty = true;
     private bool wasAwaiting;
     private bool bookWasShowing;
+    private bool referenceSavePending;
+    private float referenceRetryAt;
     private int syncedProfiles = -1;
     private bool syncedCopy;
     private bool syncedFolder;
@@ -221,6 +223,8 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
 
     /// <summary>T18: this row serves Rosa's chapter.</summary>
     private bool LevelTwo => levelId == OfficeLevelCatalog.Level2Id;
+    private bool LevelThree => levelId == OfficeLevelCatalog.Level3Id;
+    private bool LevelOne => levelId == OfficeLevelCatalog.Level1Id;
 
     /// <summary>The carried Tax Code Book's icon: this row's own in Level 1, Level 2's own part (Level2Gameplay) there.</summary>
     private Level2TaxCodeBookIcon Book => book != null ? book : LevelTwo ? Level2TaxCodeBookIcon.Instance : null;
@@ -256,7 +260,7 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         catalogue = InventoryCatalogueAsset.Current;
         levelId = OfficeLevelProfile.LevelIdFor(this);
         // Level 2 learns whether it resumes once its checkpointer has finished (TryBecomeReady).
-        resumedRun = !LevelTwo && Manager != null && Manager.GetLevelOneCheckpoint() != null;
+        resumedRun = LevelOne && Manager != null && Manager.GetLevelOneCheckpoint() != null;
         readyDeadline = Time.unscaledTime + ReadyTimeout;
 
         for (int i = 0; i < tiles.Length; i++) tiles[i] = CreateTile(i);
@@ -266,7 +270,7 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         // Level 2 builds its own book icon under Level2Gameplay; it is wrapped when it appears (WrapLevelIcons).
         if (!LevelTwo) book = gameObject.AddComponent<Level2TaxCodeBookIcon>();
 
-        if (!LevelTwo) Wrap(InventoryCatalogue.ProfileBinder, buttons.Find("TaxpayerProfileIcon"));
+        if (LevelOne) Wrap(InventoryCatalogue.ProfileBinder, buttons.Find("TaxpayerProfileIcon"));
         Wrap(InventoryCatalogue.Notes, buttons.Find("NotesIconButton"));
         Wrap(InventoryCatalogue.CaseFolder, buttons.Find("CaseFolderIconButton"));
         if (!LevelTwo) Wrap(InventoryCatalogue.TaxCodeBook, buttons.Find(Level2TaxCodeBookIcon.IconName));
@@ -799,6 +803,11 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
             return;
         }
         SyncWorld();
+        if (referenceSavePending && Time.unscaledTime >= referenceRetryAt)
+        {
+            referenceSavePending = !KeepVisibleReferences();
+            referenceRetryAt = Time.unscaledTime + RetrySeconds;
+        }
         UpdateHandoverPrompt();
         UpdateBookFirstOpen();
     }
@@ -809,22 +818,29 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         Level1FieldCheckpointer checkpointer = Level1FieldCheckpointer.Active;
         Level2Checkpointer review = LevelTwo ? Level2Checkpointer.Active : null;
         bool levelStarted = CaseProgressionManager.Instance == null || CaseProgressionManager.Instance.LevelStarted;
-        bool restoring = LevelTwo ? review != null && !review.IsReady : checkpointer != null && !checkpointer.IsReady;
+        Level3Checkpointer chapter = LevelThree ? Level3Checkpointer.Active : null;
+        bool restoring = LevelThree ? chapter == null || !chapter.IsReady
+            : LevelTwo ? review != null && !review.IsReady : checkpointer != null && !checkpointer.IsReady;
+        // A missing/failed chapter restore must never fall through into Level 1 reconciliation.
+        if (LevelThree && (chapter == null || !chapter.IsReady || chapter.Blocked)) return;
         if (Time.unscaledTime < readyDeadline && (restoring || !levelStarted)) return;
         // T18: a resumed Rosa review keeps its items exactly as saved; a fresh attempt drops what an abandoned one left.
         if (LevelTwo) resumedRun = review != null && review.Resumed;
+        if (LevelThree) resumedRun = chapter.Resumed;
 
         CacheWorld();
         if (Manager != null) Manager.NormalizeInventory(catalogue);
         Reconcile();
         // T18: Arthur's carried reference stays readable in Level 2 (a read-only copy of the desk folder; no Arthur here).
-        if (LevelTwo && ReviewedFileViewer.Instance == null)
+        if (!LevelOne && ReviewedFileViewer.Instance == null)
         {
             ReviewedFileViewer.Create(gameObject.scene, null);
             createdReviewedViewer = true;
         }
         ready = true;
         SetNotesAvailable(NotesGranted());
+        if (views.TryGetValue(InventoryCatalogue.CaseFolder, out ItemView retainedFolder) && retainedFolder.Icon != null)
+            retainedFolder.Icon.GetComponent<HudIconButton>()?.RefreshFolderState();
         dirty = true;
     }
 
@@ -855,15 +871,15 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
     }
 
     /// <summary>
-    /// A fresh run of the level (no saved run at its start) drops the level
-    /// items an abandoned attempt left behind; then the world-owned items
-    /// follow the world. Quiet: no bounce, no lesson, no sound.
+    /// Only an isolated fresh Level 1 attempt resets its tutorial tools. Later
+    /// chapter entry retains all collected items; missing old world objects
+    /// cannot revoke ownership. Quiet: no bounce, no lesson, no sound.
     /// </summary>
     private void Reconcile()
     {
         CampaignInventoryRecord r = Inventory;
         bool bookDropped = false;
-        if (!resumedRun)
+        if (LevelOne && !resumedRun)
             foreach (InventoryItemDefinition def in catalogue.items)
             {
                 // Fresh/restarted Level 1 attempts recollect Arthur's reference too (Level 2 keeps it). Continue never enters this reset.
@@ -873,7 +889,7 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
                 Commit(rec => InventoryRules.Remove(rec, catalogue, def.id, NewAction("reset/" + def.id)));
                 bookDropped |= def.id == InventoryCatalogue.TaxCodeBook;
             }
-        // T18: another chapter's quest objects (Level 1's Client IDs in Level 2) leave quietly; a repeat entry finds none.
+        // Compatibility command now preserves every collected item across chapters.
         Commit(rec => Level2CampaignRules.RetireOtherChapters(rec, catalogue, levelId, NewAction("retire")));
         foreach (string id in WorldTracked)
         {
@@ -881,14 +897,16 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
             if (!world.HasValue) continue;
             bool owned = InventoryRules.Owns(Inventory, id);
             if (world.Value && !owned) AcquireWorld(id, null, Info(id), quiet: true);
-            else if (!world.Value && owned) RemoveWorld(id);
+            // An absent old world object is not permission to delete a carried record.
         }
         SyncContents();
         if (bookDropped && deskBook != null) deskBook.UnparkClosedBook();
     }
 
     /// <summary>The items whose ownership follows this level's world (Level 2: Rosa's marked records instead of the Client IDs).</summary>
-    private string[] WorldTracked => LevelTwo
+    private string[] WorldTracked => LevelThree
+        ? new[] { InventoryCatalogue.Notes, InventoryCatalogue.CaseFolder }
+        : LevelTwo
         ? new[] { InventoryCatalogue.Notes, InventoryCatalogue.CaseFolder, InventoryCatalogue.MarkedRecords }
         : new[] { InventoryCatalogue.ProfileBinder, InventoryCatalogue.Notes, InventoryCatalogue.CaseFolder };
 
@@ -899,15 +917,14 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         {
             case InventoryCatalogue.ProfileBinder:
                 // 2026-10-27: once the IDs are on the corkboard (or the side quest is done) they are gone from the bar and Bag.
-                return !LevelTwo && TaxpayerProfileCollectionHUD.Instance != null && TaxpayerProfileCollectionHUD.Instance.CollectedProfiles.Count > 0 &&
-                       !IdsRetired;
+                return LevelOne && TaxpayerProfileCollectionHUD.Instance != null && TaxpayerProfileCollectionHUD.Instance.CollectedProfiles.Count > 0;
             case InventoryCatalogue.MarkedRecords:
                 // T18: Rosa's four marked records exist once Mark the Money! is awarded (Level2AnnotatedPapers builds them).
                 return LevelTwo && Level2AnnotatedPapers.Instance != null && Level2AnnotatedPapers.Instance.HasMarkedRecords;
             case InventoryCatalogue.Notes:
                 return NotesGranted(trustInventory);
             case InventoryCatalogue.CaseFolder:
-                return FolderCarried();
+                return FolderCarried() || (trustInventory && InventoryRules.Owns(Inventory, InventoryCatalogue.CaseFolder));
             default:
                 return null;
         }
@@ -936,6 +953,13 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         return receptionist != null && receptionist.HasSpokenFor(caseId);
     }
 
+    /// <summary>
+    /// The carried Case Folder receives the active case's papers. Level 3 hides
+    /// the desk folder (its papers are handed over in the plaza, T04), so there
+    /// the owned inventory folder is the container; Levels 1/2 follow the world folder.
+    /// </summary>
+    private bool HoldsCasePapers() => LevelThree ? InventoryRules.Owns(Inventory, InventoryCatalogue.CaseFolder) : FolderCarried();
+
     private bool FolderCarried()
     {
         if (ClientCopyHandover.CopyActive) return true;
@@ -944,8 +968,6 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         return false;
     }
 
-    /// <summary>The clients' IDs went onto the corkboard for good (or the side quest is done): no Client IDs item any more.</summary>
-    private static bool IdsRetired => CorkboardSideQuestManager.IdsOnBoard || LevelGate.SideQuestDone;
 
     /// <summary>Per frame: profiles collected, the Case Folder stored or returned (Notes arrive by event).</summary>
     private void SyncWorld()
@@ -957,10 +979,9 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
             if (WorldOwns(InventoryCatalogue.MarkedRecords) == true && !InventoryRules.Owns(r, InventoryCatalogue.MarkedRecords))
                 AcquireWorld(InventoryCatalogue.MarkedRecords, null, Info(InventoryCatalogue.MarkedRecords), quiet: false);
         }
-        else if (WorldOwns(InventoryCatalogue.ProfileBinder) == true && !InventoryRules.Owns(r, InventoryCatalogue.ProfileBinder))
+        else if (LevelOne && WorldOwns(InventoryCatalogue.ProfileBinder) == true && !InventoryRules.Owns(r, InventoryCatalogue.ProfileBinder))
             AcquireWorld(InventoryCatalogue.ProfileBinder, null, Info(InventoryCatalogue.ProfileBinder), quiet: false);
-        else if (IdsRetired && InventoryRules.Owns(r, InventoryCatalogue.ProfileBinder))
-            RemoveWorld(InventoryCatalogue.ProfileBinder);
+        // Client IDs remain in the Bag after board completion and into later chapters.
 
         bool folderCarried = FolderCarried();
         bool folderOwned = InventoryRules.Owns(r, InventoryCatalogue.CaseFolder);
@@ -970,7 +991,7 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
             SlotRef? preferred = dropped >= 0 ? SlotRef.Hotbar(dropped) : (SlotRef?)null;
             AcquireWorld(InventoryCatalogue.CaseFolder, preferred, Info(InventoryCatalogue.CaseFolder), quiet: false);
         }
-        else if (!folderCarried && folderOwned) RemoveWorld(InventoryCatalogue.CaseFolder);
+        // Folder ownership survives submission, delivery and chapter changes; only its active world binding changes.
         SyncContents();
     }
 
@@ -978,10 +999,13 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
     private void SyncContents()
     {
         CampaignInventoryRecord r = Inventory;
-        int profiles = !LevelTwo && TaxpayerProfileCollectionHUD.Instance != null ? TaxpayerProfileCollectionHUD.Instance.CollectedProfiles.Count : 0;
+        int profiles = LevelOne && TaxpayerProfileCollectionHUD.Instance != null ? TaxpayerProfileCollectionHUD.Instance.CollectedProfiles.Count : 0;
         bool copy = ClientCopyHandover.CopyActive;
         bool folder = InventoryRules.Owns(r, InventoryCatalogue.CaseFolder);
-        int records = LevelTwo ? RosaRecordCount() : 0;
+        // Level 3: acquired sources plus the player's collected work (T06: Bea's checked worksheet).
+        int records = LevelTwo ? RosaRecordCount() : LevelThree
+            ? (Level3Checkpointer.Active?.State?.Case(CurrentCaseId())?.acquiredSourceIds?.Count ?? 0) +
+              (Level3Checkpointer.Active?.State?.Case(CurrentCaseId())?.workIds?.Count ?? 0) : 0;
         int marked = LevelTwo && Level2AnnotatedPapers.Instance != null ? Level2AnnotatedPapers.Instance.MarkedRecordIds.Count : 0;
         if (profiles == syncedProfiles && copy == syncedCopy && folder == syncedFolder && records == syncedRecords && marked == syncedMarked) return;
         syncedProfiles = profiles;
@@ -989,6 +1013,8 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         syncedFolder = folder;
         syncedRecords = records;
         syncedMarked = marked;
+        referenceSavePending = !KeepVisibleReferences();
+        referenceRetryAt = Time.unscaledTime + RetrySeconds;
         if (LevelTwo && InventoryRules.Owns(r, InventoryCatalogue.MarkedRecords))
         {
             List<string> ids = MarkedContents();
@@ -1005,9 +1031,14 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         }
         if (InventoryRules.Owns(r, InventoryCatalogue.CaseFolder))
         {
-            List<string> papers = FolderContents();
-            if (!SameContents(r, InventoryCatalogue.CaseFolder, papers))
-                Commit(rec => InventoryRules.SetContents(rec, InventoryCatalogue.CaseFolder, papers));
+            if (HoldsCasePapers())
+            {
+                // A new case adds records without erasing prior clients' contents.
+                List<string> papers = new List<string>(InventoryRules.Record(r, InventoryCatalogue.CaseFolder)?.contents ?? new List<string>());
+                foreach (string id in FolderContents()) if (!papers.Contains(id)) papers.Add(id);
+                if (!SameContents(r, InventoryCatalogue.CaseFolder, papers))
+                    Commit(rec => InventoryRules.SetContents(rec, InventoryCatalogue.CaseFolder, papers));
+            }
         }
     }
 
@@ -1018,6 +1049,69 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         if (record.contents.Count != ids.Count) return false;
         for (int i = 0; i < ids.Count; i++) if (record.contents[i] != ids[i]) return false;
         return true;
+    }
+
+    /// <summary>Snapshot acquired display text, never answer keys, before another chapter replaces its world.</summary>
+    private bool KeepVisibleReferences()
+    {
+        CaseDefinition definition = CaseManager.Instance?.CurrentDefinition;
+        if (definition == null) return true;
+        var pages = new List<(string itemId, InventoryReferencePage page)>();
+        if (HoldsCasePapers() && definition.documents != null)
+        {
+            CaseReviewState review = LevelTwo ? Level2OfficeStart.Review : null;
+            foreach (DocumentDefinition document in definition.documents)
+            {
+                if (document == null) continue;
+                if (LevelThree && Level3Checkpointer.Active?.State?.Case(definition.caseId)?.acquiredSourceIds?.Contains(document.documentName) != true)
+                    continue;
+                // Do not expose papers that Rosa has not actually handed over.
+                if (LevelTwo && definition.review?.documents != null)
+                {
+                    ReviewDocumentDefinition binding = definition.review.documents.Find(d => d != null && d.documentName == document.documentName);
+                    if (binding == null || review == null || !review.HasDocument(binding.id)) continue;
+                }
+                var lines = new List<string>();
+                if (document.fields != null)
+                    foreach (DocumentFieldDefinition field in document.fields)
+                        if (field != null) lines.Add(field.label + ": " + field.displayValue);
+                KeepReferencePages(pages, InventoryCatalogue.CaseFolder, definition.caseId + "/" + document.documentName,
+                    definition.caseTitle + " · " + document.documentName, lines);
+            }
+        }
+        // Level 3 T06: Bea's collected worksheet is the player's own checked work, kept as a read-only page.
+        Level3ChapterCheckpoint chapter = LevelThree ? Level3Checkpointer.Active?.State : null;
+        if (chapter != null && HoldsCasePapers() && chapter.Case(definition.caseId)?.workIds?.Contains(Level3WorksheetCheck.WorksheetWorkId) == true)
+            KeepReferencePages(pages, InventoryCatalogue.CaseFolder, definition.caseId + "/" + Level3WorksheetCheck.WorksheetWorkId,
+                definition.caseTitle + " · Checked worksheet", Level3WorksheetCheck.ReferenceLines(chapter, Level3WorksheetRules.RowsOf(definition)));
+        if (LevelTwo && Level2OfficeStart.Review?.challenge?.awarded == true)
+        {
+            var lines = IncomeChallenge.AnnotatedList(Level2OfficeStart.Review.challenge, definition.review?.annotation);
+            for (int i = 0; i < lines.Count; i++)
+                KeepReferencePages(pages, InventoryCatalogue.MarkedRecords, definition.caseId + "/marked/" + i,
+                    "Rosa's Marked Records · " + (i + 1), new List<string> { lines[i] });
+        }
+        if (pages.Count == 0) return true;
+        InventoryResult saved = Commit(rec =>
+        {
+            bool changed = false;
+            foreach (var entry in pages)
+                changed |= InventoryRules.KeepReference(rec, entry.itemId, entry.page).Changed;
+            return new InventoryResult { Outcome = changed ? InventoryOutcome.Applied : InventoryOutcome.NoChange };
+        });
+        return saved.Outcome != InventoryOutcome.SaveFailed;
+    }
+
+    private static void KeepReferencePages(List<(string itemId, InventoryReferencePage page)> pages,
+        string itemId, string id, string title, List<string> lines)
+    {
+        // Small readable pages reuse the existing inspect-card view; no semantic values are transferable.
+        for (int start = 0; start < lines.Count; start += 6)
+        {
+            var page = new InventoryReferencePage { id = id + "/" + start, title = title,
+                lines = lines.GetRange(start, Math.Min(6, lines.Count - start)) };
+            pages.Add((itemId, page));
+        }
     }
 
     private static string CurrentCaseId() =>
@@ -1043,6 +1137,16 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
             if (review != null && review.acquiredDocumentIds != null && definition?.documents != null)
                 foreach (ReviewDocumentDefinition document in definition.documents)
                     if (document != null && document.kind == "record" && review.HasDocument(document.id)) papers.Add(caseId + "/" + document.id);
+        }
+        if (LevelThree)
+        {
+            List<string> acquired = Level3Checkpointer.Active?.State?.Case(caseId)?.acquiredSourceIds;
+            if (acquired != null)
+                foreach (string id in acquired) papers.Add(caseId + "/" + id);
+            // T06: the collected worksheet travels in the same folder (a container document, no extra Bag slot).
+            List<string> work = Level3Checkpointer.Active?.State?.Case(caseId)?.workIds;
+            if (work != null)
+                foreach (string id in work) papers.Add(caseId + "/" + id);
         }
         return papers;
     }
@@ -1523,10 +1627,12 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
                     if (notes.gameObject.scene == gameObject.scene) { if (!notes.IsOpen) notes.Show(); return true; }
                 return false;
             case InventoryCatalogue.ProfileBinder:
-                if (TaxpayerProfileCollectionHUD.Instance == null) return false;
-                TaxpayerProfileCollectionHUD.Instance.OnHudIconClicked();
-                return true;
+                HudProfileCards.Instance?.SetReturnIcon(ItemAnchor(itemId) ?? bagIcon);
+                if (TaxpayerProfileCollectionHUD.IconClickOverride != null)
+                    return TaxpayerProfileCollectionHUD.IconClickOverride();
+                return OpenSavedRecords(itemId);
             case InventoryCatalogue.CaseFolder:
+                if (!FolderCarried()) return OpenSavedRecords(itemId);
                 return OfficeHudRuntime.Instance != null && OfficeHudRuntime.Instance.OpenCaseFolderView();
             case InventoryCatalogue.TaxCodeBook:
                 if (Book == null || Book.IsFloating) return false;
@@ -1534,7 +1640,8 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
                 return true;
             case InventoryCatalogue.MarkedRecords:
                 // T18: Rosa's four marked records open as their own papers (read anywhere; values move only at the desk).
-                return Level2AnnotatedPapers.Instance != null && Level2AnnotatedPapers.Instance.OpenForReference();
+                return LevelTwo && Level2AnnotatedPapers.Instance != null
+                    ? Level2AnnotatedPapers.Instance.OpenForReference() : OpenSavedRecords(itemId);
             case InventoryCatalogue.ReviewedFile:
                 // T30: Arthur's file is a teal copy of the Case Folder: it flies out of its slot or the Bag (a second tap puts it away).
                 if (ReviewedFileViewer.Instance == null) return false;
@@ -1549,6 +1656,18 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
                 // T11: the postcard is read on its printed inspect card.
                 return collectibles != null && collectibles.ShowRead(itemId);
         }
+    }
+
+    public bool HasSavedRecords(string itemId) =>
+        InventoryRules.Record(Inventory, itemId)?.referencePages?.Count > 0;
+
+    public bool HasCurrentFolder => FolderCarried();
+
+    public bool OpenSavedRecords(string itemId)
+    {
+        if (!InventoryRules.Owns(Inventory, itemId) || collectibles == null) return false;
+        InventoryItemRecord record = InventoryRules.Record(Inventory, itemId);
+        return collectibles.ShowSavedRecords(catalogue.Find(itemId)?.label ?? itemId, record);
     }
 
     /// <summary>The first time the book's pages show in this run (desk or slot), its first-open event is raised once.</summary>
@@ -1630,6 +1749,8 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
             if (review != null && review.HandoverDone) learned.Add("rosa-records");
             return learned;
         }
+        // The Level 3 assignment is not Marie's old case-received journal event.
+        if (LevelThree) return learned;
         if (ReceptionistHasReceivedCase()) learned.Add("case-received");
         ClientCopyPhase phase = ClientCopyHandover.Instance != null ? ClientCopyHandover.Instance.Phase : ClientCopyPhase.None;
         if (phase == ClientCopyPhase.Carried || phase == ClientCopyPhase.Done) learned.Add("client-copy");

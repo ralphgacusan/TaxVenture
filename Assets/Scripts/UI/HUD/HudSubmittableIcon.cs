@@ -376,7 +376,9 @@ public class HudSubmittableIcon :
     /// the desk folder has been stored in this icon (count 1). Other kinds
     /// are unchanged.
     /// </summary>
-    private bool CanUseIcon() => isAvailable && CanDragOut();
+    private bool CanUseIcon() => isAvailable && (CanDragOut() ||
+        (kind == SubmittableKind.CaseFolder && HudHotbar.Instance != null &&
+         InventoryRules.Owns(HudHotbar.Instance.Inventory, InventoryCatalogue.CaseFolder)));
 
     private bool CanDragOut()
     {

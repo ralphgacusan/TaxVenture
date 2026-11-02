@@ -207,7 +207,7 @@ public class AudioManager : MonoBehaviour
             ambienceContextActive = true;
             isOutdoor = true;
         }
-        else if (sceneName == "Office_Level2")
+        else if (sceneName == "Office_Level2" || sceneName == "Office_Level3")
         {
             ambienceContextActive = true;
             isOutdoor = false;

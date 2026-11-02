@@ -1,0 +1,58 @@
+{
+  "_readme": [
+    "Level 3 objectives (T02: the opening only; later tickets add their steps). Notes shows one chapter at a readable size.",
+    "Triggers observe committed chapter state: ChapterAssignmentReceived is raised only after the reception assignment is saved (or kept, outside a story run); CalculatorPracticeAttached is raised by T03 after its practice tape is attached and saved. ClientRecordsCollected is raised by T04 only after Bea's handover is saved (or kept, outside a story run). WorksheetDrafted is raised by T05 the first time every worksheet strip has a section and both claim notes are filled in (saved first); it never says whether they are right.",
+    "T06: WorksheetReady is raised when a saved check finds every worksheet decision right and both subtotals supported; WorksheetCollected when the checked worksheet is collected, saved together with its 60 coins and +2 Public Trust.",
+    "T07: TaxDueAttached is raised the first time Bea's taxable income and tax due both have current tapes on her computation sheet (saved). It is structural: it never says whether they are right; the review (T09) judges them.",
+    "T08: WithholdingCertificateReceived is raised when Bea's certificate handover in the conference room is saved; RemainingPayableAttached the first time a credit is linked and the remaining payable has a current tape (saved). Both are structural, never a grade.",
+    "T09: BeaCaseApproved is raised when the Auditor's approval of Bea's stamped computation is saved together with its 100 coins (a returned review or a hold never raises it).",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "objectives": [
+    {
+      "title": "Bea's computation",
+      "steps": [
+        {
+          "text": "Check in at reception.",
+          "trigger": "event:ChapterAssignmentReceived"
+        },
+        {
+          "text": "Practise with the desk calculator.",
+          "trigger": "event:CalculatorPracticeAttached"
+        },
+        {
+          "text": "Meet Bea at her plaza table and collect her records.",
+          "trigger": "event:ClientRecordsCollected"
+        },
+        {
+          "text": "Build Bea's worksheet: place every row and fill in both claim notes.",
+          "trigger": "event:WorksheetDrafted"
+        },
+        {
+          "text": "Add up both subtotals, check the worksheet and fix anything marked.",
+          "trigger": "event:WorksheetReady"
+        },
+        {
+          "text": "Collect Bea's checked worksheet.",
+          "trigger": "event:WorksheetCollected"
+        },
+        {
+          "text": "Work out Bea's taxable income and tax due at your desk.",
+          "trigger": "event:TaxDueAttached"
+        },
+        {
+          "text": "Meet Bea in the conference room and take her withholding certificate.",
+          "trigger": "event:WithholdingCertificateReceived"
+        },
+        {
+          "text": "Link Bea's tax credit and attach what she still has to pay.",
+          "trigger": "event:RemainingPayableAttached"
+        },
+        {
+          "text": "Stamp Bea's computation and hand her Case Folder to the Auditor.",
+          "trigger": "event:BeaCaseApproved"
+        }
+      ]
+    }
+  ]
+}

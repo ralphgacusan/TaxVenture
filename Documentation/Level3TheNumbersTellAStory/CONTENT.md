@@ -1,6 +1,6 @@
 # Canonical Level 3 content and answer fixtures
 
-All names, identifiers, papers and amounts below are fictional game content. Tax year 2026, complete annual packets; the chapter reviews supplied annual cases rather than claiming a partial island month is a full annual return. These figures are implementation fixtures from the adopted proposal, not a real taxpayer filing instruction. T01 must record curriculum authority, current primary-source verification, regime/boundary/rounding assumptions and release status. No fabricated official seals/identifiers or newly invented tax rule.
+All names, identifiers, papers and amounts below are fictional game content. Tax year 2026, complete annual packets; the chapter reviews supplied annual cases rather than claiming a partial island month is a full annual return. These figures are implementation fixtures from the adopted proposal, not a real taxpayer filing instruction. T01 research and bindings are complete for isolated development: see [TAX_AUTHORITY](TAX_AUTHORITY.md) for dated primary citations and the pending L3-CONTENT-AUTHORITY graded-release gate, and [FIXTURE_CONTRACT](FIXTURE_CONTRACT.md) for canonical IDs, source fields, full rule table, exact chains, twelve decisions, rounding/boundary/negative fixtures and proposed schema. Educator approval is not supplied. No fabricated official seals/identifiers or newly invented tax rule.
 
 ## Bea and her records
 
@@ -11,7 +11,7 @@ Case `L3-BEA-001`, Beatriz Mendoza, freelance logo/menu illustrator already pres
 | B-ID | 1 Identity | Bea's consistent fictional identity, masked identifier | Assignment/supporting papers |
 | B-BG | 2 Client interview notes | Freelancer; annual period; selected regime; personal studio-saving goal | Assignment |
 | B-REV | 4 Annual collection sheet | R1 logo fees 500,000; R2 menu/illustration fees 400,000; annual revenue 900,000 | Bea handover |
-| B-EXP | 4 Annual business expense record | R3 rent 180,000, ref RENT-26; R4 subscriptions 90,000, ref SUB-26; R5 printing/consumables 30,000, ref PRINT-26; total 300,000 | Bea handover |
+| B-EXP | Working annual cost schedule, plain record layout | R3 rent 180,000, ref RENT-26; R4 subscriptions 90,000, ref SUB-26; R5 printing/consumables 30,000, ref PRINT-26; total 300,000 | Bea handover |
 | B-RENT | 7 Studio tenancy agreement | Annual studio-only rent 180,000; paid/current-period facts explicitly supplied | Bea handover; support for R3 |
 | B-SUB | 5 Supplier payment record | Business-only annual subscription 90,000, paid, SUB-26 | Bea handover; support for R4 |
 | B-PRINT | 5 Printing supplier record | R7 paid annual bill 30,000, PRINT-26; recorded in B-EXP's printing row | Bea handover; support, not another cost |
@@ -37,31 +37,31 @@ R3 strips extract the annual B-EXP row and retain the agreement as support; R4 l
 
 Amounts/source identities are copied automatically, not independent scored fields. Reasons/link remain reachable from the two claim notes even on wrong placement. Neutral alternative reason labels: Business purpose, Personal purpose, Already represented, Different reporting period, Need supporting record. Permit wrong content choices; validate after Check. The correct completed totals are 900,000 and 300,000. A wrong placement with a matching sum earns arithmetic credit on first check but still requires treatment and resulting total correction before acquisition.
 
-Correct Bea chain: 900,000 −300,000 =600,000 taxable income; annual bracket over 400,000 through 800,000; excess 200,000 ×20% =40,000; +22,500 base tax =62,500 tax due; −12,500 supported credit =50,000 remaining payable. Tax-rule constants are from the proposal's [BIR published table](https://bir-cdn.bir.gov.ph/BIR/pdf/RMC%20No.%2034-2025%20Annex%20A.pdf); T01 verifies applicability/current authority. Player-facing book explains the method without client-specific solved values.
+Correct Bea chain: 900,000 −300,000 =600,000 taxable income; annual bracket over 400,000 through 800,000; excess 200,000 ×20% =40,000; +22,500 base tax =62,500 tax due; −12,500 supported credit =50,000 remaining payable. Tax-rule constants are verified against RA10963 and the [BIR published table](https://bir-cdn.bir.gov.ph/BIR/pdf/RMC%20No.%2034-2025%20Annex%20A.pdf), effective2023 onwards; precise locators/applicability are in TAX_AUTHORITY. Player-facing book explains the method without client-specific solved values.
 
 ## Company and records
 
-Case `L3-MARINE-001`, Coast Tales Marine Services, Inc.; proposed bookkeeper **Nina Cruz**, ordinary cooperative client distinct from redevelopment corporation. She is an authored new role using an existing model, not a verified existing NPC. Domestic corporation, no special incentives; supplied operating-year facts bound MCIT out of this case subject to T01 authority verification. Set verified relevant assets to 80,000,000 excluding relevant land, and taxable income 6,000,000, exceeding the smaller-corporation income condition. No separate asset hunt, depreciation schedule or minimum-tax lesson.
+Case `L3-MARINE-001`, Coast Tales Marine Services, Inc.; proposed bookkeeper **Nina Cruz**, ordinary cooperative client distinct from redevelopment corporation. She is an authored new role using an existing model, not a verified existing NPC. Domestic corporation, no special incentives; supplied operations and BIR registration began1 January2024, so first MCIT year is2028 and it is outside this2026 packet. Set verified relevant assets to 80,000,000 excluding relevant land, and taxable income 6,000,000, exceeding the smaller-corporation income condition. No separate asset hunt, depreciation schedule or minimum-tax lesson.
 
 | Source ID | Type/content | Values and use |
 |---|---|---|
 | C-BG | 2 Interview notes | Company/bookkeeper, completed annual period, verified regime/operating-year facts |
 | C-REV | 4 Annual service revenue | 8,000,000 supported services |
-| C-COST | 4 Supported annual costs | Operations 1,200,000; premises rent 500,000; administration 300,000; total 2,000,000 |
+| C-COST | Working cost schedule with retained invoice extracts | Operations 1,200,000; premises rent 500,000; administration 300,000; total 2,000,000 |
 | C-TRIP | 5 Travel payment record | Owner/family personal holiday, 120,000, no business purpose; separately identifiable transaction |
 | C-DRAFT | Working summary | Assistance Desk-prepared administration includes trip; total proposed costs 2,120,000; preparer reference AD-26 |
-| C-WHT | 8 Withholding certificate | Same company/year; 300,000 credit; underlying payment explicitly already included in C-REV |
-| C-ASSET | 4 Verified asset schedule extract | Relevant assets 80,000,000 excluding identified qualifying land; threshold context only, not deduction |
+| C-WHT | 8 Withholding certificate | Same company/year; supplied annual certificate packet totals300,000 credit; covered gross income8,000,000 already included in C-REV; payer/ATC itemization remains a graded-release gate |
+| C-ASSET | Working verified asset schedule extract | Relevant assets 80,000,000 excluding identified qualifying land; threshold context only, not deduction |
 
 All costs are expressly supported for this bounded exercise; original retained documents, not the interview alone, support the adjustment. Player removes 120,000 personal trip from proposed deductible total, leaving 2,000,000. Taxable income 8,000,000 −2,000,000 =6,000,000; ordinary rate 25%; tax due 1,500,000; −300,000 credit =1,200,000 payable. Draft unsupported balance at same rate/credits =1,170,000; supported correction increases payable by30,000. No rule that higher tax is morally better.
 
-Reference entry points retained from proposal: [RA 11534](https://elibrary.judiciary.gov.ph/thebookshelf/showdocs/2/93191) and [BIR published CREATE MORE text](https://bir-cdn.bir.gov.ph/BIR/pdf/RMC%20No.%20135-2024%20Annex%20A.pdf). T01 must verify subsequent/current text and all bounded exceptions, document exact cited passages, and have educator/curriculum authority validate expense/period/withholding/rounding assumptions. Records may be drafted while authority is pending, but graded release cannot pretend confirmation.
+Reference entry points retained from proposal: [RA 11534](https://elibrary.judiciary.gov.ph/thebookshelf/showdocs/2/93191) and [BIR published CREATE MORE text](https://bir-cdn.bir.gov.ph/BIR/pdf/RMC%20No.%20135-2024%20Annex%20A.pdf). T01 verified the ordinary25% rule, small-company AND conditions and EDR distinction against BIR RR7-2025 and reviewed later CMEPA changes; see TAX_AUTHORITY. Its source discrepancy, expense/period assumptions, certificate provenance (especially Marine's300,000 aggregate) and rounding still need curriculum sign-off before graded release. Source-shaped props do not establish credit eligibility.
 
 ## Book and tool teaching
 
 Preserve book contents from prior levels. Add leaves: Costs and Purpose; Count Once; Taxable Income; Annual Individual Table; Base Plus Excess; Ordinary Corporate Conditions; Credit Versus Expense; Checking a Computation. Read-only rule text, selectable generic constants/reasons as existing transfer supports; no Bea/company answer values in reference leaves. Year clearly visible; no requirement to memorize a hidden number.
 
-Protected tool example: fictional budget 100 −paper order20 =80; −courier8 =72. No actual wallet change, invented tax rate, score or reward. Teach selecting a source, subtract/equals, attach and reopen tape, then independent control. Later graduated-method help uses an unrelated author-reviewed example in the book; T01 supplies exact approved numbers without solving Bea's bracket. No new guide actor/demo framework.
+Protected tool example: fictional budget 100 −paper order20 =80; −courier8 =72. No actual wallet change, invented tax rate, score or reward. Teach selecting a source, subtract/equals, attach and reopen tape, then independent control. Later graduated-method help uses an unrelated author-reviewed example in the book; T01 supplies the exact separate Practice Design Studio example:350,000 taxable income;100,000 excess at15%;15,000 tax. This is author-prepared and educator-pending, in a different band from Bea. No new guide actor/demo framework.
 
 ## Dialogue content and transitions
 

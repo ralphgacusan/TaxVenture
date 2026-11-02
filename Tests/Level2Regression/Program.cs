@@ -2577,9 +2577,10 @@ Check(!handoffSrc.Contains("private void PlaceOnDesk(") &&
       handoffSrc.Contains("bool handled = previousDrop != null && previousDrop(screenPosition);"),
     "Level 2 reuses the Level 1 toggle/drop presentation instead of unstoring and reopening the desk folder");
 string folderPointerSource = Src("Scripts/UI/HUD/HudSubmittableIcon.cs");
-Check(folderPointerSource.Contains("private bool CanUseIcon() => isAvailable && CanDragOut();") &&
+Check(folderPointerSource.Contains("private bool CanUseIcon() => isAvailable && (CanDragOut() ||") &&
+      folderPointerSource.Contains("InventoryRules.Owns(HudHotbar.Instance.Inventory, InventoryCatalogue.CaseFolder)") &&
       folderPointerSource.Split("private void ToggleFloatingWindow()")[1].Contains("if (!CanUseIcon()) return;"),
-    "empty folder icons reject click dispatch as well as drag-out");
+    "unowned empty folder icons reject clicks; retained folders may read without authorizing drag-out");
 Check(folderIconControl.Contains("GameplayEvents.OnCaseFolderReturned += RefreshFolderAvailability;") &&
       folderIconControl.Contains("GameplayEvents.OnCaseFolderReturned -= RefreshFolderAvailability;"),
     "returning the folder to the desk relocks its empty icon");
@@ -2776,15 +2777,16 @@ var unmapped = new ReviewDocumentDefinition { id = "FX-plain", kind = "record", 
 var unmappedFace = SupportingPaperTypes.Face(unmapped, null);
 Check(unmappedFace.Fallback && unmappedFace.Title == "MYSTERY SLIP" && unmappedFace.Problem.Contains("FX-plain"),
     "T18 fixture: an unmapped record prints as a plain sheet under its own title and is named in the warning");
-foreach (int planned in new[] { 3, 8, 42 })
+// Level 3 T08 builds Type 8 (the 2307): only 3 and unknown numbers stay planned here.
+foreach (int planned in new[] { 3, 42 })
 {
     var rec = new ReviewDocumentDefinition { id = "FX-" + planned, kind = "record", title = "Planned", paperType = planned };
     Check(SupportingPaperTypes.Face(rec, null).Fallback && SupportingPaperTypes.MappingProblems(new[] { rec }).Count == 1,
         $"T18 fixture: Type {planned} is not built here (readable fallback + diagnostic, never another record)");
 }
 Check(SupportingPaperTypes.Implemented(SupportingPaperType.Identity) && SupportingPaperTypes.Implemented(SupportingPaperType.Background) &&
-      !SupportingPaperTypes.Implemented(SupportingPaperType.Compensation2316) && !SupportingPaperTypes.Implemented(SupportingPaperType.Withholding2307),
-    "T18: implemented types are Level 1's 1-2 plus Rosa's 4-7; 3 and 8 stay planned");
+      !SupportingPaperTypes.Implemented(SupportingPaperType.Compensation2316) && SupportingPaperTypes.Implemented(SupportingPaperType.Withholding2307),
+    "T18: implemented types are Level 1's 1-2 plus Rosa's 4-7 and (Level 3 T08) the 2307; 3 stays planned");
 SupportingPaperTypes.FaceRange(7, SupportingPaperTypes.SlipRows, 0, out int f18s0, out int f18c0);
 SupportingPaperTypes.FaceRange(7, SupportingPaperTypes.SlipRows, 1, out int f18s1, out int f18c1);
 SupportingPaperTypes.FaceRange(7, SupportingPaperTypes.SlipRows, 9, out int f18s9, out int f18c9);
@@ -2860,7 +2862,7 @@ Check(ppmSrc.Contains("if (IsLevelTwoStoryResult(levelTotal))") && ppmSrc.Contai
 Check(ppmSrc.Contains("PlayerProgressData candidate = CloneProgress();\r\n        candidate.SetCheckpoint(checkpoint);\r\n        return TryWriteCandidate(candidate);") ||
       ppmSrc.Contains("PlayerProgressData candidate = CloneProgress();\n        candidate.SetCheckpoint(checkpoint);\n        return TryWriteCandidate(candidate);"),
     "T18: a failed checkpoint write keeps the previous checkpoint in memory");
-Check(HudHotbar.UsesHotbar("Level_02") && HudHotbar.UsesHotbar("Level_01") && !HudHotbar.UsesHotbar("Level_03"),
+Check(HudHotbar.UsesHotbar("Level_02") && HudHotbar.UsesHotbar("Level_01") && HudHotbar.UsesHotbar("Level_03"),
     "T18: Level 2 uses the campaign hotbar and Bag (Level 3 does not exist yet)");
 string careerSrc = Src("Scripts/RewardsSystem/CareerProgressService.cs");
 Check(Regex.IsMatch(careerSrc, "id = \"Level_02\"[^}]*campaignPending = false", RegexOptions.Singleline),

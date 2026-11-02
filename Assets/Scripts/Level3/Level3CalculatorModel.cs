@@ -1,0 +1,365 @@
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+
+/// <summary>
+/// PURPOSE:
+/// The physical Level 3 desk calculator (T03), built once at runtime from
+/// supplied art: a scaled instance of Synty's SM_Prop_Calculator_01 as the
+/// body (the source prefab is never edited), plus readable parts of real
+/// thickness in the office palette:
+///
+/// - a navy faceplate over the body's top, a dark display with mint digits
+///   and a caption line (source in use, the expression, or an input problem);
+/// - twenty raised keycaps (cream digits, navy operators, brass =, terracotta
+///   clears), each with printed label and its own tap target;
+/// - a paper roll with brass caps behind the display, and the tape strip it
+///   feeds onto the desk beside the calculator (curled lip, visible thickness),
+///   printed with the draft computation.
+///
+/// Local frame: +Y up out of the keys, +Z toward the display / roll (away
+/// from the seated player), body base at y = 0. Sizes are meters at rest; the
+/// owner scales the whole assembly when it lifts it toward the camera.
+/// Presentation only: Level3Calculator decides every value.
+/// </summary>
+public sealed class Level3CalculatorModel
+{
+    /// <summary>Body length (along Z) the source mesh is fitted to.</summary>
+    public const float BodyLength = 0.19f;
+    public const float TapeWidth = 0.07f;
+    public const float TapeGap = 0.012f;
+    private const float FallbackWidth = 0.115f;
+    private const float FallbackHeight = 0.026f;
+    private const int TapeLinesShown = 8;
+
+    public static readonly Level3CalcKey[,] Layout =
+    {
+        { Level3CalcKey.Clear, Level3CalcKey.ClearEntry, Level3CalcKey.Backspace, Level3CalcKey.Divide },
+        { Level3CalcKey.D7, Level3CalcKey.D8, Level3CalcKey.D9, Level3CalcKey.Multiply },
+        { Level3CalcKey.D4, Level3CalcKey.D5, Level3CalcKey.D6, Level3CalcKey.Subtract },
+        { Level3CalcKey.D1, Level3CalcKey.D2, Level3CalcKey.D3, Level3CalcKey.Add },
+        { Level3CalcKey.D0, Level3CalcKey.Point, Level3CalcKey.Percent, Level3CalcKey.Equals }
+    };
+
+    private sealed class KeyCap
+    {
+        public Level3CalcKey Key;
+        public Transform Cap;
+        public Vector3 Rest;
+        public float PressedUntil;
+    }
+
+    public Transform Root { get; private set; }
+    /// <summary>Body width (X) after fitting the source mesh.</summary>
+    public float Width { get; private set; }
+    /// <summary>Body height (Y) after fitting.</summary>
+    public float Height { get; private set; }
+    /// <summary>True when the Synty body was used (false: a plain navy body stands in; logged).</summary>
+    public bool UsesSourceBody { get; private set; }
+    /// <summary>The whole calculator's tap target (resting on the desk: tap to pick it up).</summary>
+    public Collider BodyTarget { get; private set; }
+
+    /// <summary>Local bounds of calculator + tape + roll (for on-screen fitting).</summary>
+    public Bounds UnitBounds { get; private set; }
+
+    private readonly Dictionary<Collider, KeyCap> keys = new Dictionary<Collider, KeyCap>();
+    private readonly Level3DeskProps props;
+    private TextMeshPro display;
+    private TextMeshPro caption;
+    private Transform tapeStrip;
+    private TextMeshPro tapePrint;
+    private float tapeLength;
+    private float tapeFeedStart = -1f;
+    private float tapeFeedSeconds;
+
+    private Level3CalculatorModel(Level3DeskProps props)
+    {
+        this.props = props;
+    }
+
+    public static Level3CalculatorModel Build(Transform parent, GameObject sourceBody, Level3DeskProps props)
+    {
+        var model = new Level3CalculatorModel(props);
+        model.Create(parent, sourceBody);
+        return model;
+    }
+
+    private void Create(Transform parent, GameObject sourceBody)
+    {
+        var root = new GameObject("Calculator");
+        root.layer = parent.gameObject.layer;
+        root.transform.SetParent(parent, false);
+        Root = root.transform;
+
+        UsesSourceBody = sourceBody != null && FitSourceBody(sourceBody);
+        if (!UsesSourceBody)
+        {
+            Width = FallbackWidth;
+            Height = FallbackHeight;
+            props.Box("Body", Root, new Vector3(0f, Height * 0.5f, 0f), new Vector3(Width, Height, BodyLength), Level3DeskProps.Navy);
+        }
+
+        BuildFace();
+        BuildRollAndTape();
+        // Below the key targets, so a key is always the nearest hit; the whole body lifts the calculator from the desk.
+        BodyTarget = props.Target("Calculator Target", Root, new Vector3(0f, Height * 0.5f, 0f), new Vector3(Width, Height, BodyLength + 0.03f));
+
+        float minX = -Width * 0.5f - TapeGap - TapeWidth;
+        float maxZ = BodyLength * 0.5f + 0.03f;
+        var bounds = new Bounds();
+        bounds.SetMinMax(new Vector3(minX, 0f, -BodyLength * 0.5f), new Vector3(Width * 0.5f, Height + 0.04f, maxZ));
+        UnitBounds = bounds;
+        SetDisplay("0", "");
+    }
+
+    /// <summary>Instance the supplied prop, lay its long side along Z, scale it to BodyLength, base on y = 0. No colliders.</summary>
+    private bool FitSourceBody(GameObject prefab)
+    {
+        GameObject body = Object.Instantiate(prefab, Root, false);
+        body.name = "Body (" + prefab.name + ")";
+        foreach (Collider collider in body.GetComponentsInChildren<Collider>(true)) Object.Destroy(collider);
+        foreach (Transform t in body.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = Root.gameObject.layer;
+
+        if (!TryLocalBounds(body, out Bounds raw)) { Object.Destroy(body); return false; }
+        bool longX = raw.size.x > raw.size.z;
+        if (longX) body.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+        float length = longX ? raw.size.x : raw.size.z;
+        if (length <= 0.0001f) { Object.Destroy(body); return false; }
+        float scale = BodyLength / length;
+        body.transform.localScale = Vector3.one * scale;
+        if (!TryLocalBounds(body, out Bounds fitted)) { Object.Destroy(body); return false; }
+        body.transform.localPosition -= new Vector3(fitted.center.x, fitted.min.y, fitted.center.z);
+        Width = fitted.size.x;
+        Height = Mathf.Max(0.012f, fitted.size.y);
+        foreach (Renderer renderer in body.GetComponentsInChildren<Renderer>(true))
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        return true;
+    }
+
+    /// <summary>The renderers' bounds in Root's local space (Root is at identity scale while building).</summary>
+    private bool TryLocalBounds(GameObject body, out Bounds bounds)
+    {
+        bounds = new Bounds();
+        bool any = false;
+        foreach (MeshFilter filter in body.GetComponentsInChildren<MeshFilter>(true))
+        {
+            if (filter.sharedMesh == null) continue;
+            Bounds mesh = filter.sharedMesh.bounds;
+            Vector3 c = mesh.center, e = mesh.extents;
+            for (int i = 0; i < 8; i++)
+            {
+                Vector3 corner = c + new Vector3((i & 1) == 0 ? -e.x : e.x, (i & 2) == 0 ? -e.y : e.y, (i & 4) == 0 ? -e.z : e.z);
+                Vector3 local = Root.InverseTransformPoint(filter.transform.TransformPoint(corner));
+                if (!any) { bounds = new Bounds(local, Vector3.zero); any = true; }
+                else bounds.Encapsulate(local);
+            }
+        }
+        return any;
+    }
+
+    // =========================================================
+    // FACE: faceplate, display, keys
+    // =========================================================
+
+    private void BuildFace()
+    {
+        float plateW = Width * 0.92f, plateL = BodyLength * 0.94f, top = Height + 0.0015f;
+        props.Box("Faceplate", Root, new Vector3(0f, top, 0f), new Vector3(plateW, 0.003f, plateL), Level3DeskProps.Navy);
+        float surface = top + 0.0015f;
+
+        // Display window: the far 24% of the plate, a dark recessed panel with a brass rim.
+        float displayL = plateL * 0.22f, displayZ = plateL * 0.5f - displayL * 0.5f - plateL * 0.03f;
+        props.Box("Display Rim", Root, new Vector3(0f, surface + 0.0005f, displayZ), new Vector3(plateW * 0.9f, 0.002f, displayL + 0.004f), Level3DeskProps.Brass);
+        props.Box("Display", Root, new Vector3(0f, surface + 0.001f, displayZ), new Vector3(plateW * 0.86f, 0.0025f, displayL), Level3DeskProps.Display);
+        float printY = surface + 0.0028f;
+        display = props.Print("Display Digits", Root, new Vector3(0f, printY, displayZ + displayL * 0.12f), plateW * 0.8f, displayL * 0.56f, "0",
+            Level3DeskProps.DisplayInk, TextAlignmentOptions.Right, bold: true);
+        caption = props.Print("Display Caption", Root, new Vector3(0f, printY, displayZ - displayL * 0.32f), plateW * 0.8f, displayL * 0.26f, "",
+            Level3DeskProps.DisplayInk, TextAlignmentOptions.Right);
+
+        // Keys: 4 columns x 5 rows below the display.
+        float keysTop = displayZ - displayL * 0.5f - plateL * 0.04f;
+        float keysBottom = -plateL * 0.5f + plateL * 0.03f;
+        int rows = Layout.GetLength(0), cols = Layout.GetLength(1);
+        float cellW = plateW * 0.94f / cols, cellL = (keysTop - keysBottom) / rows;
+        for (int r = 0; r < rows; r++)
+            for (int c = 0; c < cols; c++)
+            {
+                Level3CalcKey key = Layout[r, c];
+                var center = new Vector3(-plateW * 0.47f + cellW * (c + 0.5f), surface + 0.0035f, keysTop - cellL * (r + 0.5f));
+                AddKey(key, center, new Vector3(cellW * 0.82f, 0.006f, cellL * 0.8f));
+            }
+    }
+
+    private void AddKey(Level3CalcKey key, Vector3 center, Vector3 size)
+    {
+        KeyStyle(key, out Color cap, out Color ink);
+        GameObject capObject = props.Box("Key " + key, Root, center, size, cap);
+        Transform capTransform = capObject.transform;
+        // The label rides on the cap (a child of a scaled box would distort, so it is parented to a holder).
+        var holder = new GameObject("Key " + key + " Top");
+        holder.layer = Root.gameObject.layer;
+        holder.transform.SetParent(Root, false);
+        holder.transform.localPosition = center;
+        capTransform.SetParent(holder.transform, true);
+        props.Print("Label", holder.transform, new Vector3(0f, size.y * 0.5f + 0.0004f, 0f), size.x * 0.8f, size.z * 0.62f, Label(key), ink,
+            TextAlignmentOptions.Center, bold: true);
+        BoxCollider target = props.Target("Target", holder.transform, Vector3.zero, new Vector3(size.x / 0.82f, size.y + 0.01f, size.z / 0.8f));
+        keys[target] = new KeyCap { Key = key, Cap = holder.transform, Rest = holder.transform.localPosition };
+    }
+
+    public static string Label(Level3CalcKey key)
+    {
+        switch (key)
+        {
+            case Level3CalcKey.Point: return ".";
+            case Level3CalcKey.Add: return "+";
+            case Level3CalcKey.Subtract: return "−";
+            case Level3CalcKey.Multiply: return "×";
+            case Level3CalcKey.Divide: return "÷";
+            case Level3CalcKey.Percent: return "%";
+            case Level3CalcKey.Equals: return "=";
+            case Level3CalcKey.Clear: return "C";
+            case Level3CalcKey.ClearEntry: return "CE";
+            case Level3CalcKey.Backspace: return "DEL";
+            default: return ((int)key - (int)Level3CalcKey.D0).ToString();
+        }
+    }
+
+    private static void KeyStyle(Level3CalcKey key, out Color cap, out Color ink)
+    {
+        switch (key)
+        {
+            case Level3CalcKey.Equals: cap = Level3DeskProps.Brass; ink = Level3DeskProps.Ink; return;
+            case Level3CalcKey.Add:
+            case Level3CalcKey.Subtract:
+            case Level3CalcKey.Multiply:
+            case Level3CalcKey.Divide:
+            case Level3CalcKey.Percent: cap = Level3DeskProps.NavyLight; ink = Level3DeskProps.Cream; return;
+            case Level3CalcKey.Clear:
+            case Level3CalcKey.ClearEntry:
+            case Level3CalcKey.Backspace: cap = Level3DeskProps.Terracotta; ink = Level3DeskProps.Cream; return;
+            default: cap = Level3DeskProps.Cream; ink = Level3DeskProps.Ink; return;
+        }
+    }
+
+    public bool TryKey(Collider collider, out Level3CalcKey key)
+    {
+        key = default;
+        if (collider == null || !keys.TryGetValue(collider, out KeyCap cap)) return false;
+        key = cap.Key;
+        return true;
+    }
+
+    /// <summary>Holds a key down while the finger is on it (released by Release or after a short press).</summary>
+    public void Press(Collider collider, float seconds)
+    {
+        if (collider != null && keys.TryGetValue(collider, out KeyCap cap)) cap.PressedUntil = Time.unscaledTime + seconds;
+    }
+
+    public void ReleaseAll()
+    {
+        foreach (KeyCap cap in keys.Values) cap.PressedUntil = 0f;
+    }
+
+    public void SetDisplay(string number, string line)
+    {
+        if (display != null && display.text != number) display.text = number;
+        if (caption != null && caption.text != (line ?? "")) caption.text = line ?? "";
+    }
+
+    // =========================================================
+    // ROLL AND TAPE
+    // =========================================================
+
+    private void BuildRollAndTape()
+    {
+        float rollZ = BodyLength * 0.5f + 0.011f, rollY = Height * 0.75f, rollLength = Width * 0.72f;
+        props.Box("Roll Housing", Root, new Vector3(0f, rollY * 0.5f, rollZ + 0.004f), new Vector3(rollLength + 0.012f, rollY, 0.026f), Level3DeskProps.Navy);
+        props.Roll("Paper Roll", Root, new Vector3(0f, rollY + 0.006f, rollZ), rollLength, 0.026f, Level3DeskProps.Paper);
+        props.Roll("Roll Cap L", Root, new Vector3(-rollLength * 0.5f - 0.002f, rollY + 0.006f, rollZ), 0.004f, 0.03f, Level3DeskProps.Brass);
+        props.Roll("Roll Cap R", Root, new Vector3(rollLength * 0.5f + 0.002f, rollY + 0.006f, rollZ), 0.004f, 0.03f, Level3DeskProps.Brass);
+
+        // The tape leaves the roll toward the player's left and lies on the desk beside the body:
+        // a short curled lip down from the roll, then a flat strip that grows as lines are printed.
+        float tapeX = -Width * 0.5f - TapeGap - TapeWidth * 0.5f;
+        tapeLength = BodyLength * 0.92f;
+        var lip = props.Box("Tape Lip", Root, new Vector3(tapeX + 0.004f, rollY * 0.5f + 0.003f, rollZ - 0.004f), new Vector3(TapeWidth, 0.0012f, rollY + 0.01f), Level3DeskProps.Paper);
+        lip.transform.localRotation = Quaternion.Euler(-62f, 0f, 0f);
+
+        var strip = new GameObject("Tape Strip");
+        strip.layer = Root.gameObject.layer;
+        strip.transform.SetParent(Root, false);
+        // Anchored at the roll end: scaling Z feeds the strip toward the player.
+        strip.transform.localPosition = new Vector3(tapeX, 0.0008f, BodyLength * 0.5f);
+        tapeStrip = strip.transform;
+        props.Box("Paper", tapeStrip, new Vector3(0f, 0f, -tapeLength * 0.5f), new Vector3(TapeWidth, 0.0012f, tapeLength), Level3DeskProps.Paper);
+        tapePrint = props.Print("Print", tapeStrip, new Vector3(0f, 0.0008f, -tapeLength * 0.5f), TapeWidth * 0.88f, tapeLength * 0.94f, "",
+            Level3DeskProps.Ink, TextAlignmentOptions.TopRight, wrap: false);
+        // One size for every line, as large as the widest line allows (never below a readable floor).
+        tapePrint.fontSizeMin = 0.05f;
+        tapePrint.fontSizeMax = 0.16f;
+        tapePrint.overflowMode = TextOverflowModes.Truncate;
+        SetTape(null, animate: false);
+    }
+
+    /// <summary>Prints the draft lines on the strip (null/empty: a blank stub at the roll). Animated feed when asked.</summary>
+    public void SetTape(IList<string> lines, bool animate, float seconds = 0.2f)
+    {
+        bool empty = lines == null || lines.Count == 0;
+        if (tapePrint != null)
+        {
+            int first = empty ? 0 : Mathf.Max(0, lines.Count - TapeLinesShown);
+            var text = new System.Text.StringBuilder();
+            if (!empty)
+                for (int i = first; i < lines.Count; i++) text.Append(i == lines.Count - 1 ? "<b>" + lines[i] + "</b>" : lines[i]).Append('\n');
+            tapePrint.text = text.ToString();
+        }
+        if (tapeStrip == null) return;
+        if (empty)
+        {
+            tapeFeedStart = -1f;
+            tapeStrip.localScale = new Vector3(1f, 1f, 0.08f);
+            return;
+        }
+        if (animate)
+        {
+            // The print appears once the strip has fed out (it would squash while the strip grows).
+            if (tapePrint != null) tapePrint.enabled = false;
+            tapeFeedStart = Time.unscaledTime;
+            tapeFeedSeconds = Mathf.Max(0.05f, seconds);
+            tapeStrip.localScale = new Vector3(1f, 1f, 0.08f);
+        }
+        else
+        {
+            tapeFeedStart = -1f;
+            tapeStrip.localScale = Vector3.one;
+            if (tapePrint != null) tapePrint.enabled = true;
+        }
+    }
+
+    /// <summary>World position/rotation of the printed strip (the attach flight starts here).</summary>
+    public Transform TapeStrip => tapeStrip;
+
+    /// <summary>Key press depth and tape feed; call every frame while visible (cheap: no allocations).</summary>
+    public void Tick()
+    {
+        float now = Time.unscaledTime;
+        foreach (KeyCap cap in keys.Values)
+        {
+            float depth = now < cap.PressedUntil ? -0.0028f : 0f;
+            Vector3 target = cap.Rest + new Vector3(0f, depth, 0f);
+            if (cap.Cap.localPosition != target) cap.Cap.localPosition = target;
+        }
+        if (tapeFeedStart >= 0f && tapeStrip != null)
+        {
+            float t = Mathf.Clamp01((now - tapeFeedStart) / tapeFeedSeconds);
+            tapeStrip.localScale = new Vector3(1f, 1f, Mathf.Lerp(0.08f, 1f, 1f - (1f - t) * (1f - t)));
+            if (t >= 1f)
+            {
+                tapeFeedStart = -1f;
+                if (tapePrint != null) tapePrint.enabled = true;
+            }
+        }
+    }
+}

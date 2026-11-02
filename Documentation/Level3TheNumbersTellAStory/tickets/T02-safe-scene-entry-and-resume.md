@@ -1,6 +1,6 @@
 # T02 — Enter a safely specialized Level 3 scene with resumable chapter state
 
-Status: **Planned**. Blocked by: T01.
+Status: **Implemented, internally verified; user manual pending**. Blocked by: T01.
 
 Priority: P1. Phase: A — Chapter entry. Estimated scope: M+; one safe entry/resume slice; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
 
@@ -8,7 +8,7 @@ Priority: P1. Phase: A — Chapter entry. Estimated scope: M+; one safe entry/re
 
 An isolated Level3 attempt enters the familiar office at reception, reads the appropriate next task and restores the same campaign state without starting old quests.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Current request is documentation only; future implementation requires an implementation instruction.
+This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Implemented 30 October 2026 on an implementation instruction; evidence is in [PROGRESS](../PROGRESS.md), limitations in [KNOWN_ISSUES](../KNOWN_ISSUES.md).
 
 ## Existing systems to reuse
 
@@ -22,7 +22,7 @@ Verified existing paths relative to repository root; recheck live behavior rathe
 - `Assets/Scripts/Level2/Level2Checkpointer.cs`
 - `Assets/Scripts/FSM/GameStateMachine.cs`
 
-New L3 components/resources mentioned below are proposed outputs, not verified existing APIs. Prefer existing owners/adapters and level configuration; do not copy global frameworks.
+New L3 components/resources below were outputs of this ticket; later tickets extend them rather than adding frameworks.
 
 ## Work and interaction mechanics
 
@@ -40,7 +40,7 @@ Follow WORLD_AND_FEEDBACK and fixed document types. Bind every new world object 
 
 ## Integration requirements
 
-Proposed runtime destination Assets/Scripts/Level3 and Levels/Level_03 content are new, not existing APIs. Keep L1/L2 mapping and startup unchanged. Preserve both eventual case subrecords from the beginning, but implement only entry transitions in this slice. No second save/FSM manager.
+Runtime lives in `Assets/Scripts/Level3` and `Resources/Levels/Level_03`. Keep L1/L2 mapping and startup unchanged. Preserve both eventual case subrecords from the beginning, but implement only entry transitions in this slice. No second save/FSM manager.
 
 Preserve current L1/L2 scenes, source prefabs/GUIDs, signed save owner, mode guards, input/FSM/dialogue/audio frameworks and Android controls. Normal L3 Career remains unavailable until T18. No L4 filing, ending, stand, drawer or global archive feature is added.
 
@@ -50,11 +50,11 @@ Use the existing candidate→save→publish command boundary and stable chapter/
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] Source L1/L2 immediate-baseline hashes remain unchanged; destination GUID is distinct; setup reruns without duplicates.
-- [ ] Isolated L3 has one active owner per input/manager role and no inherited L1/L2 quest/reward starts.
-- [ ] Reception→practice task and save/resume round-trip use existing observers and exact carried campaign state.
-- [ ] Failed writes and non-story attempts do not replace live campaign data; Career3 remains unavailable.
-- [ ] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count.
+- [x] Source L1/L2 immediate-baseline hashes remain unchanged; destination GUID is distinct; setup reruns without duplicates. (L1 `148D871C…62FE`, L2 `F5B8538E…19E7` before and after; Office_Level3 GUID `844c604a279e4b66ae226bf66f1dd99a`; one runtime root, none serialized: VerifyLevel3Scene PASS.)
+- [x] Isolated L3 has one active owner per input/manager role and no inherited L1/L2 quest/reward starts. (Owner counts equal Office_Level2's, including its inherited second GameStateMachine component; Level 1 quest objects hidden, popup tutorial and desk folder flow off, Rosa parts never built, legacy completion states refused.)
+- [x] Reception→practice task and save/resume round-trip use existing observers and exact carried campaign state. (Level3Regression: candidate/round trip equal except `campaign.levelThree`; quiet-restore triggers/lessons; history line read only.)
+- [x] Failed writes and non-story attempts do not replace live campaign data; Career3 remains unavailable. (Injected temp-file failure leaves both save generations and the published state unchanged, retry succeeds; Editor/replay/practice/no-Chapter-2 never write; chapters.json unchanged.)
+- [x] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count. (Commands and counts in PROGRESS; Level1LivingPlazaRegression keeps 4 pre-existing failures in untouched files.)
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 
@@ -63,6 +63,14 @@ Use the existing candidate→save→publish command boundary and stable chapter/
 
 ## Handoff and completion definition
 
-Playable isolated office entry, bounded checkpoint seam and recorded owned/disabled bindings. Next T03.
+Delivered: Office_Level3 (byte copy of the saved Office_Level2, new GUID); `Level3OfficeStart` (Level3Gameplay root v1, config-driven hide/disable, reception placement, history greeting filter); `Level3Checkpointer` (chapter entry/resume, AssignBea command, legacy guard, guide flags, settings exit); `Level3ChapterRules`; `Level3ContentValidator` with the `level3` case DTO; Level_03 level/start/objectives/rewards/guide and both case files; `campaign.levelThree` in the signed save; `Level3SceneSetup` (append-only build entry on import); Level3Regression and VerifyLevel3Scene. Bag/hotbar presentation in Level 3 is split out (KNOWN_ISSUES L3-18) and must land before T04 acquisitions.
 
-Direct dependents: T03, T04. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Mark implemented/internal-verified only after real entry points and checks work; Git operations and user acceptance remain user-owned. No commits, scene edits or gameplay implementation are performed by authoring this ticket.
+Next: user imports and checks T02 in Unity, then T03 consumes the ToolPractice phase.
+
+Direct dependents: T03, T04. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Git operations and user acceptance remain user-owned.
+
+## 30 October 2026 — Bag/hotbar continuation follow-up
+
+Implemented/internal-verified; user manual pending. User override: every collected item stays across Levels1–3, regardless of usefulness. L3 now uses shared HudHotbar with its own ready/resume/blocked branch. Chapter entry no longer retires IDs, marked records or carried tools. Folder contents accumulate; older papers/player annotations have saved read-only pages, never current-case transfer or answer keys. Current-folder submission still requires the actual stored folder.
+
+Direct L3 Editor testing previews a deep local copy only from a compatible completedL2 campaign; changes never write live possessions. Otherwise isolated inventory starts empty. Old already-deleted items/missing paper text are not fabricated. Career3 remains comingSoon. See PROGRESS for exact paths,245/245 L3 checks, previous-level regressions and user import/read/move/exit tests. No scene, actual save, Unity or Git operation occurred. Next remains T03.

@@ -16,7 +16,7 @@ public enum CarryEligibility
     Keepsake = 4,
     /// <summary>A tool this chapter's world hands out again (Notes, Case Folder, Tax Code Book; Rosa's marked records).</summary>
     ChapterTool = 5,
-    /// <summary>Another chapter's quest object (Level 1's Client IDs): retired on entry, never Rosa evidence, no old task restarts.</summary>
+    /// <summary>Another chapter's quest object: retained for reading, never current-case evidence or an old task restart.</summary>
     ChapterBound = 6
 }
 
@@ -46,8 +46,8 @@ public struct Level2CaseFacts
 /// ELIGIBILITY: what each Level 1 item becomes in Rosa's chapter
 /// (Eligibility / Describe). The campaign inventory, wallet, trust, mastery,
 /// upgrades, decor and settings are the same records in both chapters;
-/// nothing is cleared, reseeded or acquired again on entry. Only another
-/// chapter's quest objects are retired (RetireOtherChapters).
+/// nothing is cleared, reseeded or acquired again on entry. Previous chapter
+/// objects stay owned/readable; their scope does not authorize current-case actions.
 ///
 /// CLAIMS (CampaignRewards catalogue, each claimed once by campaign + level +
 /// activity + kind): the corrected income review (+2 trust, 60 coins) is
@@ -151,12 +151,12 @@ public static class Level2CampaignRules
     public static CarryEligibility Eligibility(InventoryCatalogue catalogue, string itemId, string levelId) =>
         Eligibility(catalogue?.Find(itemId), levelId);
 
-    /// <summary>Shared carried tools keep their saved slot on Chapter 2 entry; case evidence follows its own world.</summary>
+    /// <summary>Shared carried tools keep their saved slot on Chapter 2 and Chapter 3 entry; case evidence follows its own world.</summary>
     public static bool ResetsOnFreshAttempt(InventoryItemDefinition item, string levelId)
     {
         if (item == null) return false;
-        if (levelId == LevelId && (item.id == InventoryCatalogue.Notes || item.id == InventoryCatalogue.TaxCodeBook))
-            return false;
+        // Chapter continuation preserves every owned item; replay uses an isolated inventory.
+        if (levelId == LevelId || levelId == CampaignRewards.Level3) return false;
         return item.InScope(levelId) || (levelId == CampaignRewards.Level1 && item.id == InventoryCatalogue.ReviewedFile);
     }
 
@@ -170,12 +170,12 @@ public static class Level2CampaignRules
             case CarryEligibility.Bookmark: return "Still pins up to three owned records";
             case CarryEligibility.Keepsake: return "Readable from the Bag";
             case CarryEligibility.ChapterTool: return "Handed out again by this chapter's world";
-            case CarryEligibility.ChapterBound: return "Retired on entry: another chapter's quest object";
+            case CarryEligibility.ChapterBound: return "Kept as a reference from an earlier chapter; never current-case evidence";
             default: return "Kept as it is; not used";
         }
     }
 
-    /// <summary>Owned items another chapter owns (they leave the bar, Bag and drawer on entry), in catalogue order.</summary>
+    /// <summary>Owned items from another chapter, retained as references rather than current-case evidence.</summary>
     public static List<string> ChapterBoundOwned(CampaignInventoryRecord r, InventoryCatalogue c, string levelId)
     {
         var ids = new List<string>();
@@ -187,16 +187,13 @@ public static class Level2CampaignRules
     }
 
     /// <summary>
-    /// Entering a story level retires another chapter's quest objects (one
-    /// command, so a failed save keeps them all). Everything else stays exactly
-    /// where it is; a repeat entry finds nothing to retire (NoChange).
+    /// Compatibility entry point. Changing chapter preserves all possessions;
+    /// scope controls current gameplay eligibility, not ownership.
     /// </summary>
     public static InventoryResult RetireOtherChapters(CampaignInventoryRecord r, InventoryCatalogue c, string levelId, string actionId)
     {
-        List<string> retire = ChapterBoundOwned(r, c, levelId);
-        if (retire.Count == 0) return new InventoryResult { Outcome = InventoryOutcome.NoChange };
-        foreach (string id in retire) InventoryRules.Remove(r, c, id, (actionId ?? "retire") + "/" + id);
-        return new InventoryResult { Outcome = InventoryOutcome.Applied, ItemId = retire[0] };
+        // Kept as a compatibility entry point: changing chapter never deletes collected belongings.
+        return new InventoryResult { Outcome = InventoryOutcome.NoChange };
     }
 
     // =========================================================

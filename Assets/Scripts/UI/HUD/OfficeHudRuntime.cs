@@ -405,6 +405,9 @@ public sealed class OfficeHudRuntime : MonoBehaviour
             {
                 if (AuditorInteractable.Current != null && AuditorInteractable.Current.TryIconHandIn()) return true;
                 if (ClientCopyHandover.Instance != null && ClientCopyHandover.Instance.TryIconTap()) return true;
+                if (HudHotbar.Instance != null && !HudHotbar.Instance.HasCurrentFolder &&
+                    InventoryRules.Owns(HudHotbar.Instance.Inventory, InventoryCatalogue.CaseFolder))
+                    return HudHotbar.Instance.OpenSavedRecords(InventoryCatalogue.CaseFolder);
                 view.Toggle();
                 return true;
             };

@@ -335,6 +335,22 @@ public sealed class WorldCollectibles : MonoBehaviour
         return true;
     }
 
+    /// <summary>Read saved papers without rebinding CaseManager or exposing transfer controls.</summary>
+    public bool ShowSavedRecords(string label, InventoryItemRecord record)
+    {
+        if (record == null || card == null || !HudHotbar.CanOpenPanels()) return false;
+        var pages = (record.referencePages ?? new List<InventoryReferencePage>()).FindAll(page => page != null);
+        if (pages.Count == 0)
+        {
+            // Older saves may hold only identities. Do not invent missing annotations or restore rewards.
+            var lines = new List<string> { "Kept from an earlier case. Read only; these records do not change your current case.",
+                "This save kept the record references, but did not include a readable paper copy." };
+            pages.Add(new InventoryReferencePage { title = label, lines = lines });
+        }
+        card.ShowReferences(pages);
+        return true;
+    }
+
     internal void StandTapped(KeepsakeStand stand)
     {
         if (card == null || !HudHotbar.CanOpenPanels() || InventoryScreen.AnyOpen) return;
@@ -788,7 +804,7 @@ public sealed class KeepsakeStand : MonoBehaviour, IPointerClickHandler
 /// </summary>
 public sealed class CollectibleInspectCard : MonoBehaviour
 {
-    public enum Mode { Pickup, Read, Display, Displayed }
+    public enum Mode { Pickup, Read, Display, Displayed, Reference }
 
     private const int SortingOrder = 2570;
     private RectTransform card;
@@ -864,6 +880,9 @@ public sealed class CollectibleInspectCard : MonoBehaviour
     public void Show(PickupDefinition pickup, Mode mode, string notice, Action primaryAction, Action secondaryAction)
     {
         if (pickup == null) return;
+        front.gameObject.SetActive(true);
+        HudTheme.PlaceTopLeft(title.rectTransform, 560f, 40f, 640f, 56f);
+        HudTheme.PlaceTopLeft(body.rectTransform, 560f, 110f, 640f, 260f);
         Clear(front);
         Clear(back);
         bool voucher = pickup.itemId == InventoryCatalogue.ReviewVoucher;
@@ -894,6 +913,25 @@ public sealed class CollectibleInspectCard : MonoBehaviour
             if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_card_pickup_01", 0.6f);
         }
         shownAt = Time.unscaledTime;
+    }
+
+    public void ShowReferences(List<InventoryReferencePage> pages, int index = 0)
+    {
+        if (pages == null || pages.Count == 0) return;
+        InventoryReferencePage page = pages[index];
+        Show(new PickupDefinition { title = page.title, lines = page.lines }, Mode.Reference,
+            "SAVED RECORD · " + (index + 1) + " / " + pages.Count + " · Read only",
+            () => { if (pages.Count > 1) ShowReferences(pages, (index + 1) % pages.Count); else Hide(); }, Hide);
+        front.gameObject.SetActive(false);
+        back.gameObject.SetActive(false);
+        HudTheme.PlaceTopLeft(title.rectTransform, 60f, 40f, 1120f, 70f);
+        title.enableAutoSizing = true;
+        title.fontSizeMin = 24f;
+        title.fontSizeMax = 38f;
+        HudTheme.PlaceTopLeft(body.rectTransform, 60f, 125f, 1120f, 320f);
+        primaryLabel.text = pages.Count > 1 ? "NEXT PAGE" : "CLOSE";
+        secondaryLabel.text = "CLOSE";
+        secondary.gameObject.SetActive(pages.Count > 1);
     }
 
     public void SetMessage(string text) => message.text = text ?? "";

@@ -529,6 +529,9 @@ public sealed class SettingsBoard3D : MonoBehaviour
                 : gameObject.scene.name == "Office_Level2" ? (Level2Checkpointer.IsDirectEditorAttempt
                     ? "Leave this test attempt? The saved career checkpoint will be kept."
                     : "Leave this level? Your review will be saved so you can resume from the career board.")
+                : gameObject.scene.name == OfficeLevelCatalog.Level3Scene ? (Level3Checkpointer.Active == null || !Level3Checkpointer.Active.SavesStory
+                    ? "Leave this test attempt? Nothing is saved to the story."
+                    : "Leave this level? Your chapter will be saved so you can resume from the career board.")
                 : "Leave this level? Your current attempt will be lost. Earned career rewards are kept.")
             : "Are you sure you want to close TaxVenture?";
         cancelButton.SetLabel(resumeClientCopy ? "STAY" : CampaignMenu.CancelButton.ToUpperInvariant());

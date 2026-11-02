@@ -8,8 +8,11 @@ using UnityEngine.UI;
 /// The review cutoff of Level 2 (T10), under Level2Gameplay/ReviewClock.
 /// The Auditor stays all day; the cutoff only closes today's hand-ins.
 /// </summary>
-public sealed class Level2ReviewClock : MonoBehaviour
+public sealed class Level2ReviewClock : MonoBehaviour, IReviewCutoffClock
 {
+    /// <summary>Rosa's vouchers are Level 2 claims (IReviewCutoffClock).</summary>
+    public string LevelId => Level2CampaignRules.LevelId;
+
     public const string ChildName = "ReviewClock";
     private const string DeskPath = "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk";
     private const string DeskSeatPath = "Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/DeskViewpoint";

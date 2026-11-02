@@ -68,7 +68,7 @@ public sealed class InventoryScreen : MonoBehaviour
     private readonly List<InventoryTile> barTiles = new List<InventoryTile>();
     private InventoryTile handTile;
     private TextMeshProUGUI handLabel;
-    private Button readButton, quickButton, backButton, pinButton;
+    private Button readButton, quickButton, backButton, pinButton, savedButton;
     private readonly List<Button> actionButtons = new List<Button>();
     private TextMeshProUGUI pinLabel, quickLabel;
 
@@ -192,7 +192,8 @@ public sealed class InventoryScreen : MonoBehaviour
         readButton = MakeButton(body, "Read", 0f, ActionTop, 180f, ActionHeight, "READ", OnRead, out _);
         quickButton = MakeButton(body, "Quick Move", 0f, ActionTop, 180f, ActionHeight, "TO BAR", OnQuickMove, out quickLabel);
         pinButton = MakeButton(body, "Pin", 0f, ActionTop, 180f, ActionHeight, "PIN", OnPin, out pinLabel);
-        actionButtons.AddRange(new[] { readButton, quickButton, pinButton });
+        savedButton = MakeButton(body, "Saved Records", 0f, ActionTop, 180f, ActionHeight, "SAVED PAPERS", OnSavedRead, out _);
+        actionButtons.AddRange(new[] { readButton, quickButton, pinButton, savedButton });
         BuildPinStrip(body);
 
         BuildSidePanel(body);
@@ -587,6 +588,7 @@ public sealed class InventoryScreen : MonoBehaviour
         InventorySlot chosenSlot = hasSlotItem ? InventoryRules.SlotAt(r, selected) : null;
         string chosen = chosenSlot?.itemId;
         readButton.interactable = !string.IsNullOrEmpty(chosen);
+        savedButton.gameObject.SetActive(!string.IsNullOrEmpty(chosen) && hotbar.HasSavedRecords(chosen));
         quickButton.interactable = hasSlotItem;
         quickLabel.text = hasSlotItem && selected.Area == InventoryArea.Hotbar ? "TO BAG" :
             hasSlotItem && selected.Area == InventoryArea.Hand ? "PLACE" : "TO BAR";
@@ -644,7 +646,8 @@ public sealed class InventoryScreen : MonoBehaviour
         sheetBody.text = def.description + holds;
         string where = area == InventoryArea.Hotbar ? "In your bar: ready to use." :
             area == InventoryArea.Hand ? "In your hand: tap a slot to place it." : "In your bag.";
-        sheetPlace.text = def.reference ? $"<color=#{ColorUtility.ToHtmlStringRGB(Needed)}>✔ Reference: read only, always kept.</color>\n{where}"
+        bool earlierChapter = !def.CampaignWide && !def.InScope(OfficeLevelProfile.LevelIdFor(this));
+        sheetPlace.text = def.reference || earlierChapter ? $"<color=#{ColorUtility.ToHtmlStringRGB(Needed)}>✔ Reference: read only, always kept.</color>\n{where}"
             : def.required ? $"<color=#{ColorUtility.ToHtmlStringRGB(Needed)}>✔ Needed for your case: always carried.</color>\n{where}" : where;
     }
 
@@ -774,6 +777,13 @@ public sealed class InventoryScreen : MonoBehaviour
         if (dragFrom != null) dragFrom.SetDragging(false);
         dragFrom = null;
         if (ghost != null) ghost.gameObject.SetActive(false);
+    }
+
+    private void OnSavedRead()
+    {
+        string item = InventoryRules.SlotAt(Inv, selected)?.itemId;
+        if (string.IsNullOrEmpty(item) || !Close(force: false)) return;
+        if (!hotbar.OpenSavedRecords(item)) hotbar.OpenInventory(SlotRef.None, item);
     }
 
     private void OnRead()

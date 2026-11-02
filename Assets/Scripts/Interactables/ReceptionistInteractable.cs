@@ -9,6 +9,13 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
     private NpcStateMachine npcState;
     private bool dialogueSessionActive;
 
+    /// <summary>
+    /// Optional level text filter for the greeting's lines (Level 3: the
+    /// {history} line from the saved Rosa history). Null = lines as authored.
+    /// The owner sets it while enabled and clears only its own filter.
+    /// </summary>
+    public static System.Func<string, string> GreetingFilter;
+
     // Stores which case this receptionist has already spoken to.
     // This automatically allows interaction again when a new case loads.
     private string spokenForCaseId = null;
@@ -159,6 +166,10 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
             foreach (DialogueLine line in lines)
                 if (line != null && line.Text != null) line.Text = line.Text.Replace("{deadline}", deadline);
         }
+
+        if (GreetingFilter != null)
+            foreach (DialogueLine line in lines)
+                if (line != null && line.Text != null) line.Text = GreetingFilter(line.Text);
 
         // Office Hours: she adds that the Auditor leaves early today.
         if (OfficeHours.Instance != null)

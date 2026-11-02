@@ -37,6 +37,15 @@ public class CaseManager : MonoBehaviour
     {
         var caseResult = JsonCaseLoader.LoadCase(levelToLoad, caseToLoad);
 
+        if (!caseResult.IsSuccess && levelToLoad == Level3ChapterRules.LevelId)
+        {
+            // Level 3 fails closed: an invalid case never becomes a playable placeholder.
+            Debug.LogError($"[CaseManager] Failed to load case '{caseToLoad}' from level '{levelToLoad}': {caseResult.ErrorMessage} No placeholder case is created for Level 3.");
+            CurrentDefinition = null;
+            CurrentCase = null;
+            return;
+        }
+
         if (!caseResult.IsSuccess)
         {
             Debug.LogError($"[CaseManager] Failed to load case '{caseToLoad}' from level '{levelToLoad}': {caseResult.ErrorMessage}");

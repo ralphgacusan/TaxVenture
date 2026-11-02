@@ -1,0 +1,23 @@
+{
+  "_readme": [
+    "Level 3 reward rules (same format as Level_01/rewards.json). The office is open from the start (Level 3 starts inside it) and no door is held shut.",
+    "T06 sideQuest = Worth the Tax? (Bea's worksheet): 12 first-check decisions. EXP = 60 minus wrong (minExp 48). Badge from accuracy: Gold 12/12 (goldAtCorrect), Silver 10-11 (silverAtCorrect), Bronze 0-9. No score hearts: every visible heart in the campaign is Public Trust. Level3WorksheetCheck freezes the same numbers (Tests/Level3Regression checks they match).",
+    "Coins and trust (60 coins, +2 Public Trust at the worksheet's collection; 100/100 coins and +4/+4 trust for the cases) are the campaign catalogue's (CampaignRewards), claimed once through Level 3's chapter commands (REWARDS_AND_VALIDATION.md), never through this file. caseFile values arrive with T09/T12.",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "requireSideQuestBeforeOffice": false,
+  "officeDoors": [],
+  "sideQuest": {
+    "exp": 60,
+    "hearts": 0,
+    "expPerWrong": 1,
+    "minExp": 48,
+    "goldAtCorrect": 12,
+    "silverAtCorrect": 10,
+    "heartsLostAtWrong": [],
+    "badgeId": "worth_the_tax_3",
+    "badgeName": "Worth the Tax?",
+    "badgeEmblem": "receipt",
+    "badgeRibbon": "#D9962B"
+  }
+}

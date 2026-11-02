@@ -1,0 +1,75 @@
+{
+  "_readme": [
+    "Level 3 worksheet hints (Level3WorksheetHints, T06). HINT on Bea's worksheet opens only after the first complete check, for a place that check marked with ?.",
+    "Each set lists the decision ids it helps with (Level3WorksheetCheck.DecisionIds) and exactly three hints: 1 where to look (a record, Bea, or a Tax Code Book section), 2 the idea, 3 specific help. Every decision must have one set.",
+    "Hints are free: they never change the grade, XP, coins or Public Trust, and are not saved. They must not appear before a check, and the book leaves (book.json) never state Bea's answers.",
+    "A broken file is reported in the Console and the built-in copy (Level3WorksheetHints.BuiltIn) is used.",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "hints": [
+    {
+      "decisions": [ "dest-R1", "dest-R2" ],
+      "lines": [
+        "Read Bea's Studio fees sheet: who paid her, and for what work?",
+        "Money Bea earned from her design work is what her costs are taken from.",
+        "Studio fees go in Income."
+      ]
+    },
+    {
+      "decisions": [ "dest-R3", "dest-R4", "dest-R5" ],
+      "lines": [
+        "Read the cost schedule row and the record that backs it. Tax Code Book, Section 4: Costs and Purpose.",
+        "This was paid for the studio's work, in 2026, and a record shows it.",
+        "A supported business cost of the year goes in Allowable expenses."
+      ]
+    },
+    {
+      "decisions": [ "dest-R6" ],
+      "lines": [
+        "Read the Party shop receipt again, or ask Bea: what was it for? Tax Code Book, Section 4.",
+        "A cost lowers Bea's income only if it was spent to earn her fees. Her own celebration wasn't.",
+        "Put the party purchases in Not deductible."
+      ]
+    },
+    {
+      "decisions": [ "dest-R7" ],
+      "lines": [
+        "Compare the Print bill with the Cost schedule. Tax Code Book, Section 5: Count Once.",
+        "Both papers show the same printing order, PRINT-26. Counting the bill as well would count it twice.",
+        "Keep the printing bill in Supporting only: it backs up the schedule's row."
+      ]
+    },
+    {
+      "decisions": [ "reason-R6" ],
+      "lines": [
+        "Ask Bea what the party purchases were for.",
+        "Was the dinner for the studio's work, or for her own celebration?",
+        "Choose Personal purpose."
+      ]
+    },
+    {
+      "decisions": [ "reason-R7" ],
+      "lines": [
+        "Look for PRINT-26 on Bea's other papers. Tax Code Book, Section 5: Count Once.",
+        "Bea's draft adds the printing bill on top of a cost schedule that already includes it.",
+        "Choose Already represented."
+      ]
+    },
+    {
+      "decisions": [ "related-R7" ],
+      "lines": [
+        "Which worksheet row already records the same printing order?",
+        "Look for the row with the same reference, PRINT-26, on the Cost schedule.",
+        "Link it to Printing and supplies, the Cost schedule's row."
+      ]
+    },
+    {
+      "decisions": [ "subtotal-income", "subtotal-expenses" ],
+      "lines": [
+        "A subtotal adds exactly the strips in its own section, each once.",
+        "Tap the SUBTOTAL slot, then each strip in the section with + between them, then =, and attach the tape.",
+        "Check no strip is missing, typed by hand, counted twice or taken from another section."
+      ]
+    }
+  ]
+}

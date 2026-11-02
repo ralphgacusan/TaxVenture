@@ -1,5 +1,12 @@
 # Level 3 — The Numbers Tell a Story
 
+## Current continuation rule — 30 October 2026
+
+The user explicitly requires every collected Bag/hotbar item to stay across Levels 1 → 2 → 3, whether useful in the next chapter or not. This supersedes older retirement instructions in this pack/proposal/tickets. Keep ownership, quantities, slots, contents, pins, capacities and readable prior records; scope limits current-case use, never ownership. Consumed supplies stay consumed, explicit put-back remains deliberate, and confirmed New Game is still a new campaign. Replay/Practice/Editor remain isolated from live story inventory. Already deleted historical data is not fabricated from answer keys.
+
+Level 3 now adopts the shared Bag/hotbar with its own checkpoint branch. Prior IDs open in the actual card reader; retained acquired-paper/player-annotation text uses read-only saved-paper pages, without CaseManager rebinding or value transfer. No global historical filing/archive gameplay is introduced.
+
+
 Revised design proposal • 29 October 2026 • Planning only; no runtime changes
 
 Implementation planning: [Level 3 ticket pack](Level3TheNumbersTellAStory/README.md) and [ordered 18-ticket index](Level3TheNumbersTellAStory/TICKETS.md). This proposal remains the design basis; the pack supplies inspected source mappings, execution scope and acceptance without enabling gameplay.

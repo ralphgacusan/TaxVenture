@@ -1,6 +1,13 @@
 # Instructions for Level 3 implementers
 
-Current request: author tickets and supporting documentation only. Runtime implementation starts only on a subsequent implementation instruction. The [proposal](../Level3DesignProposal.md) and this pack define Level 3; latest source and Campaign Foundation amendments define existing behavior. Reinspect before each ticket. All tickets currently Planned.
+## Current continuation rule — 30 October 2026
+
+The user explicitly requires every collected Bag/hotbar item to stay across Levels 1 → 2 → 3, whether useful in the next chapter or not. This supersedes older retirement instructions in this pack/proposal/tickets. Keep ownership, quantities, slots, contents, pins, capacities and readable prior records; scope limits current-case use, never ownership. Consumed supplies stay consumed, explicit put-back remains deliberate, and confirmed New Game is still a new campaign. Replay/Practice/Editor remain isolated from live story inventory. Already deleted historical data is not fabricated from answer keys.
+
+Level 3 now adopts the shared Bag/hotbar with its own checkpoint branch. Prior IDs open in the actual card reader; retained acquired-paper/player-annotation text uses read-only saved-paper pages, without CaseManager rebinding or value transfer. No global historical filing/archive gameplay is introduced.
+
+
+T01 implementation instruction (30 October2026): content preparation, source verification, fixture/schema documentation and documentation validators only. Runtime implementation starts in subsequent numbered tickets. The [proposal](../Level3DesignProposal.md) and this pack define Level 3; latest source and Campaign Foundation amendments define existing behavior. Reinspect before each ticket. T01 is implemented/internal-verified with content-authority acceptance pending; T02–T08 are implemented/internal-verified with Unity/device acceptance pending (30–31 October 2026); T09–T18 remain Planned.
 
 - Read README order and active ticket. Implement one numbered ticket at a time, retaining prior working changes. Dependencies do not grant parallel file ownership. No Git commands at all; the user performs status/diff/branch/commit/push and all other Git actions.
 - Internal AI verification only: code/data/serialized assets, dependency-light regression suites, scratch compilation, save round trips/failure injection, static scene/GUID/target checks. User performs Unity import, Play Mode, screenshots, rendered/physical placement checks, navigation, device/touch, listening, performance and feel. Do not launch Unity, automate editor screens, or substitute source strings for visual acceptance. AI owns actual wiring/models/colliders, not user scene assembly.

@@ -1,0 +1,964 @@
+{
+  "_readme": [
+    "Level 3 case (Documentation/Level3TheNumbersTellAStory/FIXTURE_CONTRACT.md, revision L3-2026-v1). Generated from the contract tables in T02; edit the contract first, then regenerate.",
+    "documents: one paper per source id (documentName = sourceId); each monetary row is a Number field whose semanticKey is the row fieldKey. level3 binds them; JsonCaseLoader refuses the case if any binding or amount disagrees (Level3ContentValidator).",
+    "level3.expectedFields and worksheetDecisions are validator answers: never shown, never copied into the Bag, a copy or the checkpoint. answerKey stays blank on purpose (legacy floats are not Level 3 authority).",
+    "clientId is blank: the conference-room client is not changed when the case loads (Bea meets the player at her plaza table, T04).",
+    "Content authority: L3-CONTENT-AUTHORITY educator approval is pending (TAX_AUTHORITY.md); isolated development only.",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "caseId": "L3-BEA-001",
+  "caseNumber": "L3-BEA-001",
+  "clientId": "",
+  "clientModel": "",
+  "taxYear": "2026",
+  "assignedConsultant": "Player",
+  "fullName": "Beatriz Mendoza",
+  "answerKey": {
+    "residencyStatus": "",
+    "taxpayerType": "",
+    "incomeSource": "",
+    "numberOfEmployers": "",
+    "businessRegistration": "",
+    "taxOption": "",
+    "requiredForm": "",
+    "correctAssessment": "",
+    "grossIncome": 0,
+    "allowableExpenses": 0,
+    "taxableIncome": 0,
+    "taxDue": 0,
+    "taxWithheldOrCredits": 0,
+    "finalTaxPayable": 0,
+    "employerTin": "",
+    "businessAddress": "",
+    "dependentCount": 0
+  },
+  "requiredFields": [],
+  "missingFieldKeys": [],
+  "documents": [
+    {
+      "documentName": "B-ID",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Fictional identity issuer",
+          "correctValue": "Fictional identity issuer",
+          "type": "Text",
+          "semanticKey": "B-ID/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Bea",
+          "correctValue": "Bea",
+          "type": "Text",
+          "semanticKey": "B-ID/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "ID-B26",
+          "correctValue": "ID-B26",
+          "type": "Text",
+          "semanticKey": "B-ID/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-01-01 to 2026-12-31",
+          "correctValue": "2026-01-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "B-ID/period"
+        },
+        {
+          "label": "Name",
+          "displayValue": "Beatriz Mendoza",
+          "correctValue": "Beatriz Mendoza",
+          "type": "Text",
+          "semanticKey": "B-ID/name"
+        },
+        {
+          "label": "ID number",
+          "displayValue": "•••• B26",
+          "correctValue": "•••• B26",
+          "type": "Text",
+          "semanticKey": "B-ID/id-number"
+        },
+        {
+          "label": "Work",
+          "displayValue": "Freelance illustrator",
+          "correctValue": "Freelance illustrator",
+          "type": "Text",
+          "semanticKey": "B-ID/work"
+        }
+      ]
+    },
+    {
+      "documentName": "B-BG",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Consultant interview",
+          "correctValue": "Consultant interview",
+          "type": "Text",
+          "semanticKey": "B-BG/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Bea",
+          "correctValue": "Bea",
+          "type": "Text",
+          "semanticKey": "B-BG/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "BG-B26",
+          "correctValue": "BG-B26",
+          "type": "Text",
+          "semanticKey": "B-BG/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-01-01 to 2026-12-31",
+          "correctValue": "2026-01-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "B-BG/period"
+        },
+        {
+          "label": "Work",
+          "displayValue": "Freelance illustrator",
+          "correctValue": "Freelance illustrator",
+          "type": "Text",
+          "semanticKey": "B-BG/work"
+        },
+        {
+          "label": "Covers",
+          "displayValue": "Calendar year 2026",
+          "correctValue": "Calendar year 2026",
+          "type": "Text",
+          "semanticKey": "B-BG/covers"
+        },
+        {
+          "label": "Tax rates",
+          "displayValue": "Graduated rates",
+          "correctValue": "Graduated rates",
+          "type": "Text",
+          "semanticKey": "B-BG/tax-rates"
+        },
+        {
+          "label": "Goal",
+          "displayValue": "Save for a studio",
+          "correctValue": "Save for a studio",
+          "type": "Text",
+          "semanticKey": "B-BG/goal"
+        }
+      ]
+    },
+    {
+      "documentName": "B-REV",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Bea studio",
+          "correctValue": "Bea studio",
+          "type": "Text",
+          "semanticKey": "B-REV/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Bea",
+          "correctValue": "Bea",
+          "type": "Text",
+          "semanticKey": "B-REV/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "REV-B26",
+          "correctValue": "REV-B26",
+          "type": "Text",
+          "semanticKey": "B-REV/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-01-01 to 2026-12-31",
+          "correctValue": "2026-01-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "B-REV/period"
+        },
+        {
+          "label": "Logo fees",
+          "displayValue": "₱500,000.00",
+          "correctValue": "₱500,000.00",
+          "type": "Number",
+          "semanticKey": "BLogoFees"
+        },
+        {
+          "label": "Menu illustration fees",
+          "displayValue": "₱400,000.00",
+          "correctValue": "₱400,000.00",
+          "type": "Number",
+          "semanticKey": "BMenuFees"
+        },
+        {
+          "label": "Annual revenue",
+          "displayValue": "₱900,000.00",
+          "correctValue": "₱900,000.00",
+          "type": "Number",
+          "semanticKey": "BRevenueTotal"
+        }
+      ]
+    },
+    {
+      "documentName": "B-EXP",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Bea studio",
+          "correctValue": "Bea studio",
+          "type": "Text",
+          "semanticKey": "B-EXP/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Bea",
+          "correctValue": "Bea",
+          "type": "Text",
+          "semanticKey": "B-EXP/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "EXP-B26",
+          "correctValue": "EXP-B26",
+          "type": "Text",
+          "semanticKey": "B-EXP/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-01-01 to 2026-12-31",
+          "correctValue": "2026-01-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "B-EXP/period"
+        },
+        {
+          "label": "Studio rent",
+          "displayValue": "₱180,000.00",
+          "correctValue": "₱180,000.00",
+          "type": "Number",
+          "semanticKey": "BRent"
+        },
+        {
+          "label": "Design subscriptions",
+          "displayValue": "₱90,000.00",
+          "correctValue": "₱90,000.00",
+          "type": "Number",
+          "semanticKey": "BSubscriptions"
+        },
+        {
+          "label": "Printing and supplies",
+          "displayValue": "₱30,000.00",
+          "correctValue": "₱30,000.00",
+          "type": "Number",
+          "semanticKey": "BPrinting"
+        },
+        {
+          "label": "Annual costs",
+          "displayValue": "₱300,000.00",
+          "correctValue": "₱300,000.00",
+          "type": "Number",
+          "semanticKey": "BCostTotal"
+        }
+      ]
+    },
+    {
+      "documentName": "B-RENT",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Plaza Studio Rentals",
+          "correctValue": "Plaza Studio Rentals",
+          "type": "Text",
+          "semanticKey": "B-RENT/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Bea",
+          "correctValue": "Bea",
+          "type": "Text",
+          "semanticKey": "B-RENT/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "RENT-26",
+          "correctValue": "RENT-26",
+          "type": "Text",
+          "semanticKey": "B-RENT/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-01-01 to 2026-12-31",
+          "correctValue": "2026-01-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "B-RENT/period"
+        },
+        {
+          "label": "Studio rent, paid",
+          "displayValue": "₱180,000.00",
+          "correctValue": "₱180,000.00",
+          "type": "Number",
+          "semanticKey": "BRentProof"
+        }
+      ]
+    },
+    {
+      "documentName": "B-SUB",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Island Design Tools",
+          "correctValue": "Island Design Tools",
+          "type": "Text",
+          "semanticKey": "B-SUB/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Bea",
+          "correctValue": "Bea",
+          "type": "Text",
+          "semanticKey": "B-SUB/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "SUB-26",
+          "correctValue": "SUB-26",
+          "type": "Text",
+          "semanticKey": "B-SUB/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-01-01 to 2026-12-31",
+          "correctValue": "2026-01-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "B-SUB/period"
+        },
+        {
+          "label": "Subscription, paid",
+          "displayValue": "₱90,000.00",
+          "correctValue": "₱90,000.00",
+          "type": "Number",
+          "semanticKey": "BSubscriptionProof"
+        }
+      ]
+    },
+    {
+      "documentName": "B-PRINT",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Town Print Supply",
+          "correctValue": "Town Print Supply",
+          "type": "Text",
+          "semanticKey": "B-PRINT/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Bea",
+          "correctValue": "Bea",
+          "type": "Text",
+          "semanticKey": "B-PRINT/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "PRINT-26",
+          "correctValue": "PRINT-26",
+          "type": "Text",
+          "semanticKey": "B-PRINT/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-01-01 to 2026-12-31",
+          "correctValue": "2026-01-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "B-PRINT/period"
+        },
+        {
+          "label": "Printing bill, paid",
+          "displayValue": "₱30,000.00",
+          "correctValue": "₱30,000.00",
+          "type": "Number",
+          "semanticKey": "BPrintingProof"
+        }
+      ]
+    },
+    {
+      "documentName": "B-PERSONAL",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Island Party Shop",
+          "correctValue": "Island Party Shop",
+          "type": "Text",
+          "semanticKey": "B-PERSONAL/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Bea",
+          "correctValue": "Bea",
+          "type": "Text",
+          "semanticKey": "B-PERSONAL/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "PARTY-26",
+          "correctValue": "PARTY-26",
+          "type": "Text",
+          "semanticKey": "B-PERSONAL/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-06-15 to 2026-06-15",
+          "correctValue": "2026-06-15 to 2026-06-15",
+          "type": "Text",
+          "semanticKey": "B-PERSONAL/period"
+        },
+        {
+          "label": "Birthday dinner, decor",
+          "displayValue": "₱24,000.00",
+          "correctValue": "₱24,000.00",
+          "type": "Number",
+          "semanticKey": "BPersonal"
+        }
+      ]
+    },
+    {
+      "documentName": "B-DRAFT",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Bea",
+          "correctValue": "Bea",
+          "type": "Text",
+          "semanticKey": "B-DRAFT/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Bea",
+          "correctValue": "Bea",
+          "type": "Text",
+          "semanticKey": "B-DRAFT/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "DRAFT-B26",
+          "correctValue": "DRAFT-B26",
+          "type": "Text",
+          "semanticKey": "B-DRAFT/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-01-01 to 2026-12-31",
+          "correctValue": "2026-01-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "B-DRAFT/period"
+        },
+        {
+          "label": "Studio costs",
+          "displayValue": "₱300,000.00",
+          "correctValue": "₱300,000.00",
+          "type": "Number",
+          "semanticKey": "BClaimBase"
+        },
+        {
+          "label": "Party purchases",
+          "displayValue": "₱24,000.00",
+          "correctValue": "₱24,000.00",
+          "type": "Number",
+          "semanticKey": "BClaimPersonal"
+        },
+        {
+          "label": "Printing bill",
+          "displayValue": "₱30,000.00",
+          "correctValue": "₱30,000.00",
+          "type": "Number",
+          "semanticKey": "BClaimPrintAgain"
+        },
+        {
+          "label": "Proposed costs",
+          "displayValue": "₱354,000.00",
+          "correctValue": "₱354,000.00",
+          "type": "Number",
+          "semanticKey": "BDraftTotal"
+        }
+      ]
+    },
+    {
+      "documentName": "B-WHT",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Harbor Menu Client",
+          "correctValue": "Harbor Menu Client",
+          "type": "Text",
+          "semanticKey": "B-WHT/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Bea",
+          "correctValue": "Bea",
+          "type": "Text",
+          "semanticKey": "B-WHT/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "WHT-B26",
+          "correctValue": "WHT-B26",
+          "type": "Text",
+          "semanticKey": "B-WHT/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-10-01 to 2026-12-31",
+          "correctValue": "2026-10-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "B-WHT/period"
+        },
+        {
+          "label": "Income payment",
+          "displayValue": "₱250,000.00",
+          "correctValue": "₱250,000.00",
+          "type": "Number",
+          "semanticKey": "BWithheldIncome"
+        },
+        {
+          "label": "Tax withheld",
+          "displayValue": "₱12,500.00",
+          "correctValue": "₱12,500.00",
+          "type": "Number",
+          "semanticKey": "BWithheldCredit"
+        }
+      ]
+    }
+  ],
+  "potentialIssues": [],
+  "caseTitle": "Beatriz Mendoza - 2026 Annual Computation",
+  "caseSummary": "Bea, a freelance illustrator, booked a computation appointment for her 2026 professional income. Her records wait at her plaza table.",
+  "_receptionistGreeting": "{history} is replaced by the reception line for the player's saved Rosa history (Levels/Level_03/office_start.json receptionHistory; CONTENT 'First reception').",
+  "receptionistGreeting": [
+    {
+      "speaker": "Npc",
+      "text": "{history}",
+      "portraitId": "default"
+    },
+    {
+      "speaker": "Npc",
+      "text": "Before you meet her, try the calculator at your desk. Its tape keeps every step you attach.",
+      "portraitId": "default"
+    },
+    {
+      "speaker": "Player",
+      "text": "Got it. The calculator first, then Bea.",
+      "portraitId": "Auditor_Default"
+    }
+  ],
+  "level3": {
+    "schemaVersion": 1,
+    "contentRevision": "L3-2026-v1",
+    "caseId": "L3-BEA-001",
+    "clientId": "bea",
+    "taxpayer": "Beatriz Mendoza",
+    "periodStart": "2026-01-01",
+    "periodEnd": "2026-12-31",
+    "taxYear": 2026,
+    "taxpayerKind": "individual-professional",
+    "regimeId": "PH-IND-GRAD-2023",
+    "roundingPolicyId": "L3-COMPUTATION-CENTS-v1",
+    "sources": [
+      {
+        "sourceId": "B-ID",
+        "documentName": "B-ID",
+        "paperType": 1,
+        "reference": "ID-B26",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Fictional identity issuer",
+        "party": "Bea",
+        "status": "identity context, no money"
+      },
+      {
+        "sourceId": "B-BG",
+        "documentName": "B-BG",
+        "paperType": 2,
+        "reference": "BG-B26",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Consultant interview",
+        "party": "Bea",
+        "status": "client interview notes"
+      },
+      {
+        "sourceId": "B-REV",
+        "documentName": "B-REV",
+        "paperType": 4,
+        "reference": "REV-B26",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Bea studio",
+        "party": "Bea",
+        "status": "gross earned and collected fees"
+      },
+      {
+        "sourceId": "B-EXP",
+        "documentName": "B-EXP",
+        "paperType": 0,
+        "reference": "EXP-B26",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Bea studio",
+        "party": "Bea",
+        "status": "annual working cost schedule"
+      },
+      {
+        "sourceId": "B-RENT",
+        "documentName": "B-RENT",
+        "paperType": 7,
+        "reference": "RENT-26",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Plaza Studio Rentals",
+        "party": "Bea",
+        "status": "business-only lease with paid invoice extracts"
+      },
+      {
+        "sourceId": "B-SUB",
+        "documentName": "B-SUB",
+        "paperType": 5,
+        "reference": "SUB-26",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Island Design Tools",
+        "party": "Bea",
+        "status": "paid annual service consumed this year"
+      },
+      {
+        "sourceId": "B-PRINT",
+        "documentName": "B-PRINT",
+        "paperType": 5,
+        "reference": "PRINT-26",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Town Print Supply",
+        "party": "Bea",
+        "status": "paid printing and consumed supplies"
+      },
+      {
+        "sourceId": "B-PERSONAL",
+        "documentName": "B-PERSONAL",
+        "paperType": 5,
+        "reference": "PARTY-26",
+        "periodStart": "2026-06-15",
+        "periodEnd": "2026-06-15",
+        "issuer": "Island Party Shop",
+        "party": "Bea",
+        "status": "paid private birthday purchases"
+      },
+      {
+        "sourceId": "B-DRAFT",
+        "documentName": "B-DRAFT",
+        "paperType": 0,
+        "reference": "DRAFT-B26",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Bea",
+        "party": "Bea",
+        "status": "rough claim schedule, not an extra transaction"
+      },
+      {
+        "sourceId": "B-WHT",
+        "documentName": "B-WHT",
+        "paperType": 8,
+        "reference": "WHT-B26",
+        "periodStart": "2026-10-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Harbor Menu Client",
+        "party": "Bea",
+        "status": "supplied creditable withholding certificate"
+      }
+    ],
+    "rows": [
+      {
+        "rowId": "R1",
+        "sourceId": "B-REV",
+        "fieldKey": "BLogoFees",
+        "transactionId": "B-LOGO-26",
+        "amount": "500000.00",
+        "relation": "-"
+      },
+      {
+        "rowId": "R2",
+        "sourceId": "B-REV",
+        "fieldKey": "BMenuFees",
+        "transactionId": "B-MENU-26",
+        "amount": "400000.00",
+        "relation": "-"
+      },
+      {
+        "rowId": "R3",
+        "sourceId": "B-EXP",
+        "fieldKey": "BRent",
+        "transactionId": "RENT-26",
+        "amount": "180000.00",
+        "relation": "-"
+      },
+      {
+        "rowId": "R4",
+        "sourceId": "B-EXP",
+        "fieldKey": "BSubscriptions",
+        "transactionId": "SUB-26",
+        "amount": "90000.00",
+        "relation": "-"
+      },
+      {
+        "rowId": "R5",
+        "sourceId": "B-EXP",
+        "fieldKey": "BPrinting",
+        "transactionId": "PRINT-26",
+        "amount": "30000.00",
+        "relation": "-"
+      },
+      {
+        "rowId": "R6",
+        "sourceId": "B-PERSONAL",
+        "fieldKey": "BPersonal",
+        "transactionId": "PARTY-26",
+        "amount": "24000.00",
+        "relation": "-"
+      },
+      {
+        "rowId": "R7",
+        "sourceId": "B-PRINT",
+        "fieldKey": "BPrintingProof",
+        "transactionId": "PRINT-26",
+        "amount": "30000.00",
+        "relation": "supports:R5"
+      },
+      {
+        "rowId": "B-RENT-PROOF",
+        "sourceId": "B-RENT",
+        "fieldKey": "BRentProof",
+        "transactionId": "RENT-26",
+        "amount": "180000.00",
+        "relation": "supports:R3"
+      },
+      {
+        "rowId": "B-SUB-PROOF",
+        "sourceId": "B-SUB",
+        "fieldKey": "BSubscriptionProof",
+        "transactionId": "SUB-26",
+        "amount": "90000.00",
+        "relation": "supports:R4"
+      },
+      {
+        "rowId": "B-CLAIM-BASE",
+        "sourceId": "B-DRAFT",
+        "fieldKey": "BClaimBase",
+        "transactionId": "B-COST-GROUP",
+        "amount": "300000.00",
+        "relation": "-"
+      },
+      {
+        "rowId": "B-CLAIM-PERSONAL",
+        "sourceId": "B-DRAFT",
+        "fieldKey": "BClaimPersonal",
+        "transactionId": "PARTY-26",
+        "amount": "24000.00",
+        "relation": "claim:R6"
+      },
+      {
+        "rowId": "B-CLAIM-PRINT",
+        "sourceId": "B-DRAFT",
+        "fieldKey": "BClaimPrintAgain",
+        "transactionId": "PRINT-26",
+        "amount": "30000.00",
+        "relation": "claim:R7"
+      },
+      {
+        "rowId": "B-WHT-INCOME",
+        "sourceId": "B-WHT",
+        "fieldKey": "BWithheldIncome",
+        "transactionId": "B-MENU-WHT-26",
+        "amount": "250000.00",
+        "relation": "subset:R2"
+      },
+      {
+        "rowId": "B-WHT-CREDIT",
+        "sourceId": "B-WHT",
+        "fieldKey": "BWithheldCredit",
+        "transactionId": "B-CREDIT-26",
+        "amount": "12500.00",
+        "relation": "-"
+      }
+    ],
+    "totals": [
+      {
+        "sourceId": "B-REV",
+        "fieldKey": "BRevenueTotal",
+        "componentRowIds": [
+          "R1",
+          "R2"
+        ],
+        "amount": "900000.00"
+      },
+      {
+        "sourceId": "B-EXP",
+        "fieldKey": "BCostTotal",
+        "componentRowIds": [
+          "R3",
+          "R4",
+          "R5"
+        ],
+        "amount": "300000.00"
+      },
+      {
+        "sourceId": "B-DRAFT",
+        "fieldKey": "BDraftTotal",
+        "componentRowIds": [
+          "B-CLAIM-BASE",
+          "B-CLAIM-PERSONAL",
+          "B-CLAIM-PRINT"
+        ],
+        "amount": "354000.00"
+      }
+    ],
+    "creditLinks": [
+      {
+        "creditRowId": "B-WHT-CREDIT",
+        "incomeRowId": "B-WHT-INCOME",
+        "includedInRowId": "R2"
+      }
+    ],
+    "rules": [
+      {
+        "ruleId": "IND-0",
+        "lower": "0.00",
+        "upper": "250000.00",
+        "baseTax": "0.00",
+        "rate": "0.00"
+      },
+      {
+        "ruleId": "IND-15",
+        "lower": "250000.00",
+        "upper": "400000.00",
+        "baseTax": "0.00",
+        "rate": "0.15"
+      },
+      {
+        "ruleId": "IND-20",
+        "lower": "400000.00",
+        "upper": "800000.00",
+        "baseTax": "22500.00",
+        "rate": "0.20"
+      },
+      {
+        "ruleId": "IND-25",
+        "lower": "800000.00",
+        "upper": "2000000.00",
+        "baseTax": "102500.00",
+        "rate": "0.25"
+      },
+      {
+        "ruleId": "IND-30",
+        "lower": "2000000.00",
+        "upper": "8000000.00",
+        "baseTax": "402500.00",
+        "rate": "0.30"
+      },
+      {
+        "ruleId": "IND-35",
+        "lower": "8000000.00",
+        "upper": "",
+        "baseTax": "2202500.00",
+        "rate": "0.35"
+      }
+    ],
+    "worksheetDecisions": [
+      {
+        "decisionId": "dest-R1",
+        "expected": "Income"
+      },
+      {
+        "decisionId": "dest-R2",
+        "expected": "Income"
+      },
+      {
+        "decisionId": "dest-R3",
+        "expected": "Allowable expenses"
+      },
+      {
+        "decisionId": "dest-R4",
+        "expected": "Allowable expenses"
+      },
+      {
+        "decisionId": "dest-R5",
+        "expected": "Allowable expenses"
+      },
+      {
+        "decisionId": "dest-R6",
+        "expected": "Not deductible"
+      },
+      {
+        "decisionId": "dest-R7",
+        "expected": "Supporting only"
+      },
+      {
+        "decisionId": "reason-R6",
+        "expected": "Personal purpose"
+      },
+      {
+        "decisionId": "reason-R7",
+        "expected": "Already represented"
+      },
+      {
+        "decisionId": "related-R7",
+        "expected": "R5/B-EXP/PRINT-26"
+      },
+      {
+        "decisionId": "subtotal-income",
+        "expected": "Exact sum of the player's Income set, with matching source edges"
+      },
+      {
+        "decisionId": "subtotal-expenses",
+        "expected": "Exact sum of the player's Allowable expenses set, with matching source edges"
+      }
+    ],
+    "expectedFields": [
+      {
+        "field": "grossIncome",
+        "amount": "900000.00"
+      },
+      {
+        "field": "allowableExpenses",
+        "amount": "300000.00"
+      },
+      {
+        "field": "taxableIncome",
+        "amount": "600000.00"
+      },
+      {
+        "field": "excess",
+        "amount": "200000.00"
+      },
+      {
+        "field": "marginalTax",
+        "amount": "40000.00"
+      },
+      {
+        "field": "taxDue",
+        "amount": "62500.00"
+      },
+      {
+        "field": "taxWithheldOrCredits",
+        "amount": "12500.00"
+      },
+      {
+        "field": "finalTaxPayable",
+        "amount": "50000.00"
+      }
+    ]
+  }
+}

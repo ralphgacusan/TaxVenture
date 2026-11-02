@@ -1,0 +1,738 @@
+{
+  "_readme": [
+    "Level 3 case (Documentation/Level3TheNumbersTellAStory/FIXTURE_CONTRACT.md, revision L3-2026-v1). Generated from the contract tables in T02; edit the contract first, then regenerate.",
+    "documents: one paper per source id (documentName = sourceId); each monetary row is a Number field whose semanticKey is the row fieldKey. level3 binds them; JsonCaseLoader refuses the case if any binding or amount disagrees (Level3ContentValidator).",
+    "level3.expectedFields and worksheetDecisions are validator answers: never shown, never copied into the Bag, a copy or the checkpoint. answerKey stays blank on purpose (legacy floats are not Level 3 authority).",
+    "clientId is blank: the conference-room client is not changed when the case loads (Bea meets the player at her plaza table, T04).",
+    "Content authority: L3-CONTENT-AUTHORITY educator approval is pending (TAX_AUTHORITY.md); isolated development only.",
+    "Fields starting with '_' are notes and are ignored by the game."
+  ],
+  "caseId": "L3-MARINE-001",
+  "caseNumber": "L3-MARINE-001",
+  "clientId": "",
+  "clientModel": "",
+  "taxYear": "2026",
+  "assignedConsultant": "Player",
+  "fullName": "Coast Tales Marine Services, Inc.",
+  "answerKey": {
+    "residencyStatus": "",
+    "taxpayerType": "",
+    "incomeSource": "",
+    "numberOfEmployers": "",
+    "businessRegistration": "",
+    "taxOption": "",
+    "requiredForm": "",
+    "correctAssessment": "",
+    "grossIncome": 0,
+    "allowableExpenses": 0,
+    "taxableIncome": 0,
+    "taxDue": 0,
+    "taxWithheldOrCredits": 0,
+    "finalTaxPayable": 0,
+    "employerTin": "",
+    "businessAddress": "",
+    "dependentCount": 0
+  },
+  "requiredFields": [],
+  "missingFieldKeys": [],
+  "documents": [
+    {
+      "documentName": "C-BG",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Consultant interview with Nina",
+          "correctValue": "Consultant interview with Nina",
+          "type": "Text",
+          "semanticKey": "C-BG/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Marine Services",
+          "correctValue": "Marine Services",
+          "type": "Text",
+          "semanticKey": "C-BG/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "BG-C26",
+          "correctValue": "BG-C26",
+          "type": "Text",
+          "semanticKey": "C-BG/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-01-01 to 2026-12-31",
+          "correctValue": "2026-01-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "C-BG/period"
+        },
+        {
+          "label": "Bookkeeper",
+          "displayValue": "Nina Cruz",
+          "correctValue": "Nina Cruz",
+          "type": "Text",
+          "semanticKey": "C-BG/bookkeeper"
+        },
+        {
+          "label": "Operating since",
+          "displayValue": "2024-01-01",
+          "correctValue": "2024-01-01",
+          "type": "Text",
+          "semanticKey": "C-BG/operating-since"
+        },
+        {
+          "label": "Tax rates",
+          "displayValue": "Ordinary, no incentive",
+          "correctValue": "Ordinary, no incentive",
+          "type": "Text",
+          "semanticKey": "C-BG/tax-rates"
+        },
+        {
+          "label": "Covers",
+          "displayValue": "Calendar year 2026",
+          "correctValue": "Calendar year 2026",
+          "type": "Text",
+          "semanticKey": "C-BG/covers"
+        }
+      ]
+    },
+    {
+      "documentName": "C-REV",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Marine Services",
+          "correctValue": "Marine Services",
+          "type": "Text",
+          "semanticKey": "C-REV/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Marine Services",
+          "correctValue": "Marine Services",
+          "type": "Text",
+          "semanticKey": "C-REV/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "REV-C26",
+          "correctValue": "REV-C26",
+          "type": "Text",
+          "semanticKey": "C-REV/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-01-01 to 2026-12-31",
+          "correctValue": "2026-01-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "C-REV/period"
+        },
+        {
+          "label": "Service revenue",
+          "displayValue": "₱8,000,000.00",
+          "correctValue": "₱8,000,000.00",
+          "type": "Number",
+          "semanticKey": "CServiceRevenue"
+        },
+        {
+          "label": "Annual revenue",
+          "displayValue": "₱8,000,000.00",
+          "correctValue": "₱8,000,000.00",
+          "type": "Number",
+          "semanticKey": "CRevenueTotal"
+        }
+      ]
+    },
+    {
+      "documentName": "C-COST",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Marine Services",
+          "correctValue": "Marine Services",
+          "type": "Text",
+          "semanticKey": "C-COST/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Marine Services",
+          "correctValue": "Marine Services",
+          "type": "Text",
+          "semanticKey": "C-COST/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "COST-C26",
+          "correctValue": "COST-C26",
+          "type": "Text",
+          "semanticKey": "C-COST/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-01-01 to 2026-12-31",
+          "correctValue": "2026-01-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "C-COST/period"
+        },
+        {
+          "label": "Operations",
+          "displayValue": "₱1,200,000.00",
+          "correctValue": "₱1,200,000.00",
+          "type": "Number",
+          "semanticKey": "COperations"
+        },
+        {
+          "label": "Premises rent",
+          "displayValue": "₱500,000.00",
+          "correctValue": "₱500,000.00",
+          "type": "Number",
+          "semanticKey": "CPremisesRent"
+        },
+        {
+          "label": "Administration",
+          "displayValue": "₱300,000.00",
+          "correctValue": "₱300,000.00",
+          "type": "Number",
+          "semanticKey": "CAdministration"
+        },
+        {
+          "label": "Invoice: operations",
+          "displayValue": "₱1,200,000.00",
+          "correctValue": "₱1,200,000.00",
+          "type": "Number",
+          "semanticKey": "COperationsProof"
+        },
+        {
+          "label": "Invoice: rent",
+          "displayValue": "₱500,000.00",
+          "correctValue": "₱500,000.00",
+          "type": "Number",
+          "semanticKey": "CPremisesRentProof"
+        },
+        {
+          "label": "Invoice: office",
+          "displayValue": "₱300,000.00",
+          "correctValue": "₱300,000.00",
+          "type": "Number",
+          "semanticKey": "CAdministrationProof"
+        },
+        {
+          "label": "Annual costs",
+          "displayValue": "₱2,000,000.00",
+          "correctValue": "₱2,000,000.00",
+          "type": "Number",
+          "semanticKey": "CCostTotal"
+        }
+      ]
+    },
+    {
+      "documentName": "C-TRIP",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Island Holiday Travel",
+          "correctValue": "Island Holiday Travel",
+          "type": "Text",
+          "semanticKey": "C-TRIP/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Marine Services, owner's family beneficiaries",
+          "correctValue": "Marine Services, owner's family beneficiaries",
+          "type": "Text",
+          "semanticKey": "C-TRIP/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "TRIP-C26",
+          "correctValue": "TRIP-C26",
+          "type": "Text",
+          "semanticKey": "C-TRIP/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-07-01 to 2026-07-01",
+          "correctValue": "2026-07-01 to 2026-07-01",
+          "type": "Text",
+          "semanticKey": "C-TRIP/period"
+        },
+        {
+          "label": "Family holiday",
+          "displayValue": "₱120,000.00",
+          "correctValue": "₱120,000.00",
+          "type": "Number",
+          "semanticKey": "CPersonalTrip"
+        }
+      ]
+    },
+    {
+      "documentName": "C-DRAFT",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Assistance Desk",
+          "correctValue": "Assistance Desk",
+          "type": "Text",
+          "semanticKey": "C-DRAFT/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Marine Services",
+          "correctValue": "Marine Services",
+          "type": "Text",
+          "semanticKey": "C-DRAFT/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "AD-26",
+          "correctValue": "AD-26",
+          "type": "Text",
+          "semanticKey": "C-DRAFT/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-01-01 to 2026-12-31",
+          "correctValue": "2026-01-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "C-DRAFT/period"
+        },
+        {
+          "label": "Operations",
+          "displayValue": "₱1,200,000.00",
+          "correctValue": "₱1,200,000.00",
+          "type": "Number",
+          "semanticKey": "CClaimOperations"
+        },
+        {
+          "label": "Premises rent",
+          "displayValue": "₱500,000.00",
+          "correctValue": "₱500,000.00",
+          "type": "Number",
+          "semanticKey": "CClaimRent"
+        },
+        {
+          "label": "Administration",
+          "displayValue": "₱420,000.00",
+          "correctValue": "₱420,000.00",
+          "type": "Number",
+          "semanticKey": "CClaimAdministration"
+        },
+        {
+          "label": "incl. holiday",
+          "displayValue": "₱120,000.00",
+          "correctValue": "₱120,000.00",
+          "type": "Number",
+          "semanticKey": "CClaimTripComponent"
+        },
+        {
+          "label": "Proposed costs",
+          "displayValue": "₱2,120,000.00",
+          "correctValue": "₱2,120,000.00",
+          "type": "Number",
+          "semanticKey": "CDraftTotal"
+        }
+      ]
+    },
+    {
+      "documentName": "C-WHT",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Supplied payer certificate packet",
+          "correctValue": "Supplied payer certificate packet",
+          "type": "Text",
+          "semanticKey": "C-WHT/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Marine Services",
+          "correctValue": "Marine Services",
+          "type": "Text",
+          "semanticKey": "C-WHT/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "WHT-C26",
+          "correctValue": "WHT-C26",
+          "type": "Text",
+          "semanticKey": "C-WHT/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-01-01 to 2026-12-31",
+          "correctValue": "2026-01-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "C-WHT/period"
+        },
+        {
+          "label": "Income payments",
+          "displayValue": "₱8,000,000.00",
+          "correctValue": "₱8,000,000.00",
+          "type": "Number",
+          "semanticKey": "CWithheldIncome"
+        },
+        {
+          "label": "Tax withheld",
+          "displayValue": "₱300,000.00",
+          "correctValue": "₱300,000.00",
+          "type": "Number",
+          "semanticKey": "CWithheldCredit"
+        }
+      ]
+    },
+    {
+      "documentName": "C-ASSET",
+      "fields": [
+        {
+          "label": "Issued by",
+          "displayValue": "Marine Services verified schedule",
+          "correctValue": "Marine Services verified schedule",
+          "type": "Text",
+          "semanticKey": "C-ASSET/issuer"
+        },
+        {
+          "label": "For",
+          "displayValue": "Marine Services",
+          "correctValue": "Marine Services",
+          "type": "Text",
+          "semanticKey": "C-ASSET/party"
+        },
+        {
+          "label": "Reference",
+          "displayValue": "ASSET-C26",
+          "correctValue": "ASSET-C26",
+          "type": "Text",
+          "semanticKey": "C-ASSET/reference"
+        },
+        {
+          "label": "Period",
+          "displayValue": "2026-01-01 to 2026-12-31",
+          "correctValue": "2026-01-01 to 2026-12-31",
+          "type": "Text",
+          "semanticKey": "C-ASSET/period"
+        },
+        {
+          "label": "Relevant assets",
+          "displayValue": "₱80,000,000.00",
+          "correctValue": "₱80,000,000.00",
+          "type": "Number",
+          "semanticKey": "CRelevantAssets"
+        }
+      ]
+    }
+  ],
+  "potentialIssues": [],
+  "caseTitle": "Coast Tales Marine Services, Inc. - 2026 Annual Computation",
+  "caseSummary": "The company's bookkeeper brings the annual records after Bea's case is delivered.",
+  "_receptionistGreeting": "Admitted only after Bea delivery (T11); the receptionist line lives in CONTENT \"Company reception\".",
+  "receptionistGreeting": [
+    {
+      "speaker": "Npc",
+      "text": "Marine Services is ready for its appointment. Their bookkeeper brought the annual records.",
+      "portraitId": "default"
+    }
+  ],
+  "level3": {
+    "schemaVersion": 1,
+    "contentRevision": "L3-2026-v1",
+    "caseId": "L3-MARINE-001",
+    "clientId": "marine-services",
+    "taxpayer": "Coast Tales Marine Services, Inc.",
+    "periodStart": "2026-01-01",
+    "periodEnd": "2026-12-31",
+    "taxYear": 2026,
+    "taxpayerKind": "domestic-corporation",
+    "regimeId": "PH-DOMESTIC-ORDINARY",
+    "roundingPolicyId": "L3-COMPUTATION-CENTS-v1",
+    "sources": [
+      {
+        "sourceId": "C-BG",
+        "documentName": "C-BG",
+        "paperType": 2,
+        "reference": "BG-C26",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Consultant interview with Nina",
+        "party": "Marine Services",
+        "status": "interview notes, operations began 2024-01-01"
+      },
+      {
+        "sourceId": "C-REV",
+        "documentName": "C-REV",
+        "paperType": 4,
+        "reference": "REV-C26",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Marine Services",
+        "party": "Marine Services",
+        "status": "gross supported service revenue"
+      },
+      {
+        "sourceId": "C-COST",
+        "documentName": "C-COST",
+        "paperType": 0,
+        "reference": "COST-C26",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Marine Services",
+        "party": "Marine Services",
+        "status": "working cost schedule with retained paid invoice extracts"
+      },
+      {
+        "sourceId": "C-TRIP",
+        "documentName": "C-TRIP",
+        "paperType": 5,
+        "reference": "TRIP-C26",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-07-01",
+        "issuer": "Island Holiday Travel",
+        "party": "Marine Services, owner's family beneficiaries",
+        "status": "paid private withdrawal"
+      },
+      {
+        "sourceId": "C-DRAFT",
+        "documentName": "C-DRAFT",
+        "paperType": 0,
+        "reference": "AD-26",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Assistance Desk",
+        "party": "Marine Services",
+        "status": "prepared working schedule"
+      },
+      {
+        "sourceId": "C-WHT",
+        "documentName": "C-WHT",
+        "paperType": 8,
+        "reference": "WHT-C26",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Supplied payer certificate packet",
+        "party": "Marine Services",
+        "status": "annual aggregate; provenance gate pending"
+      },
+      {
+        "sourceId": "C-ASSET",
+        "documentName": "C-ASSET",
+        "paperType": 0,
+        "reference": "ASSET-C26",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-12-31",
+        "issuer": "Marine Services verified schedule",
+        "party": "Marine Services",
+        "status": "year-end assets excluding qualifying premises land"
+      }
+    ],
+    "rows": [
+      {
+        "rowId": "C-R1",
+        "sourceId": "C-REV",
+        "fieldKey": "CServiceRevenue",
+        "transactionId": "C-SERVICE-26",
+        "amount": "8000000.00",
+        "relation": "-"
+      },
+      {
+        "rowId": "C-R2",
+        "sourceId": "C-COST",
+        "fieldKey": "COperations",
+        "transactionId": "C-OPS-26",
+        "amount": "1200000.00",
+        "relation": "-"
+      },
+      {
+        "rowId": "C-R3",
+        "sourceId": "C-COST",
+        "fieldKey": "CPremisesRent",
+        "transactionId": "C-RENT-26",
+        "amount": "500000.00",
+        "relation": "-"
+      },
+      {
+        "rowId": "C-R4",
+        "sourceId": "C-COST",
+        "fieldKey": "CAdministration",
+        "transactionId": "C-ADMIN-26",
+        "amount": "300000.00",
+        "relation": "-"
+      },
+      {
+        "rowId": "C-R5",
+        "sourceId": "C-TRIP",
+        "fieldKey": "CPersonalTrip",
+        "transactionId": "TRIP-C26",
+        "amount": "120000.00",
+        "relation": "-"
+      },
+      {
+        "rowId": "C-OPS-PROOF",
+        "sourceId": "C-COST",
+        "fieldKey": "COperationsProof",
+        "transactionId": "C-OPS-26",
+        "amount": "1200000.00",
+        "relation": "supports:C-R2"
+      },
+      {
+        "rowId": "C-RENT-PROOF",
+        "sourceId": "C-COST",
+        "fieldKey": "CPremisesRentProof",
+        "transactionId": "C-RENT-26",
+        "amount": "500000.00",
+        "relation": "supports:C-R3"
+      },
+      {
+        "rowId": "C-ADMIN-PROOF",
+        "sourceId": "C-COST",
+        "fieldKey": "CAdministrationProof",
+        "transactionId": "C-ADMIN-26",
+        "amount": "300000.00",
+        "relation": "supports:C-R4"
+      },
+      {
+        "rowId": "C-DRAFT-OPS",
+        "sourceId": "C-DRAFT",
+        "fieldKey": "CClaimOperations",
+        "transactionId": "C-OPS-26",
+        "amount": "1200000.00",
+        "relation": "claim:C-R2"
+      },
+      {
+        "rowId": "C-DRAFT-RENT",
+        "sourceId": "C-DRAFT",
+        "fieldKey": "CClaimRent",
+        "transactionId": "C-RENT-26",
+        "amount": "500000.00",
+        "relation": "claim:C-R3"
+      },
+      {
+        "rowId": "C-DRAFT-ADMIN",
+        "sourceId": "C-DRAFT",
+        "fieldKey": "CClaimAdministration",
+        "transactionId": "C-DRAFT-ADMIN-GROUP",
+        "amount": "420000.00",
+        "relation": "-"
+      },
+      {
+        "rowId": "C-DRAFT-TRIP",
+        "sourceId": "C-DRAFT",
+        "fieldKey": "CClaimTripComponent",
+        "transactionId": "TRIP-C26",
+        "amount": "120000.00",
+        "relation": "claim:C-R5"
+      },
+      {
+        "rowId": "C-WHT-INCOME",
+        "sourceId": "C-WHT",
+        "fieldKey": "CWithheldIncome",
+        "transactionId": "C-SERVICE-WHT-26",
+        "amount": "8000000.00",
+        "relation": "subset:C-R1"
+      },
+      {
+        "rowId": "C-WHT-CREDIT",
+        "sourceId": "C-WHT",
+        "fieldKey": "CWithheldCredit",
+        "transactionId": "C-CREDIT-26",
+        "amount": "300000.00",
+        "relation": "-"
+      },
+      {
+        "rowId": "C-ASSETS",
+        "sourceId": "C-ASSET",
+        "fieldKey": "CRelevantAssets",
+        "transactionId": "C-ASSETS-26",
+        "amount": "80000000.00",
+        "relation": "-"
+      }
+    ],
+    "totals": [
+      {
+        "sourceId": "C-REV",
+        "fieldKey": "CRevenueTotal",
+        "componentRowIds": [
+          "C-R1"
+        ],
+        "amount": "8000000.00"
+      },
+      {
+        "sourceId": "C-COST",
+        "fieldKey": "CCostTotal",
+        "componentRowIds": [
+          "C-R2",
+          "C-R3",
+          "C-R4"
+        ],
+        "amount": "2000000.00"
+      },
+      {
+        "sourceId": "C-DRAFT",
+        "fieldKey": "CDraftTotal",
+        "componentRowIds": [
+          "C-DRAFT-OPS",
+          "C-DRAFT-RENT",
+          "C-DRAFT-ADMIN"
+        ],
+        "amount": "2120000.00"
+      }
+    ],
+    "creditLinks": [
+      {
+        "creditRowId": "C-WHT-CREDIT",
+        "incomeRowId": "C-WHT-INCOME",
+        "includedInRowId": "C-R1"
+      }
+    ],
+    "rules": [
+      {
+        "ruleId": "CORP-ORDINARY",
+        "lower": "0.00",
+        "upper": "",
+        "baseTax": "0.00",
+        "rate": "0.25"
+      }
+    ],
+    "worksheetDecisions": [],
+    "expectedFields": [
+      {
+        "field": "grossIncome",
+        "amount": "8000000.00"
+      },
+      {
+        "field": "allowableExpenses",
+        "amount": "2000000.00"
+      },
+      {
+        "field": "taxableIncome",
+        "amount": "6000000.00"
+      },
+      {
+        "field": "taxDue",
+        "amount": "1500000.00"
+      },
+      {
+        "field": "taxWithheldOrCredits",
+        "amount": "300000.00"
+      },
+      {
+        "field": "finalTaxPayable",
+        "amount": "1200000.00"
+      }
+    ],
+    "corporateFacts": {
+      "ordinaryRate": "0.25",
+      "smallRate": "0.20",
+      "smallIncomeCeiling": "5000000.00",
+      "smallAssetCeiling": "100000000.00",
+      "eligibilityOperator": "AND",
+      "excludeQualifyingPremisesLand": true,
+      "assetRowId": "C-ASSETS",
+      "incentiveRegime": "none",
+      "operationsStart": "2024-01-01",
+      "birRegistrationDate": "2024-01-01",
+      "mcitFollowingYearOffset": 4,
+      "mcitRate": "0.02",
+      "firstMCITYear": 2028
+    }
+  }
+}

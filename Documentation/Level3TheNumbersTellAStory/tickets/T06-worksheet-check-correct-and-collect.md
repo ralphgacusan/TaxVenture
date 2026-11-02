@@ -1,6 +1,6 @@
 # T06 — Check, correct and collect the worksheet with frozen mastery and service rewards
 
-Status: **Planned**. Blocked by: T03, T05.
+Status: **Implemented, internally verified; user manual pending**. Blocked by: T03, T05.
 
 Priority: P1. Phase: B — Side-quest completion. Estimated scope: M; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
 
@@ -8,7 +8,7 @@ Priority: P1. Phase: B — Side-quest completion. Estimated scope: M; target one
 
 The player calculates subtotals, deliberately freezes one 12-decision grade, corrects the worksheet and acquires the case input with once-only 60 coins/+2 trust.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Current request is documentation only; future implementation requires an implementation instruction.
+This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Implemented 30 October 2026 on an implementation instruction; evidence in [PROGRESS](../PROGRESS.md), limitations in [KNOWN_ISSUES](../KNOWN_ISSUES.md).
 
 ## Existing systems to reuse
 
@@ -49,11 +49,11 @@ Use the existing candidate→save→publish command boundary and stable chapter/
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] Incomplete/ungraded vs first complete/graded vs corrected/mastered/acquired transitions and all 12 decisions have behavioral tests.
-- [ ] Wrong destination plus internally correct chosen-set addition does not double-penalize; final correct totals 900,000/300,000 required.
-- [ ] Gold/Silver/Bronze and XP 48–60 freeze; repeated corrections/acquisition/resume do not farm XP/60 coins/+2 trust.
-- [ ] Failure/reload round trip retains source, first result, actual acquisition and dependent next objective in one transaction.
-- [ ] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count.
+- [x] Incomplete/ungraded vs first complete/graded vs corrected/mastered/acquired transitions and all 12 decisions have behavioral tests. (An empty, a tape-less and a stale-tape worksheet are Incomplete and freeze nothing; the first complete Check freezes once (WorksheetDraft -> WorksheetCorrections, or -> WorksheetReady when perfect); a corrected re-check reaches WorksheetReady; collection moves to BeaComputation; every decision is exercised right and wrong through the real calculator and commands.)
+- [x] Wrong destination plus internally correct chosen-set addition does not double-penalize; final correct totals 900,000/300,000 required. (FIXTURE_CONTRACT's examples: 324,000 and 330,000 sets -> 11/12, 354,000 -> 10/12, a 300,000 tape on that set -> 9/12; R5+R7 each once earns the arithmetic; a strip added twice, a subtraction, a typed or chained number never does; Ready needs every decision and current 900,000/300,000.)
+- [x] Gold/Silver/Bronze and XP 48–60 freeze; repeated corrections/acquisition/resume do not farm XP/60 coins/+2 trust. (Tier/XP equal the ledger's side-quest maths for every wrong count; a 0/12 first check corrected to Ready stays Bronze/48; Acquire twice is a Duplicate; applying the collection again, after a reload or a successful retry is AlreadyClaimed; trust clamps at 100.)
+- [x] Failure/reload round trip retains source, first result, actual acquisition and dependent next objective in one transaction. (Disposable signed store: a failed check write grades nothing; a failed collection write leaves WorksheetReady, no coins/trust/claim/badge and both save files byte-identical; the retry writes BeaComputation, the folder work id, 60 coins, +2 trust, the mastery claim and badge in one save; resume implies WorksheetReady/WorksheetCollected quietly; a T05 save without the new fields resumes without a rewrite.)
+- [x] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count. (Commands and counts in PROGRESS; suites built out of tree; a two-mutation run proved the freeze and once-only checks bite.)
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 

@@ -10,8 +10,9 @@ using UnityEngine.UI;
 /// and reads large in a close-up. Fixed layout per type, only the values
 /// change: header (icon + title), owner/context, labelled evidence, footer.
 /// T24 builds Types 1 and 2 (now Arthur's file); T25 adds Type 3, the
-/// compensation certificate (2316) on Marie's case; later tickets add the
-/// other types here. Warm ivory paper, charcoal text,
+/// compensation certificate (2316) on Marie's case; Level 2 adds Types 4, 5
+/// and 7; Level 3 T08 adds Type 8, the creditable withholding certificate
+/// (2307). Warm ivory paper, charcoal text,
 /// colour only marks the type (never whether anything is right).
 /// Sizes are canvas units of the face (ID card 800 x 500, sheet 700 x 980).
 /// </summary>
@@ -44,6 +45,8 @@ public static class SupportingDocumentFace
     public static readonly Color PaymentOchre = new Color32(200, 151, 62, 255);
     public static readonly Color AgreementPlum = new Color32(134, 96, 126, 255);
     public static readonly Color PlainGrey = new Color32(110, 112, 106, 255);
+    /// <summary>Type 8 (2307): a blue deeper and greener than the ID card's and the 2316's (SupportingPaperTypes 0x346884).</summary>
+    public static readonly Color WithholdingBlue = new Color32(52, 104, 132, 255);
 
     public static Vector2 SizeOf(string type) =>
         type == ClientRecord.Identity ? CardSize : type == ClientRecord.Payment ? SlipSize : SheetSize;
@@ -52,7 +55,8 @@ public static class SupportingDocumentFace
     public static Color TypeColor(string type) =>
         type == ClientRecord.Identity ? IdentityBlue : type == ClientRecord.Compensation ? CompensationBlue :
         type == ClientRecord.Income ? IncomeSage : type == ClientRecord.Payment ? PaymentOchre :
-        type == ClientRecord.Agreement ? AgreementPlum : type == ClientRecord.Plain ? PlainGrey : BackgroundOchre;
+        type == ClientRecord.Agreement ? AgreementPlum : type == ClientRecord.Withholding ? WithholdingBlue :
+        type == ClientRecord.Plain ? PlainGrey : BackgroundOchre;
 
     /// <summary>Fills root (sized to SizeOf(record.type)) with the record's face.</summary>
     public static void Build(RectTransform root, ClientRecord record, bool physical = false)
@@ -61,6 +65,7 @@ public static class SupportingDocumentFace
         if (record.type == ClientRecord.Identity) BuildIdentity(root, record, physical);
         else if (record.type == ClientRecord.Compensation) BuildCompensation(root, record, physical);
         else if (record.type == ClientRecord.Background) BuildBackground(root, record, physical);
+        else if (record.type == ClientRecord.Withholding) BuildWithholding(root, record, physical);
         else BuildTransaction(root, record, physical);
     }
 
@@ -228,6 +233,88 @@ public static class SupportingDocumentFace
         TextMeshProUGUI caption = Label(band, "Label", label, 22f, 16f, 590f, 32f, 28f, LabelInk, TextAlignmentOptions.Left, FontStyles.Bold);
         caption.characterSpacing = 4f;
         Label(band, "Amount", Value(amount), 22f, 54f, 592f, 72f, 60f, Ink, TextAlignmentOptions.Right, FontStyles.Bold);
+    }
+
+    // =========================================================
+    // TYPE 8: CREDITABLE WITHHOLDING CERTIFICATE (2307; Level 3 T08)
+    // =========================================================
+
+    /// <summary>
+    /// Portrait sheet, blue header, its purpose in one plain line, then the
+    /// payer block, payee and period side by side, the income payment (with
+    /// where it is already counted) and the tax withheld in the large band;
+    /// reference at the foot. More payments than fit continue on the back.
+    /// The same layout serves any certificate (Bea's, later the company's).
+    /// </summary>
+    private static void BuildWithholding(RectTransform root, ClientRecord r, bool physical)
+    {
+        Vector2 s = SheetSize;
+        if (!physical) Paperback(root, s, 18f);
+        else Backing(root, s, 18f, Paper);
+        Box(root, "Header", 0f, 0f, s.x, 122f, WithholdingBlue, 18f);
+        Box(root, "Header Base", 0f, 104f, s.x, 18f, Paper);
+        Icon(root, ClientRecord.Withholding, 32f, 24f, 56f);
+        TextMeshProUGUI title = Label(root, "Title", Title(r, "WITHHOLDING CERTIFICATE"), 104f, 22f, 570f, 60f, 36f, HeaderInk, TextAlignmentOptions.Left, FontStyles.Bold);
+        Fit(title, 26f);
+
+        TextMeshProUGUI purpose = Label(root, "Purpose", Value(r.footer), 40f, 130f, 620f, 72f, 27f, LabelInk, TextAlignmentOptions.TopLeft);
+        purpose.textWrappingMode = TextWrappingModes.Normal;
+        Box(root, "Divider", 40f, 210f, 620f, 3f, Edge);
+
+        // Who withheld and paid it: the payer.
+        RectTransform payer = Box(root, "PAYER Block", 32f, 224f, 636f, 128f, Edge, 14f);
+        RectTransform inner = Box(payer, "Fill", 2f, 2f, 632f, 124f, BlockFill, 12f);
+        TextMeshProUGUI heading = Label(inner, "Heading", "PAYER", 22f, 12f, 590f, 32f, 26f, WithholdingBlue, TextAlignmentOptions.Left, FontStyles.Bold);
+        heading.characterSpacing = 6f;
+        TextMeshProUGUI name = Label(inner, "Name", Value(r.issuer), 22f, 48f, 590f, 70f, 38f, Ink, TextAlignmentOptions.TopLeft, FontStyles.Bold);
+        name.textWrappingMode = TextWrappingModes.Normal;
+
+        // For whom, and for which period (the tax year shows in it).
+        Pair(root, "PAYEE", r.party, 40f, 366f, 290f);
+        Pair(root, "PERIOD", r.period, 350f, 366f, 310f);
+        Box(root, "Divider 2", 40f, 452f, 620f, 3f, Edge);
+
+        // The income payment(s): one in its band with where it is already counted; several as rows.
+        int count = r.rows != null ? r.rows.Count : 0;
+        if (count == 1)
+        {
+            RectTransform band = Box(root, "Income Payment Row", 32f, 466f, 636f, 172f, BlockFill, 14f);
+            TextMeshProUGUI caption = Label(band, "Label", Upper(r.rows[0].label), 22f, 14f, 590f, 30f, 25f, LabelInk, TextAlignmentOptions.Left, FontStyles.Bold);
+            caption.characterSpacing = 4f;
+            Label(band, "Amount", Value(r.rows[0].value), 22f, 46f, 592f, 64f, 54f, Ink, TextAlignmentOptions.Right, FontStyles.Bold);
+            if (!string.IsNullOrWhiteSpace(r.includedIn))
+            {
+                TextMeshProUGUI note = Label(band, "Included In", r.includedIn.Trim(), 22f, 112f, 592f, 56f, 24f, Ink, TextAlignmentOptions.TopLeft, FontStyles.Italic);
+                note.textWrappingMode = TextWrappingModes.Normal;
+            }
+        }
+        else
+        {
+            for (int i = 0; i < count; i++) Row(root, r.rows[i], 40f, 466f + i * 86f, 620f, 86f, i);
+            if (count == 0) Label(root, "Empty", "Not applicable", 40f, 466f, 620f, 40f, 30f, LabelInk, TextAlignmentOptions.Left);
+        }
+
+        // The amount withheld: the certificate's large band.
+        RectTransform total = Box(root, "Tax Withheld Band", 32f, 654f, 636f, 150f, BlockFill, 14f);
+        Box(total, "Rule", 0f, 0f, 636f, 5f, WithholdingBlue);
+        TextMeshProUGUI totalCaption = Label(total, "Label", string.IsNullOrWhiteSpace(r.totalLabel) ? "TAX WITHHELD" : r.totalLabel.Trim().ToUpperInvariant(),
+            22f, 18f, 590f, 32f, 26f, LabelInk, TextAlignmentOptions.Left, FontStyles.Bold);
+        totalCaption.characterSpacing = 4f;
+        Label(total, "Amount", Value(r.totalValue), 22f, 60f, 592f, 74f, 60f, Ink, TextAlignmentOptions.Right, FontStyles.Bold);
+
+        Box(root, "Footer Line", 40f, 856f, 620f, 2f, Edge);
+        Label(root, "Reference", "Ref " + Value(r.reference), 40f, 872f, 620f, 34f, 26f, LabelInk, TextAlignmentOptions.Left);
+        if (r.backRows != null && r.backRows.Count > 0)
+            Label(root, "Turn Over", "Continued on the back ›", 40f, 918f, 620f, 34f, 24f, LabelInk, TextAlignmentOptions.Right, FontStyles.Italic);
+    }
+
+    /// <summary>A small capital label over its value (Type 8's payee and period).</summary>
+    private static void Pair(RectTransform root, string label, string value, float x, float y, float width)
+    {
+        TextMeshProUGUI caption = Label(root, label + " Label", label, x, y, width, 30f, 24f, WithholdingBlue, TextAlignmentOptions.Left, FontStyles.Bold);
+        caption.characterSpacing = 5f;
+        TextMeshProUGUI text = Label(root, label + " Value", Value(value), x, y + 32f, width, 48f, 32f, Ink, TextAlignmentOptions.Left);
+        Fit(text, 24f);
     }
 
     // =========================================================
@@ -415,6 +502,15 @@ public static class SupportingDocumentFace
             Box(icon, "Line", size * 0.33f, size * 0.18f, size * 0.34f, size * 0.07f, PaymentOchre);
             RectTransform coin = Box(icon, "Coin", size * 0.35f, size * 0.52f, size * 0.3f, size * 0.3f, PaymentOchre);
             coin.GetComponent<Image>().sprite = HudTheme.Circle;
+        }
+        else if (type == ClientRecord.Withholding)
+        {
+            // A page with two lines and a coin set aside: tax already withheld.
+            Box(icon, "Page", size * 0.14f, 0f, size * 0.72f, size, HeaderInk, size * 0.1f);
+            for (int i = 0; i < 2; i++) Box(icon, "Line " + i, size * 0.26f, size * (0.2f + i * 0.17f), size * 0.48f, size * 0.07f, WithholdingBlue);
+            RectTransform coin = Box(icon, "Coin", size * 0.44f, size * 0.56f, size * 0.32f, size * 0.32f, WithholdingBlue);
+            coin.GetComponent<Image>().sprite = HudTheme.Circle;
+            Box(icon, "Mark", size * 0.52f, size * 0.69f, size * 0.16f, size * 0.06f, HeaderInk);
         }
         else if (type == ClientRecord.Agreement)
         {

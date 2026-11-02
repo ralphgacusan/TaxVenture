@@ -111,6 +111,7 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
     // Startup.
     private bool started;
     private bool levelTwoResumeApplied;
+    private bool levelThreeResumeApplied;
     private float readySince = -1f;
 
     // Polled observations.
@@ -420,6 +421,20 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
                 foreach (string key in Level2Checkpoint.ImpliedTriggers(Level2OfficeStart.Review))
                     if (Count(key) == 0) Fire(key);
                 levelTwoResumeApplied = true;
+            }
+        }
+        // Level 3 (T02): wait for the chapter restore; a resumed phase never replays its welcome or task.
+        else if (levelId == OfficeLevelCatalog.Level3Id)
+        {
+            Level3Checkpointer chapter = Level3Checkpointer.Active;
+            if (chapter == null || !chapter.IsReady) return;
+            if (chapter.Resumed && !levelThreeResumeApplied)
+            {
+                foreach (string id in Level3ChapterRules.ImpliedLessons(chapter.State))
+                    if (finished.Add(id)) Fire(GuideTriggers.LessonKey(id));
+                foreach (string key in Level3ChapterRules.ImpliedTriggers(chapter.State))
+                    if (Count(key) == 0) Fire(key);
+                levelThreeResumeApplied = true;
             }
         }
         OfficeHudRuntime hud = OfficeHudRuntime.Instance;

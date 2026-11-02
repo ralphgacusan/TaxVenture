@@ -5,6 +5,8 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.InputSystem.UI;
+using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>Fresh UI hit tests for legacy world input alongside the Input System.</summary>
@@ -14,6 +16,31 @@ public static class MobileInputGuard
     private static PointerEventData pointer;
     private static EventSystem owner;
     private static int suppressedFrame = -1;
+
+    /// <summary>Gameplay owns mobile gestures; the rendering debugger must not capture a three-finger tap.</summary>
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void PrepareGameplayInput()
+    {
+        DebugManager.instance.enableRuntimeUI = false;
+        DebugManager.instance.displayRuntimeUI = false;
+        DebugManager.instance.displayPersistentRuntimeUI = false;
+        // Play sessions can retain static delegates when editor domain reload is disabled.
+        SceneManager.sceneLoaded -= ConfigureSceneInput;
+        SceneManager.sceneLoaded += ConfigureSceneInput;
+        owner = null;
+        pointer = null;
+        hits.Clear();
+        suppressedFrame = -1;
+    }
+
+    private static void ConfigureSceneInput(Scene scene, LoadSceneMode mode)
+    {
+        // The package default removes touch pointer state when the desktop mouse moves.
+        // Unity Remote uses both devices; neither may take ownership from the other.
+        foreach (InputSystemUIInputModule module in Object.FindObjectsByType<InputSystemUIInputModule>(FindObjectsInactive.Include))
+            if (module.gameObject.scene == scene)
+                module.pointerBehavior = UIPointerBehavior.AllPointersAsIs;
+    }
 
     /// <summary>
     /// The UI tap that closes a view (desk exit, last dialogue line, viewer) is
