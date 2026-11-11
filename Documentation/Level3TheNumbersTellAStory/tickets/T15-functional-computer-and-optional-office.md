@@ -1,67 +1,65 @@
-# T15 — Buy and use the optional installed computer after chapter completion
+# T15 — Activate the existing optional computer purchase and verified client register
 
-Status: **Planned**. Blocked by: T14.
+Status: **Implemented, internally verified; user manual pending**. Blocked by: T14. (6 November 2026; Unity/device acceptance is the user's.)
 
-Priority: P1. Phase: E — Upgrade milestone. Estimated scope: M; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
+**6 November 2026 implementation:** The existing `office_computer` product (250 coins, office tab) is now sold once Level 3 is completed in the story (`chapter:Level_03`, shop.json and `ShopCatalogue.BuiltIn()` identical) and installs at a new `printer_desk` surface anchor: the separate PrinterDesk beside the consultant desk (present in all three offices), so the folder, stamps, book, calculator and pencil cup keep their spots. Purchase is the unchanged `ShopRules.Purchase` / `PlayerProgressManager.CommitPurchase` transaction (status gate, request id, one debit + ledger line + ownership + placement in one candidate, signed write, publish). `OfficeDecor` builds it from the supplied Synty monitor and keyboard (referenced from `CampaignShopAssets`; `DecorModels.BuildComputer`) with the existing 0.3 s arrival, one Interactable box (disabled until it has arrived) and `OfficeComputerTerminal`. Using it opens the read-only Client Register on the existing Audit Summary card: Bea's frozen approved taxable income, tax due, tax credit (withheld), remaining payable and the finding (`Level3RegisterRules`, saved campaign only), CLOSE and HER PAPERS (her saved papers in the existing Case Folder reader). Unfinished/incomplete data shows "No verified client case yet" with no figures. The legacy ComputerHomeUI prototype (calculate/prepare return) stays unused: no auto-solver, filing, printing or Level 4 transfer. Details/commands: latest PROGRESS; limitations KNOWN_ISSUES L3-R118–L3-R123.
+
+Priority: P1. Phase: E — Office upgrade. Estimated scope: M; one fresh agent context. If real call-site work exceeds this bound, record a bounded split before adding unrelated framework work.
 
 ## Goal and visible accomplishment
 
-A funded player can buy a real installed 250-coin computer and immediately inspect both verified computations, using the same menu/counter ownership.
+After completed Bea-only Level3, a funded player buys the computer through existing shop mechanics, sees it installed, and immediately opens Bea’s verified computation and sources.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Current request is documentation only; future implementation requires an implementation instruction.
+Revision: **3 November 2026**. Read [REVISION_PLAN](../REVISION_PLAN.md), [SPEC](../SPEC.md), [reuse map](../REUSE_AND_ARCHITECTURE.md), [visual contract](../WORLD_AND_FEEDBACK.md), [verification](../VERIFICATION.md) and [AGENTS](../AGENTS.md). Planned refers to changed revision acceptance, not absence of reusable implementation. Historical baseline: office_computer product250 exists as pending teaser in the same menu/counter catalogue. Existing computer art/UI is reused; read-only verified register/purchase readiness must be implemented, not inferred from the product.
 
 ## Existing systems to reuse
 
-Verified existing paths relative to repository root; recheck live behavior rather than rely on stale comments:
+Existing source paths relative to repository root; inspect live callbacks/content before changing them. Narrow Level_03 adapters only; no duplicate folder/stamp/calculator/input/save/shop framework.
 
-- `Assets/Resources/Campaign/shop.json`
 - `Assets/Scripts/RewardsSystem/CampaignShop.cs`
 - `Assets/Scripts/Interactables/OfficeDecor.cs`
 - `Assets/Scripts/UI/Computer/ComputerHomeUI.cs`
+- `Assets/Scripts/UI/HUD/SupplyShopScreen.cs`
+- `Assets/Resources/Campaign/shop.json`
 - `Assets/Synty/PolygonOffice/Prefabs/Props/Desk Props/SM_Prop_Computer_Monitor_01.prefab`
 - `Assets/Synty/PolygonOffice/Prefabs/Props/Desk Props/SM_Prop_Computer_Keyboard_01.prefab`
 
-New L3 components/resources mentioned below are proposed outputs, not verified existing APIs. Prefer existing owners/adapters and level configuration; do not copy global frameworks.
-
 ## Work and interaction mechanics
 
-1. Reuse supplied monitor/keyboard/terminal pieces and existing desk art; resolve a clear local installation anchor using actual bounds/camera/colliders. Do not overwrite existing intro terminal, desk tools or purchased cup. Mark missing anchor before purchase, not after spending.
-2. Implement a small read-only register that opens frozen Bea/company verified computation/source/tape snapshots. Same existing viewer/physical paper access; active-case binding must not change. No auto-treatment, answer key or future filing feature is sold.
-3. Reuse office_computer productID250 coins and existing purchase confirmation/command/ownership. Make eligible only actual completedL3 AND functional feature readiness. One wallet/menu+counter; duplicate/insufficient/cancel/failure changes nothing. Owned device restores without repurchase.
-4. Wire T14 completed-office option: counter/computer only, no timer/copy/reopened case or second wrap-up reward, safe Exit to Career. Career-shop purchase uses same installed state at supported next office. Keep chapter snapshots durably available to this chapter register without introducing global historical-folder archive.
-5. Paper/calculator remains complete free route, and purchase is optional. Stand stays pending. If this feature slice is deferred by a later explicit scope decision, leave computer pending with no sale; never block story completion. This full pack includes implementing/verifying it now before final feature gate.
+1. Resolve current desk terminal/install anchor and reuse supplied monitor/keyboard/ComputerHomeUI. Keep folder/calculator/stamps/decor clearance and base terminal identities. No new computer model/package/shop/currency/ownership framework.
+2. Provide a simple read-only Bea register entry that opens her frozen verified computation/source/working without changing chapter state. Existing paper/viewer access supplies readable details; no dense dashboard. Add a company entry only in a future user-approved second-case extension.
+3. Reuse product office_computer price250 and same confirmation/atomic wallet+ownership/install receipt. Require actual completedL3 AND shipped working feature/valid anchor. Both catalogue and fallback agree; cancel/insufficient/failed write/duplicate purchase changes nothing.
+4. Installation uses brief bounded motion and persists for later office visits. Completed-office route/Exit to Career stays optional, no clock or new completion. Unaffordable player returns later; purchase not required for chapter or practice.
+5. Level4 introduces confirmed figure transfer into return and draft printing. Do not enable legacy prototype auto-solver/filing as immediate function or sell promise-only equipment. If slice cannot ship, leave pending and report incomplete full-pack scope.
 
 ## Assets, motion and feedback
 
-Existing monitor/keyboard assembly plus local 3D placement/interaction target. Functional register display reuses viewers; source prefab untouched, no generated photorealistic computer or new package.
-
-Follow WORLD_AND_FEEDBACK and fixed document types. Bind every new world object to actual 3D body, collider/target, correct source/record identity and existing camera/input/audio ownership. Record resolved anchors/clip names and any unsupported asset assumption. No user scene-assembly chores or claims of rendered acceptance from declarations.
+Implement this slice with actual existing 3D bodies, readable paper faces, reachable targets and current page/camera/audio ownership. One active task/primary action; temporary source/reference only on demand. Reuse L1/L2 styling and quiet lift/settle/feed/stamp cues. No tiny auto-shrunk text, full-tool overlay or correctness flash on draft placement. Bind models/colliders/callbacks here; T17 cannot substitute for this ticket’s visual implementation. User verifies rendered/touch/feel results.
 
 ## Integration requirements
 
-Catalogue/runtime fallback must agree about readiness; do not change price/ID. New register adapts existing ComputerHomeUI only where it does not run prototype all-field calculator/filing paths. Future L4 transfer/print remains reserved, not silently implemented here.
-
-Preserve current L1/L2 scenes, source prefabs/GUIDs, signed save owner, mode guards, input/FSM/dialogue/audio frameworks and Android controls. Normal L3 Career remains unavailable until T18. No L4 filing, ending, stand, drawer or global archive feature is added.
+Preserve shared L1/L2 behavior, existing serialized identities/source scenes and all campaign possessions. Keep current exact-decimal L3 rules/provenance; no float prototype bridge. Use existing input/dialogue/FSM/guide/Bag/reward owners. Career3 stays gated until T18, L4/L5 remain unavailable. No remote ticket, package, scene recopy or global cleanup.
 
 ## Persistence and failure rules
 
-Use the existing candidate→save→publish command boundary and stable chapter/case/action IDs. Validate actual prerequisites/revision/source before committing. Failed write leaves prior state, source/copy and retry available, with no success effect. Quiet restore does not raise acquisition/reward/choice/consumption events. Back, repeated input, disable and app focus interruption settle pointer state and release only owned holds. Story/replay/practice/Editor distinctions protect live campaign data.
+Candidate -> signed persist -> publish before success effects. Validate mode/case/source/revision/prerequisites/action IDs; duplicates do not award. Preserve legacy grades/claims/approved snapshots/copies and quiet restores. Failure keeps prior state/source/copy retryable. Clear only owned pointer/selection/locks on Back/settings/disable/focus/camera return; independent work can be left. Practice/replay/Editor cannot mutate live story state.
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] CompletedL3+feature ready gate; pending/early purchase cannot spend. Missing anchor and rapid double confirm/rollback are tested.
-- [ ] Actual250coin ownership/installation is shared at menu/counter/reload; no duplicate model or purchase.
-- [ ] Both verified snapshots/sources/tapes open read-only without global case rebinding or answer-key leakage.
-- [ ] Post-completion entry/exit/save failure and no-purchase path preserve chapter completion and pay nothing again.
-- [ ] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count.
+- [x] Same menu/counter product/price/wallet/ownership; completedL3/readiness/funds/anchor gate purchase.
+- [x] Cancel/failure/double input/reload cannot duplicate debit/install; owned device restores without repurchase.
+- [x] Register immediately shows Bea’s frozen result and sources, with no active-case mutation or answer-key leak. No company entry is required in this release.
+- [x] Skip/return later/base calculator route remain complete; L4 transfer/printing stays outside Level3.
+- [x] Build actual changed production paths and run targeted command/save/failure/mode checks plus affected shared regressions; record commands/counts/warnings, not historical passes.
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 
-- [ ] User inspects installed body/scale/lighting/collider, honest preview/register function, camera fit, both shop routes and exit without purchase.
-- [ ] Inspect applicable actual imported references, 3D bodies, paper text, targets, motion, camera/control recovery and Android layout. Manual acceptance remains pending until the user reports it; static tests are not a substitute.
+- [ ] Purchase preview/installation fits office with original assets and clear desk/door/control access.
+- [ ] Register is simple/readable, Bea’s case reopens, sound/settings are respected, and optional exit remains clear.
+- [ ] Confirm real 3D targets/animations/text/safe areas/Back/focus/audio on supported devices; no source declaration counts as visual acceptance.
 
 ## Handoff and completion definition
 
-Functional optional computer milestone and safe completed-office route. Next recommended T16.
+Deliver the goal above through its real entry point, including persistence, presentation and checked limitations. Update [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md) with actual evidence and remaining user checks; do not mark implemented for documentation presence. User owns Unity and every Git operation.
 
-Direct dependents: T17. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Mark implemented/internal-verified only after real entry points and checks work; Git operations and user acceptance remain user-owned. No commits, scene edits or gameplay implementation are performed by authoring this ticket.
+Direct dependents: T17. Continue the revised index, retaining prior working changes and historical results.

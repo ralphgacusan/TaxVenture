@@ -135,7 +135,14 @@ public static class CareerProgressService
             description = "Check Aling Rosa's prepared income summary, follow the records back to her market stall and decide if her work is ready.",
             scene = "Office_Level2", cases = 1, campaignPending = false
         });
-        for (int number = 3; number <= 5; number++)
+        // User-requested APK playtest entry; final T18 release acceptance remains pending.
+        built.chapters.Add(new CareerChapterDef
+        {
+            id = "Level_03", number = 3, noteTitle = "Bea's records", title = "The Numbers Tell a Story",
+            description = "Help Bea organize her records and work through her income, deductions and tax.",
+            scene = "Office_Level3", cases = 1, comingSoon = false, campaignPending = false
+        });
+        for (int number = 4; number <= 5; number++)
             built.chapters.Add(new CareerChapterDef
             {
                 id = $"Level_{number:00}", number = number, noteTitle = "New chapter", title = "New Chapter",

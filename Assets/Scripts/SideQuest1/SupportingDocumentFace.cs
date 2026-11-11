@@ -104,7 +104,7 @@ public static class SupportingDocumentFace
         Row(root, "Citizenship", r.citizenship, 248f, 176f, 524f);
         Row(root, "Born", r.born, 248f, 252f, 524f);
         Row(root, "Address", r.address, 248f, 328f, 524f);
-        Row(root, "ID", r.reference, 248f, 404f, 524f);
+        Row(root, r.title == "TIN ID" ? "TIN" : "ID", r.reference, 248f, 404f, 524f);
     }
 
     /// <summary>
@@ -326,6 +326,32 @@ public static class SupportingDocumentFace
     /// rows -> footer (Type 4 total band, Type 5 large amount and status, Type 7 two signature strokes).
     /// Same reading order as Types 1-3; only the values change between clients.
     /// </summary>
+    public const float SummaryHeaderHeight = 154f;
+    public const float SummaryTitlePoints = 38f;
+    public const float SummaryTitleHeight = 94f;
+    public const float SummaryTitleWidth = 580f;
+    public const float SummaryBodyTop = 166f;
+    public const float SummaryAmountRowHeight = 180f;
+    public const float SummaryAmountLabelPoints = 36f;
+    public const float SummaryAmountValuePoints = 50f;
+
+    private static bool IsSummary(ClientRecord r) => r.type == ClientRecord.Plain && r.source == "B-WORKSHEET";
+
+    /// <summary>One large, bounded title on both sides; continuation context has its own line.</summary>
+    private static void BuildSummaryHeader(RectTransform root, ClientRecord r, bool back)
+    {
+        Box(root, "Header", 0f, 0f, SheetSize.x, SummaryHeaderHeight, PlainGrey, 18f);
+        Box(root, "Header Base", 0f, SummaryHeaderHeight - 16f, SheetSize.x, 16f, Paper);
+        Icon(root, r.type, 30f, 34f, 56f);
+        string text = Title(r, "INCOME & EXPENSE SUMMARY").Replace(" SUMMARY", "\nSUMMARY");
+        TextMeshProUGUI title = Label(root, "Title", text, 100f, 14f, SummaryTitleWidth, SummaryTitleHeight,
+            SummaryTitlePoints, HeaderInk, TextAlignmentOptions.TopLeft, FontStyles.Bold);
+        title.textWrappingMode = TextWrappingModes.Normal;
+        title.overflowMode = TextOverflowModes.Truncate;
+        Label(root, "Side", back ? "ENTRIES & SOURCES · BACK" : "TOTALS · FRONT", 100f, 112f,
+            SummaryTitleWidth, 26f, 20f, HeaderInk, TextAlignmentOptions.TopLeft);
+    }
+
     private static void BuildTransaction(RectTransform root, ClientRecord r, bool physical)
     {
         bool slip = r.type == ClientRecord.Payment;
@@ -335,16 +361,21 @@ public static class SupportingDocumentFace
         else Backing(root, s, 18f, Paper);
         float inset = slip ? 34f : 40f;
         float width = s.x - inset * 2f;
-        Box(root, "Header", 0f, 0f, s.x, 122f, accent, 18f);
-        Box(root, "Header Base", 0f, 104f, s.x, 18f, Paper);
-        Icon(root, r.type, 30f, 24f, 56f);
-        TextMeshProUGUI title = Label(root, "Title", Title(r, CaseRecordRules.TypeTitle(r.type)), 100f, 22f, s.x - 120f, 60f, slip ? 34f : 38f,
-            HeaderInk, TextAlignmentOptions.Left, FontStyles.Bold);
-        title.textWrappingMode = TextWrappingModes.NoWrap;
-        title.overflowMode = TextOverflowModes.Ellipsis;
+        bool summary = IsSummary(r);
+        if (summary) BuildSummaryHeader(root, r, back: false);
+        else
+        {
+            Box(root, "Header", 0f, 0f, s.x, 122f, accent, 18f);
+            Box(root, "Header Base", 0f, 104f, s.x, 18f, Paper);
+            Icon(root, r.type, 30f, 24f, 56f);
+            TextMeshProUGUI title = Label(root, "Title", Title(r, CaseRecordRules.TypeTitle(r.type)), 100f, 22f, s.x - 120f, 60f, slip ? 34f : 38f,
+                HeaderInk, TextAlignmentOptions.Left, FontStyles.Bold);
+            title.textWrappingMode = TextWrappingModes.NoWrap;
+            title.overflowMode = TextOverflowModes.Ellipsis;
+        }
 
         // Owner / context.
-        float y = 132f;
+        float y = summary ? SummaryBodyTop : 132f;
         if (r.type == ClientRecord.Agreement)
         {
             Party(root, "PARTY", r.issuer, inset, y, width * 0.5f - 8f, accent);
@@ -365,8 +396,8 @@ public static class SupportingDocumentFace
         // Evidence rows: a small label over a readable value (long values wrap; nothing shrinks).
         float footerTop = s.y - (slip ? 300f : r.type == ClientRecord.Income ? 214f : r.type == ClientRecord.Agreement ? 196f : 90f);
         int count = r.rows != null ? r.rows.Count : 0;
-        float rowHeight = count > 0 ? Mathf.Min(118f, (footerTop - y) / count) : 0f;
-        for (int i = 0; i < count; i++) Row(root, r.rows[i], inset, y + i * rowHeight, width, rowHeight, i);
+        float rowHeight = count > 0 ? Mathf.Min(summary ? SummaryAmountRowHeight : 118f, (footerTop - y) / count) : 0f;
+        for (int i = 0; i < count; i++) Row(root, r.rows[i], inset, y + i * rowHeight, width, rowHeight, i, summary);
         if (count == 0) Label(root, "Empty", "Not applicable", inset, y, width, 40f, 30f, LabelInk, TextAlignmentOptions.Left);
 
         if (slip) SlipFooter(root, r, inset, footerTop, width, accent);
@@ -382,25 +413,35 @@ public static class SupportingDocumentFace
         Vector2 s = SizeOf(r.type);
         Color accent = TypeColor(r.type);
         Backing(root, s, 18f, Paper);
-        Box(root, "Header", 0f, 0f, s.x, 96f, accent, 18f);
-        Box(root, "Header Base", 0f, 80f, s.x, 16f, Paper);
-        Label(root, "Title", Title(r, CaseRecordRules.TypeTitle(r.type)) + " (continued)", 34f, 18f, s.x - 68f, 56f, 32f, HeaderInk,
-            TextAlignmentOptions.Left, FontStyles.Bold);
+        bool summary = IsSummary(r);
+        if (summary) BuildSummaryHeader(root, r, back: true);
+        else
+        {
+            Box(root, "Header", 0f, 0f, s.x, 96f, accent, 18f);
+            Box(root, "Header Base", 0f, 80f, s.x, 16f, Paper);
+            Label(root, "Title", Title(r, CaseRecordRules.TypeTitle(r.type)) + " (continued)", 34f, 18f, s.x - 68f, 56f, 32f, HeaderInk,
+                TextAlignmentOptions.Left, FontStyles.Bold);
+        }
         float inset = r.type == ClientRecord.Payment ? 34f : 40f;
-        float y = 124f;
+        float y = summary ? SummaryBodyTop : 124f;
         int count = r.backRows != null ? r.backRows.Count : 0;
         float rowHeight = count > 0 ? Mathf.Min(118f, (s.y - 80f - y) / count) : 0f;
         for (int i = 0; i < count; i++) Row(root, r.backRows[i], inset, y + i * rowHeight, s.x - inset * 2f, rowHeight, i);
     }
 
-    private static void Row(RectTransform root, ClientRecordRow row, float x, float y, float w, float h, int index)
+    private static void Row(RectTransform root, ClientRecordRow row, float x, float y, float w, float h, int index, bool summaryTotal = false)
     {
         if (row == null) return;
-        if (index % 2 == 1) Box(root, "Row Band " + index, x - 10f, y, w + 20f, h - 6f, BlockFill, 10f);
+        if (summaryTotal)
+        {
+            RectTransform source = Box(root, "Summary Source Field " + index, x - 10f, y, w + 20f, h - 20f, BlockFill, 12f);
+            PaperInkStyle.StyleSourceField(source.GetComponent<Image>());
+        }
+        else if (index % 2 == 1) Box(root, "Row Band " + index, x - 10f, y, w + 20f, h - 6f, BlockFill, 10f);
         TextMeshProUGUI label = Label(root, "Row Label " + index, string.IsNullOrWhiteSpace(row.label) ? "—" : row.label.Trim().ToUpperInvariant(),
-            x, y + 8f, w, 30f, 22f, LabelInk, TextAlignmentOptions.Left, FontStyles.Bold);
+            x + (summaryTotal ? 8f : 0f), y + (summaryTotal ? 18f : 8f), w - (summaryTotal ? 48f : 0f), summaryTotal ? 44f : 30f, summaryTotal ? SummaryAmountLabelPoints : 22f, LabelInk, TextAlignmentOptions.Left, FontStyles.Bold);
         label.characterSpacing = 3f;
-        TextMeshProUGUI value = Label(root, "Row Value " + index, Value(row.value), x, y + 40f, w, Mathf.Max(40f, h - 48f), 34f, Ink, TextAlignmentOptions.TopLeft);
+        TextMeshProUGUI value = Label(root, "Row Value " + index, Value(row.value), x + (summaryTotal ? 8f : 0f), y + (summaryTotal ? 76f : 40f), w - (summaryTotal ? 48f : 0f), summaryTotal ? 60f : Mathf.Max(40f, h - 48f), summaryTotal ? SummaryAmountValuePoints : 34f, Ink, TextAlignmentOptions.TopLeft, summaryTotal ? FontStyles.Bold : FontStyles.Normal);
         value.textWrappingMode = TextWrappingModes.Normal;
     }
 

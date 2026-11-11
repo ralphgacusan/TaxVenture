@@ -61,9 +61,9 @@ public static class Level3RecordRules
         type = ClientRecord.Identity,
         source = source.sourceId,
         tab = source.sourceId,
-        title = "IDENTITY CARD",
+        title = Text(document, "TIN") != null ? "TIN ID" : "IDENTITY CARD",
         name = Text(document, "Name") ?? client,
-        reference = Text(document, "ID number") ?? source.reference
+        reference = Text(document, "TIN") ?? Text(document, "ID number") ?? source.reference
     };
 
     private static ClientRecord Background(string caseId, string client, Level3SourceDefinition source, DocumentDefinition document) => new ClientRecord

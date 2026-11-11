@@ -16,10 +16,10 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class PrintedPaperStyle : MonoBehaviour
 {
-    private static readonly Color InkColor = new Color(0.12f, 0.13f, 0.17f, 1f);
-    private static readonly Color BorderColor = new Color(0.2f, 0.22f, 0.28f, 0.35f);
+    public static readonly Color InkColor = new Color(0.12f, 0.13f, 0.17f, 1f);
+    public static readonly Color BorderColor = new Color(0.2f, 0.22f, 0.28f, 0.35f);
     private static readonly Color ShadowColor = new Color(0f, 0f, 0f, 0.28f);
-    private static readonly Color PaperColor = new Color(0.988f, 0.968f, 0.925f, 1f);
+    public static readonly Color PaperColor = new Color(0.988f, 0.968f, 0.925f, 1f);
     private static readonly Color HeaderColor = new Color(0.93f, 0.885f, 0.78f, 1f);
     private static readonly Color HeaderLine = new Color(0.62f, 0.48f, 0.2f, 0.85f);
     private static readonly Color HeadingInk = new Color(0.1f, 0.16f, 0.28f, 1f);

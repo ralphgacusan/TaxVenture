@@ -191,7 +191,7 @@ public class DialogueUI : MonoBehaviour
 
     /// <summary>This dialogue box is still on screen (it can outlive the session for a moment while it closes).</summary>
     public bool IsPanelShowing => panelRoot != null && panelRoot.activeInHierarchy;
-    public bool CanStartDialogue => !IsAnyDialogueActive && CanShowPanel() &&
+    public bool CanStartDialogue => !ChapterEndingSequence.BlocksGameplay && !IsAnyDialogueActive && CanShowPanel() &&
         (CameraController.Instance == null || CameraController.Instance.CanStartDialogue) &&
         (GameStateMachine.Instance == null || !GameStateMachine.Instance.IsPaused);
     public DialogueLine CurrentLine => session.CurrentLine;

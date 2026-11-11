@@ -278,6 +278,11 @@ public class TrainingDrill
     public string[] objectivesDone = new string[0];
     /// <summary>Scene paths switched off for this drill (parts of the level it never uses).</summary>
     public string[] hide = new string[0];
+    /// <summary>
+    /// Level 3 T16: the practice start state, a disposable chapter built with the real rule commands
+    /// (Level3EditorFixtures ids, e.g. bea-table-restored, office-practice). Held in memory only; empty = the level's own start.
+    /// </summary>
+    public string fixture = "";
     public TrainingRun guided = new TrainingRun();
     public TrainingRun mastery = new TrainingRun();
 #pragma warning restore 0649

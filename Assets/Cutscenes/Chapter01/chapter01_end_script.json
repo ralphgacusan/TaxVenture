@@ -1,0 +1,31 @@
+{
+  "id": "chapter01.end",
+  "title": "A First Case Closed",
+  "scene": "CS_Chapter01_End",
+  "duration": 15.0,
+  "fadeInSeconds": 0.25,
+  "fadeOutSeconds": 0.25,
+  "cueFadeSeconds": 0.1,
+  "charsPerLine": 46,
+  "shotStarts": [
+    0.0,
+    4.8,
+    10.1
+  ],
+  "cues": [
+    {
+      "voice": "vo_ch01_end_01_marie", "speaker": "Marie",
+      "text": "Thank you. I understand it now.",
+      "start": 0.6,
+      "end": 4.6,
+      "variant": ""
+    },
+    {
+      "voice": "vo_ch01_end_02_arthur", "speaker": "Arthur",
+      "text": "Good work. Another file is waiting.",
+      "start": 5.2,
+      "end": 9.8,
+      "variant": ""
+    }
+  ]
+}

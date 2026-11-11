@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fc767fbbe48464187bff9f352952ec2, type: 3}
+  m_Name: ExplorationBody
+  m_EditorClassIdentifier: Assembly-CSharp::ExplorationBodyAssets
+  mixedCameraEnabled: 0
+  model: {fileID: 919132149155446097, guid: 87838c26fef240a3a2a99f95c91e41ea, type: 3}
+  idle: {fileID: -203655887218126122, guid: 627d8de63b4cc4c49bcf990b12b41b38, type: 3}
+  walk: {fileID: -203655887218126122, guid: c8feebe21aab3eb41b121dc3ef4321de, type: 3}
+  sprint: {fileID: 7400000, guid: e7912ada488942c38f7c6e86a9f95ed1, type: 2}
+  jump: {fileID: 7400000, guid: 2799202688904129a63f8bd82ae44f5c, type: 2}
+  conversationModel: {fileID: 919132149155446097, guid: f9f148d5cf7a46daa8eea909ce1914ab, type: 3}

@@ -224,11 +224,47 @@ public sealed class OfficeHudRuntime : MonoBehaviour
     /// <summary>The EXIT DESK button's own sorting order: over every desk document layer.</summary>
     public const int ExitDeskSortingOrder = 2400;
 
+    private RectTransform deskExit, deskCalc, deskStamps;
+    private bool calcAction, stampAction;
+
+    public void RegisterDeskAction(RectTransform button, bool calculator, bool visible)
+    {
+        if (calculator) { deskCalc = button; calcAction = visible; }
+        else { deskStamps = button; stampAction = visible; }
+    }
+
+    private void LayoutDeskActions()
+    {
+        if (deskExit == null || SafeRoot == null) return;
+        int count = 1 + (calcAction ? 1 : 0) + (stampAction ? 1 : 0);
+        float width = Mathf.Min(370f, (SafeRoot.rect.width - 64f - 20f * (count - 1)) / count);
+        int index = 0;
+        Place(deskExit, index++);
+        if (calcAction && deskCalc != null) Place(deskCalc, index++);
+        if (stampAction && deskStamps != null) Place(deskStamps, index);
+        void Place(RectTransform button, int slot)
+        {
+            RectTransform parent = button.parent as RectTransform;
+            if (parent == null) return;
+            float x = SafeRoot.rect.center.x + (slot - (count - 1) * .5f) * (width + 20f);
+            float y = SafeRoot.rect.yMin + HudTheme.Margin * 2f + 42f;
+            Vector2 screen = RectTransformUtility.WorldToScreenPoint(null, SafeRoot.TransformPoint(new Vector3(x, y, 0f)));
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, null, out Vector2 local)) return;
+            float k = WorldEmote.ReducedMotion ? 1f : 1f - Mathf.Exp(-14f * Time.unscaledDeltaTime);
+            button.pivot = new Vector2(.5f, .5f);
+            button.localPosition = Vector3.Lerp(button.localPosition, new Vector3(local.x, local.y, button.localPosition.z), k);
+            float scale = SafeRoot.lossyScale.x / Mathf.Max(.001f, parent.lossyScale.x);
+            button.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width * scale);
+            button.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 84f * scale);
+        }
+    }
+
     private static void SkinExitButton()
     {
         WorkstationUI ui = FindAnyObjectByType<WorkstationUI>(FindObjectsInactive.Include);
         UnityEngine.UI.Button button = ui != null ? ui.GetComponentInChildren<UnityEngine.UI.Button>(true) : null;
         if (button == null) return;
+        if (Instance != null) Instance.deskExit = button.transform as RectTransform;
         // Always above the open desk documents (their layers sort 1101-1900), below the Bag (2550) (2026-10-26).
         // A nested canvas added while hidden loses overrideSorting when it is shown, so the order is
         // re-applied every time the button appears (HudSortingKeeper).
@@ -405,6 +441,7 @@ public sealed class OfficeHudRuntime : MonoBehaviour
             {
                 if (AuditorInteractable.Current != null && AuditorInteractable.Current.TryIconHandIn()) return true;
                 if (ClientCopyHandover.Instance != null && ClientCopyHandover.Instance.TryIconTap()) return true;
+                if (ClientCopyHandover.LevelDelivery != null && ClientCopyHandover.LevelDelivery.TryIconTap()) return true;
                 if (HudHotbar.Instance != null && !HudHotbar.Instance.HasCurrentFolder &&
                     InventoryRules.Owns(HudHotbar.Instance.Inventory, InventoryCatalogue.CaseFolder))
                     return HudHotbar.Instance.OpenSavedRecords(InventoryCatalogue.CaseFolder);
@@ -412,7 +449,8 @@ public sealed class OfficeHudRuntime : MonoBehaviour
                 return true;
             };
             folderIcon.DropResolver = screen => AuditorInteractable.ResolveFolderDrop(screen) ??
-                (ClientCopyHandover.Instance != null ? ClientCopyHandover.Instance.ResolveDrop(screen) : null);
+                (ClientCopyHandover.Instance != null ? ClientCopyHandover.Instance.ResolveDrop(screen) : null) ??
+                ClientCopyHandover.LevelDelivery?.ResolveDrop(screen);
             folderIcon.DropOpenOverride = screen =>
             {
                 view.Open(screen);
@@ -506,8 +544,10 @@ public sealed class OfficeHudRuntime : MonoBehaviour
             CanvasGroup group = sceneButtonGroups[i];
             if (group == null) continue;
             bool show = awaiting ? group == iconButtons : visible;
+            // Bea's seated activity owns its originals and tools; the inventory rail obscures the lever.
+            if (group == iconButtons && Level3BeaTable.Instance != null && Level3BeaTable.Instance.Seated && !Level3BeaTable.Instance.SummaryAvailable) show = false;
             group.alpha = Mathf.MoveTowards(group.alpha, show ? 1f : 0f, FadeSpeed * Time.unscaledDeltaTime);
-            bool interactive = group.alpha > 0.5f;
+            bool interactive = show && group.alpha > 0.5f;
             group.blocksRaycasts = interactive;
             group.interactable = interactive;
         }
@@ -586,6 +626,8 @@ public sealed class OfficeHudRuntime : MonoBehaviour
         awaitedPointerHandlerStates.Clear();
         awaitedSiblingVisualStates.Clear();
         awaitedControlsApplied = false;
+        // The saved states predate the handover (the folder's tile was occupied then): the row re-reads the inventory.
+        HudHotbar.Instance?.PresentationChanged();
         if (caseFolderIcon != null)
         {
             HudIconButton folder = caseFolderIcon.GetComponent<HudIconButton>();
@@ -623,6 +665,7 @@ public sealed class OfficeHudRuntime : MonoBehaviour
 
     private void LateUpdate()
     {
+        LayoutDeskActions();
         // Settings and results are optional; the camera is what gates visibility.
         if (cameraController == null && Time.unscaledTime >= nextResolveTime)
         {
@@ -675,6 +718,10 @@ public sealed class OfficeHudRuntime : MonoBehaviour
 
     /// <summary>T10: reading the carried Case Folder from the bag opens the same floating 3D view as its icon.</summary>
     public bool OpenCaseFolderView() => caseFolder3D != null && caseFolder3D.Open(null);
+
+    /// <summary>Level 3 (revised T07, opt-in caller only): the same floating view, its page placed at a screen point (the existing drop-open path).</summary>
+    public bool OpenCaseFolderViewAt(Vector2 screen) => caseFolder3D != null && caseFolder3D.Open(screen);
+    public void PlaceCaseFolderInArea(Rect area) => caseFolder3D?.PlaceInScreenArea(area);
 
     private void ResolveSceneDependencies()
     {

@@ -68,7 +68,10 @@ public static class PlayerControlHold
         applied = true;
         held.Clear();
         HoldIfEnabled(Object.FindAnyObjectByType<PlayerMovement>());
-        HoldIfEnabled(Object.FindAnyObjectByType<FirstPersonCameraController>());
+        // Milestone T03: the office scenes carry two look controllers (Main Camera's writes the camera,
+        // a helper's mirrors it); holding only one let the camera keep turning during a hold.
+        foreach (FirstPersonCameraController look in Object.FindObjectsByType<FirstPersonCameraController>())
+            HoldIfEnabled(look);
         HoldIfEnabled(Object.FindAnyObjectByType<Interactor>());
 
         cursorLock = Cursor.lockState;

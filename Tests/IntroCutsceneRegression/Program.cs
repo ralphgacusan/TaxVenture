@@ -56,14 +56,14 @@ foreach (string word in new[] { "click", "mouse", "wasd" })
 // ---------- subtitle JSON ----------
 var options = new JsonSerializerOptions { IncludeFields = true };
 CutsceneSubtitleTrack track = JsonSerializer.Deserialize<CutsceneSubtitleTrack>(Read("Assets", "Resources", "Cutscenes", "cutscene01_subtitles.json"), options);
-Check(track != null && track.lines.Count == 14, "subtitle JSON parses with 14 lines");
+Check(track != null && track.lines.Count == 11, "subtitle JSON parses with 11 readable audio-aligned groups");
 Check(track.nextScene == "Office_Level1", "the cutscene ends in Office_Level1");
 Check(Math.Abs(track.fadeInSeconds - 0.25f) < 1e-4 && Math.Abs(track.fadeOutSeconds - 0.25f) < 1e-4, "fades match the old intro (0.25 s)");
-int[] expectedClips = { 1, 2, 3, 5, 6, 7, 8, 10, 10, 10, 10, 10, 14, 14 };
-Check(track.lines.Select(l => l.clip).SequenceEqual(expectedClips), "lines belong to clips 1, 2, 3, 5, 6, 7, 8, 10 (x5), 14 (x2)");
-Check(track.lines[0].title && track.lines[0].text.StartsWith("COAST TALES."), "clip 1 is the COAST TALES title card");
-Check(track.lines[7].text.Contains("every case comes across my desk") && track.lines[11].text.Contains("decide what should be done"), "clip 10 lines in order");
-Check(track.lines[13].text.Contains("Let's get to work."), "the last line is \"Let's get to work.\"");
+int[] expectedClips = { 1, 2, 3, 5, 6, 7, 8, 10, 10, 10, 14 };
+Check(track.lines.Select(l => l.clip).SequenceEqual(expectedClips), "lines belong to clips 1, 2, 3, 5, 6, 7, 8, 10 (x3), 14");
+Check(track.lines[0].title && track.lines[0].text.StartsWith("Coast Tales."), "clip 1 retains its title content in the shared subtitle treatment");
+Check(track.lines[7].text.Contains("every case comes across my desk") && track.lines[9].text.Contains("decide what should be done"), "clip 10 lines in order");
+Check(track.lines[10].text.Contains("Let's get to work."), "the last line is \"Let's get to work.\"");
 bool ordered = true;
 for (int i = 0; i < track.lines.Count; i++)
 {
@@ -72,7 +72,7 @@ for (int i = 0; i < track.lines.Count; i++)
 }
 Check(ordered, "JSON times are positive and never overlap");
 Check(track.lines.All(l => l.end <= track.fallbackDurationSeconds), "every line ends before the fallback length");
-Check(track.LineAt(1.0)?.clip == 1 && track.LineAt(14.0) == null && track.LineAt(43.0)?.text.Contains("Check the numbers") == true, "LineAt picks the line on screen");
+Check(track.LineAt(1.0)?.clip == 1 && track.LineAt(14.0)?.clip == 5 && track.LineAt(38.0)?.text.Contains("Check the numbers") == true, "LineAt picks the line on screen");
 
 // ---------- timing from Timeline clips ----------
 var starts = new List<double>(); var ends = new List<double>();
@@ -81,11 +81,68 @@ var timed = JsonSerializer.Deserialize<CutsceneSubtitleTrack>(Read("Assets", "Re
 Check(timed.ApplyClipTimes(starts, ends), "14 Timeline clips time every line");
 Check(Math.Abs(timed.lines[1].start - 5.0) < 1e-4 && Math.Abs(timed.lines[1].end - 10.0) < 1e-4 && !timed.lines[1].estimate, "a one-line clip fills its clip");
 var clip10 = timed.lines.Where(l => l.clip == 10).ToList();
-Check(Math.Abs(clip10[0].start - 45.0) < 1e-4 && Math.Abs(clip10[4].end - 50.0) < 1e-4 && clip10.Zip(clip10.Skip(1)).All(p => p.First.end < p.Second.start),
-    "clip 10's five lines share the clip in order with gaps");
+Check(Math.Abs(clip10[0].start - 45.0) < 1e-4 && Math.Abs(clip10[2].end - 50.0) < 1e-4 && clip10.Zip(clip10.Skip(1)).All(p => p.First.end < p.Second.start),
+    "legacy clip retiming remains compatible for grouped captions");
 var few = JsonSerializer.Deserialize<CutsceneSubtitleTrack>(Read("Assets", "Resources", "Cutscenes", "cutscene01_subtitles.json"), options);
-Check(!few.ApplyClipTimes(starts.Take(10).ToList(), ends.Take(10).ToList()) && few.lines[1].estimate && Math.Abs(few.lines[1].start - track.lines[1].start) < 1e-4,
+Check(!few.ApplyClipTimes(starts.Take(10).ToList(), ends.Take(10).ToList()) && few.lines[1].estimate == track.lines[1].estimate && Math.Abs(few.lines[1].start - track.lines[1].start) < 1e-4,
     "too few clips keeps the JSON times");
+
+// ---------- actual dialogue audio and shared cue presentation ----------
+var spans = new List<CutsceneAudioSpan>();
+var timelineDocs = Regex.Matches(Read("Assets", "EnvTimeline.playable"), @"^--- !u!\d+ &(-?\d+)\r?\n(.*?)(?=^--- |\z)", RegexOptions.Multiline | RegexOptions.Singleline)
+    .ToDictionary(m => m.Groups[1].Value, m => m.Groups[2].Value.Replace("\r", ""));
+string audioTrack = timelineDocs.Values.Single(b => b.Contains("m_Name: Audio Track\n"));
+foreach (string clip in Regex.Split(audioTrack, @"  - m_Version: ").Skip(1))
+{
+    double N(string field) => double.Parse(Regex.Match(clip, @"^    " + field + @": ([\d.eE+-]+)$", RegexOptions.Multiline).Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+    string asset = Regex.Match(clip, @"m_Asset: \{fileID: (-?\d+)\}").Groups[1].Value;
+    string guid = Regex.Match(timelineDocs[asset], @"m_Clip: \{fileID: \d+, guid: ([a-f0-9]+)").Groups[1].Value;
+    string meta = Directory.GetFiles(Path.Combine(root, "Assets", "Clip Audios"), "*.meta").Single(p => File.ReadAllText(p).Contains("guid: " + guid));
+    string name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(meta));
+    // Existing MP3s have one extra 24ms frame in the Timeline duration. The
+    // runtime uses Unity's decoded length, not that padding (measured via afinfo).
+    spans.Add(new CutsceneAudioSpan(name, N("m_Start"), N("m_Duration"), N("m_ClipIn"), N("m_TimeScale"), N("m_Duration") - .024));
+}
+Check(spans.Count == 9 && spans.Select(c => c.Name).SequenceEqual(new[] { "CLIP 01", "CLIP 02", "CLIP 03", "CLIP 05", "CLIP 06", "CLIP 07", "CLIP 08", "CLIP 10", "CLIP 14" }), "actual Timeline has nine named dialogue recordings (music excluded)");
+Check(track.timelineTrack == "Audio Track" && track.lines.All(l => !l.estimate && !string.IsNullOrEmpty(l.audioClip)), "intro opts into real dialogue track with measured fallback, no numbered-track guessing");
+Check(track.ApplyAudioClipTimes(spans), "all captions bind to actual dialogue audio");
+foreach (var audio in spans)
+{
+    var cues = track.lines.Where(l => l.audioClip == audio.Name).ToList();
+    Check(cues.Count > 0 && cues.All(c => c.start >= audio.Start - .0001 && c.end <= audio.Start + audio.SourceDuration + .0001), audio.Name + " captions stay within the recording");
+    Check(Math.Abs(cues.Last().end - (audio.Start + audio.SourceDuration)) < .0001, audio.Name + " last caption ends with the audio, not an arbitrary hold");
+}
+var shared = track.SubtitlePresentation();
+Check(shared.cues.Count == track.lines.Count && shared.cueFadeSeconds == .1f, "intro adapts existing timing to the same chapter cue opacity contract");
+foreach (var cue in shared.cues)
+{
+    Check(shared.EstimatedLines(cue) <= 2 && cue.ReadLength / (cue.end - cue.start) <= ChapterCinematicScript.MaxCharsPerSecond,
+        "readable two-line dialogue cue: " + cue.text);
+    Check(shared.CueAt(cue.start + .01, "") == cue && shared.CueAlpha(cue, cue.start) == 0 && shared.CueAlpha(cue, cue.end) == 0,
+        "shared complete-cue selection and within-audio fades: " + cue.text);
+}
+var phrase = new CutsceneSubtitleTrack { lines = new List<CutsceneSubtitleLine> {
+    new CutsceneSubtitleLine { audioClip = "voice", audioStart = 2, audioEnd = 6, start = 90, end = 91 } } };
+Check(phrase.ApplyAudioClipTimes(new[] { new CutsceneAudioSpan("voice", 10, 5, 1, 2, 20) })
+    && phrase.lines[0].start == 10.5 && phrase.lines[0].end == 12.5, "source phrase offsets respect Timeline trim and playback speed");
+Check(phrase.ApplyAudioClipTimes(new[] { new CutsceneAudioSpan("voice", 10, 1, 3, 1, 20) })
+    && phrase.lines[0].start == 10 && phrase.lines[0].end == 11, "partially trimmed phrase clamps inside audible Timeline window");
+foreach (var missing in new[] {
+    new CutsceneAudioSpan[0],
+    new[] { new CutsceneAudioSpan("other", 0, 9, 0, 1, 9) },
+    new[] { new CutsceneAudioSpan("voice", 0, 9, 0, 1, 9), new CutsceneAudioSpan("voice", 20, 9, 0, 1, 9) },
+    new[] { new CutsceneAudioSpan("voice", 0, 9, 0, 0, 9) },
+    new[] { new CutsceneAudioSpan("voice", double.NaN, 9, 0, 1, 9) } })
+{
+    float before = phrase.lines[0].start, after = phrase.lines[0].end;
+    Check(!phrase.ApplyAudioClipTimes(missing) && phrase.lines[0].start == before && phrase.lines[0].end == after,
+        "missing/ambiguous/invalid dialogue preserves fallback atomically");
+}
+var partial = new CutsceneSubtitleTrack { lines = new List<CutsceneSubtitleLine> {
+    new CutsceneSubtitleLine { audioClip = "voice", start = 4, end = 5 },
+    new CutsceneSubtitleLine { audioClip = "absent", start = 6, end = 7 } } };
+Check(!partial.ApplyAudioClipTimes(new[] { new CutsceneAudioSpan("voice", 30, 5, 0, 1, 5) }) && partial.lines[0].start == 4,
+    "failed multi-clip binding cannot partially retime earlier lines");
 
 // ---------- first story entry and replay eligibility (production save data) ----------
 var fresh = new PlayerProgressData();
@@ -122,7 +179,15 @@ Check(resultUi.Contains("MenuEntry.OpenLevelSelect = true") && resultUi.Contains
 string fade = Read("Assets", "Scripts", "UI", "HUD", "SceneFade.cs");
 Check(fade.Contains("EnsureForScene(SceneManager.GetActiveScene(), force: true)") && fade.Contains("instance.black.alpha = 0f"), "initial Play creates an outgoing fade on the menu instead of cutting to the intro");
 
-Check(runtime.Contains("track.lines.Clear();") && !runtime.Contains("UpdateSubtitle(usingTimelineClock"),
-    "Cutscene 2.0 does not display legacy overlay subtitles");
+Check(!runtime.Contains("track.lines.Clear();") && runtime.Contains("new ChapterCinematicPlayer.SubtitleView(safeRoot)"),
+    "intro retains cues and reuses the existing chapter subtitle renderer");
+Check(runtime.Contains("audio.clip.name, clip.start, clip.duration") && runtime.Contains("clip.clipIn, clip.timeScale, audio.clip.length")
+    && runtime.Contains("track.ApplyAudioClipTimes(clips)"), "intro follows actual named dialogue audio windows, trims, speed and decoded length");
+Check(runtime.Contains("subtitleDirector.time") && runtime.Contains("subtitleScript.CueAlpha(cue, time)") && runtime.Contains("subtitles?.Hide()")
+    && runtime.Contains("subtitles?.Dispose()"), "shared cue fades use the audio director clock and clean up on exit");
+string chapters = Read("Assets", "Scripts", "Cutscenes", "Chapters", "ChapterCinematicPlayer.cs");
+Check(chapters.Contains("subtitles = new SubtitleView(safeRoot, subtitleFontSize") && chapters.Contains("public sealed class SubtitleView")
+    && !runtime.Contains("HudTheme.CreateLabel(\"Line\""), "both presentations use one subtitle layout implementation");
+Check(!runtime.Contains("master.state != PlayState.Playing || atEnd"), "paused Timeline does not prematurely finish the intro");
 Console.WriteLine($"{checks - failures}/{checks} checks passed");
 return failures == 0 ? 0 : 1;

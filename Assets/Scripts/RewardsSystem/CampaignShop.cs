@@ -112,6 +112,8 @@ public class ShopCatalogue
     public const string IslandPrint = "island_print";
     public const string ComparisonStand = "comparison_stand";
     public const string OfficeComputer = "office_computer";
+    /// <summary>Level 3 T15: the computer's spot, the separate printer desk beside the consultant desk.</summary>
+    public const string PrinterDeskAnchor = "printer_desk";
 
     public const string SectionSupplies = "supplies";
     public const string SectionOffice = "office";
@@ -265,9 +267,10 @@ public class ShopCatalogue
         c.products.Add(new ShopProduct
         {
             id = OfficeComputer, kind = ShopProduct.KindDecor, section = SectionOffice, price = 250, icon = "computer",
+            anchors = new List<string> { PrinterDeskAnchor },
             title = "Office Computer", tagline = "Your own desk computer",
-            effect = "A computer for your desk that keeps your records together.",
-            requires = "pending:office_computer", requiresLabel = "Requires corrected Level 3"
+            effect = "Opens a read-only register of your verified client cases: Bea's approved computation and her papers. No filing or printing.",
+            requires = "chapter:Level_03", requiresLabel = "Requires corrected Level 3"
         });
         c.counter = new ShopCounterPlacement
         {
@@ -290,6 +293,11 @@ public class ShopCatalogue
         {
             id = "wall_above_filing", label = "the wall above your filing shelf", kind = ShopDecorAnchor.KindWall,
             parent = "Environment/OfficeBuilding/Rooms/ConsultantOffice/MCRoom/OfficeRoomProps/ShelfProps", target = "SM_Prop_Shelf_06", above = 0.3f
+        });
+        c.anchors.Add(new ShopDecorAnchor
+        {
+            id = PrinterDeskAnchor, label = "the printer desk beside yours", kind = ShopDecorAnchor.KindSurface,
+            parent = "Environment/OfficeBuilding/Rooms/ConsultantOffice", target = "PrinterDesk", side = "right"
         });
         return c;
     }

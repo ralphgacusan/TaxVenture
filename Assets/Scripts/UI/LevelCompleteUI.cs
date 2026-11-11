@@ -18,6 +18,14 @@ using TMPro;
 /// hearts, and the next step (Marie's Client Copy handover). A failed save
 /// shows a retry state without fanfare. The result card waits until Marie has
 /// received the copy.
+///
+/// Level 3 T14: ShowLevelThreeChapter shows Bea's one-case chapter result on
+/// the same card (no LevelCompleteState: the chapter's guard refuses it). It
+/// only presents committed facts (Level3ClosingRules.Result, the Level_03
+/// ledger). Its shared Continue button is
+/// the explicit acknowledgment: Level3Checkpointer.CommitAcknowledgment saves
+/// the chapter's completion before anything moves on; a failed write keeps the
+/// card with a retry state. Nothing is paid here.
 /// </summary>
 public class LevelCompleteUI : MonoBehaviour
 {
@@ -37,6 +45,8 @@ public class LevelCompleteUI : MonoBehaviour
     // T07: Level 1 story run (case result path) and whether its result is saved.
     private bool storyCaseResult;
     private bool caseResultSaved;
+    // T14: the card shows Level 3's pending chapter result (its buttons acknowledge it).
+    private bool levelThreeChapter;
 
     private void Awake()
     {
@@ -216,6 +226,119 @@ public class LevelCompleteUI : MonoBehaviour
         Debug.Log("[LevelCompleteUI] panelRoot activated successfully.");
     }
 
+    // =========================================================
+    // LEVEL 3 CHAPTER RESULT (T14)
+    // =========================================================
+
+    private const string LevelThreeSaveFailedText = "Your chapter result could not be saved. Your progress is safe. Try again.";
+
+    /// <summary>
+    /// T14: Bea's pending chapter result (WrapUpPending). Presentation only:
+    /// the frozen results and the Level_03 ledger; Continue acknowledges it.
+    /// False when the card cannot be shown yet (the caller tries again later).
+    /// </summary>
+    public bool ShowLevelThreeChapter()
+    {
+        Level3Checkpointer owner = Level3Checkpointer.Active;
+        if (owner == null || owner.State == null || panelRoot == null ||
+            Level3ClosingRules.StageOf(owner.State) != Level3ClosingRules.Stage.Result) return false;
+        if (ChapterEndingSequence.TryPlay("Level_03", () => ShowLevelThreeChapter())) return true;
+        levelThreeChapter = true;
+        storyCaseResult = false;
+        currentResult = null;
+        leaving = false;
+        panelRoot.SetActive(true);
+        CaseFinale.Instance?.PlayAfterHandover();
+        if (!HudRewardScreen.Present(panelRoot, BuildChapterThreeScreen(owner, null)))
+        {
+            panelRoot.SetActive(false);
+            levelThreeChapter = false;
+            return false;
+        }
+        AudioManager.Instance?.PlayAchievementSFX();
+        return true;
+    }
+
+    /// <summary>
+    /// The acknowledgment is saved before returning to Career. A failed or
+    /// refused write keeps the pending card with one retry line.
+    /// </summary>
+    private void ContinueLevelThree()
+    {
+        if (leaving) return;
+        Level3Checkpointer owner = Level3Checkpointer.Active;
+        if (owner == null) return;
+        leaving = true;
+        Level3Checkpointer.TapeCommit outcome = owner.CommitAcknowledgment(out _, out string hint);
+        if (outcome == Level3Checkpointer.TapeCommit.SaveFailed || outcome == Level3Checkpointer.TapeCommit.Refused)
+        {
+            leaving = false;
+            Debug.LogWarning("[LevelCompleteUI] Chapter 3 result not acknowledged (" + outcome + "); the card stays for a retry.");
+            HudRewardScreen.Present(panelRoot, BuildChapterThreeScreen(owner, hint ?? LevelThreeSaveFailedText));
+            return;
+        }
+        levelThreeChapter = false;
+        owner.PrepareSettingsExit(false);
+        LeaveForCareer();
+    }
+
+    /// <summary>What this chapter's activities earn from its own saved facts: the same rewards the story claims. Presentation for unsaved test runs.</summary>
+    public static void LevelThreeAttemptRewards(Level3ChapterCheckpoint state, out int coins, out int trust)
+    {
+        coins = trust = 0;
+        Level3CaseProgress bea = state?.Case(Level3ChapterRules.BeaCaseId);
+        if (Level3WorksheetCheck.Collected(state))
+        {
+            coins += CampaignRewards.Amount(CampaignRewards.Level3, CampaignRewards.BeaWorksheet, CampaignRewards.CoinsKind);
+            trust += CampaignRewards.Amount(CampaignRewards.Level3, CampaignRewards.BeaWorksheet, CampaignRewards.TrustKind);
+        }
+        if (bea?.review?.approved == true) coins += CampaignRewards.Amount(CampaignRewards.Level3, CampaignRewards.BeaCaseApproved, CampaignRewards.CoinsKind);
+        if (Level3DeliveryRules.Delivered(state)) trust += Level3DeliveryRules.FollowThroughTrust(bea?.balanceWrongAnswers ?? 0);
+    }
+
+    /// <summary>The Chapter 3 card: aggregated XP and badge, the chapter's coins/Trust from the ledger, the shared Continue button.</summary>
+    private RewardScreenData BuildChapterThreeScreen(Level3Checkpointer owner, string failure)
+    {
+        Level3ChapterResult result = Level3ClosingRules.Result(owner.State);
+        PlayerProgressData career = PlayerProgressManager.Instance != null ? PlayerProgressManager.Instance.CurrentProgress : null;
+        CaseResultRules.ChapterSummary summary = CaseResultRules.BuildChapterSummary(career, CampaignRewards.Level3);
+        LevelRewardRules rules = CaseProgressionManager.Instance != null ? CaseProgressionManager.Instance.Score.Rules : null;
+        BadgeTier tier = result.WorksheetKnown ? (BadgeTier)result.WorksheetTier : BadgeTier.None;
+        bool failed = !string.IsNullOrEmpty(failure);
+        // T16: a replay/practice/Editor run shows its own XP and badge only; the story's coins and Trust are not its rewards.
+        bool story = owner.SavesStory;
+        CampaignRunMode mode = PlayerProgressManager.CurrentRunMode;
+        var data = ChapterTemplate("Chapter 3 Complete", "The Numbers Tell a Story", result.Exp, Level3ChapterResult.MaxExp,
+            HudBadgeArt.TierColor(tier == BadgeTier.None ? BadgeTier.Bronze : tier));
+        data.StatusGood = !failed;
+        data.StatusText = failed ? "NOT SAVED YET" : story ? CaseResultRules.CompletedStatus : mode == CampaignRunMode.MasteryReplay ? "REPLAY  ·  BEST ONLY" : CampaignRun.Label(mode);
+        data.StatusDetail = failed ? failure : CaseResultRules.CompletedDetail;
+        data.Summary = story ? CaseResultRules.CompletedSummary : CampaignRun.WhatChanges(mode);
+        data.ButtonLabel = failed ? "TRY AGAIN" : "CONTINUE";
+        data.Footer = CareerResultFooter(career, Level3ChapterRules.LevelId, result.Exp, Level3ChapterResult.MaxExp);
+        if (tier != BadgeTier.None) data.Medals.Add(HudBadgeArt.For(rules, tier));
+        if (story && career != null && career.HasCampaign)
+        {
+            data.RewardTile("Coins", HudTheme.Coin, HudTheme.CoinGold, summary.CoinsEarned, "Wallet", summary.Wallet);
+            data.RewardTile("Public Trust", HudTheme.Heart, HudTheme.Reputation, summary.TrustEarned, "Trust", summary.TrustNow, CampaignRecord.MaxTrust);
+        }
+        else if (mode == CampaignRunMode.DirectEditor)
+        {
+            // An Editor test run shows what this attempt would earn (nothing here is saved); replays and drills keep their own card.
+            LevelThreeAttemptRewards(owner.State, out int coins, out int trust);
+            int walletBefore = career != null && career.HasCampaign ? career.campaign.coins : 0;
+            int trustBefore = career != null && career.HasCampaign ? career.campaign.publicTrust : 0;
+            data.RewardTile("Coins", HudTheme.Coin, HudTheme.CoinGold, coins, "Wallet", walletBefore + coins);
+            data.RewardTile("Public Trust", HudTheme.Heart, HudTheme.Reputation, trust, "Trust", Mathf.Min(trustBefore + trust, CampaignRecord.MaxTrust), CampaignRecord.MaxTrust);
+        }
+        if (result.WorksheetKnown)
+            data.Fact("Worksheet first check", $"{result.WorksheetCorrect}/{result.WorksheetTotal}  ·  {tier}");
+        if (result.CaseKnown)
+            data.Fact("Computation review", $"{result.CaseXp}/{Level3ReviewRules.MaxXp} XP");
+        if (LevelTimer.Instance != null) data.Fact("Time", LevelTimer.Instance.GetFormattedTime());
+        return data;
+    }
+
     /// <summary>Restores the approved result card from its durable case-result record.</summary>
     public void ShowAfterHandover(LevelTotalResult result)
     {
@@ -225,6 +348,9 @@ public class LevelCompleteUI : MonoBehaviour
             Debug.LogWarning("[LevelCompleteUI] No saved level result was available after the handover.");
             return;
         }
+        string chapter = result.LevelId;
+        if (ChapterEndingSequence.TryPlay(chapter, () => ShowAfterHandover(result))) return;
+        CaseFinale.Instance?.PlayAfterHandover();
         Show(result);
     }
 
@@ -349,24 +475,9 @@ public class LevelCompleteUI : MonoBehaviour
         CaseProgressionManager progression = CaseProgressionManager.Instance;
         BadgeTier tier = caseResult != null && caseResult.recorded ? (BadgeTier)caseResult.tier : BadgeTier.None;
         CaseResultRules.ChapterSummary summary = CaseResultRules.BuildChapterSummary(career);
-        var data = new RewardScreenData
-        {
-            Title = CaseResultRules.CompletedTitle,
-            Subtitle = progression != null ? progression.CurrentLevelName : null,
-            Exp = result.TotalExp,
-            MaxExp = result.HasScore ? result.MaxExp : 0,
-            Hearts = 0,
-            MaxHearts = 0,
-            PassingPercent = 0,
-            HasStatus = true,
-            StatusGood = true,
-            StatusText = CaseResultRules.CompletedStatus,
-            StatusDetail = CaseResultRules.CompletedDetail,
-            Accent = HudBadgeArt.TierColor(tier == BadgeTier.None ? BadgeTier.Bronze : tier),
-            Summary = CaseResultRules.CompletedSummary,
-            ButtonLabel = "CONTINUE",
-            Large = true
-        };
+        var data = ChapterTemplate(CaseResultRules.CompletedTitle,
+            progression != null ? progression.CurrentLevelName : null, result.TotalExp, result.HasScore ? result.MaxExp : 0,
+            HudBadgeArt.TierColor(tier == BadgeTier.None ? BadgeTier.Bronze : tier));
         for (int i = 0; i < result.BadgeTiers.Count; i++)
             if (result.BadgeTiers[i] != BadgeTier.None) data.Medals.Add(HudBadgeArt.For(rules, result.BadgeTiers[i]));
         data.RewardTile("Coins", HudTheme.Coin, HudTheme.CoinGold, summary.CoinsEarned, "Wallet", summary.Wallet);
@@ -375,7 +486,26 @@ public class LevelCompleteUI : MonoBehaviour
         if (caseResult != null && caseResult.firstCheckCorrect >= 0)
             data.Fact("Board first check", $"{caseResult.firstCheckCorrect}/4  ·  {tier}");
         data.Fact("Time", result.FormattedCompletionTime);
+        data.Footer = CareerResultFooter(career, CampaignRecord.FirstChapterId, result.TotalExp, result.MaxExp);
         return data;
+    }
+
+    private static RewardScreenData ChapterTemplate(string title, string subtitle, int exp, int maximum, Color accent) =>
+        new RewardScreenData
+        {
+            Title = title, Subtitle = subtitle, Exp = exp, MaxExp = maximum,
+            Hearts = 0, MaxHearts = 0, PassingPercent = 0, HasStatus = true, StatusGood = true,
+            StatusText = CaseResultRules.CompletedStatus, StatusDetail = CaseResultRules.CompletedDetail,
+            Accent = accent, Summary = CaseResultRules.CompletedSummary, ButtonLabel = "CONTINUE", Large = true
+        };
+
+    private static string CareerResultFooter(PlayerProgressData career, string levelId, int earned, int maximum)
+    {
+        LevelRecord best = career?.levelRecords?.Find(record => record.levelId == levelId);
+        string current = "This run " + earned + " / " + maximum + " EXP";
+        if (career == null) return current;
+        return current + "  ·  Career " + career.totalExp + " EXP" +
+            "\nBest on this level " + Mathf.Max(best?.bestExp ?? 0, earned) + " / " + maximum + " EXP";
     }
 
     /// <summary>The reward card for the level (Office HUD); same values as the text fields.</summary>
@@ -450,7 +580,7 @@ public class LevelCompleteUI : MonoBehaviour
             StatusText = complete ? "CLIENT COPY DELIVERED" : "DELIVERY PENDING",
             Summary = complete ? "Rosa has her approved copy and understands her corrected May summary. Thank you for seeing her case through."
                 : "The review must be saved and Rosa must receive her approved Client Copy. Continue to retry.",
-            Footer = "Return to Career. Future chapters are coming soon."
+            Footer = "Return to Career to continue your story."
         };
         LevelRewardRules rules = CaseProgressionManager.Instance != null ? CaseProgressionManager.Instance.Score.Rules : null;
         foreach (BadgeTier tier in result.BadgeTiers)
@@ -482,6 +612,9 @@ public class LevelCompleteUI : MonoBehaviour
 
     public void OnReturnToMainModulePressed()
     {
+        if (ChapterEndingSequence.BlocksGameplay) return;
+        // T14: Level 3's chapter result: this button acknowledges it, then goes to the career board.
+        if (levelThreeChapter) { ContinueLevelThree(); return; }
         if (leaving) return;   // one press only (the screen fades out first)
         leaving = true;
 
@@ -544,6 +677,12 @@ public class LevelCompleteUI : MonoBehaviour
             return;
         }
 
+        if (PlayerProgressManager.Instance != null && !PlayerProgressManager.Instance.AcknowledgeLevelTwoEnding())
+        {
+            leaving = false;
+            if (congratsText != null) congratsText.text = "Your result could not be saved. Press Continue to try again.";
+            return;
+        }
         LeaveForCareer();
     }
 

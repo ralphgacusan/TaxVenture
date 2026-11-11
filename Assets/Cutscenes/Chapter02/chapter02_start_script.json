@@ -1,0 +1,15 @@
+{
+  "id": "chapter02.start",
+  "title": "An Ordinary File",
+  "scene": "CS_Chapter02_Start",
+  "duration": 15.0,
+  "fadeInSeconds": 0.25,
+  "fadeOutSeconds": 0.25,
+  "cueFadeSeconds": 0.1,
+  "charsPerLine": 46,
+  "shotStarts": [0.0, 4.8, 10.1],
+  "cues": [
+    { "voice": "vo_ch02_start_01_marco", "speaker": "Marco", "text": "Bayview's first records. More will follow.", "start": 5.2, "end": 9.8, "variant": "" },
+    { "voice": "vo_ch02_start_02_receptionist", "speaker": "Receptionist", "text": "Start with the company details.", "start": 10.5, "end": 14.5, "variant": "" }
+  ]
+}

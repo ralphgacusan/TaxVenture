@@ -3,7 +3,7 @@
     "Level 3 review content (T09, Level3ReviewRules). cases: each case's own review clock, ReviewClockDefinition fields as in Level 2 (allowanceSeconds of ACTIVE time, warnSeconds, lateExp = the one punctuality mark inside the case XP cap, lateHearts unused: Public Trust never moves for time). Bea's 16 active minutes start after the protected calculator practice; the company's clock arrives with T11/T12.",
     "Lines may use {minutes} (game minutes left), {time} (active m:ss) and {deadline} (today's cutoff).",
     "auditor: CONTENT 'Review returned' and 'Bea approval' lines; hold / falseHold / staleStamp open his other answers.",
-    "roots: what the Auditor says about each case-scoped root (FIXTURE_CONTRACT root keys). They name the line and the Tax Code Book section, never a client value. credit-as-expense is the credit-source note when the credit was used above its own line.",
+    "roots: what the Auditor says about each case-scoped root (FIXTURE_CONTRACT root keys). 'line' is what he says on a return or hold: one problem plus the next action, at most 24 words. 'note' is the longer reason on the Audit Summary. Both name the line (and the note the Tax Code Book section), never a client value. credit-as-expense is the credit-source text when the credit was used above its own line.",
     "Fields starting with '_' are notes and are ignored by the game."
   ],
   "cases": [
@@ -37,42 +37,52 @@
   "roots": [
     {
       "id": "income-sum",
-      "note": "Gross income comes from the checked worksheet's Income subtotal (Tax Code Book, Section 6)."
+      "line": "Check your taxable income. Use Income minus Supported deductions from Bea's summary.",
+      "note": "Taxable income starts from the Income total on Bea's collected summary (Tax Code Book, Section 6)."
     },
     {
       "id": "expense-sum",
-      "note": "Allowable expenses come from the checked worksheet's subtotal, not the draft claims (Sections 4 and 5)."
+      "line": "Check your taxable income. Use Income minus Supported deductions from Bea's summary.",
+      "note": "Only the Supported deductions total on her summary comes off, not her draft claims (Sections 4 and 5)."
     },
     {
       "id": "taxable-operation",
-      "note": "Taxable income is gross income minus allowable expenses, from the two lines above (Section 6)."
+      "line": "Check your taxable income. Use Income minus Supported deductions from Bea's summary.",
+      "note": "Taxable income is the summary's Income minus its Supported deductions, both taken from the paper itself (Section 6)."
     },
     {
       "id": "rule-selection",
+      "line": "Check your tax band. Open the annual table and compare your taxable income.",
       "note": "The rate band is the row of the annual table that holds the taxable income (Section 7)."
     },
     {
       "id": "tax-formula",
-      "note": "Tax due is the band's base tax plus its rate on the excess over the floor only (Section 8)."
+      "line": "Check your tax due. Apply the rate only above the threshold, then add the base tax.",
+      "note": "Tax due is the band's base tax plus its rate on the amount above the threshold only, never on the whole income (Section 8)."
     },
     {
       "id": "credit-source",
+      "line": "Check your tax credit. Use the tax withheld on Bea's certificate.",
       "note": "Tax credits are the tax withheld on Bea's own certificate for this year (Section 9)."
     },
     {
       "id": "credit-as-expense",
+      "line": "The credit came off too early. Subtract it from tax due, not from income.",
       "note": "The withholding credit was taken off before the tax: it comes off the tax due at the end (Section 9)."
     },
     {
       "id": "balance-operation",
+      "line": "Check your remaining payable. Take tax due minus the tax credit.",
       "note": "The remaining payable is tax due minus tax credits (Section 9)."
     },
     {
       "id": "stamp-revision",
+      "line": "Your stamp is older than the sheet. Stamp it again, then bring it back.",
       "note": "Stamp the sheet as it is now, then bring it back."
     },
     {
       "id": "stamp-decision",
+      "line": "Every line is supported, so no hold is needed. Stamp it Ready, then bring it back.",
       "note": "Every line is supported: a hold needs an open problem. Stamp it Ready for computation review."
     }
   ]

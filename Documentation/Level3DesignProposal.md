@@ -1,3 +1,5 @@
+> **Superseded interaction design — 3 November 2026.** The accepted revision and execution tickets are in [Level3TheNumbersTellAStory/REVISION_PLAN.md](Level3TheNumbersTellAStory/REVISION_PLAN.md) and [TICKETS.md](Level3TheNumbersTellAStory/TICKETS.md). Use them for current gameplay, visual limits, source transfer, scoring and continuation. This earlier proposal remains background/financial rationale; its crowded board, practice gate and service-plan mechanics are historical.
+
 # Level 3 — The Numbers Tell a Story
 
 ## Current continuation rule — 30 October 2026

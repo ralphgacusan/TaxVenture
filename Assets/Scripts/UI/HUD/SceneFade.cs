@@ -114,7 +114,7 @@ public sealed class SceneFade : MonoBehaviour
     private IEnumerator FadeAndLoad(string sceneName)
     {
         yield return Fade(black.alpha, 1f, FadeOutSeconds);
-        SceneManager.LoadScene(sceneName);
+        MobilePerformance.LoadScene(sceneName);
     }
 
     private IEnumerator Fade(float from, float to, float seconds)

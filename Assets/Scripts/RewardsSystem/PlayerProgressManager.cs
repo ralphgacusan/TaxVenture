@@ -89,6 +89,10 @@ public class PlayerProgressManager : MonoBehaviour
     private static void Bootstrap()
     {
         if (Instance != null) return;
+        // Milestone T02: the isolated visual/contact pilot scene never reads or creates the campaign save.
+        if (T02PilotIsolation.IsPilotScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name) ||
+            UnityEngine.SceneManagement.SceneManager.sceneCount > 0 &&
+            T02PilotIsolation.IsPilotScene(UnityEngine.SceneManagement.SceneManager.GetSceneAt(0).name)) return;
         var host = new GameObject("PlayerProgressManager");
         host.AddComponent<PlayerProgressManager>();
     }
@@ -354,6 +358,7 @@ public class PlayerProgressManager : MonoBehaviour
         }
         PlayerProgressData candidate = CloneProgress();
         grants.Trust = CaseResultRules.CompleteFollowThrough(candidate);
+        ChapterEndingRules.Begin(candidate, "Level_01");
         grants.Saved = TryWriteCandidate(candidate);
         if (grants.Saved)
             Debug.Log($"[PlayerProgressManager] Marie's follow-through done: trust {grants.Trust.After}/100; the Chapter 1 wrap-up is next.");
@@ -375,6 +380,7 @@ public class PlayerProgressManager : MonoBehaviour
 
         PlayerProgressData candidate = CloneProgress();
         if (!CaseResultRules.CompleteWrapUp(candidate)) return false;
+        ChapterEndingRules.Acknowledge(candidate, "Level_01");
         bool saved = TryWriteCandidate(candidate);
         if (saved) Debug.Log("[PlayerProgressManager] Chapter 1 wrap-up: chapter completed.");
         return saved;
@@ -424,6 +430,9 @@ public class PlayerProgressManager : MonoBehaviour
 
     /// <summary>Purchases may spend real coins: a story run, or the menu between runs (T13). Anything else only browses.</summary>
     public bool CanSpendCoins => UsesStoryInventory || CanShopFromMenu;
+
+    /// <summary>The campaign's saved inventory, whatever run is active (the career board's view-only Bag); null without a campaign. Read only.</summary>
+    public CampaignInventoryRecord SavedInventory => progress != null && progress.HasCampaign ? progress.campaign.inventory : null;
 
     /// <summary>The live inventory for this run. Observers only read it; changes go through CommitInventory.</summary>
     public CampaignInventoryRecord Inventory
@@ -711,6 +720,40 @@ public class PlayerProgressManager : MonoBehaviour
         return result.Outcome != InventoryOutcome.SaveFailed;
     }
 
+    public bool PreparePendingEnding(string chapter)
+    {
+        if (!UsesStoryInventory || !ChapterEndingRules.Eligible(progress, chapter) ||
+            progress.campaign.IsChapterCompleted(chapter)) return false;
+        if (ChapterEndingRules.Pending(progress, chapter)) return true;
+        PlayerProgressData candidate = CloneProgress();
+        return ChapterEndingRules.Begin(candidate, chapter) && TryWriteCandidate(candidate);
+    }
+
+    /// <summary>T04: no rewards; write the handled presentation before exposing its pending result.</summary>
+    public bool CommitEndingConsumed(string chapter, ChapterCinematicOutcome outcome)
+    {
+        if (!UsesStoryInventory || !ChapterEndingRules.Pending(progress, chapter)) return false;
+        if (progress.campaign.ending.consumed) return outcome != ChapterCinematicOutcome.Aborted;
+        PlayerProgressData candidate = CloneProgress();
+        return ChapterEndingRules.Consume(candidate, chapter, outcome) && TryWriteCandidate(candidate);
+    }
+
+    /// <summary>
+    /// The handled write failed repeatedly: mark it in memory only, so the result can show and its
+    /// Continue can retry the save. Disk keeps the unconsumed record, so a restart replays the movie.
+    /// </summary>
+    public void MarkEndingHandledUnsaved(string chapter) =>
+        ChapterEndingRules.Consume(progress, chapter, ChapterCinematicOutcome.Skipped);
+
+    public bool AcknowledgeLevelTwoEnding()
+    {
+        if (!ChapterEndingRules.Pending(progress, "Level_02")) return true;
+        if (!UsesLevelTwoStory || !progress.campaign.ending.consumed) return false;
+        PlayerProgressData candidate = CloneProgress();
+        ChapterEndingRules.Acknowledge(candidate, "Level_02");
+        return TryWriteCandidate(candidate);
+    }
+
     private PlayerProgressData CloneProgress() => JsonUtility.FromJson<PlayerProgressData>(JsonUtility.ToJson(progress));
 
     /// <summary>Writes a complete candidate; only after the write succeeds does it become the live progress.</summary>
@@ -986,6 +1029,8 @@ public class PlayerProgressManager : MonoBehaviour
         Level2CaseFacts facts = LevelTwoFacts != null ? LevelTwoFacts() : default;
         LevelCheckpoint approvedCopy = null;
         bool copyAlreadyDelivered = Level2CampaignRules.FollowThroughDone(progress);
+        // T04: a restored delivered result is presentation, not another mastery attempt.
+        if (copyAlreadyDelivered) return true;
         if (facts.Approved && !copyAlreadyDelivered)
         {
             approvedCopy = Level2Checkpointer.Active != null ? Level2Checkpointer.Active.CaptureApprovedClientCopy() : null;
@@ -1024,7 +1069,9 @@ public class PlayerProgressManager : MonoBehaviour
     /// it from Rosa's follow-through conversation. Story runs only; a failed
     /// write changes nothing (Saved false) and a repeat is AlreadyDone.
     /// </summary>
-    public StoryGrants CommitLevelTwoFollowThrough()
+    public StoryGrants CommitLevelTwoFollowThrough() => CommitLevelTwoFollowThrough(null);
+
+    public StoryGrants CommitLevelTwoFollowThrough(LevelTotalResult endingResult)
     {
         var grants = new StoryGrants();
         if (!UsesLevelTwoStory) return grants;
@@ -1040,7 +1087,8 @@ public class PlayerProgressManager : MonoBehaviour
         int trustBefore = progress.campaign.publicTrust;
         Level2CampaignRules.Grants due = Level2CampaignRules.ApplyFollowThrough(candidate);
         if (!due.Changed) return grants;
-        // The checkpoint kept only for the Client Copy ends in the same write (nothing left to resume).
+        ChapterEndingRules.Begin(candidate, "Level_02", endingResult != null ? JsonUtility.ToJson(endingResult) : "");
+        // The delivery checkpoint ends here; the presentation handoff retains the result separately.
         candidate.ClearCheckpoint(Level2CampaignRules.LevelId);
         grants.Saved = TryWriteCandidate(candidate);
         if (!grants.Saved) return grants;
@@ -1077,16 +1125,46 @@ public class PlayerProgressManager : MonoBehaviour
 
     /// <summary>
     /// One Level 3 chapter command: the snapshot goes into a candidate copy of
-    /// the whole save and is written before it becomes live. Wallet, trust,
-    /// Rosa history, mastery, inventory, upgrades and decor are carried as
-    /// they are. A failed write changes nothing (memory and disk keep the
-    /// previous snapshot) and the caller may retry.
+    /// the whole save and is written before it becomes live. Attached papers
+    /// move from their separate inventory slots into the physical folder in
+    /// the same candidate; wallet, history, mastery, upgrades and decor stay.
+    /// A failed write changes neither the packet nor the carried slots.
     /// </summary>
     public bool CommitLevelThreeCheckpoint(Level3ChapterCheckpoint state)
     {
         if (!UsesLevelThreeStory) return false;
         PlayerProgressData candidate = Level3ChapterRules.WithCheckpoint(CloneProgress(), state);
-        return candidate != null && TryWriteCandidate(candidate);
+        if (candidate == null) return false;
+        if (!candidate.campaign.IsChapterCompleted("Level_03")) ChapterEndingRules.Begin(candidate, "Level_03");
+        InventoryResult papers = Level3ReviewRules.SyncFolderInventory(candidate.campaign.inventory, InventoryCatalogueAsset.Current, state);
+        if (!papers.Ok || !TryWriteCandidate(candidate)) return false;
+        if (papers.Changed)
+        {
+            try { InventoryChanged?.Invoke(); }
+            catch (Exception e) { Debug.LogException(e); }
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Collect Bea's certificate and its Bag item in the same signed candidate. Milestone T01: a
+    /// certificate clipped into her carried folder (full bar and Bag) takes no slot; its readable pages
+    /// stay with the folder in that same candidate. A failed write changes neither chapter nor inventory.
+    /// </summary>
+    public bool CommitLevelThreeCertificate(Level3ChapterCheckpoint state)
+    {
+        if (!UsesLevelThreeStory) return false;
+        PlayerProgressData candidate = Level3ChapterRules.WithCheckpoint(CloneProgress(), state);
+        if (candidate == null) return false;
+        InventoryResult item = Level3CertificateRules.ApplyToInventory(candidate.campaign.inventory, InventoryCatalogueAsset.Current, state,
+            CaseManager.Instance?.CurrentDefinition, requireFolder: true);
+        if (!item.Ok || !TryWriteCandidate(candidate)) return false;
+        if (item.Changed && Level3CertificateRules.Clipped(state))
+        {
+            try { InventoryChanged?.Invoke(); }
+            catch (Exception e) { Debug.LogException(e); }
+        }
+        return true;
     }
 
     /// <summary>
@@ -1099,12 +1177,14 @@ public class PlayerProgressManager : MonoBehaviour
     /// worksheet and the player can collect again. A campaign already paid
     /// writes the chapter only (grants.AlreadyClaimed).
     /// </summary>
-    public bool CommitLevelThreeWorksheet(Level3ChapterCheckpoint state, out Level3WorksheetGrants grants)
+    public bool CommitLevelThreeWorksheet(Level3ChapterCheckpoint state, out Level3WorksheetGrants grants, SlotRef? target = null)
     {
         grants = default;
         if (!UsesLevelThreeStory) return false;
         PlayerProgressData candidate = Level3ChapterRules.WithCheckpoint(CloneProgress(), state);
         if (candidate == null) return false;
+        InventoryResult item = Level3WorksheetCheck.AcquireSummary(candidate.campaign.inventory, InventoryCatalogueAsset.Current, state, target, CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null);
+        if (!item.Ok) return false;
         Level3WorksheetGrants due = Level3WorksheetCheck.ApplyAcquisitionGrants(candidate, state);
         if (!TryWriteCandidate(candidate)) return false;
         grants = due;
@@ -1129,11 +1209,102 @@ public class PlayerProgressManager : MonoBehaviour
         PlayerProgressData candidate = Level3ChapterRules.WithCheckpoint(CloneProgress(), state);
         if (candidate == null) return false;
         Level3ReviewGrants due = Level3ReviewRules.ApplyApprovalGrants(candidate, state);
-        if (!TryWriteCandidate(candidate)) return false;
+        InventoryResult folder = Level3ReviewRules.SyncFolderInventory(candidate.campaign.inventory, InventoryCatalogueAsset.Current, state);
+        if (!folder.Ok || !TryWriteCandidate(candidate)) return false;
+        if (folder.Changed)
+        {
+            try { InventoryChanged?.Invoke(); }
+            catch (Exception e) { Debug.LogException(e); }
+        }
         grants = due;
         Debug.Log($"[PlayerProgressManager] Bea's computation approved: case XP {due.Xp} (kept for the chapter result), coins {progress.campaign.coins}" +
                   $"{(due.AlreadyClaimed ? " (already paid)" : "")}.");
         return true;
+    }
+
+    /// <summary>
+    /// T10: Bea has her copy after the explanation. ONE candidate holds the
+    /// delivered chapter (copy done, ClosingFinding, her saved explanation)
+    /// and the once-only +4 Public Trust follow-through claim; it is written
+    /// before anything becomes live. False (grants empty) when this run does
+    /// not write the story or the write failed: memory and disk keep the
+    /// carried copy and the handover can be repeated. A campaign already
+    /// credited writes the chapter only (grants.AlreadyClaimed). No coins,
+    /// XP, approval or chapter completion.
+    /// </summary>
+    public bool CommitLevelThreeDelivery(Level3ChapterCheckpoint state, out Level3DeliveryGrants grants)
+    {
+        grants = default;
+        if (!UsesLevelThreeStory) return false;
+        PlayerProgressData candidate = Level3ChapterRules.WithCheckpoint(CloneProgress(), state);
+        if (candidate == null) return false;
+        Level3DeliveryGrants due = Level3DeliveryRules.ApplyDeliveryGrants(candidate, state);
+        if (!due.Changed && !due.AlreadyClaimed) return false;
+        InventoryResult copy = Level3DeliveryRules.ReleaseCopyInventory(candidate.campaign.inventory, InventoryCatalogueAsset.Current, state);
+        if (!copy.Ok || !TryWriteCandidate(candidate)) return false;
+        if (copy.Changed)
+        {
+            try { InventoryChanged?.Invoke(); }
+            catch (Exception e) { Debug.LogException(e); }
+        }
+        grants = due;
+        Debug.Log($"[PlayerProgressManager] Bea has her copy: trust {progress.campaign.publicTrust}/100{(due.AlreadyClaimed ? " (already credited)" : "")}.");
+        return true;
+    }
+
+    /// <summary>
+    /// T14: the Bea-only chapter result was acknowledged (Continue). ONE
+    /// candidate holds the acknowledged chapter (CompletedOffice, the saved
+    /// finding and message), the wrap-up activity, Level 3's completion and its
+    /// aggregated mastery record (frozen worksheet XP + Bea's case XP, best
+    /// kept, badge tier); it is written before anything becomes live. No coins
+    /// or Public Trust: those were claimed once by their own activities. False
+    /// (grants empty) when this run does not write the story or the write
+    /// failed: memory and disk keep the pending result and Continue can be
+    /// pressed again. A chapter already completed writes the chapter only
+    /// (grants.AlreadyDone).
+    /// </summary>
+    public bool CommitLevelThreeWrapUp(Level3ChapterCheckpoint state, out Level3WrapUpGrants grants)
+    {
+        grants = default;
+        if (!UsesLevelThreeStory) return false;
+        PlayerProgressData candidate = Level3ChapterRules.WithCheckpoint(CloneProgress(), state);
+        if (candidate == null) return false;
+        Level3WrapUpGrants due = Level3ClosingRules.ApplyWrapUp(candidate, state);
+        if (!due.Changed && !due.AlreadyDone) return false;
+        ChapterEndingRules.Acknowledge(candidate, "Level_03");
+        if (!TryWriteCandidate(candidate)) return false;
+        grants = due;
+        Debug.Log($"[PlayerProgressManager] Chapter 3 acknowledged: {due.Result.Exp}/{Level3ChapterResult.MaxExp} XP (+{due.ExpGain} to the career), " +
+                  $"chapter complete {progress.campaign.IsChapterCompleted(Level3ChapterRules.LevelId)}{(due.AlreadyDone ? " (already recorded)" : "")}.");
+        return true;
+    }
+
+    /// <summary>T16: what a Level 3 mastery replay's acknowledged result wrote.</summary>
+    public enum ReplayCommit { NotEligible, Saved, SaveFailed }
+
+    /// <summary>
+    /// T16: a mastery replay of the completed Chapter 3 was acknowledged. ONE
+    /// candidate holds only its best-only mastery record (MasteryBoundary via
+    /// Level3ClosingRules.ApplyReplayBest: best XP kept, badge tier kept at its
+    /// best, the career total grows only by an improvement); the story's
+    /// chapter snapshot, frozen first grades, wallet, Trust, claims,
+    /// possessions and history are carried exactly. NotEligible outside a
+    /// replay of a story-completed Chapter 3 (practice, Editor, story).
+    /// </summary>
+    public ReplayCommit CommitLevelThreeReplay(Level3ChapterCheckpoint replay, out Level3WrapUpGrants grants)
+    {
+        grants = default;
+        if (progress == null || !progress.HasCampaign || !CampaignSave.CanContinue(campaignState) || TrainingSession.IsPracticing ||
+            CurrentRunMode != CampaignRunMode.MasteryReplay || !progress.campaign.IsChapterCompleted(Level3ChapterRules.LevelId))
+            return ReplayCommit.NotEligible;
+        PlayerProgressData candidate = CloneProgress();
+        Level3WrapUpGrants due = Level3ClosingRules.ApplyReplayBest(candidate, replay);
+        if (!due.Changed) return ReplayCommit.NotEligible;
+        if (!TryWriteCandidate(candidate)) return ReplayCommit.SaveFailed;
+        grants = due;
+        Debug.Log($"[PlayerProgressManager] Chapter 3 replay: {due.Result.Exp}/{Level3ChapterResult.MaxExp} XP (+{due.ExpGain} to the career; best kept).");
+        return ReplayCommit.Saved;
     }
 
     /// <summary>

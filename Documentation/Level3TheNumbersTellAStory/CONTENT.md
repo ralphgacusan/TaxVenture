@@ -1,93 +1,80 @@
-# Canonical Level 3 content and answer fixtures
+# Canonical Level 3 content — revised player-facing flow
 
-All names, identifiers, papers and amounts below are fictional game content. Tax year 2026, complete annual packets; the chapter reviews supplied annual cases rather than claiming a partial island month is a full annual return. These figures are implementation fixtures from the adopted proposal, not a real taxpayer filing instruction. T01 research and bindings are complete for isolated development: see [TAX_AUTHORITY](TAX_AUTHORITY.md) for dated primary citations and the pending L3-CONTENT-AUTHORITY graded-release gate, and [FIXTURE_CONTRACT](FIXTURE_CONTRACT.md) for canonical IDs, source fields, full rule table, exact chains, twelve decisions, rounding/boundary/negative fixtures and proposed schema. Educator approval is not supplied. No fabricated official seals/identifiers or newly invented tax rule.
+Office presentation update — **4 November 2026**: [OFFICE_CASE_PLAY](OFFICE_CASE_PLAY.md) governs the approved Bea office interaction, short screen copy, progressive detail and restrained print/clip/stamp/review/delivery feedback in T07–T10; T17 verifies the complete experience. Sources/financial fixtures remain intact, richer details stay accessible and no production work is claimed.
 
-## Bea and her records
+Current outdoor interaction: [SIDE_QUEST_MACHINE](SIDE_QUEST_MACHINE.md) governs T04–T06. Feed halfway → select treatment/reason → lever-file → next record → Check batch/correct → collect the small summary (existing B-WORKSHEET) into Bag/Case Folder support for office use. It supersedes direct three-bin placement and giant worksheet presentation; source facts, nine-decision grading, legacy results and rewards are unchanged.
 
-Case `L3-BEA-001`, Beatriz Mendoza, freelance logo/menu illustrator already present as Bea in Level1. Resident individual professional; graduated rates/itemized deductions established in background, not a player tax-option optimization exercise. All stated business expenses are current-period, wholly business, supported and eligible for this bounded exercise; no capital assets, depreciation, mixed-use allocation, VAT computation, foreign-source or OSD/8% choice. Describe eligibility only as far as T01 verified authority supports.
+Current mechanics and presentation: [REVISION_PLAN](REVISION_PLAN.md). Exact financial/source/rule tables and legacy decoder fixtures: [FIXTURE_CONTRACT](FIXTURE_CONTRACT.md). [TAX_AUTHORITY](TAX_AUTHORITY.md) retains educator/provenance/rounding release gates. No new tax-law verification or curriculum acceptance is claimed by this revision.
 
-| Source ID | Fixed type / content | Printed facts / relationship | Admission |
-|---|---|---|---|
-| B-ID | 1 Identity | Bea's consistent fictional identity, masked identifier | Assignment/supporting papers |
-| B-BG | 2 Client interview notes | Freelancer; annual period; selected regime; personal studio-saving goal | Assignment |
-| B-REV | 4 Annual collection sheet | R1 logo fees 500,000; R2 menu/illustration fees 400,000; annual revenue 900,000 | Bea handover |
-| B-EXP | Working annual cost schedule, plain record layout | R3 rent 180,000, ref RENT-26; R4 subscriptions 90,000, ref SUB-26; R5 printing/consumables 30,000, ref PRINT-26; total 300,000 | Bea handover |
-| B-RENT | 7 Studio tenancy agreement | Annual studio-only rent 180,000; paid/current-period facts explicitly supplied | Bea handover; support for R3 |
-| B-SUB | 5 Supplier payment record | Business-only annual subscription 90,000, paid, SUB-26 | Bea handover; support for R4 |
-| B-PRINT | 5 Printing supplier record | R7 paid annual bill 30,000, PRINT-26; recorded in B-EXP's printing row | Bea handover; support, not another cost |
-| B-PERSONAL | 5 Personal purchase receipt | R6 birthday dinner/decorations 24,000; private celebration, not studio work | Bea handover |
-| B-DRAFT | Working paper, not ninth source type | Rough proposed costs include 300,000 +24,000 +30,000 =354,000; two claim notes for R6/R7 | Bea handover |
-| B-WHT | 8 Creditable withholding certificate / 2307 | Bea payee; same year; income payment 250,000 already within R2; creditable withholding 12,500; ref WHT-B26 | At Bea's office credit step, deliberate actual handover/collection |
+Current release scope is one case, Bea. The company source packet and Nina story beats below are preserved as deferred T11/T12 material; they are not active player content or gates for this release.
 
-R3 strips extract the annual B-EXP row and retain the agreement as support; R4 likewise retains B-SUB. Originals remain intact. B-WHT is not a new 250,000 income item or another business expense. No net-bank reconciliation is added. Source fields stay readable, with annual period, issuer/payee, purpose/status, amount/reference. Use additional faces for overflow, not tiny print.
+## Cases and source facts
 
-### Worksheet first check: twelve decisions
+All people/amounts/references are fictional teaching content. Supplied complete annual2026 packets; existing client regime/context facts determine the bounded scenario. Do not imply partial island time is a full annual return, or that receipts alone establish eligibility. All source/row/transaction identities remain as existing definitions; new summaries never create duplicate economic items. Original records retain source standard types; no new supporting-document type.
 
-| Decision IDs | Correct outcome |
-|---|---|
-| dest-R1, dest-R2 | Income |
-| dest-R3, dest-R4, dest-R5 | Allowable expenses |
-| dest-R6 | Not deductible |
-| dest-R7 | Supporting only |
-| reason-R6 | Personal purpose |
-| reason-R7 | Already represented |
-| related-R7 | R5/B-EXP PRINT-26 |
-| subtotal-income | Attached addition matches actual selected Income set |
-| subtotal-expenses | Attached addition matches actual selected Expense set |
+### Bea — L3-BEA-001
 
-Amounts/source identities are copied automatically, not independent scored fields. Reasons/link remain reachable from the two claim notes even on wrong placement. Neutral alternative reason labels: Business purpose, Personal purpose, Already represented, Different reporting period, Need supporting record. Permit wrong content choices; validate after Check. The correct completed totals are 900,000 and 300,000. A wrong placement with a matching sum earns arithmetic credit on first check but still requires treatment and resulting total correction before acquisition.
+Beatriz Mendoza is the returning freelance logo/menu illustrator. Introduction works without an earlier optional conversation. Resident individual professional, graduated regime and supported itemized business costs supplied. No OSD/8% optimization, VAT, foreign-source allocation, depreciation or withholding-rate assessment.
 
-Correct Bea chain: 900,000 −300,000 =600,000 taxable income; annual bracket over 400,000 through 800,000; excess 200,000 ×20% =40,000; +22,500 base tax =62,500 tax due; −12,500 supported credit =50,000 remaining payable. Tax-rule constants are verified against RA10963 and the [BIR published table](https://bir-cdn.bir.gov.ph/BIR/pdf/RMC%20No.%2034-2025%20Annex%20A.pdf), effective2023 onwards; precise locators/applicability are in TAX_AUTHORITY. Player-facing book explains the method without client-specific solved values.
-
-## Company and records
-
-Case `L3-MARINE-001`, Coast Tales Marine Services, Inc.; proposed bookkeeper **Nina Cruz**, ordinary cooperative client distinct from redevelopment corporation. She is an authored new role using an existing model, not a verified existing NPC. Domestic corporation, no special incentives; supplied operations and BIR registration began1 January2024, so first MCIT year is2028 and it is outside this2026 packet. Set verified relevant assets to 80,000,000 excluding relevant land, and taxable income 6,000,000, exceeding the smaller-corporation income condition. No separate asset hunt, depreciation schedule or minimum-tax lesson.
-
-| Source ID | Type/content | Values and use |
+| Source | Content / supported amount | Admission and role |
 |---|---|---|
-| C-BG | 2 Interview notes | Company/bookkeeper, completed annual period, verified regime/operating-year facts |
-| C-REV | 4 Annual service revenue | 8,000,000 supported services |
-| C-COST | Working cost schedule with retained invoice extracts | Operations 1,200,000; premises rent 500,000; administration 300,000; total 2,000,000 |
-| C-TRIP | 5 Travel payment record | Owner/family personal holiday, 120,000, no business purpose; separately identifiable transaction |
-| C-DRAFT | Working summary | Assistance Desk-prepared administration includes trip; total proposed costs 2,120,000; preparer reference AD-26 |
-| C-WHT | 8 Withholding certificate | Same company/year; supplied annual certificate packet totals300,000 credit; covered gross income8,000,000 already included in C-REV; payer/ATC itemization remains a graded-release gate |
-| C-ASSET | Working verified asset schedule extract | Relevant assets 80,000,000 excluding identified qualifying land; threshold context only, not deduction |
+| B-ID | Existing fictional/masked identity | Assignment/records; context only |
+| B-BG | Freelancer, annual2026 period, selected regime, studio-saving goal | Assignment/records; no repeated classification |
+| B-REV | R1 logo500,000; R2 menu/illustration400,000; total900,000 | Initial originals; two earnings slips |
+| B-EXP | R3 rent180,000; R4 subscription90,000; R5 printing30,000; total300,000 | Initial originals; three cost slips |
+| B-RENT | Same annual business rent, RENT-26, paid/support facts | Initial originals; support forR3, not second expense |
+| B-SUB | Same business subscription90,000, SUB-26 | Initial originals; support forR4, not second expense |
+| B-PRINT | R7 paid printing bill30,000, PRINT-26 already withinR5 | Initial originals; questionable record, not another deduction |
+| B-PERSONAL | R6 birthday purchase24,000, private purpose | Initial originals; questionable record, not a business deduction |
+| B-DRAFT | Proposed costs354,000 =300,000 +24,000 +30,000 | Initial originals; optional comparison, not three extra entries |
+| B-WHT | Certificate/Type8; income payment250,000 already inR2; credit12,500 | Deliberate acquisition at office credit step |
 
-All costs are expressly supported for this bounded exercise; original retained documents, not the interview alone, support the adjustment. Player removes 120,000 personal trip from proposed deductible total, leaving 2,000,000. Taxable income 8,000,000 −2,000,000 =6,000,000; ordinary rate 25%; tax due 1,500,000; −300,000 credit =1,200,000 payable. Draft unsupported balance at same rate/credits =1,170,000; supported correction increases payable by30,000. No rule that higher tax is morally better.
+The first nine papers are acquired once through existing record command; only one is prominent at a time. R1–R7 remain the seven activity entries. No separate link-choice or subtotal-arithmetic puzzle. Earnings R1/R2 -> Income; costs R3/R4/R5 -> Deduct; R6/R7 -> Leave Out, with Personal purpose / Already represented explanations. PRINT-26 remains the source relationship; an optional comparison supports the distinction. Automatic chosen-entry totals reflect decisions without secretly correcting them. Nine current decisions/tier/XP/batch behavior are in REVISION_PLAN, distinct from legacy twelve-decision fixtures.
 
-Reference entry points retained from proposal: [RA 11534](https://elibrary.judiciary.gov.ph/thebookshelf/showdocs/2/93191) and [BIR published CREATE MORE text](https://bir-cdn.bir.gov.ph/BIR/pdf/RMC%20No.%20135-2024%20Annex%20A.pdf). T01 verified the ordinary25% rule, small-company AND conditions and EDR distinction against BIR RR7-2025 and reviewed later CMEPA changes; see TAX_AUTHORITY. Its source discrepancy, expense/period assumptions, certificate provenance (especially Marine's300,000 aggregate) and rounding still need curriculum sign-off before graded release. Source-shaped props do not establish credit eligibility.
+Bea computation:900,000 -300,000 =600,000 taxable income. Chosen individual band over400,000 through800,000;22,500 base +20% x(600,000 -400,000) =62,500 tax due. Transfer supported certificate credit12,500;62,500 -12,500 =50,000 remaining payable. The250,000 is not additional income or an expense. Reference book teaches method without client-specific solved values.
 
-## Book and tool teaching
+### Deferred future case — Company — L3-MARINE-001
 
-Preserve book contents from prior levels. Add leaves: Costs and Purpose; Count Once; Taxable Income; Annual Individual Table; Base Plus Excess; Ordinary Corporate Conditions; Credit Versus Expense; Checking a Computation. Read-only rule text, selectable generic constants/reasons as existing transfer supports; no Bea/company answer values in reference leaves. Year clearly visible; no requirement to memorize a hidden number.
+This complete source/rule packet is retained for the future T11/T12 case. It is not active content in the current Bea-only Level 3 release and does not gate current chapter completion or Career enablement.
 
-Protected tool example: fictional budget 100 −paper order20 =80; −courier8 =72. No actual wallet change, invented tax rate, score or reward. Teach selecting a source, subtract/equals, attach and reopen tape, then independent control. Later graduated-method help uses an unrelated author-reviewed example in the book; T01 supplies the exact separate Practice Design Studio example:350,000 taxable income;100,000 excess at15%;15,000 tax. This is author-prepared and educator-pending, in a different band from Bea. No new guide actor/demo framework.
+Coast Tales Marine Services, Inc., represented by bookkeeper Nina Cruz, is a cooperative local company distinct from redevelopment antagonist. Reuse an existing verified character model/controller, not an asserted unique Nina asset. Domestic ordinary corporation; no incentives; operations/registration supplied as1 January2024 so2026 packet is outside firstMCIT year2028. Existing relevant asset amount80,000,000 excludes qualifying premises land; taxable income6,000,000 fails the smaller-company income condition. No asset hunt or depreciation/MCIT lesson.
 
-## Dialogue content and transitions
-
-Use existing DialogueUI/DialogueSession, AwaitAction and narrow choices. Choice labels below are canonical copy; phase selectors live in level content, not a competing dialogue framework. Speaker/portrait is text-only if no matching supplied art exists. The detailed proposal Section14 supplies history variants; preserve those exact meanings.
-
-| Trigger | Speaker/line and options | Action/result |
+| Source | Content / supported amount | Role |
 |---|---|---|
-| First reception | Responsible Rosa: `Rosa appreciated getting her checked copy. Bea has booked a computation appointment.` Unsupported resolved: `Rosa's corrected copy is delivered. Bea needs a checked computation before making plans.` Dismissive: `Rosa's case is closed. Bea has brought her records and would like you to explain the result.` Neutral: `Bea has booked a computation appointment. Her records are ready in the plaza.` | One actual-history variant, then assignment; no old reward/consequence |
-| Bea first talk | `I kept the receipts this time. That means I can subtract all of them, right?` Elijah: `Let's look at what each record supports.` | Records handover available; no instant destinations selected |
-| Source inquiries | `What was this purchase for?` → `My birthday dinner and decorations. The studio wasn't involved.` `Does this invoice belong to the annual total?` → `Yes, that supplier bill is in the printing summary.` `Show me the period these records cover.` → `These are the records for the whole year shown on the sheets.` `I'll review the papers first.` | Contextual selected record; repeatable facts, no reward; all graded facts also printed |
-| Worksheet ready | `Could you help me understand how to keep this organized next time?` Options: `Let's separate business and personal receipts before I explain the total.` / `I'll mark the worksheet so you can trace each total back to a record.` / `Let me finish the computation, then we can choose how to go through it.` | Save separate-receipts / trace-totals / deferred plan; no immediate trust. Talk later cancels without promise |
-| Withholding handover | `A client withheld some tax from a payment. Is that another business expense?` Options: `It reduces the remaining tax when supported by the certificate.` / `It reduces the income amount before the tax calculation.` / `Let's inspect the certificate together.` | Correct explanation proceeds but never auto-fills; wrong explanation opens Credit Versus Expense help, retains draft; inspect returns to same context |
-| Review returned | Auditor: `Your work is kept. Start with the line I marked, then check the calculations that depend on it.` | Focus root cause; no unrelated work reset |
-| Bea approval | Auditor: `Approved for this computation review. Give Bea her copy and explain the balance.` | Existing physical copy pickup/awaited delivery |
-| Bea plan follow-through | separate-receipts: `Show me one business record and one personal record.` trace-totals: `Can you show me the record behind this total?` | One brief tap/placement/source-opening action; then approve delivery admission |
-| Bea closing | `Now I can see what belongs in the calculation. I'll keep those records together.` | Actual copy handover +4 once, proceed company appointment |
-| Company reception | `Marine Services is ready for its appointment. Their bookkeeper brought the annual records.` | After Bea delivery only; new folder/clock binding |
-| Nina discrepancy | `The prepared schedule calls that administrative. I thought the Desk had checked it.` Options: `What was the trip's purpose?` / `Let's compare that label with the original record.` / `I'll finish reviewing before I give you a figure.` | Targeted original/interview fact; no automatic treatment; safe return |
-| Nina trip answer | `It was the owner's family holiday. It wasn't a company trip.` | Link interview context to retained C-TRIP; originals remain evidence |
-| Company delivery | `Your figure is higher than the Desk's. Can you show me why?` Options: `The personal trip cannot reduce this company's taxable income in this case.` / `The company pays the individual graduated bracket.` / `A higher figure proves someone intended to mislead you.` | First requires point to120,000 row. Second prompts rule correction. Third: `We can support the correction. Intent needs additional evidence.` Correct before delivery, no trust punishment |
-| Company closing | `Thank you. I'll keep the original records with the corrected worksheet.` | Correct explanation/copy +4 once |
-| Finding | `Record the discrepancy and retain both sources` / `Review the records once more` | Qualified journal fact or return to sources; no trust |
-| Mayor message via receptionist | `The mayor asked me to pass this on.` Quoted note: `I told people this service would make things easier. Bring me what the records support. I need to know where the process is failing.` | No new Quax actor; save closing fact/response |
+| C-BG | Company/bookkeeper/year/regime/commencement context | Folder Client/support |
+| C-REV | Service revenue8,000,000 | Income source |
+| C-COST | Operations1,200,000 +rent500,000 +administration300,000 =2,000,000, retained invoice extracts | Supported expense source |
+| C-TRIP |120,000 owner/family personal holiday | Original resolves proposed unsupported expense |
+| C-DRAFT | Prepared summary2,120,000 costs; administration420,000 contains300,000 plus120,000 trip; AD-26 preparer reference | Comparison; never add trip component twice |
+| C-WHT | Same-company/year supplied certificate packet credit300,000; covered8,000,000 already in revenue | Credit source; approved itemization/provenance release gate remains |
+| C-ASSET | Verified relevant assets80,000,000 | Rule context only, not income/deduction/credit |
 
-During delivery the existing action prompt becomes `Give Bea her computation copy` / `Give Nina the company's computation copy`; drag-to-correct-NPC and icon-tap alternatives. Read-only copy marked COMPUTATION COPY; no return filing or tax payment is claimed. During held action, ordinary dialogue tapping cannot skip handover. Save explanation outcome and handover together before trust FX.
+All company sources arrive after Bea delivery; no second field hunt or sorting side quest. Player compares summary/original, identifies personal purpose and explicitly confirms supported expenses2,000,000. Company computation:8,000,000 -2,000,000 =6,000,000; applicable ordinary25% ->1,500,000; less300,000 credit ->1,200,000 payable. Draft balance at same rate/credit1,170,000; correction increases balance30,000. Higher tax alone is neither morality nor proof of wrongdoing.
 
-Every NPC also has bounded first/repeat/resume lines for records pending, draft, corrected worksheet, calculation pending, audit returned, new review day, copy pending and delivered. Use one actionable clue before review reaction before optional small talk. Clues point to source/purpose/book leaf, not client answers. No compulsory four-person round or mandatory ambient chats.
+## Concise dialogue beats and actions
 
-Verified journal fact: Assistance Desk prepared another summary with unsupported treatment; retained original supports correction. Unresolved: intention, author of treatment, whether a review/replacement process failed. A neutral fact/journal extension is sufficient; Level5 finding board is not introduced.
+These meanings replace older multi-route/service-task scripts. Each ticket rewrites actual resource dialogue/guide/objectives; this document alone does not change runtime. Starting copy budgets and optional detail in WORLD_AND_FEEDBACK.
+
+| Beat | Short conversational intent | Required player action |
+|---|---|---|
+| Reception | Rosa-history-aware acknowledgment; Bea has brought annual records | Accept next assignment, no repeated consequence/reward |
+| Bea outside | “I kept my receipts. Can I deduct all of them?” | Acquire originals, inspect/sort/check batches |
+| Optional source question | What was the purchase for? Is this printing bill already in the total? | Inspect printed facts; answers repeatable, no reward |
+| Office first calculator use | Brief unrelated demonstration of source/subtract/calculate/attach | One unscored demonstration; then independent client calculation |
+| Credit handover | “Some tax was already withheld. Where does it go?” | Acquire/read certificate, distinguish credit from expense, transfer |
+| Auditor return | Name first unsupported step and relevant book help | Correct working, stamp current revision, resubmit |
+| Auditor approval | Computation review approved; explain and deliver client copy | Pick up actual read-only copy, not auto delivery |
+| Bea resolution | “How much is left after the tax already withheld?” | Point to credit/balance/source, brief explanation and handover |
+| Nina appointment — deferred | Prepared summary and supplied company originals | Future T11; acquire/bind only if the second case is approved |
+| Company comparison — deferred | “The Desk included this trip in administration.” | Future T11; check original purpose, choose supported deduction total |
+| Nina resolution — deferred | “Why is the supported amount higher?” | Future T12; point to120,000 personal trip/correction; explain and deliver |
+| Closing finding | Another prepared summary used unsupported treatment | Retain qualified fact/source; no intent allegation |
+| Mayor message | Bring what records support; identify where process fails | Read receptionist message, acknowledge chapter wrap-up |
+
+Wrong explanation opens concise contextual help and retry, no Public Trust penalty. No separate receipts-versus-trace service-plan choice or promised task. Optional original/source questions stay accessible without becoming additional mandatory quiz pages. Correct explanation and actual correct-client copy handover jointly gate delivery reward.
+
+## Reference and story boundaries
+
+Reuse current book leaves Costs and Purpose, Count Once, Taxable Income, Annual Individual Table, Base Plus Excess, Ordinary Corporate Conditions, Credit Versus Expense, Checking a Computation. Open relevant leaf on demand, do not add permanent formula/reference panels. No client answer values in generic reference. Existing unrelated worked example may support first-use help; remove compulsory100-20/80-8 budget-tape route.
+
+Verified finding: Assistance Desk-prepared summary included an unsupported personal cost; original supports correction. Unresolved: intent, author/authorization and replacement/review process. Mayor message builds concern. L4 investigates conflicting versions/prepares returns; L5 substantiates integrated findings. Arthur remains guide and Quax message role. Preserve all possessions, Rosa outcomes and known story history.

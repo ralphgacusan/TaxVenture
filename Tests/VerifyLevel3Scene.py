@@ -3,11 +3,15 @@ Usage: python Tests/VerifyLevel3Scene.py   (from the project root)
 
 Checks, without Unity:
 - Office_Level3.unity exists with its own .meta GUID, used by no other .meta;
-  Office_Level1/Office_Level2 keep their GUIDs; the copy's bytes equal the saved
-  Office_Level2 at the one-time copy (Level 3 adds nothing to the scene file:
-  Level3Gameplay is built at runtime).
-- Office_Level1/Office_Level2 still match the immediate pre-T02 hashes (a later
-  user edit is reported as WARN, never "fixed").
+  Office_Level1/Office_Level2 keep their GUIDs. The user-requested supply
+  and Bea placement markers are authored; Level3Gameplay is built at runtime.
+- Revision (T02, 3 November 2026): Office_Level3 is the authorized continuing
+  scene, edited and saved since its one-time copy, so byte equality with the
+  saved Office_Level2 is no longer a contract. Each scene's hash is compared
+  with the baseline recorded at the revision; a difference is reported as WARN
+  (a later saved edit), never "fixed" and never a pass/fail by itself. The
+  structural contracts below (GUIDs, script set, owners, runtime roots, paths,
+  build order, Career gate) are what is checked.
 - Every script GUID in Office_Level3 resolves to a script in Assets or a package
   (no dangling script reference).
 - Every scene path Level_03 data uses (office_start.json spawn/face/hide) exists.
@@ -16,7 +20,7 @@ Checks, without Unity:
 - Build settings: Office_Level3, when registered (Level3SceneSetup does it on
   import), is one enabled entry with its GUID AFTER every existing entry; the
   existing entries keep their order. Not registered yet = WARN (import pending).
-- Career Chapter 3 stays coming soon.
+- Career Chapter 3 routes to the enabled scene for the user-requested APK playtest.
 Unity import, lighting, visuals, controls and Play Mode are NOT checked here."""
 import hashlib, json, os, re, sys
 
@@ -28,10 +32,12 @@ LEVEL3 = 'Assets/Scenes/Office_Level3.unity'
 LEVEL1_GUID = '5f6c770d7b969f143b4fbd481aaef942'
 LEVEL2_GUID = '00c1e5f98fce4a819da741bdd9d51819'
 LEVEL3_GUID = '844c604a279e4b66ae226bf66f1dd99a'
-# Immediate pre-T02 baselines (30 October 2026) and the saved source of the one-time copy.
-LEVEL1_BASELINE = '148d871cd00586bff6a495c85c63bb37c46e22670b526a97052ecdd2e03462fe'
-LEVEL2_BASELINE = 'f5b8538e20841926228b4f84bb5447db9c1c4aa488b65e73f435f06343db19e7'
-COPY_SOURCE = LEVEL2_BASELINE
+# Historical: the immediate pre-T02 Office_Level2 (30 October 2026), the saved source of the one-time copy.
+COPY_SOURCE = 'f5b8538e20841926228b4f84bb5447db9c1c4aa488b65e73f435f06343db19e7'
+# Saved scenes recorded at the T02 revision (3 November 2026), before any revised work; later edits are WARN only.
+LEVEL1_BASELINE = 'f4564ecd2513cb2b5e8cf81e2ffe92a075649f591ad52024674a44d24c675275'
+LEVEL2_BASELINE = '0a46b8d6d82caf34f60f3440ddcf679b5ec1957c83550031b71cc6624f9cd433'
+LEVEL3_BASELINE = '3e8d29dfd93c2efc75a903034b6957b5c6093c867f6b9ca0a9900be6c824b9c5'
 # Build order before T02 (Level3SceneSetup only appends after these).
 BUILD_BEFORE = ['Assets/Scenes/3D Menu.unity', LEVEL1, LEVEL2, 'Assets/Scenes/Cutscene2.0.unity']
 
@@ -85,11 +91,11 @@ for base in ('Assets', 'Packages'):
 check(len(meta_guids.get(LEVEL3_GUID, [])) == 1, f'Office_Level3 GUID is used by exactly one .meta (found {len(meta_guids.get(LEVEL3_GUID, []))})')
 dupes = {g: p for g, p in meta_guids.items() if len(p) > 1 and any('Level3' in x or 'Level_03' in x for x in p)}
 check(not dupes, 'no new Level 3 asset shares a GUID: ' + str(dupes))
-check(sha256(LEVEL3) == COPY_SOURCE, 'Office_Level3 bytes equal the saved Office_Level2 it was copied from (no hand edits)')
-if sha256(LEVEL1) != LEVEL1_BASELINE:
-    warn('Office_Level1 differs from the immediate pre-T02 baseline (a later user edit?)')
-if sha256(LEVEL2) != LEVEL2_BASELINE:
-    warn('Office_Level2 differs from the immediate pre-T02 baseline (a later user edit?)')
+for label, path, baseline in (('Office_Level1', LEVEL1, LEVEL1_BASELINE), ('Office_Level2', LEVEL2, LEVEL2_BASELINE),
+                               ('Office_Level3', LEVEL3, LEVEL3_BASELINE)):
+    if sha256(path) != baseline:
+        warn(f'{label} differs from its 3 November 2026 revision baseline (a later saved edit; not checked here)')
+level3_hash = sha256(LEVEL3)
 
 # ---------- scene parse ----------
 def parse(path):
@@ -170,7 +176,10 @@ if new_unresolved and not package_guids:
     warn('Library/PackageCache not readable; package script GUIDs not checked: ' + ', '.join(new_unresolved))
 else:
     check(not new_unresolved, 'every script GUID Office_Level3 adds resolves to a script (unresolved: ' + ', '.join(new_unresolved) + ')')
-check(sorted(scripts3) == sorted(scripts2), 'Office_Level3 serializes exactly Office_Level2\'s script components')
+authored_placements = [meta_guid('Assets/Scripts/Interactables/SupplyCounterPlacement.cs'),
+                       meta_guid('Assets/Scripts/Level3/Level3BeaPlacement.cs')]
+check(sorted(scripts3) == sorted(scripts2 + authored_placements),
+      'Office_Level3 retains Office_Level2 script components and adds only the two authorized placement markers')
 
 
 def res(rel):
@@ -191,6 +200,9 @@ check(exists(town['bea']['anchorPath']), "Bea worktable anchor (her Level 1 benc
 # T08: Bea waits at the conference room's client spot (the same spot Level 2's Rosa uses); her route matches Rosa's doorway points.
 check(exists(town['bea']['officeSpotPath']), "Bea's office spot (conference room client) exists in Office_Level3: " + town['bea']['officeSpotPath'])
 check(exists('Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk'), "the consultant desk (Bea's computation sheet and certificate tab) exists in Office_Level3")
+# Revised T03: Level3CaseFolder carries the real desk folder (its pages and store) and can put it back on the desk stack.
+check(exists('Environment/OfficeBuilding/Rooms/ConsultantOffice/InteractiveFolderObjects/OpenCaseFolder'), 'the real desk Case Folder (Level3CaseFolder) exists in Office_Level3')
+check(exists('Environment/OfficeBuilding/Rooms/ConsultantOffice/Desk/StackedCaseFolder'), 'the desk folder stack (put back on the desk) exists in Office_Level3')
 rosa = res('Levels/Level_02/town_life.json')['rosa']
 rosa_points = [(p['x'], p['z']) for p in rosa['toReception'][:-1] + rosa['toRoom']]
 check([(p['x'], p['z']) for p in town['bea']['toOffice']] == rosa_points,
@@ -238,10 +250,10 @@ else:
 # ---------- career gate ----------
 chapters = res('Career/chapters.json')['chapters']
 chapter3 = [c for c in chapters if c.get('id') == 'Level_03']
-check(len(chapter3) == 1 and chapter3[0].get('comingSoon') is True and not chapter3[0].get('scene'),
-      'Career Chapter 3 stays coming soon with no scene route (T18 enables it)')
+check(len(chapter3) == 1 and chapter3[0].get('comingSoon') is False and chapter3[0].get('scene') == 'Office_Level3',
+      'Career Chapter 3 routes to Office_Level3 for APK playtesting')
 
 print(f'VerifyLevel3Scene: {"PASS" if fails == 0 else str(fails) + " FAIL"} ({warns} warning(s)); '
-      f'Office_Level3 GUID {LEVEL3_GUID}; source sha256 {COPY_SOURCE[:16]}...; '
+      f'Office_Level3 GUID {LEVEL3_GUID}; current sha256 {level3_hash[:16]}... (copied from {COPY_SOURCE[:16]}...); '
       f'GameStateMachine components {counts.get("GameStateMachine")} (inherited from Office_Level2)')
 sys.exit(1 if fails else 0)

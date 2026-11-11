@@ -79,6 +79,8 @@ public sealed class Level3Calculator
     public string DraftResult { get; private set; }
 
     public bool HasDraft => DraftExpression != null && DraftResult != null;
+    /// <summary>Invalidates a captured print even if later input returns to the same number.</summary>
+    public long InputRevision { get; private set; }
 
     /// <summary>
     /// T07: the draft as one traceable chain. Continuing from a result (an
@@ -105,6 +107,7 @@ public sealed class Level3Calculator
 
     public Level3CalcResult Press(Level3CalcKey key)
     {
+        InputRevision++;
         Issue = null;
         switch (key)
         {
@@ -125,6 +128,7 @@ public sealed class Level3Calculator
     /// <summary>Takes a printed amount from a source paper as the number being entered (replacing a typed one).</summary>
     public Level3CalcResult SelectSource(string sourceId, string label, string amount)
     {
+        InputRevision++;
         Issue = null;
         if (string.IsNullOrWhiteSpace(sourceId) || !TryParse(amount, out decimal value)) return Fail(IssueNoNumber);
         if (ShowingResult) Result = null;
@@ -137,6 +141,7 @@ public sealed class Level3Calculator
     /// <summary>Clears everything, including the draft tape (a new attempt or a restore).</summary>
     public void Reset()
     {
+        InputRevision++;
         tokens.Clear();
         entry = "";
         entrySource = null;
@@ -152,6 +157,7 @@ public sealed class Level3Calculator
     /// <summary>The draft tape was attached: it leaves the calculator (the expression and result stay on the display).</summary>
     public void ConsumeDraft()
     {
+        InputRevision++;
         DraftExpression = null;
         DraftResult = null;
         DraftChain = null;
@@ -164,6 +170,7 @@ public sealed class Level3Calculator
     /// </summary>
     public Level3CalcResult SelectSourcePercent(string sourceId, string label, string fraction)
     {
+        InputRevision++;
         Issue = null;
         if (string.IsNullOrWhiteSpace(sourceId) || !TryParse(fraction, out decimal value)) return Fail(IssueNoNumber);
         if (ShowingResult) Result = null;

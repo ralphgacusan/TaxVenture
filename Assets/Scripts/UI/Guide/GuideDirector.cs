@@ -456,6 +456,7 @@ public sealed class GuideDirector : MonoBehaviour, ISerializationCallbackReceive
 
     private static bool Calm(bool allowResults)
     {
+        if (ChapterEndingSequence.BlocksGameplay) return false;
         if ((HudRewardScreen.AnyOpen && !allowResults) || Time.timeScale <= 0f) return false;
         if (SideQuestSplash.IsShowing || (Level2AnnotatedPapers.Instance != null && Level2AnnotatedPapers.Instance.IsCollecting)) return false;
         if (!allowResults && CaseResultPopupUI.Instance != null && CaseResultPopupUI.Instance.IsVisible) return false;

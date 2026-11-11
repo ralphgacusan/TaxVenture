@@ -214,6 +214,8 @@ public class DialogueCameraDirector : MonoBehaviour, IDialoguePresentation
         closeUpPolicy.Reset(unchecked(Environment.TickCount * 31 + (owner != null ? owner.GetHashCode() : 0)));
 
         framed = TryFrame(owner as Component);
+        // T03: outdoors the exploration Elijah steps aside while this conversation's own Elijah is framed (never two).
+        if (framed && ExplorationBody.Current != null) ExplorationBody.Current.HideFor(this);
         if (framed && hands != null)
         {
             handsWereShowing = hands.IsShowing;
@@ -397,6 +399,7 @@ public class DialogueCameraDirector : MonoBehaviour, IDialoguePresentation
     private void RestoreHandsAndVisual()
     {
         if (playerVisual != null) playerVisual.Hide();
+        if (ExplorationBody.Current != null) ExplorationBody.Current.ReleaseHide(this);
         if (!handsHidden || hands == null || ownershipLost) return;
         if (handsWereShowing) hands.Show();
         if (documentWasShowing) hands.ShowCarriedDocument();

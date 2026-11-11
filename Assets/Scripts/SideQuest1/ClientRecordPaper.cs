@@ -62,8 +62,21 @@ public interface IClientRecordHolder
 /// the same route as the folder's own page controls.
 /// </summary>
 public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler,
-    IInitializePotentialDragHandler, IPointerDownHandler, IPointerUpHandler
+    IInitializePotentialDragHandler, IPointerDownHandler, IPointerUpHandler, IPointerEnterHandler, IPointerExitHandler
 {
+    public Transform WindowCanvas;
+    public Func<bool> BeforeTakeOut;
+    public void SetRestSlot(Transform destination) { if (destination != null) slot = destination; }
+    /// <summary>Only explicitly attached Level 3 amount bands opt into desk transfers.</summary>
+    public bool OffersDeskValues;
+    /// <summary>Opt-in pickup easing for a physical stand sheet; other record drags retain their existing behavior.</summary>
+    public float DragLiftSeconds;
+    private float dragLiftElapsed = -1f;
+    private bool notifyMoveSettled;
+    public bool IsDragging => state == State.Dragging;
+    public bool RaisedThisFrame => windowLayer != null && windowLayer.LastRaisedFrame == Time.frameCount;
+    public int WindowOrder => windowLayer != null ? windowLayer.SortingOrder : 0;
+
     private enum State { Attached, Lifting, Out, Dragging, Returning, Moving }
     private const float RefuseSeconds = 0.3f;
     private const float RefuseDegrees = 5f;
@@ -96,6 +109,8 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
     private Quaternion refuseBase;
     private Doc3DLayer windowLayer;
     private Transform contactShadow;
+    private HighlightEffect pointerHighlight;
+    private bool pointerOver;
     private Canvas touchCanvas;
     private int attachedLayer;
     private int captureLayer = -1;
@@ -180,6 +195,7 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
             flip.Changed += paper.HandleFlipChanged;
             flip.Flipped += backUp => paper.holder?.PaperFlipped(paper, backUp);
         }
+        if (root.scene.name == "Office_Level3") paper.pointerHighlight = HighlightEffect.For(paper);
         paper.holder = holder;
         paper.slot = slot;
         paper.workspace = workspace;
@@ -291,7 +307,7 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
     private void Detach()
     {
         Doc3DLayer folderLayer = Doc3DLayer.For(slot);
-        Transform hudCanvas = folderLayer != null ? folderLayer.transform.parent : null;
+        Transform hudCanvas = folderLayer != null ? folderLayer.transform.parent : WindowCanvas;
         float scale = WorldScale;
         transform.SetParent(workspace, true);
         SetWorldScale(scale);
@@ -301,7 +317,7 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
         {
             windowLayer = Doc3DLayer.Create(hudCanvas, transform, Record.tab);
             windowLayer.AlwaysComposite = true;
-            windowLayer.AlwaysReadOnly = true;
+            windowLayer.AlwaysReadOnly = !OffersDeskValues;
             windowLayer.ResolutionScale = 2f;
             windowLayer.RefreshTextBeforeCapture = true;
             windowLayer.RenderOnlyWhenChanged = true;
@@ -364,12 +380,62 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
     /// <summary>A tap on the attached record: a short lift and turn into its readable pose.</summary>
     public void TakeOut()
     {
-        if (state != State.Attached || holder == null) return;
+        if (state != State.Attached || holder == null || BeforeTakeOut != null && !BeforeTakeOut()) return;
         Detach();
         holder.ReadingPose(this, out toPosition, out toRotation, out toScale);
         FitTargetPose();
         StartMotion(State.Lifting, !Record.IsCard ? 0.44f : LiftSeconds);
         PlayCue(true);
+    }
+
+    /// <summary>Inventory ghost handoff: begin at the screen release/icon, without visiting the world holder.</summary>
+    public void TakeOutFromScreen(Vector2 screen) => TakeOutFromScreen(screen, false);
+
+    /// <summary>The same icon flight and small starting size as the Case Folder.</summary>
+    public void TakeOutFromIcon(RectTransform icon)
+    {
+        if (icon == null) { TakeOut(); return; }
+        TakeOutFromScreen(IconScreenPoint(icon), true);
+    }
+
+    private static Vector2 IconScreenPoint(RectTransform icon)
+    {
+        Canvas canvas = icon.GetComponentInParent<Canvas>();
+        Camera camera = canvas != null && canvas.rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.rootCanvas.worldCamera : null;
+        return RectTransformUtility.WorldToScreenPoint(camera, icon.TransformPoint(icon.rect.center));
+    }
+
+    private void TakeOutFromScreen(Vector2 screen, bool fromIcon)
+    {
+        if (state != State.Attached || holder?.ViewCamera == null || BeforeTakeOut != null && !BeforeTakeOut()) return;
+        Detach();
+        holder.ReadingPose(this, out toPosition, out toRotation, out toScale);
+        FitTargetPose();
+        Camera camera = holder.ViewCamera;
+        float depth = Vector3.Dot(toPosition - camera.transform.position, camera.transform.forward);
+        transform.SetPositionAndRotation(camera.ScreenToWorldPoint(new Vector3(screen.x, screen.y, depth)), toRotation * Quaternion.Euler(0f, -5f, 0f));
+        SetWorldScale(toScale * (fromIcon ? 0.12f : 0.72f));
+        // An icon is allowed at the edge; clamping here makes the paper jump away from it.
+        if (!fromIcon) transform.position = HeldOnScreen.FitOnScreen(transform, camera);
+        // Moving uses the shared smooth interpolation without the physical stand's lift arc or clip delay.
+        StartMotion(State.Moving, WorldEmote.ReducedMotion ? 0.05f : fromIcon ? 0.3f : 0.16f);
+        notifyMoveSettled = true;
+        PlayCue(true);
+    }
+
+    private Func<RectTransform> returnIcon;
+    private float returnIconScale;
+
+    /// <summary>Return the actual paper to its current inventory icon, then let its holder hide it.</summary>
+    public void PutBackToIcon(Func<RectTransform> icon)
+    {
+        if (state == State.Attached || returnIcon != null) return;
+        if (icon?.Invoke() == null) { Gather(); return; }
+        dragLiftElapsed = -1f;
+        returnIcon = icon;
+        returnIconScale = WorldScale * 0.12f;
+        flip?.TurnToFront(0.24f);
+        StartMotion(State.Returning, WorldEmote.ReducedMotion ? 0.05f : 0.3f);
     }
 
     /// <summary>Back into its holder with a short settle (onto the page shown now).</summary>
@@ -386,6 +452,9 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
     /// <summary>Straight back into its holder (closing the folder, an interruption).</summary>
     public void Gather()
     {
+        dragLiftElapsed = -1f;
+        returnIcon = null;
+        notifyMoveSettled = false;
         flip?.ShowFront();
         CloseWindowLayer();
         if (contactShadow != null) contactShadow.gameObject.SetActive(true);
@@ -416,6 +485,7 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
 
     private void StartMotion(State next, float seconds)
     {
+        notifyMoveSettled = false;
         fromPosition = transform.position;
         fromRotation = transform.rotation;
         fromScale = WorldScale;
@@ -447,6 +517,12 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
     private void Update()
     {
         ExcludeMainCopy(holder?.ViewCamera);
+        if (pointerHighlight != null)
+        {
+            pointerHighlight.SetFocused(pointerOver && InputAllowed);
+            // Document captures are cached at rest; redraw while the shared outline fades.
+            if (pointerOver || pointerHighlight.Strength > 0f) windowLayer?.MarkDirty();
+        }
         // The clip opens as the sheet leaves and closes as it lands (restrained, one short swing).
         if (clip != null && !Mathf.Approximately(clipOpen, clipTarget))
         {
@@ -456,6 +532,13 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
             if (clipTarget > 0f && clipOpen >= 1f && state != State.Returning) clipTarget = 0f;
         }
         UpdateRefuse();
+        if (state == State.Dragging && dragLiftElapsed >= 0f)
+        {
+            dragLiftElapsed += Time.unscaledDeltaTime;
+            float lift = Mathf.Clamp01(dragLiftElapsed / Mathf.Max(0.01f, DragLiftSeconds));
+            ApplyDragLift(SmoothMotion(lift));
+            if (lift >= 1f) dragLiftElapsed = -1f;
+        }
         if (state != State.Lifting && state != State.Returning && state != State.Moving) return;
 
         elapsed += Time.unscaledDeltaTime;
@@ -469,11 +552,21 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
             toPosition = RestPosition;
             toRotation = RestRotation;
             toScale = RestScale;
+            RectTransform icon = returnIcon?.Invoke();
+            if (icon != null && holder?.ViewCamera != null)
+            {
+                Camera view = holder.ViewCamera;
+                float depth = Mathf.Max(view.nearClipPlane + 0.04f, Vector3.Dot(fromPosition - view.transform.position, view.transform.forward));
+                Vector2 screen = IconScreenPoint(icon);
+                toPosition = view.ScreenToWorldPoint(new Vector3(screen.x, screen.y, depth));
+                toRotation = fromRotation * Quaternion.Euler(0f, -12f, 0f);
+                toScale = returnIconScale;
+            }
             if (t > 0.8f) clipTarget = 0f;
         }
         Vector3 position = Vector3.Lerp(fromPosition, toPosition, eased);
         Camera camera = holder?.ViewCamera;
-        if (state != State.Moving)
+        if (state != State.Moving && returnIcon == null)
         {
             // Leave the holder along its surface normal before sweeping into
             // the reading pose; reverse the path into a soft, flush landing.
@@ -491,6 +584,7 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
         {
             state = State.Out;
             FitInsideView(camera);
+            if (notifyMoveSettled) { notifyMoveSettled = false; holder?.PaperSettled(this); }
         }
         else if (state == State.Lifting)
         {
@@ -508,6 +602,19 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
             if (clip != null) clip.localRotation = clipRest * Quaternion.Euler(ClipOpenDegrees * WorldPickupMotion.Smooth(clipOpen), 0f, 0f);
             PlayCue(false);
         }
+    }
+
+    private void ApplyDragLift(float t)
+    {
+        transform.SetPositionAndRotation(Vector3.Lerp(fromPosition, toPosition, t), Quaternion.Slerp(fromRotation, toRotation, t));
+        SetWorldScale(Mathf.Lerp(fromScale, toScale, t));
+    }
+
+    private void FinishDragLift()
+    {
+        if (dragLiftElapsed < 0f) return;
+        ApplyDragLift(1f);
+        dragLiftElapsed = -1f;
     }
 
     /// <summary>Out of the folder: eases to a new pose (the holder arranging or stacking), then holds still. No progress counted.</summary>
@@ -555,6 +662,7 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
     /// <summary>Focus lost mid-drag: it simply stays where it is, out and still.</summary>
     public void CancelDrag()
     {
+        FinishDragLift();
         groupDrag = false;
         if (state == State.Dragging) state = State.Out;
     }
@@ -572,7 +680,10 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
     // =========================================================
 
     private bool InputAllowed => holder != null && holder.ViewCamera != null && !DialogueUI.IsAnyDialogueActive &&
-        !InGameSettings.IsOpen && !HudRewardScreen.AnyOpen && isActiveAndEnabled;
+        !InGameSettings.IsOpen && !HudRewardScreen.AnyOpen && !SideQuestSplash.IsShowing && isActiveAndEnabled;
+
+    public void OnPointerEnter(PointerEventData eventData) { pointerOver = true; pointerHighlight?.SetFocused(InputAllowed); windowLayer?.MarkDirty(); }
+    public void OnPointerExit(PointerEventData eventData) { pointerOver = false; pointerHighlight?.SetFocused(false); windowLayer?.MarkDirty(); }
 
     public void OnInitializePotentialDrag(PointerEventData eventData) => eventData.useDragThreshold = true;
 
@@ -595,6 +706,7 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
         if (eventData == null || eventData.button != PointerEventData.InputButton.Left || !InputAllowed) return;
         // A record still lifting from a tap can be caught straight away (T28: no input wait).
         if (state != State.Attached && state != State.Out && state != State.Moving && state != State.Lifting) return;
+        if (state == State.Attached && BeforeTakeOut != null && !BeforeTakeOut()) return;
         eventData.eligibleForClick = false;
         holder.PointerMoved(this);
         if (state != State.Attached && holder.IsGrouped(this))
@@ -604,9 +716,13 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
             return;
         }
         if (state == State.Moving) state = State.Out;
+        Vector3 pickupPosition = transform.position;
+        Quaternion pickupRotation = transform.rotation;
+        float pickupScale = WorldScale;
         Camera camera = holder.ViewCamera;
         bool attached = state == State.Attached;
-        extractedByDrag = attached || state == State.Lifting;
+        extractedByDrag = attached || state == State.Lifting || notifyMoveSettled;
+        notifyMoveSettled = false;
         if (extractedByDrag)
         {
             // Dragged straight out of its holder (or caught mid-lift): it turns to read and sits under the finger.
@@ -622,8 +738,16 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
         else holder.BroughtToFront(this);
         dragDepth = Vector3.Dot(transform.position - camera.transform.position, camera.transform.forward);
         grabOffset = transform.position - camera.ScreenToWorldPoint(new Vector3(eventData.position.x, eventData.position.y, dragDepth));
+        if (extractedByDrag && DragLiftSeconds > 0f) transform.position = HeldOnScreen.FitOnScreen(transform, camera);
         held = HeldOnScreen.ForModel(transform, camera, eventData.position);
         state = State.Dragging;
+        if (extractedByDrag && DragLiftSeconds > 0f && !WorldEmote.ReducedMotion)
+        {
+            fromPosition = pickupPosition; fromRotation = pickupRotation; fromScale = pickupScale;
+            toPosition = transform.position; toRotation = transform.rotation; toScale = WorldScale;
+            dragLiftElapsed = 0f;
+            ApplyDragLift(0f);
+        }
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -633,7 +757,9 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
         Camera camera = holder.ViewCamera;
         // Exactly under the finger (no spring), stopping where more would leave the screen.
         Vector2 screen = held.Clamp(eventData.position, camera.pixelRect);
-        transform.position = camera.ScreenToWorldPoint(new Vector3(screen.x, screen.y, dragDepth)) + grabOffset;
+        Vector3 position = camera.ScreenToWorldPoint(new Vector3(screen.x, screen.y, dragDepth)) + grabOffset;
+        if (dragLiftElapsed >= 0f) toPosition = position;
+        else transform.position = position;
     }
 
     public void OnEndDrag(PointerEventData eventData)
@@ -645,6 +771,7 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
             return;
         }
         if (state != State.Dragging) return;
+        FinishDragLift();
         state = State.Out;
         if (holder != null && holder.WantsReturn(this, eventData.position, PutBack)) return;
         if (extractedByDrag) holder?.PaperSettled(this);
@@ -653,6 +780,8 @@ public sealed class ClientRecordPaper : MonoBehaviour, IPointerClickHandler, IBe
 
     private void OnDisable()
     {
+        pointerOver = false;
+        pointerHighlight?.SetFocused(false);
         groupDrag = false;
         refuseElapsed = -1f;
         if (state == State.Dragging || state == State.Lifting || state == State.Returning || state == State.Moving) Gather();

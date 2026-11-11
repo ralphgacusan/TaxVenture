@@ -1,0 +1,28 @@
+# Third-person polish and T02 fit — 11 November 2026
+
+Status: implemented, internally verified; Unity appearance, native animation, touch and phone acceptance pending. This user request supersedes the prior capsule-sized visual decision and explicitly authorizes smoother Elijah copies. Scope remains Elijah exploration/conversation and the T02 review fixture. No later milestone ticket is implemented.
+
+## Changes
+
+- Exploration retains the camera owner's conversation height (saved Level 1 value **1.5726485 m**), rather than replacing it with the **1.12 m** physics capsule height. Feet still follow the capsule bottom; gameplay collider/scale are unchanged. Posed-height correction runs after Humanoid rebind. The same camera writer has zero horizontal shoulder offset, so the body sits on the horizontal centerline. Its chest pivot and obstacle pull-in remain.
+- New derived `Resources/Player/Elijah_Exploration_Smooth.fbx` and `Elijah_Conversation_Smooth.fbx` are byte copies of the original walking/generic-idle models with unique GUIDs. Only these two copies calculate 70° normals and receive the existing bounded import-time silhouette refinement. Source rig, UVs, clips and textures remain; material slots explicitly reference each original model's materials. Both conversation and exploration select these variants in Level 1. Other characters and Levels 2/3 keep their defaults.
+- Added concrete `Elijah_Sprint.anim` and `Elijah_Jump.anim` assets, authored as in-place Humanoid muscle curves. Sprint has forward lean, bent elbows, opposing arm/leg swing and a 0.64 s cycle. Jump has takeoff, tuck, descent, soft landing and standing recovery over 0.8 s. Four explicitly clocked Playables blend idle/walk/sprint/air+landing. Flight sampling follows vertical velocity; landing recovers over 0.2 s. Root scale/fit are retained after sampling; standing-height guards exclude intentional jump crouches. `Tests/BuildElijahTraversalClips.py` reproduces the clip assets.
+- Walking remains at the visible stick rim (raw travel 1). Sprint requires farther travel: enter **1.45**, exit **1.25**, maximum **1.65**. The extended ring and upward chevrons with RUN/RUNNING feedback show this threshold. Release clears the cue. Normal walking response, pointer ownership and unadopted look-stick limits remain.
+- Jump now uses a resolution-independent jumping-person/up-arrow graphic, with its anchor moved from x=-190 to **-310** to separate it from the bag. Its minimum touch target, simultaneous move/look/jump pointers and hold/task cleanup remain. Silent hints describe the chevrons and jumping-person icon. The ground cast cannot mark the ascending player grounded just because the floor is still within reach.
+- T02 fits every posed Arthur variant independently and corrects after rebind; it no longer reuses the baseline's scale for all bays. A finger-only HumanPose write now retains only finger rotations and restores **every** other local position, rotation and scale, including imported renderer transforms. Preserving only the pelvis was insufficient. The exact Animator root supplies the pose conversion frame.
+- Elijah geometry tests exposed a seam defect: almost-equal smoothed seam normals generated slightly different PN midpoints. Midpoint positions now use one canonical point per welded edge, while UV/material seam vertices remain separate. Postprocessor versions were bumped so derived copies rebuild on import.
+
+## Fresh internal evidence
+
+- Initial `VerifyThirdPersonPolish.py`: **0/9**, reproducing the reported assembly contracts before edits. Final: **27/27**, including concrete clip curves, looping seam, in-place root motion, source bytes, smooth import policy, material preservation and resource GUID bindings.
+- Real Elijah FBX geometry passed through the actual silhouette algorithm first failed **2 topology checks** (new open edges on `Cube.007` and `Cylinder.007`). After canonical shared-edge midpoint fix: **T02PilotRegression 99/99**. Offline approximation for each Elijah variant: **2,559 → 4,783 triangles**, 1,112 split edges, with UV range, weights, determinism and no-new-open-edge checks. This is not Unity imported/GPU/device cost evidence.
+- Current runtime and complete Editor compile: **0 errors**, **21/10 inherited warnings**. Disposable output under `Temp/L3Repair`; no Unity launch or automation.
+- `T03ExplorationRegression`: **69/69** (new rim/extension thresholds, consistent height/centered orbit and distinct animation wiring included).
+- Broader regression: **Level3 2,855/2,855**, **controls 5,734 assertions**.
+- `VerifyT02Pilot.py`: **118 passed** (originals, GUIDs, isolated pilot references); `VerifyCharacterPlayback.py`: **7/7**; `VerifyMobileInput.py`: **7 passed**; `VerifyGuideTargets.py`: **14 paths, 0 missing**.
+
+No native Play Mode, import/render, listening, phone, real-save or touch test was executed by AI. Repository execution instructions reserve Unity/device acceptance to the user. No Git operation was performed after reading those instructions. The latest screenshots are a failure report, not acceptance of this revision.
+
+## In-game acceptance
+
+Allow Unity's normal import/compile, then start a fresh Play session (no rig/scene assembly). In Level 1 compare body height against a dialogue, walk/stop/orbit, drag to the walking rim and then farther toward the chevrons, jump idle/walking/sprinting and land, and check conversation/task/indoor returns. Inspect face, hair, suit and UV seams at exploration and dialogue distances. In T02 check all three full bodies inside the doorway and through calibration/walk/grip/release; a bounds warning is a failure. Device framing, simultaneous fingers, native clip retargeting/foot contact and appearance remain acceptance checks.

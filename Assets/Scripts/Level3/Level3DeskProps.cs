@@ -107,6 +107,27 @@ public sealed class Level3DeskProps
         return label;
     }
 
+    // TMP's world text uses fontSize / face.pointSize * 0.1. A fontSize of
+    // 1.35 is therefore a 155 mm line, not 1.35 mm. Keep the rect in point
+    // space and convert the entire text transform to meters, once.
+    public const float PrintScale = 0.001f;
+    public TextMeshPro FixedPrint(string name, Transform parent, Vector3 position, float width, float height,
+        string text, Color color, float points, TextAlignmentOptions alignment, bool bold = false, bool wrap = false)
+    {
+        TextMeshPro label = Print(name, parent, position, width, height, text, color, alignment, bold);
+        label.transform.localScale = Vector3.one * PrintScale;
+        label.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        label.rectTransform.sizeDelta = new Vector2(width, height) / PrintScale;
+        label.isOrthographic = false;
+        label.enableAutoSizing = false;
+        label.fontSize = points;
+        label.textWrappingMode = wrap ? TextWrappingModes.Normal : TextWrappingModes.NoWrap;
+        // Bounds are sized for the actual shipped font; overflow is never a
+        // substitute for fitting. No ellipsis can hide a monetary value.
+        label.overflowMode = TextOverflowModes.Overflow;
+        return label;
+    }
+
     /// <summary>A tap target (trigger-free box collider on the owner's pointer layer) covering a local area.</summary>
     public BoxCollider Target(string name, Transform parent, Vector3 localPosition, Vector3 size)
     {

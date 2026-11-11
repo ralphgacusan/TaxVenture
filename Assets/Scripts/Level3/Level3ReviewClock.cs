@@ -11,9 +11,10 @@ using UnityEngine;
 /// to Bea's case instead of Rosa's. The first adopter of a case-aware clock;
 /// the company case reuses it (T12).
 ///
-/// - Starts once, when the protected calculator practice is done (saved:
-///   Level3ReviewRules.StartClock), with 16 ACTIVE minutes; the receptionist's
-///   announcement style line follows when nothing is speaking.
+/// - Starts once, when Bea's record work becomes independent (her first
+///   worksheet lesson is done; saved: Level3ReviewRules.StartClock), with 16
+///   ACTIVE minutes; a clock that already started is kept exactly. The
+///   receptionist's announcement style line follows when nothing is speaking.
 /// - Ticks only outside the existing pauses (Level2ReviewClock.ClockPaused:
 ///   conversations, settings, result cards, blocking lessons, the catalogue);
 ///   reading and working use time. Active time lives on the chapter snapshot
@@ -132,13 +133,23 @@ public sealed class Level3ReviewClock : MonoBehaviour, IReviewCutoffClock
 
     private void OnDestroy() => PlayerControlHold.Release(this);
 
-    /// <summary>The existing pauses (conversations, settings, result cards, blocking lessons, the catalogue); a held certificate is reading time.</summary>
-    public static bool ClockPaused => Level2ReviewClock.ClockPaused;
+    /// <summary>
+    /// The existing pauses (conversations, settings, result cards, blocking lessons, the catalogue); a held
+    /// certificate is reading time. Teaching pass (6 November 2026): a compulsory demonstration that stands in
+    /// for Bea's work (a desk example or the practice packet) is paused time too: it never advances her clock,
+    /// and a clock that already runs keeps its saved time.
+    /// </summary>
+    public static bool ClockPaused => Level2ReviewClock.ClockPaused || TeachingPaused(Owner != null ? Owner.State : null);
+
+    /// <summary>A compulsory demonstration is due (Bea's own work waits for it). Reads only.</summary>
+    public static bool TeachingPaused(Level3ChapterCheckpoint state) =>
+        Level3PracticeRules.LessonDue(state) || Level3SortingPractice.Due(state);
 
     /// <summary>Actions and blocking surfaces must finish before the day can roll over.</summary>
     private static bool ActionInFlight =>
         ClockPaused || Input.GetMouseButton(0) || Input.touchCount > 0 || ValueDragSource.IsAnyDragActive ||
         (Level3DeskCalculator.Instance != null && Level3DeskCalculator.Instance.Busy) ||
+        (Level3CaseFolder.Active != null && Level3CaseFolder.Active.StampsBusy) ||
         (Level3CertificatePaper.Instance != null && Level3CertificatePaper.Instance.IsUp) ||
         (AuditorInteractable.Current != null && AuditorInteractable.AwaitingFolder);
 
@@ -148,7 +159,7 @@ public sealed class Level3ReviewClock : MonoBehaviour, IReviewCutoffClock
         if (owner == null || !owner.IsReady || owner.Blocked || owner.State == null) return;
         UpdateMinimapClock();
 
-        // Her 16 active minutes start once the protected practice is done (saved; retried after a failed write).
+        // Her 16 active minutes start once her record work is independent (saved; retried after a failed write).
         if (Level3ReviewRules.ClockDue(owner.State) && Time.unscaledTime >= nextStartTry)
         {
             nextStartTry = Time.unscaledTime + RetrySeconds;

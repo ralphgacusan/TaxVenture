@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 /// <summary>
@@ -32,6 +33,10 @@ using UnityEngine.UI;
 /// (PlayerProgressManager.CommitInventory); this panel only renders the
 /// snapshot. While it is open the player is held still (HudWindowLock) and
 /// world taps are blocked by its backdrop; the review clock keeps running.
+///
+/// VIEW ONLY (CreateViewOnly, the career board): the same panel over the saved
+/// inventory, with no hotbar behind it. Tap an item to read about it; nothing
+/// can be moved, pinned, opened or saved, so the action bar gives way to a note.
 /// </summary>
 public sealed class InventoryScreen : MonoBehaviour
 {
@@ -46,6 +51,9 @@ public sealed class InventoryScreen : MonoBehaviour
     private const string DefaultHelp = "Tap an item to see it, then tap a slot to move it";
     private const string MakeRoomHelp = "No room! Tap a slot to swap it in.";
     private const string SelectedHelp = "Tap a slot to move it · tap it again to read";
+    private const string ViewHelp = "Tap an item to read about it";
+    private const string ViewEmptyHelp = "Nothing collected yet. Items you pick up in a chapter appear here.";
+    private const string ViewNote = "VIEW ONLY  ·  Move and use your items during a chapter";
     private static readonly Color Warn = new Color32(255, 196, 120, 255);
     private static readonly Color CanvasBand = new Color32(43, 58, 76, 255);
     private static readonly Color Paper = new Color32(236, 226, 200, 255);
@@ -56,6 +64,8 @@ public sealed class InventoryScreen : MonoBehaviour
     private static readonly Color ButtonFill = new Color32(16, 25, 38, 245);
 
     private HudHotbar hotbar;
+    private bool viewOnly;
+    private readonly CampaignInventoryRecord noCampaign = new CampaignInventoryRecord();
     private RectTransform root;
     private CanvasGroup group;
     private RectTransform panel;
@@ -116,14 +126,51 @@ public sealed class InventoryScreen : MonoBehaviour
     /// <summary>The bag or a "Make room" panel is open (other panels wait).</summary>
     public static bool AnyOpen => HudHotbar.Instance != null && HudHotbar.Instance.Screen != null && HudHotbar.Instance.Screen.isOpen;
 
-    private CampaignInventoryRecord Inv => hotbar.Inventory;
-    private InventoryCatalogue Catalogue => hotbar.Catalogue;
+    private CampaignInventoryRecord Inv => !viewOnly ? hotbar.Inventory
+        : PlayerProgressManager.Instance != null && PlayerProgressManager.Instance.SavedInventory != null ? PlayerProgressManager.Instance.SavedInventory
+        : noCampaign;
+    private InventoryCatalogue Catalogue => viewOnly ? InventoryCatalogueAsset.Current : hotbar.Catalogue;
+
+    /// <summary>The help line when nothing else needs saying.</summary>
+    private string IdleHelp => viewOnly
+        ? (Inv.bag.Exists(HasItem) || Inv.hotbar.Exists(HasItem) || !Inv.hand.IsEmpty ? ViewHelp : ViewEmptyHelp)
+        : makeRoom ? MakeRoomHelp : DefaultHelp;
+
+    private static bool HasItem(InventorySlot slot) => slot != null && !slot.IsEmpty;
 
     // =========================================================
     // BUILD
     // =========================================================
 
-    public static InventoryScreen Create(Transform canvasRoot, HudHotbar owner)
+    /// <summary>The Bag over its own canvas, for the menu: reads the saved inventory and changes nothing.</summary>
+    public static InventoryScreen CreateViewOnly()
+    {
+        var host = new GameObject("Bag Canvas (view only)", typeof(RectTransform));
+        var canvas = host.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = SortingOrder;
+        var scaler = host.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+        host.AddComponent<GraphicRaycaster>();
+        if (EventSystem.current == null && FindAnyObjectByType<EventSystem>() == null)
+        {
+            var events = new GameObject("EventSystem");
+            events.AddComponent<EventSystem>();
+            events.AddComponent<InputSystemUIInputModule>();
+        }
+        // The fit reads the canvas size, which a new canvas only has after an update.
+        Canvas.ForceUpdateCanvases();
+        return Create(host.transform, null, true);
+    }
+
+    private void OnDestroy()
+    {
+        if (viewOnly && root != null && root.parent != null) Destroy(root.parent.gameObject);
+    }
+
+    public static InventoryScreen Create(Transform canvasRoot, HudHotbar owner, bool viewOnly = false)
     {
         RectTransform layer = HudTheme.CreateRect("Inventory Screen (T10)", canvasRoot);
         HudTheme.Stretch(layer);
@@ -133,6 +180,7 @@ public sealed class InventoryScreen : MonoBehaviour
         layer.gameObject.AddComponent<GraphicRaycaster>();
         InventoryScreen screen = layer.gameObject.AddComponent<InventoryScreen>();
         screen.hotbar = owner;
+        screen.viewOnly = viewOnly;
         screen.root = layer;
         screen.Build();
         layer.gameObject.SetActive(false);
@@ -195,6 +243,12 @@ public sealed class InventoryScreen : MonoBehaviour
         savedButton = MakeButton(body, "Saved Records", 0f, ActionTop, 180f, ActionHeight, "SAVED PAPERS", OnSavedRead, out _);
         actionButtons.AddRange(new[] { readButton, quickButton, pinButton, savedButton });
         BuildPinStrip(body);
+        if (viewOnly)
+        {
+            TextMeshProUGUI note = HudTheme.CreateLabel("View Only Note", body, ViewNote, 28f, HudTheme.BrassSoft, TextAlignmentOptions.Center, FontStyles.Bold);
+            note.fontSizeMin = 18f;
+            HudTheme.PlaceTopLeft(note.rectTransform, ActionLeft, ActionTop, ActionWidth, ActionHeight);
+        }
 
         BuildSidePanel(body);
         BuildJournal(body);
@@ -383,9 +437,9 @@ public sealed class InventoryScreen : MonoBehaviour
             SlotRef at = InventoryRules.Find(Inv, selectItem);
             if (!at.IsNone) selected = at;
         }
-        makeRoom = !Inv.hand.IsEmpty;
+        makeRoom = !viewOnly && !Inv.hand.IsEmpty;
         if (makeRoom) selected = SlotRef.Hand;
-        SetHelp(target.IsNone ? (makeRoom ? MakeRoomHelp : DefaultHelp) : "Tap an item to put it in this slot.", false);
+        SetHelp(target.IsNone ? IdleHelp : "Tap an item to put it in this slot.", false);
         Rebuild();
     }
 
@@ -423,7 +477,7 @@ public sealed class InventoryScreen : MonoBehaviour
     public bool Close(bool force)
     {
         if (!isOpen) return true;
-        if (!Inv.hand.IsEmpty)
+        if (!viewOnly && !Inv.hand.IsEmpty)
         {
             string held = Inv.hand.itemId;
             InventoryResult released = hotbar.Commit(r => InventoryRules.ReleaseHand(r, Catalogue, true, HudHotbar.NewAction("release/" + held)));
@@ -440,7 +494,7 @@ public sealed class InventoryScreen : MonoBehaviour
             }
             else if (released.Changed && released.Location.IsNone) hotbar.ReturnedToWorld(held);
         }
-        hotbar.Commit(r => InventoryRules.SetSelected(r, cursor));
+        if (!viewOnly) hotbar.Commit(r => InventoryRules.SetSelected(r, cursor));
         isOpen = false;
         makeRoom = false;
         selected = SlotRef.None;
@@ -549,7 +603,7 @@ public sealed class InventoryScreen : MonoBehaviour
         if (helpWarnUntil > 0f && now > helpWarnUntil)
         {
             helpWarnUntil = 0f;
-            SetHelp(makeRoom ? MakeRoomHelp : DefaultHelp, false);
+            SetHelp(IdleHelp, false);
         }
     }
 
@@ -588,12 +642,13 @@ public sealed class InventoryScreen : MonoBehaviour
         InventorySlot chosenSlot = hasSlotItem ? InventoryRules.SlotAt(r, selected) : null;
         string chosen = chosenSlot?.itemId;
         readButton.interactable = !string.IsNullOrEmpty(chosen);
-        savedButton.gameObject.SetActive(!string.IsNullOrEmpty(chosen) && hotbar.HasSavedRecords(chosen));
+        savedButton.gameObject.SetActive(!viewOnly && !string.IsNullOrEmpty(chosen) && hotbar.HasSavedRecords(chosen));
         quickButton.interactable = hasSlotItem;
         quickLabel.text = hasSlotItem && selected.Area == InventoryArea.Hotbar ? "TO BAG" :
             hasSlotItem && selected.Area == InventoryArea.Hand ? "PLACE" : "TO BAR";
-        backLabel.text = r.hand.IsEmpty || !Catalogue.IsRequired(r.hand.itemId) ? "BACK" : "PLACE IT";
+        backLabel.text = viewOnly || r.hand.IsEmpty || !Catalogue.IsRequired(r.hand.itemId) ? "BACK" : "PLACE IT";
         RebuildPins(r, chosen);
+        if (viewOnly) foreach (Button action in actionButtons) action.gameObject.SetActive(false);
         LayoutActions();
         ShowSheet(chosen, chosenSlot != null ? chosenSlot.quantity : 0, selected.Area);
     }
@@ -645,8 +700,8 @@ public sealed class InventoryScreen : MonoBehaviour
                 : "\n\nHolds the case papers" + (record.contents.Exists(c => c.EndsWith("/client-copy")) ? " and the client copy." : ".");
         sheetBody.text = def.description + holds;
         string where = area == InventoryArea.Hotbar ? "In your bar: ready to use." :
-            area == InventoryArea.Hand ? "In your hand: tap a slot to place it." : "In your bag.";
-        bool earlierChapter = !def.CampaignWide && !def.InScope(OfficeLevelProfile.LevelIdFor(this));
+            area == InventoryArea.Hand ? (viewOnly ? "In your hand." : "In your hand: tap a slot to place it.") : "In your bag.";
+        bool earlierChapter = !viewOnly && !def.CampaignWide && !def.InScope(OfficeLevelProfile.LevelIdFor(this));
         sheetPlace.text = def.reference || earlierChapter ? $"<color=#{ColorUtility.ToHtmlStringRGB(Needed)}>✔ Reference: read only, always kept.</color>\n{where}"
             : def.required ? $"<color=#{ColorUtility.ToHtmlStringRGB(Needed)}>✔ Needed for your case: always carried.</color>\n{where}" : where;
     }
@@ -676,6 +731,17 @@ public sealed class InventoryScreen : MonoBehaviour
         SlotRef slot = tile.Slot;
         InventorySlot content = InventoryRules.SlotAt(r, slot);
         bool hasItem = content != null && !content.IsEmpty;
+        if (viewOnly)
+        {
+            // Viewing only: a tap chooses the item for the details sheet.
+            if (!hasItem) { selected = SlotRef.None; SetHelp("That slot is empty.", false); Rebuild(); return; }
+            if (selected != slot && AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_ui_select_01", 0.5f);
+            selected = slot;
+            if (slot.IsSlot) cursor = slot;
+            SetHelp(IdleHelp, false);
+            Rebuild();
+            return;
+        }
         if (slot.Area == InventoryArea.Hand)
         {
             // The held item is placed by tapping a slot; tapping it again only keeps it selected.
@@ -717,7 +783,7 @@ public sealed class InventoryScreen : MonoBehaviour
         {
             selected = tile.Slot;
             if (tile.Slot.IsSlot) cursor = tile.Slot;
-            SetHelp(SelectedHelp, false);
+            SetHelp(viewOnly ? IdleHelp : SelectedHelp, false);
         }
         sheetNudgeAt = Time.unscaledTime;
         if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_paper_place_01", 0.5f);
@@ -726,7 +792,7 @@ public sealed class InventoryScreen : MonoBehaviour
 
     internal bool CanDrag(InventoryTile tile)
     {
-        if (tile.Locked) return false;
+        if (viewOnly || tile.Locked) return false;
         InventorySlot content = InventoryRules.SlotAt(Inv, tile.Slot);
         return content != null && !content.IsEmpty;
     }
@@ -743,7 +809,12 @@ public sealed class InventoryScreen : MonoBehaviour
         tile.SetDragging(true);
     }
 
-    internal void Drag(Vector2 screen) => MoveGhost(screen);
+    internal void Drag(Vector2 screen)
+    {
+        MoveGhost(screen);
+        if (dragFrom != null && InventoryRules.SlotAt(Inv, dragFrom.Slot)?.itemId == InventoryCatalogue.BeaSummary)
+            Level3SummaryDocument.Instance?.IconDrag(screen);
+    }
 
     private void MoveGhost(Vector2 screen)
     {
@@ -769,11 +840,24 @@ public sealed class InventoryScreen : MonoBehaviour
             return;
         }
         if (onto != null && onto.Locked) { SetHelp(InventoryRules.ShopUpgrade + ": buy more slots at the Supply Counter.", true); onto.Shake(); return; }
+        if (onto == null && InventoryRules.SlotAt(Inv, from.Slot)?.itemId == InventoryCatalogue.BeaSummary && Level3SummaryDocument.Instance != null &&
+            !RectTransformUtility.RectangleContainsScreenPoint(panel, eventData.position, null))
+        {
+            if (Close(force: false)) Level3SummaryDocument.Instance.DropFromIcon(eventData.position);
+            return;
+        }
+        if (onto == null && InventoryRules.SlotAt(Inv, from.Slot)?.itemId == InventoryCatalogue.BeaCertificate &&
+            Level3CertificatePaper.Instance != null && !RectTransformUtility.RectangleContainsScreenPoint(panel, eventData.position, null))
+        {
+            if (Close(force: false)) Level3CertificatePaper.Instance.Open(eventData.position);
+            return;
+        }
         Rebuild();
     }
 
     private void EndDragVisual()
     {
+        Level3SummaryDocument.Instance?.IconDrag(new Vector2(-10000f, -10000f));
         if (dragFrom != null) dragFrom.SetDragging(false);
         dragFrom = null;
         if (ghost != null) ghost.gameObject.SetActive(false);
@@ -849,6 +933,13 @@ public sealed class InventoryScreen : MonoBehaviour
     private void OnPinTab(int index)
     {
         CampaignInventoryRecord r = Inv;
+        if (viewOnly)
+        {
+            // Viewing only: a ribbon shows its record in the details sheet.
+            SlotRef at = index < r.pins.Count ? InventoryRules.Find(r, r.pins[index]) : SlotRef.None;
+            if (!at.IsNone) { selected = at; Rebuild(); }
+            return;
+        }
         if (pinPending != null)
         {
             string item = pinPending;
@@ -880,7 +971,7 @@ public sealed class InventoryScreen : MonoBehaviour
     private void OpenJournal()
     {
         CampaignInventoryRecord r = Inv;
-        List<InventoryJournalFact> facts = InventoryRules.Journal(Catalogue, hotbar.LearnedFacts());
+        List<InventoryJournalFact> facts = InventoryRules.Journal(Catalogue, viewOnly ? SavedFacts() : hotbar.LearnedFacts());
         if (facts.Count == 0) journalBody.text = "Nothing learned yet. Facts you learn while you work appear here, with the record they came from.";
         else
         {
@@ -895,13 +986,23 @@ public sealed class InventoryScreen : MonoBehaviour
             }
             journalBody.text = lines.ToString();
             var ids = facts.ConvertAll(f => f.id);
-            hotbar.Commit(rec => InventoryRules.MarkJournalSeen(rec, ids));
+            if (!viewOnly) hotbar.Commit(rec => InventoryRules.MarkJournalSeen(rec, ids));
         }
         journal.gameObject.SetActive(true);
         journal.SetAsLastSibling();
         journalAt = Time.unscaledTime;
         journalGroup.alpha = 0f;
         if (AudioManager.Instance != null) AudioManager.Instance.PlayEffect("sfx_page_turn_01", 0.7f);
+    }
+
+    /// <summary>Outside a level only the save knows what was learned.</summary>
+    private static HashSet<string> SavedFacts()
+    {
+        var learned = new HashSet<string>(StringComparer.Ordinal);
+        PlayerProgressData data = PlayerProgressManager.Instance != null ? PlayerProgressManager.Instance.CurrentProgress : null;
+        if (data != null && data.storyFacts != null)
+            foreach (string fact in data.storyFacts) if (!string.IsNullOrEmpty(fact)) learned.Add(fact);
+        return learned;
     }
 
     /// <summary>Runs a command; success snaps the tiles and plays one paper cue, a refusal says why (no sound).</summary>

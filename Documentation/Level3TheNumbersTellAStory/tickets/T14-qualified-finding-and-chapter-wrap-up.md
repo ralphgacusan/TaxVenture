@@ -1,67 +1,63 @@
-# T14 — Record the supported finding and complete Chapter 3 through Career
+# T14 — Close the supported finding and aggregate the completed chapter
 
-Status: **Planned**. Blocked by: T10, T12, T13.
+Status: **Implemented, internally verified; user manual pending**. Blocked by: T10, T13. (6 November 2026; Unity/device acceptance is the user's. T13's open base-capacity decision L3-R106 is not a T14 dependency.)
 
-Priority: P1. Phase: E — Story and completion. Estimated scope: M; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
+**6 November 2026 implementation:** After Bea's explained, actual delivery (T10, ClosingFinding) her next talk asks one question about her own draft (DRAFT-B26, issued by her): it listed ₱354,000, her originals support ₱300,000. Three statements dock beside the dialogue in her existing choice card with Review her records and Talk later. Only "Party ₱24,000 was private; printing ₱30,000 listed twice." is saved (`Level3ClosingRules.RecordFinding` via `Level3Checkpointer.CommitFinding`: candidate → signed save → publish; the existing FindingRecorded event ticks Notes); intent ("on purpose") or a wider pattern gets one reply ("shows what was wrong, not why" / "only covers my own draft") and the same question waits, nothing saved, no penalty. Review her records ends the talk and opens her papers in the existing Case Folder reader; the question waits. The existing receptionist then passes on Mayor Quax's short message through one opt-in `ReceptionistInteractable.ILevelMessage` seam (Arthur stays the guide; one player acknowledgment, no choice, no Trust). Hearing it to the end saves ClosingFinding → WrapUpPending; cancelling saves nothing. The existing LevelCompleteUI/HudRewardScreen card then shows one Chapter 3 result once no dialogue runs (again after a reload): frozen worksheet first check (v1 or v2 as graded) + Bea's case XP of 160, the worth_the_tax_3 tier, the chapter's coins/Trust from the Level_03 ledger, the finding fact. TO CAREER or STAY IN OFFICE (an opt-in second card button) is the explicit acknowledgment: `CommitAcknowledgment` → `PlayerProgressManager.CommitLevelThreeWrapUp` writes CompletedOffice, the `Level_03/chapter-wrap-up` activity, Level_03 completion and one aggregated mastery record (best kept) in one signed write, no coins or Trust; a failed write keeps the card with TRY AGAIN. The completed office restarts no clock, copy, hand-in, case edit or reward. Details, commands and the manual script: latest PROGRESS; limitations KNOWN_ISSUES L3-R109–L3-R117.
+
+Priority: P1. Phase: E — Narrative closure. Estimated scope: M; one fresh agent context. If real call-site work exceeds this bound, record a bounded split before adding unrelated framework work.
 
 ## Goal and visible accomplishment
 
-Players close the chapter with a qualified story discovery, correct aggregate rewards/history and safe progression back to Career.
+After Bea’s actual delivery, record the limited finding supported by her file, receive Quax’s message via the receptionist, acknowledge the Bea-only chapter result, and return to Career or the optional completed office. Make no cross-client or systemic claim that would require the deferred company case.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Current request is documentation only; future implementation requires an implementation instruction.
+Revision: **3 November 2026**. Read [REVISION_PLAN](../REVISION_PLAN.md), [SPEC](../SPEC.md), [reuse map](../REUSE_AND_ARCHITECTURE.md), [visual contract](../WORLD_AND_FEEDBACK.md), [verification](../VERIFICATION.md) and [AGENTS](../AGENTS.md). Planned refers to changed revision acceptance, not absence of reusable implementation. Historical baseline: Closing phases/aggregate contracts are planned; reuse existing campaign result/mastery/Notes/message surfaces instead of creating an evidence board or alternate completion manager.
 
 ## Existing systems to reuse
 
-Verified existing paths relative to repository root; recheck live behavior rather than rely on stale comments:
+Existing source paths relative to repository root; inspect live callbacks/content before changing them. Narrow Level_03 adapters only; no duplicate folder/stamp/calculator/input/save/shop framework.
 
-- `Assets/Scripts/RewardsSystem/CaseResultRules.cs`
-- `Assets/Scripts/RewardsSystem/CareerProgressService.cs`
-- `Assets/Scripts/RewardsSystem/CampaignMenu.cs`
-- `Assets/Scripts/UI/Menu/CareerChapterSheet.cs`
+- `Assets/Scripts/Level3/Level3ChapterRules.cs`
+- `Assets/Scripts/Level3/Level3Checkpointer.cs`
+- `Assets/Scripts/RewardsSystem/PlayerProgressManager.cs`
+- `Assets/Scripts/RewardsSystem/LevelScoreLedger.cs`
+- `Assets/Scripts/UI/LevelCompleteUI.cs`
 - `Assets/Scripts/UI/HUD/OfficeObjectives.cs`
-- `Assets/Resources/Career/chapters.json`
-
-New L3 components/resources mentioned below are proposed outputs, not verified existing APIs. Prefer existing owners/adapters and level configuration; do not copy global frameworks.
 
 ## Work and interaction mechanics
 
-1. Only after both deliveries, offer record supported discrepancy/retain sources or review records once more. Journal stores Desk preparer identity and original-supported correction, explicitly leaves motive/author/process failure unresolved. Reuse neutral learned-fact journal; no Level5 evidence board.
-2. Receptionist delivers CONTENT’s mayor note; Arthur remains guide, no Quax actor/portrait prerequisite. History-aware reception/closing variants read existing committed Rosa history without replaying any choice/consequence. Ordinary previous errors are not intentional misconduct.
-3. Aggregate worksheet XP once plus each case XP once, one first-check badge,260 chapter coins earned vs actual current wallet and+10maximum service vs actual saved trust. Show both computations/copies resolved, not filed returns. Case receipts already paid; chapter card pays nothing again.
-4. Completion acknowledgment validates corrected worksheet, both approvals/deliveries, finding/message and wrap-up. Same save commits chapter completion/pending-card cleanup, then Career route. Failure retains pending final card; reload can continue without repeated ending or rewards. Do not unlock by80%,hearts65,computer purchase or wallet.
-5. Prepare optional post-completion office route for T15: no active review/case task, only existing counter access/exit. Career Start/Resume sheet supports actual chapter task/case data. Normal story readiness still comingSoon until T18; L4/L5 remain unavailable. Existing Continue still enters Career.
+1. Use Bea’s retained B-DRAFT/preparer reference and original support to record the specific unsupported costs shown in her file. Distinguish discrepancy/correction from proof of intent/author authorization or a wider pattern. Review records action returns safely; no new L5 evidence board.
+2. Receptionist delivers short mayor message; Arthur remains guide, no replacement actor. Save message/finding/wrap-up facts quietly and preserve Rosa history. No extra ethics branch/trust reward for choosing a polite line.
+3. Aggregate the frozen side-quest assessment and Bea’s case result through existing mastery/result owners once. Support v1/v2 worksheet grades; current maximum is160 story coins,160 mastery XP, and+6 Public Trust, with one badge. Never reissue already-claimed coins/XP/Trust or overwrite wallet with fixture totals. The deferred company case may extend these totals later, but is not included now.
+4. Completion requires Bea’s explained delivery, the supported finding/message and explicit Continue acknowledgment. Failed save keeps the result pending. Choose Career or completed-office supply counter; the latter has no active review/copy/reward loop. L4/L5 remain unavailable.
 
 ## Assets, motion and feedback
 
-Existing chapter receipt/Career pinned paper/badge/trust/wallet, Notes/mayor message. New text only except required bindings; no cutscene/ending art system.
-
-Follow WORLD_AND_FEEDBACK and fixed document types. Bind every new world object to actual 3D body, collider/target, correct source/record identity and existing camera/input/audio ownership. Record resolved anchors/clip names and any unsupported asset assumption. No user scene-assembly chores or claims of rendered acceptance from declarations.
+Implement this slice with actual existing 3D bodies, readable paper faces, reachable targets and current page/camera/audio ownership. One active task/primary action; temporary source/reference only on demand. Reuse L1/L2 styling and quiet lift/settle/feed/stamp cues. No tiny auto-shrunk text, full-tool overlay or correctness flash on draft placement. Bind models/colliders/callbacks here; T17 cannot substitute for this ticket’s visual implementation. User verifies rendered/touch/feel results.
 
 ## Integration requirements
 
-Current single-case result/finale flow must not early-complete after Bea. Retain bounded chapter snapshots for register/recovery while respecting existing chapter-specific inventory retirement. No general archive or ending-state policy.
-
-Preserve current L1/L2 scenes, source prefabs/GUIDs, signed save owner, mode guards, input/FSM/dialogue/audio frameworks and Android controls. Normal L3 Career remains unavailable until T18. No L4 filing, ending, stand, drawer or global archive feature is added.
+Preserve shared L1/L2 behavior, existing serialized identities/source scenes and all campaign possessions. Keep current exact-decimal L3 rules/provenance; no float prototype bridge. Use existing input/dialogue/FSM/guide/Bag/reward owners. Career3 stays gated until T18 (superseded 5 November: user-authorized Career3 entry after completed Level 2 for the APK playtest, preserved), L4/L5 remain unavailable. No remote ticket, package, scene recopy or global cleanup.
 
 ## Persistence and failure rules
 
-Use the existing candidate→save→publish command boundary and stable chapter/case/action IDs. Validate actual prerequisites/revision/source before committing. Failed write leaves prior state, source/copy and retry available, with no success effect. Quiet restore does not raise acquisition/reward/choice/consumption events. Back, repeated input, disable and app focus interruption settle pointer state and release only owned holds. Story/replay/practice/Editor distinctions protect live campaign data.
+Candidate -> signed persist -> publish before success effects. Validate mode/case/source/revision/prerequisites/action IDs; duplicates do not award. Preserve legacy grades/claims/approved snapshots/copies and quiet restores. Failure keeps prior state/source/copy retryable. Clear only owned pointer/selection/locks on Back/settings/disable/focus/camera return; independent work can be left. Practice/replay/Editor cannot mutate live story state.
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] Every prerequisite required; low mastery/trust/coins still completes corrected story, absent delivery/finding cannot.
-- [ ] Exact260 coins/max260 XP/+10 service/one badge composition preserves earlier claims and Rosa paths64/54/59.
-- [ ] Pending-wrap-up/save failure/reload/acknowledgment routes are once-only and preserve Career/comingSoon policy.
-- [ ] Journal fact excludes unsupported intention; mayor response uses receptionist with no guide replacement or reward.
-- [ ] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count.
+- [x] Missing Bea delivery/message/finding blocks completion; review-records and cancel return to pending wrap-up.
+- [x] Legacy/v2 worksheet plus Bea case XP aggregate once without early Level3 completion/duplicate rewards.
+- [x] Failed acknowledgment/reload preserves pending card and current state; repeat Continue cannot pay.
+- [x] Bea-supported qualified fact/history and result retained; deferred company state is not required; optional office has no clock or reopened case.
+- [x] Build actual changed production paths and run targeted command/save/failure/mode checks plus affected shared regressions; record commands/counts/warnings, not historical passes.
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 
-- [ ] User checks complete closing flow/history variants, record reinspection return, reward receipt clarity, Career transitions and optional exit without purchase.
-- [ ] Inspect applicable actual imported references, 3D bodies, paper text, targets, motion, camera/control recovery and Android layout. Manual acceptance remains pending until the user reports it; static tests are not a substitute.
+- [ ] Ending clearly connects records to emerging story without overstating intent or repeating lectures.
+- [ ] One existing chapter result feels conclusive, offers clear Career/optional-office exit and readable named rewards.
+- [ ] Confirm real 3D targets/animations/text/safe areas/Back/focus/audio on supported devices; no source declaration counts as visual acceptance.
 
 ## Handoff and completion definition
 
-Complete isolated chapter story/wrap-up and saved progression, normal availability still gated. Next T15.
+Deliver the goal above through its real entry point, including persistence, presentation and checked limitations. Update [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md) with actual evidence and remaining user checks; do not mark implemented for documentation presence. User owns Unity and every Git operation.
 
-Direct dependents: T15, T16, T17. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Mark implemented/internal-verified only after real entry points and checks work; Git operations and user acceptance remain user-owned. No commits, scene edits or gameplay implementation are performed by authoring this ticket.
+Direct dependents: T15, T16, T17. Continue the revised index, retaining prior working changes and historical results.

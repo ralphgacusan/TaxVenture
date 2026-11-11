@@ -215,6 +215,8 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
     private static readonly Vector3[] Corners = new Vector3[4];
 
     public RectTransform BagIcon => bagIcon;
+    /// <summary>The HUD canvas belongs to the UI hierarchy, not this controller's separate runtime host.</summary>
+    public Transform DocumentCanvas => canvasRoot;
     public InventoryCatalogue Catalogue => catalogue;
     public InventoryScreen Screen => screen;
     public bool IsReady => ready;
@@ -330,6 +332,8 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         return bagIcon;
     }
 
+    public void PlayItemArrival(string itemId) => PunchPaperIcon(ItemTarget(itemId));
+
     private void PunchPaperIcon(RectTransform icon)
     {
         if (icon == null) return;
@@ -346,8 +350,10 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
     {
         if (view.Icon == null) return;
         bool reviewed = view.ItemId == InventoryCatalogue.ReviewedFile;
-        if (!reviewed && view.ItemId != InventoryCatalogue.CaseFolder) return;
-        bool isOut = reviewed
+        bool summary = view.ItemId == InventoryCatalogue.BeaSummary;
+        bool certificate = view.ItemId == InventoryCatalogue.BeaCertificate;
+        if (!reviewed && !summary && !certificate && view.ItemId != InventoryCatalogue.CaseFolder) return;
+        bool isOut = certificate ? Level3CertificatePaper.Instance?.IsUp == true : summary ? Level3SummaryDocument.Instance != null && Level3SummaryDocument.Instance.IsOut : reviewed
             ? (ReviewedFileViewer.Instance != null && ReviewedFileViewer.Instance.IsOut) ||
               (view.Icon.GetComponent<HudIconDragOpen>() != null && view.Icon.GetComponent<HudIconDragOpen>().IsDragging)
             : OfficeHudRuntime.Instance != null && OfficeHudRuntime.Instance.CaseFolderViewOut;
@@ -539,6 +545,8 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         // Usable at once: an item with a printed card opens it (T11 postcard, voucher); otherwise the Bag shows it.
         button.onClick.AddListener(() => { if (!CanOpenPanels() || !OpenViewer(itemId)) OpenInventory(SlotRef.None, itemId); });
         if (itemId == InventoryCatalogue.ReviewedFile) AddFolderDragOut(wrapper);
+        if (itemId == InventoryCatalogue.BeaSummary) AddSummaryDragOut(wrapper);
+        if (itemId == InventoryCatalogue.BeaCertificate) AddCertificateDragOut(wrapper);
         TextMeshProUGUI count = HudTheme.CreateLabel("Count", wrapper, "", 24f, HudTheme.TextPrimary, TextAlignmentOptions.BottomRight, FontStyles.Bold);
         HudTheme.Stretch(count.rectTransform, 12f);
         count.outlineWidth = 0.25f;
@@ -562,6 +570,37 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
             (root, size) => HudDragItem.BuildClosedFolder(root, size, reviewed: true));
         drag.CanDrag = () => ReviewedFileViewer.Instance != null && !ReviewedFileViewer.Instance.IsOut && CanOpenPanels();
         drag.OpenAt = screen => ReviewedFileViewer.Instance != null && ReviewedFileViewer.Instance.Open(screen);
+    }
+
+    private void AddSummaryDragOut(RectTransform icon)
+    {
+        Canvas canvas = icon.GetComponentInParent<Canvas>();
+        if (canvas == null) return;
+        var drag = icon.gameObject.AddComponent<HudIconDragOpen>();
+        drag.Visual = HudDragItem.Create(canvas.rootCanvas.transform, "Bea Summary", icon, new Vector2(230f, 300f), -5f, HudDragItem.BuildSummaryPaper);
+        drag.CanDrag = () => CanOpenPanels() && Level3SummaryDocument.Instance != null;
+        drag.OpenAt = point => Level3SummaryDocument.Instance != null && Level3SummaryDocument.Instance.DropFromIcon(point);
+        drag.Moved = point => Level3SummaryDocument.Instance?.IconDrag(point);
+    }
+
+    private void AddCertificateDragOut(RectTransform icon)
+    {
+        Canvas canvas = icon.GetComponentInParent<Canvas>();
+        if (canvas == null) return;
+        var drag = icon.gameObject.AddComponent<HudIconDragOpen>();
+        drag.Visual = HudDragItem.Create(canvas.rootCanvas.transform, "Bea Certificate", icon, new Vector2(230f, 300f), -5f, HudDragItem.BuildSummaryPaper);
+        drag.CanDrag = () => CanOpenPanels() && Level3CertificatePaper.Instance != null;
+        drag.OpenAt = point => Level3CertificatePaper.Instance != null && Level3CertificatePaper.Instance.Open(point);
+    }
+
+    public SlotRef DocumentDropTarget(Vector2 point, string itemId = InventoryCatalogue.BeaSummary)
+    {
+        int index = SlotIndexUnder(point);
+        if (index >= 0) return SlotRef.Hotbar(index);
+        SlotRef current = InventoryRules.Find(Inventory, itemId);
+        if (current.Area == InventoryArea.Bag) return current;
+        int bag = InventoryRules.FirstEmpty(Inventory.bag, Inventory.bagCapacity);
+        return bag >= 0 ? SlotRef.Bag(bag) : SlotRef.None;
     }
 
     private void CreateBagIcon()
@@ -634,7 +673,8 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
             if (!unlocked) continue;
             tile.Rect.anchoredPosition = SlotPosition(i);
             bool empty = i >= r.hotbar.Count || r.hotbar[i].IsEmpty;
-            tile.Face.enabled = empty;
+            // The tile shows whenever no icon stands on it: a slot is never an invisible hole.
+            tile.Face.enabled = SlotFaceShown(empty, !empty && ItemVisibleInBar(r.hotbar[i].itemId));
             tile.Button.interactable = empty;
         }
         // A bought slot pops in and the Bag icon glides to its new place (T12).
@@ -663,10 +703,19 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         foreach (ItemView view in views.Values) Place(view, r);
     }
 
+    /// <summary>An occupied slot's item draws its own icon; otherwise the normal slot tile (with its +) stays.</summary>
+    public static bool SlotFaceShown(bool empty, bool itemVisible) => empty || !itemVisible;
+
+    /// <summary>Level 3's folder leaves the row while it is on the desk or in someone's hands, whatever the record says for that moment.</summary>
+    private bool ItemVisibleInBar(string itemId) => !(LevelThree && itemId == InventoryCatalogue.CaseFolder) || FolderCarried();
+
+    /// <summary>The handover gate gave the row back: re-place it now, not at the next timed refresh.</summary>
+    public void PresentationChanged() => dirty = true;
+
     private void Place(ItemView view, CampaignInventoryRecord r)
     {
         SlotRef at = InventoryRules.Find(r, view.ItemId);
-        bool inBar = at.Area == InventoryArea.Hotbar && at.Index < r.hotbarCapacity;
+        bool inBar = at.Area == InventoryArea.Hotbar && at.Index < r.hotbarCapacity && ItemVisibleInBar(view.ItemId);
         view.Wrapper.anchoredPosition = inBar ? SlotPosition(at.Index) : HiddenPosition(view.ItemId, r);
         if (inBar) lastSlot[view.ItemId] = at.Index;
         if (view.Generic && view.Count != null)
@@ -762,8 +811,12 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
             lit = SlotIndexUnder(pointer);
             if (lit < 0)
             {
-                lit = InventoryRules.FirstEmpty(Inventory.hotbar, Inventory.hotbarCapacity);
-                bagLit = lit < 0;
+                if (Level3SummaryDocument.Instance != null && Level3SummaryDocument.Instance.IsDragging) bagLit = true;
+                else
+                {
+                    lit = InventoryRules.FirstEmpty(Inventory.hotbar, Inventory.hotbarCapacity);
+                    bagLit = lit < 0;
+                }
             }
         }
         for (int i = 0; i < tiles.Length; i++)
@@ -777,7 +830,7 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         foreach (FloatingModel3D model in openFolders) if (model != null && model.isActiveAndEnabled && model.IsDragging()) return true;
         if (deskBook != null && deskBook.IsCarrying) return true;
         foreach (TaxCodeBookFloatingModel3D model in openBooks) if (model != null && model.isActiveAndEnabled && model.IsDragging()) return true;
-        return false;
+        return Level3SummaryDocument.Instance != null && Level3SummaryDocument.Instance.IsDragging;
     }
 
     private static bool TryPointer(out Vector2 pointer)
@@ -803,6 +856,7 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
             return;
         }
         SyncWorld();
+        SyncSummaryItem();
         if (referenceSavePending && Time.unscaledTime >= referenceRetryAt)
         {
             referenceSavePending = !KeepVisibleReferences();
@@ -810,6 +864,20 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         }
         UpdateHandoverPrompt();
         UpdateBookFirstOpen();
+    }
+
+    private void SyncSummaryItem()
+    {
+        if (!LevelThree) return;
+        bool staleSummary = Level3CaseFolder.Attached(Level3WorksheetCheck.WorksheetWorkId) && InventoryRules.Owns(Inventory, InventoryCatalogue.BeaSummary);
+        bool staleCertificate = Level3CaseFolder.Attached(Level3ChapterRules.BeaCreditSource) && InventoryRules.Owns(Inventory, InventoryCatalogue.BeaCertificate);
+        if ((staleSummary || staleCertificate) && !Commit(r => Level3ReviewRules.SyncFolderInventory(r, catalogue, Level3Checkpointer.Active?.State)).Ok) return;
+        if (Level3CaseFolder.Attached(Level3WorksheetCheck.WorksheetWorkId) ||
+            !Level3WorksheetCheck.Collected(Level3Checkpointer.Active?.State) || InventoryRules.Owns(Inventory, InventoryCatalogue.BeaSummary)) return;
+        if (retryAfter.TryGetValue(InventoryCatalogue.BeaSummary, out float until) && Time.unscaledTime < until) return;
+        var state = Level3Checkpointer.Active.State;
+        InventoryResult result = Commit(r => Level3WorksheetCheck.AcquireSummary(r, catalogue, state, actionId: NewAction("summary-recover")));
+        retryAfter[InventoryCatalogue.BeaSummary] = Time.unscaledTime + RetrySeconds;
     }
 
     /// <summary>After the Level 1 resume finished: apply the catalogue, then make the inventory agree with the world (quietly).</summary>
@@ -962,6 +1030,7 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
 
     private bool FolderCarried()
     {
+        if (LevelThree && Level3ReviewRules.FolderInWorld(Level3Checkpointer.Active?.State)) return false;
         if (ClientCopyHandover.CopyActive) return true;
         foreach (FolderToHUDIcon folder in folders)
             if (folder != null && folder.IsStoredOrViewing) return true;
@@ -985,13 +1054,16 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
 
         bool folderCarried = FolderCarried();
         bool folderOwned = InventoryRules.Owns(r, InventoryCatalogue.CaseFolder);
+        // Actual desk/Auditor returns leave a free slot, including older invisible occupied-folder saves.
+        if (LevelThree && Level3ReviewRules.FolderInWorld(Level3Checkpointer.Active?.State) && folderOwned)
+            RemoveWorld(InventoryCatalogue.CaseFolder);
         if (folderCarried && !folderOwned)
         {
             int dropped = HudSlotDrop.TakePending(InventoryCatalogue.CaseFolder);
             SlotRef? preferred = dropped >= 0 ? SlotRef.Hotbar(dropped) : (SlotRef?)null;
             AcquireWorld(InventoryCatalogue.CaseFolder, preferred, Info(InventoryCatalogue.CaseFolder), quiet: false);
         }
-        // Folder ownership survives submission, delivery and chapter changes; only its active world binding changes.
+        // Level 3 ownership follows the actual desk/Auditor/recipient location; earlier chapters keep their existing policy.
         SyncContents();
     }
 
@@ -1080,10 +1152,15 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
             }
         }
         // Level 3 T06: Bea's collected worksheet is the player's own checked work, kept as a read-only page.
+        // Revised T06: presented as Bea's Income & Expense Summary (same B-WORKSHEET identity); a worksheet
+        // collected from the retired board keeps its original title and section-by-section page.
         Level3ChapterCheckpoint chapter = LevelThree ? Level3Checkpointer.Active?.State : null;
         if (chapter != null && HoldsCasePapers() && chapter.Case(definition.caseId)?.workIds?.Contains(Level3WorksheetCheck.WorksheetWorkId) == true)
-            KeepReferencePages(pages, InventoryCatalogue.CaseFolder, definition.caseId + "/" + Level3WorksheetCheck.WorksheetWorkId,
-                definition.caseTitle + " · Checked worksheet", Level3WorksheetCheck.ReferenceLines(chapter, Level3WorksheetRules.RowsOf(definition)));
+        {
+            KeepReferencePages(pages, InventoryCatalogue.BeaSummary, definition.caseId + "/" + Level3WorksheetCheck.WorksheetWorkId,
+                definition.caseTitle + " · " + (Level3WorksheetCheck.BoardPage(chapter) ? "Checked worksheet" : Level3WorksheetCheck.SummaryTitle),
+                Level3WorksheetCheck.ReferenceLines(chapter, definition));
+        }
         if (LevelTwo && Level2OfficeStart.Review?.challenge?.awarded == true)
         {
             var lines = IncomeChallenge.AnnotatedList(Level2OfficeStart.Review.challenge, definition.review?.annotation);
@@ -1146,7 +1223,7 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
             // T06: the collected worksheet travels in the same folder (a container document, no extra Bag slot).
             List<string> work = Level3Checkpointer.Active?.State?.Case(caseId)?.workIds;
             if (work != null)
-                foreach (string id in work) papers.Add(caseId + "/" + id);
+                foreach (string id in work) if (id != Level3WorksheetCheck.WorksheetWorkId) papers.Add(caseId + "/" + id);
         }
         return papers;
     }
@@ -1358,7 +1435,9 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
         if (retryAfter.TryGetValue(itemId, out float until) && Time.unscaledTime < until) return;
         SlotRef was = InventoryRules.Find(Inventory, itemId);
         if (was.Area == InventoryArea.Hotbar) lastSlot[itemId] = was.Index;
-        InventoryResult result = Commit(r => InventoryRules.Remove(r, catalogue, itemId, NewAction("remove/" + itemId)));
+        InventoryResult result = Commit(r => LevelThree && itemId == InventoryCatalogue.CaseFolder && Level3ReviewRules.FolderInWorld(Level3Checkpointer.Active?.State)
+            ? Level3ReviewRules.SyncFolderInventory(r, catalogue, Level3Checkpointer.Active.State)
+            : InventoryRules.Remove(r, catalogue, itemId, NewAction("remove/" + itemId)));
         if (result.Outcome == InventoryOutcome.SaveFailed) retryAfter[itemId] = Time.unscaledTime + RetrySeconds;
         else retryAfter.Remove(itemId);
     }
@@ -1508,7 +1587,7 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
     public static bool CanOpenPanels()
     {
         GuideDirector guide = GuideRuntime.Instance != null ? GuideRuntime.Instance.Director : null;
-        return !DialogueUI.IsAnyDialogueActive && !HudRewardScreen.AnyOpen && !InGameSettings.IsOpen && !SideQuestSplash.IsShowing &&
+        return !(Level3BeaTable.Instance != null && Level3BeaTable.Instance.Seated && !Level3BeaTable.Instance.SummaryAvailable) && !DialogueUI.IsAnyDialogueActive && !HudRewardScreen.AnyOpen && !InGameSettings.IsOpen && !SideQuestSplash.IsShowing &&
                (guide == null || !guide.IsBlocking) && (CaseResultPopupUI.Instance == null || !CaseResultPopupUI.Instance.IsVisible);
     }
 
@@ -1533,7 +1612,13 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
                 float local = Mathf.Clamp01((u - (i - tilesUnlockedFrom) * 0.08f) / 0.35f);
                 tiles[i].Rect.localScale = Vector3.one * HudTheme.EaseOutBack(local);
             }
-            if (u > 0.6f) tilesUnlockedFrom = -1;
+            if (u > 0.6f)
+            {
+                // Every popped-in slot ends at its normal size, including the row's last ones.
+                for (int i = tilesUnlockedFrom; i < tiles.Length; i++)
+                    if (tiles[i] != null) tiles[i].Rect.localScale = Vector3.one;
+                tilesUnlockedFrom = -1;
+            }
         }
         float t = Time.unscaledTime - bagPunchStarted;
         float scale = t < 0.45f ? 1f + 0.22f * Mathf.Sin(t / 0.45f * Mathf.PI) * (1f - t / 0.45f) : 1f;
@@ -1642,6 +1727,10 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
                 // T18: Rosa's four marked records open as their own papers (read anywhere; values move only at the desk).
                 return LevelTwo && Level2AnnotatedPapers.Instance != null
                     ? Level2AnnotatedPapers.Instance.OpenForReference() : OpenSavedRecords(itemId);
+            case InventoryCatalogue.BeaCertificate:
+                return Level3CertificatePaper.Instance != null ? Level3CertificatePaper.Instance.Toggle() : OpenSavedRecords(itemId);
+            case InventoryCatalogue.BeaSummary:
+                return Level3SummaryDocument.Instance != null ? Level3SummaryDocument.Instance.Toggle() : OpenSavedRecords(itemId);
             case InventoryCatalogue.ReviewedFile:
                 // T30: Arthur's file is a teal copy of the Case Folder: it flies out of its slot or the Bag (a second tap puts it away).
                 if (ReviewedFileViewer.Instance == null) return false;
@@ -1665,9 +1754,11 @@ public sealed class HudHotbar : MonoBehaviour, Level2TaxCodeBookIcon.IBookCarrie
 
     public bool OpenSavedRecords(string itemId)
     {
-        if (!InventoryRules.Owns(Inventory, itemId) || collectibles == null) return false;
-        InventoryItemRecord record = InventoryRules.Record(Inventory, itemId);
-        return collectibles.ShowSavedRecords(catalogue.Find(itemId)?.label ?? itemId, record);
+        if (collectibles == null) return false;
+        InventoryItemRecord record = InventoryRules.Owns(Inventory, itemId) ? InventoryRules.Record(Inventory, itemId) : null;
+        if (record == null && LevelThree && itemId == InventoryCatalogue.CaseFolder)
+            record = Level3DeliveryRules.ReadDeliveredRecords(Level3Checkpointer.Active?.State, CaseManager.Instance?.CurrentDefinition);
+        return record != null && collectibles.ShowSavedRecords(catalogue.Find(itemId)?.label ?? itemId, record);
     }
 
     /// <summary>The first time the book's pages show in this run (desk or slot), its first-open event is raised once.</summary>

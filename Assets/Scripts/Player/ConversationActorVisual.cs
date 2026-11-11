@@ -129,7 +129,10 @@ public class ConversationActorVisual : MonoBehaviour
             return false;
         }
 
-        GameObject instance = Instantiate(modelPrefab, transform, false);
+        var explorationAssets = ExplorationRules.UsesSmoothedElijah(gameObject.scene.name)
+            ? Resources.Load<ExplorationBodyAssets>(ExplorationBody.AssetsPath) : null;
+        GameObject smoothModel = explorationAssets != null ? explorationAssets.conversationModel : null;
+        GameObject instance = Instantiate(smoothModel != null ? smoothModel : modelPrefab, transform, false);
         instance.name = "ElijahConversationModel";
         modelRoot = instance.transform;
 
@@ -148,6 +151,15 @@ public class ConversationActorVisual : MonoBehaviour
         CacheMotionBones();
         SamplePose(poseTime);
         ApplyFit();
+        // The adopted smoothed copy shares the exploration body's ONE world scale: canonical rest
+        // height from rest-pose geometry, applied once (a posed BakeMesh re-fit over-scaled it ~12%).
+        // Soles keep the setup tool's measured posed floor offset, exactly as the original path.
+        if (smoothModel != null && CharacterBodyGeometry.TryMeasureRest(modelRoot, out Bounds rest))
+        {
+            float scale = modelRoot.localScale.y * ExplorationRules.CalibratedScale(rest.size.y);
+            modelRoot.localScale = Vector3.one * scale;
+            if (nativeMaxY - nativeMinY > 1e-4f) modelRoot.localPosition = new Vector3(0f, -nativeMinY * scale, 0f);
+        }
         instance.SetActive(false);
         return true;
     }
@@ -300,6 +312,13 @@ public class ConversationActorVisual : MonoBehaviour
 
     private void SamplePose(float time)
     {
+        // Built clips may omit constant bone curves. Remove our previous
+        // offsets BEFORE sampling, or an untouched bone becomes the next
+        // sampled base pose and the talk/listen rotation accumulates.
+        if (poseCached && motionBones != null)
+            for (int i = 0; i < motionBones.Length; i++)
+                if (motionBones[i] != null)
+                    motionBones[i].localRotation = sampledRotations[i];
         if (poseClip == null || modelRoot == null) return;
         // Sampling moves bones only; keep the fitted root transform authoritative.
         Vector3 p = modelRoot.localPosition;

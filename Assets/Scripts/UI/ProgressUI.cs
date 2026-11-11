@@ -117,7 +117,10 @@ public class ProgressUI : MonoBehaviour
         }
 
         PlaySelectSound();
-        SceneManager.LoadScene(levelTwoCutscene);
+        PlayerProgressData progress = PlayerProgressManager.Instance.CurrentProgress;
+        CampaignRun.Begin(progress.HasCampaign && progress.campaign.IsChapterCompleted("Level_02")
+            ? CampaignRunMode.MasteryReplay : CampaignRunMode.Story);
+        ChapterOpeningSequence.LoadChapter(levelTwoCutscene);
     }
 
     public void OnBackToMainMenuButtonPressed()

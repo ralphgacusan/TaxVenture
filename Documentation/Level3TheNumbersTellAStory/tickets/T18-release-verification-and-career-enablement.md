@@ -1,67 +1,65 @@
-# T18 — Verify the complete campaign handoff and enable Level 3 in Career
+# T18 — Verify release readiness and enable the revised chapter in Career
 
 Status: **Planned**. Blocked by: T17.
 
-Priority: P1. Phase: F — Delivery gate. Estimated scope: M; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
+**5 November 2026 user-authorized APK playtest exception:** Level3 is now launchable through normal Career after saved Level2 completion, although gameplay and release acceptance remain unfinished. This enables the requested entry portion only; it does not complete T18, T17, content sign-off, badges/results/release verification or device acceptance. Normal Story checkpoint/inventory saving is retained; no fixture/Editor-only bypass, score gate or campaign reset. L4/L5 remain Coming Soon. See latest PROGRESS for tests and manual steps.
+
+Priority: P1. Phase: F — Release. Estimated scope: M; one fresh agent context. If real call-site work exceeds this bound, record a bounded split before adding unrelated framework work.
 
 ## Goal and visible accomplishment
 
-Only the integrated internally ready Level3 is exposed as a normal campaign chapter, with exact acceptance evidence and preserved earlier levels.
+Completed Level2 campaigns can enter the revised Bea-only Level3 chapter through normal Career, with correct chapter/badge/results/replay and applicable authority/integration limitations explicitly recorded. Nina/Marine company work is deferred and is not a gate for this release.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Current request is documentation only; future implementation requires an implementation instruction.
+Revision: **3 November 2026**. Read [REVISION_PLAN](../REVISION_PLAN.md), [SPEC](../SPEC.md), [reuse map](../REUSE_AND_ARCHITECTURE.md), [visual contract](../WORLD_AND_FEEDBACK.md), [verification](../VERIFICATION.md) and [AGENTS](../AGENTS.md). Planned refers to changed revision acceptance, not absence of reusable implementation. Historical baseline before the user-authorized playtest exception: Career3 was Coming Soon and absent side-quest badge row. Final release still needs this gate’s remaining work; the explicit APK playtest exception above already enables normal story entry.
 
 ## Existing systems to reuse
 
-Verified existing paths relative to repository root; recheck live behavior rather than rely on stale comments:
+Existing source paths relative to repository root; inspect live callbacks/content before changing them. Narrow Level_03 adapters only; no duplicate folder/stamp/calculator/input/save/shop framework.
 
 - `Assets/Resources/Career/chapters.json`
+- `Assets/Scripts/RewardsSystem/CampaignMenu.cs`
 - `Assets/Scripts/RewardsSystem/CareerProgressService.cs`
 - `Assets/Scripts/Data/OfficeLevelCatalog.cs`
-- `ProjectSettings/EditorBuildSettings.asset`
-- `Tests/make_scratch_build.py`
-- `Documentation/CampaignFoundation/DELIVERY_B_HANDOFF.md`
-
-New L3 components/resources mentioned below are proposed outputs, not verified existing APIs. Prefer existing owners/adapters and level configuration; do not copy global frameworks.
+- `Assets/Editor/Level3SceneSetup.cs`
+- `Tests/VerifyLevel3Scene.py`
+- `Tests/Level3Regression/Program.cs`
 
 ## Work and interaction mechanics
 
-1. Confirm T01–T17 actual implemented/internal status and explicit content-authority release gate. Unreviewed tax assumptions, missing required source/interaction or corrupt two-case state cannot be papered over by this ticket. Preserve inherited user manual gaps; do not claim accepted based on source.
-2. Run VERIFICATION’s affected scratch/behavior/save/scene/GUID/content/mode/claim/regression matrix using current suites and disposable saves. Validate real L2 completion→L3 entry→all stable resumes→both cases/deliveries→finding/wrap-up→Career/optional office. Compare immediate-baseline source scene hashes and L1/L2 behavior.
-3. Verify zero-purchase and representative owned-upgrade paths; full Bag, money/trust bounds, three Rosa histories, Bronze corrected completion, partial retries/cutoffs/vouchers, copied/foreign sources, duplicate callbacks, failed writes and app-loss recovery. Awards match260 coins/max260 XP/+10 service without farming.
-4. Only after internal readiness, replace Chapter3 comingSoon with actual verified scene/two-case/one badge content and fallback mappings. Require actual saved Chapter2 completion, not 80% mastery/trust/coins. Register build name once preserving existing routes. L4/L5 and stand remain unavailable; computer only honest functional readiness.
-5. Add ordered delivery handoff to this pack with exact changed paths/commands/results/warnings/limitations and user scripts. Availability enabled is distinct from user accepted. If any required gate fails, keep L3 unavailable, report precise blocker and continue safe unaffected checks. Never alter an actual user save or run Git.
+1. Run actual current docs/content, compile, command/save/failure/legacy/mode/reward and scoped scene/GUID/reference/target checks plus affected L1/L2 regression suites. Locate harness/build prerequisites first; old PROGRESS counts never substitute. Preserve unresolved real warnings and user-reported blockers.
+2. Resolve the named content-authority gates applicable to Bea (supported expense/period/year, individual rates, certificate context and rounding) with actual sign-off evidence. Company-only assumptions, including Marine certificate provenance, remain recorded for the deferred future case and do not block this release. If a Bea gate is unavailable, keep graded Career release blocked but complete independent integration/documentation; never fabricate approval.
+3. After internal readiness and Bea authority gates, configure actual Level3 title/description/Office_Level3/one active Bea case/one Worth the Tax? badge in Career. Gate by completedL2/corrected completion/readiness, not80%/Trust/coins. No alternate entry resets campaign or bypasses pending copy. Keep company fixtures/ticket references preserved but inactive.
+4. Verify Continue at all revised/legacy phases, rewards/result aggregation/replay/menu counter ownership, computer completedL3+functional readiness, L4/L5 Coming Soon and final transition back to Career. Preserve user saves/source scenes.
+5. Report exact modified files/commands/results/current warnings/manual status and next responsibility. User manual acceptance remains distinct; source checks never mark rendered/device acceptance. Do not mark full user acceptance with known user blockers.
 
 ## Assets, motion and feedback
 
-No new gameplay art. Final real scene/build/content/target/GUID validation; runtime-created roots distinguished from serialized scene objects.
-
-Follow WORLD_AND_FEEDBACK and fixed document types. Bind every new world object to actual 3D body, collider/target, correct source/record identity and existing camera/input/audio ownership. Record resolved anchors/clip names and any unsupported asset assumption. No user scene-assembly chores or claims of rendered acceptance from declarations.
+Implement this slice with actual existing 3D bodies, readable paper faces, reachable targets and current page/camera/audio ownership. One active task/primary action; temporary source/reference only on demand. Reuse L1/L2 styling and quiet lift/settle/feed/stamp cues. No tiny auto-shrunk text, full-tool overlay or correctness flash on draft placement. Bind models/colliders/callbacks here; T17 cannot substitute for this ticket’s visual implementation. User verifies rendered/touch/feel results.
 
 ## Integration requirements
 
-This is the only normal-launch enablement ticket. Updating design/index does not enable a level. Career’s current Continue semantics and prior completion/mastery remain compatible. User alone performs Unity/device/Git acceptance.
-
-Preserve current L1/L2 scenes, source prefabs/GUIDs, signed save owner, mode guards, input/FSM/dialogue/audio frameworks and Android controls. Normal L3 Career remains unavailable until T18. No L4 filing, ending, stand, drawer or global archive feature is added.
+Preserve shared L1/L2 behavior, existing serialized identities/source scenes and all campaign possessions. Keep current exact-decimal L3 rules/provenance; no float prototype bridge. Use existing input/dialogue/FSM/guide/Bag/reward owners. Career3 stays gated until T18, L4/L5 remain unavailable. No remote ticket, package, scene recopy or global cleanup.
 
 ## Persistence and failure rules
 
-Use the existing candidate→save→publish command boundary and stable chapter/case/action IDs. Validate actual prerequisites/revision/source before committing. Failed write leaves prior state, source/copy and retry available, with no success effect. Quiet restore does not raise acquisition/reward/choice/consumption events. Back, repeated input, disable and app focus interruption settle pointer state and release only owned holds. Story/replay/practice/Editor distinctions protect live campaign data.
+Candidate -> signed persist -> publish before success effects. Validate mode/case/source/revision/prerequisites/action IDs; duplicates do not award. Preserve legacy grades/claims/approved snapshots/copies and quiet restores. Failure keeps prior state/source/copy retryable. Clear only owned pointer/selection/locks on Back/settings/disable/focus/camera return; independent work can be left. Practice/replay/Editor cannot mutate live story state.
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] Actual prerequisite/content authority and complete internal matrix recorded with no invented pass counts or unresolved blocking required feature.
-- [ ] Career unlocks only correct ready L3 after saved L2, resumes correct task, and leaves L4/L5/stand gated.
-- [ ] Source scenes and previous-level behavior preserved; no missing script/GUID/duplicate manager or false runtime-created path check.
-- [ ] Delivery handoff separates implemented/internal/manual accepted status and contains reproducible user route plus exact blockers if unavailable.
-- [ ] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count.
+- [ ] Current full internal checks execute on current source; no missing harness/stale DLL or historical test-count substitution.
+- [ ] Bea-applicable authority evidence exists before graded Career enablement; if missing, release remains gated and documented. Company-only authority gates are explicitly deferred.
+- [ ] Career/Continue/Bea result/one badge/replay/optional Bea register resolve correctly; no company case is active; L4/L5 stay unavailable.
+- [ ] Legacy saves/claims/possessions and L1/L2 intact; no early completion/reward duplication or paid progress gate.
+- [ ] Build actual changed production paths and run targeted command/save/failure/mode checks plus affected shared regressions; record commands/counts/warnings, not historical passes.
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 
-- [ ] User runs VERIFICATION’s complete Unity/device/free/upgraded/history/cancel/resume/audio/performance routes; status stays user manual pending until results exist.
-- [ ] Inspect applicable actual imported references, 3D bodies, paper text, targets, motion, camera/control recovery and Android layout. Manual acceptance remains pending until the user reports it; static tests are not a substitute.
+- [ ] Run normal completedL2->Career3->Bea-only chapter->Career and resume fixtures; badge/rewards/shop match actual saved results.
+- [ ] Record final phone readability/3D/input/NPC/audio/performance acceptance and remaining issues separately.
+- [ ] Confirm real 3D targets/animations/text/safe areas/Back/focus/audio on supported devices; no source declaration counts as visual acceptance.
 
 ## Handoff and completion definition
 
-Internally verified Level3 availability or explicit retained release gate, full handoff and no unsupported accepted claim. No next numbered implementation ticket; await user acceptance/results.
+Deliver the goal above through its real entry point, including persistence, presentation and checked limitations. Update [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md) with actual evidence and remaining user checks; do not mark implemented for documentation presence. User owns Unity and every Git operation.
 
-Direct dependents: None. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Mark implemented/internal-verified only after real entry points and checks work; Git operations and user acceptance remain user-owned. No commits, scene edits or gameplay implementation are performed by authoring this ticket.
+Direct dependents: None. Continue the revised index, retaining prior working changes and historical results.

@@ -50,6 +50,8 @@ public sealed class SideQuestSplash : MonoBehaviour
     private const float ShadeAlpha = 0.92f;
     private const float FadeIn = 0.5f;
     private const float FadeOut = 0.5f;
+    /// <summary>CameraController's transition blocker draws at this order.</summary>
+    private const int CameraShieldOrder = 32000;
 
     private GameObject host;
     private CanvasGroup group;
@@ -135,13 +137,22 @@ public sealed class SideQuestSplash : MonoBehaviour
         StartRequest(Content, null, releaseBoard: true);
     }
 
-    /// <summary>Shows this same cinematic card with scene-specific text and a one-shot continue callback.</summary>
-    public bool Show(SplashContent content, Action onContinue)
+    /// <summary>
+    /// Shows this same cinematic card with scene-specific text and a one-shot continue callback.
+    /// withCamera: the card rises in the same frame as a camera move the caller just started, above that move's input shield.
+    /// </summary>
+    public bool Show(SplashContent content, Action onContinue, bool withCamera = false)
     {
         if (host != null || pending || IsShowing) return false;
         if (!gameObject.activeSelf) gameObject.SetActive(true);
         if (!enabled) enabled = true;
         StartRequest(content, onContinue, releaseBoard: false);
+        if (withCamera)
+        {
+            pending = false;
+            Build();
+            if (host.TryGetComponent(out Canvas canvas)) canvas.sortingOrder = CameraShieldOrder + 1;
+        }
         return true;
     }
 

@@ -1,66 +1,63 @@
-# T12 — Compute, review and explain the company’s supported tax balance
+# T12 — Apply the same three-stage computation and deliver the company result
 
-Status: **Planned**. Blocked by: T01, T09, T11.
+Status: **Deferred — future second case; excluded from the current Bea-only release**. Blocked by: T01, T08, T09, T11.
 
-Priority: P1. Phase: D — Corporate transfer challenge. Estimated scope: M+; existing mechanics with new rule/content; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
+Priority: P1. Phase: D — Corporate resolution. Estimated scope: M+; one fresh agent context. If real call-site work exceeds this bound, record a bounded split before adding unrelated framework work.
 
 ## Goal and visible accomplishment
 
-Players reuse the established calculator/review/copy loop with a bounded corporate rule and justify the higher supported balance to Nina.
+With less guidance, compute the company’s supported result, obtain review, explain why its balance differs from the prepared summary, and deliver the company copy.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Current request is documentation only; future implementation requires an implementation instruction.
+Revision: **3 November 2026**. Read [REVISION_PLAN](../REVISION_PLAN.md), [SPEC](../SPEC.md), [reuse map](../REUSE_AND_ARCHITECTURE.md), [visual contract](../WORLD_AND_FEEDBACK.md), [verification](../VERIFICATION.md) and [AGENTS](../AGENTS.md). Planned refers to changed revision acceptance, not absence of reusable implementation. Historical baseline: Reuse revised Bea stages/transfer/stamp/review/copy interfaces; existing rules have Bea-bound assumptions that must be explicitly parameterized at real call sites, not cloned into a new case framework.
 
 ## Existing systems to reuse
 
-Verified existing paths relative to repository root; recheck live behavior rather than rely on stale comments:
+Existing source paths relative to repository root; inspect live callbacks/content before changing them. Narrow Level_03 adapters only; no duplicate folder/stamp/calculator/input/save/shop framework.
 
-- `Assets/Scripts/Data/TaxComputationCalculator.cs`
-- `Assets/Scripts/UI/TaxCodeBookUI.cs`
-- `Assets/Scripts/RewardsSystem/CampaignRewards.cs`
-- `Assets/Scripts/RewardsSystem/LevelScoring.cs`
-- `Assets/Scripts/UI/DialogueSession.cs`
-
-New L3 components/resources mentioned below are proposed outputs, not verified existing APIs. Prefer existing owners/adapters and level configuration; do not copy global frameworks.
+- `Assets/Scripts/Level3/Level3ComputationRules.cs`
+- `Assets/Scripts/Level3/Level3ReviewRules.cs`
+- `Assets/Scripts/Level3/Level3Audit.cs`
+- `Assets/Scripts/Level3/Level3ReviewClock.cs`
+- `Assets/Scripts/Level3/Level3CertificateRules.cs`
+- `Assets/Scripts/RewardsSystem/ClientCopyRules.cs`
+- `Assets/Scripts/RewardsSystem/PlayerProgressManager.cs`
 
 ## Work and interaction mechanics
 
-1. Reuse current worksheet/computation/tape/credit/stamp/review components. Player adjusts unsupported draft costs 2,120,000 to2,000,000 using C-TRIP purpose support and leaves personal120,000 non-deductible. No second full twelve-decision grade; this is a main-case application.
-2. Select supported revenue 8,000,000−costs 2,000,000→taxable 6,000,000. Corporate rule reference explains ordinary25% and qualifying smaller rate conditions; supplied assets80,000,000 and net taxable>5,000,000 establish ordinary rule. Bound MCIT/incentives per T01. Compute1,500,000 tax−300,000 supported credit→1,200,000 payable.
-3. Preserve reduced guidance, actual rule choice and valid equivalent source-linked arithmetic. Wrong individual bracket, unsupported trip deduction, double credit or cross-case source remains reviewable mistake. Dependency invalidation and current stamp requirements reuse T07–T09.
-4. Company actual review approves its separate case result/XP/100coin claim, copyAtAuditor and stopped clock in one save. Keep chapter/Bea snapshot. Root cause/retry cap same as Bea; voucher claim independent, free rollover retains work.
-5. Nina asks why amount exceeds Desk draft1,170,000. CONTENT’s explanation branches require point to120,000 adjustment. Wrong rule/motive claims prompt correction, not ethics penalty. Awaited correct-client copy delivery saves explanation/copyDone/+4 trust and ClosingFinding admission. No duplicate side-quest XP/badge or chapter completion yet.
+1. Inventory Bea-only constants/claims/credit checks/clock/copy admission. Introduce smallest active-case/content parameters through existing owners; never alias Marine as Bea/SelfEmployed or duplicate controller/formula/review implementations. Do not generalize unrelated levels.
+2. Use same folder stages: transfer8,000,000 and selected supported2,000,000 -> taxable6,000,000; choose applicable supplied corporate rule25% -> tax1,500,000; transfer certificate credit300,000 -> balance1,200,000. Rule reference explains ordinary versus smaller-company conditions without new assets/depreciation/MCIT activity.
+3. Wrong same-case input/rule/credit remains draft for existing support/review evaluation; accept equivalent supported arithmetic. Credit cannot become expense or income. Fewer prompts, no second mandatory calculator lesson/sorting worksheet.
+4. Reuse current stamp/Auditor/copy loop with company-specific roots,100-coin/mastery claim and fresh10-active-minute clock at independent admission; voucher once for company, not reused Bea claim. Approval freezes only company and stages company copy.
+5. Nina asks why balance is higher; point to personal-trip record/adjustment rather than claiming higher tax is morally better or proof of intent. Brief correction/retry then actual correct-client handover commits+4 Trust and ClosingFinding. Preserve Bea and company results separately through failures/reload.
 
 ## Assets, motion and feedback
 
-Existing developed calculator/tapes/book/stamp/copy/Type 8, company printed rule/adjustment labels and existing emote/FX. No additional arithmetic minigame or sourced art.
-
-Follow WORLD_AND_FEEDBACK and fixed document types. Bind every new world object to actual 3D body, collider/target, correct source/record identity and existing camera/input/audio ownership. Record resolved anchors/clip names and any unsupported asset assumption. No user scene-assembly chores or claims of rendered acceptance from declarations.
+Implement this slice with actual existing 3D bodies, readable paper faces, reachable targets and current page/camera/audio ownership. One active task/primary action; temporary source/reference only on demand. Reuse L1/L2 styling and quiet lift/settle/feed/stamp cues. No tiny auto-shrunk text, full-tool overlay or correctness flash on draft placement. Bind models/colliders/callbacks here; T17 cannot substitute for this ticket’s visual implementation. User verifies rendered/touch/feel results.
 
 ## Integration requirements
 
-Second case is the critical regression for distinct reward/copy/clock identity. Do not use one chapter-wide approval claim or reuse Bea delivery target. Completed case snapshots support later optional computer register.
-
-Preserve current L1/L2 scenes, source prefabs/GUIDs, signed save owner, mode guards, input/FSM/dialogue/audio frameworks and Android controls. Normal L3 Career remains unavailable until T18. No L4 filing, ending, stand, drawer or global archive feature is added.
+Preserve shared L1/L2 behavior, existing serialized identities/source scenes and all campaign possessions. Keep current exact-decimal L3 rules/provenance; no float prototype bridge. Use existing input/dialogue/FSM/guide/Bag/reward owners. Career3 stays gated until T18, L4/L5 remain unavailable. No remote ticket, package, scene recopy or global cleanup.
 
 ## Persistence and failure rules
 
-Use the existing candidate→save→publish command boundary and stable chapter/case/action IDs. Validate actual prerequisites/revision/source before committing. Failed write leaves prior state, source/copy and retry available, with no success effect. Quiet restore does not raise acquisition/reward/choice/consumption events. Back, repeated input, disable and app focus interruption settle pointer state and release only owned holds. Story/replay/practice/Editor distinctions protect live campaign data.
+Candidate -> signed persist -> publish before success effects. Validate mode/case/source/revision/prerequisites/action IDs; duplicates do not award. Preserve legacy grades/claims/approved snapshots/copies and quiet restores. Failure keeps prior state/source/copy retryable. Clear only owned pointer/selection/locks on Back/settings/disable/focus/camera return; independent work can be left. Practice/replay/Editor cannot mutate live story state.
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] Real company chain yields6,000,000/1,500,000/1,200,000 with supported personal adjustment; wrong rules/treatments/credit fail appropriately.
-- [ ] Company100 coins/+4 trust and case XP occur once and do not regrant worksheet/Bea outcomes.
-- [ ] Both copy phases/explanations/failed-save/reload/day/voucher paths remain distinct; root error scoring bounded.
-- [ ] Supported explanation admits closing finding; speculative intent correction has no moral penalty or auto-approved journal allegation.
-- [ ] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count.
+- [ ] Same source-transfer/calculator/stamp surfaces handle company without rewriting Bea or shared L1/L2 outcomes.
+- [ ] Supported6,000,000/1,500,000/1,200,000 passes; draft-trip/small-rate/credit-as-expense/foreign-source fails support.
+- [ ] Separate10-minute clock/voucher,100-coin approval, read-only copy, explained delivery+4 and claims round-trip once.
+- [ ] Interrupted/failed case commands preserve both clients; closing starts only after actual company delivery.
+- [ ] Build actual changed production paths and run targeted command/save/failure/mode checks plus affected shared regressions; record commands/counts/warnings, not historical passes.
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 
-- [ ] User completes company from appointment to actual delivery, checks comparative draft/corrected amount explanation and familiar controls with less guidance.
-- [ ] Inspect applicable actual imported references, 3D bodies, paper text, targets, motion, camera/control recovery and Android layout. Manual acceptance remains pending until the user reports it; static tests are not a substitute.
+- [ ] Company is shorter and less guided, controls/layout consistent; corporate rule is readable and understandable.
+- [ ] Observe correction/review/copy/explanation/cutoff/return without repeated teaching or duplicate clients/panels.
+- [ ] Confirm real 3D targets/animations/text/safe areas/Back/focus/audio on supported devices; no source declaration counts as visual acceptance.
 
 ## Handoff and completion definition
 
-Both main cases resolved and company delivery saved; closing discovery next. Next recommended T13.
+Deliver the goal above through its real entry point, including persistence, presentation and checked limitations. Update [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md) with actual evidence and remaining user checks; do not mark implemented for documentation presence. User owns Unity and every Git operation.
 
-Direct dependents: T13, T14, T16. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Mark implemented/internal-verified only after real entry points and checks work; Git operations and user acceptance remain user-owned. No commits, scene edits or gameplay implementation are performed by authoring this ticket.
+Direct dependents: None in the current release. Recheck downstream scope if the second case is reactivated.

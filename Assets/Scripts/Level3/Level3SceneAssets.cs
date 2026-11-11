@@ -24,6 +24,9 @@ public sealed class Level3SceneAssets : ScriptableObject
     public GameObject beaPrefab;
     public RuntimeAnimatorController npcController;
     public GameObject worktablePrefab;
+    /// <summary>Level 1's plaza guard (SM_Chr_Security_Male_01) and Carlo (SM_Chr_Developer_Male_02), same models, no copies.</summary>
+    public GameObject guardPrefab;
+    public GameObject ambientPrefab;
 
     public static Level3SceneAssets Load() => Resources.Load<Level3SceneAssets>(ResourcePath);
 }

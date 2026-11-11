@@ -58,6 +58,8 @@ public sealed class Level3ComputationLeafModel
     private const float PickX = 0.072f;
     private const float SlotX = 0.036f;
     private const float SlotWidth = 0.098f;
+    private const float AttachedTapeDepth = 0.0155f;
+    public static Vector2 AttachedTapeSize => new Vector2(SlotWidth - 0.008f, AttachedTapeDepth);
     private const float RowDepth = 0.02f;
     /// <summary>T08: the certificate tab sticks out of the clipboard's left edge (counted in the lifted bounds).</summary>
     private const float TabWidth = 0.024f;
@@ -91,6 +93,9 @@ public sealed class Level3ComputationLeafModel
 
     public Transform Root { get; private set; }
     public Collider BodyTarget { get; private set; }
+    public Collider MoveHandle { get; private set; }
+    public Collider[] MoveBorders { get; private set; }
+    public bool IsMoveHandle(Collider target) => target == BodyTarget || target == MoveHandle || (MoveBorders != null && System.Array.IndexOf(MoveBorders, target) >= 0);
     public Bounds UnitBounds { get; private set; }
 
     private readonly Level3DeskProps props;
@@ -100,7 +105,7 @@ public sealed class Level3ComputationLeafModel
     private readonly Dictionary<string, GameObject> sourceFrames = new Dictionary<string, GameObject>();
     private readonly Dictionary<string, TextMeshPro> constantValues = new Dictionary<string, TextMeshPro>();
     private readonly List<GameObject> constantChips = new List<GameObject>();
-    private readonly List<(Transform target, float start)> pops = new List<(Transform, float)>();
+    private readonly List<(Transform target, float start, Vector3 scale, Vector3 position, bool settle)> pops = new List<(Transform, float, Vector3, Vector3, bool)>();
     private TextMeshPro band;
     private TextMeshPro bandHint;
     private TextMeshPro message;
@@ -146,6 +151,13 @@ public sealed class Level3ComputationLeafModel
         props.Box("Leaf Edge", Root, new Vector3(0.0012f, 0.0041f, -0.0052f), new Vector3(LeafWidth, 0.0004f, LeafLength - 0.008f), Level3DeskProps.Cream);
         props.Box("Clip Base", Root, new Vector3(0f, 0.0065f, LeafLength * 0.5f + 0.002f), new Vector3(0.056f, 0.004f, 0.016f), Level3DeskProps.Brass);
         props.Box("Clip Lever", Root, new Vector3(0f, 0.0095f, LeafLength * 0.5f - 0.004f), new Vector3(0.038f, 0.0025f, 0.012f), Level3DeskProps.BrassSoft);
+        MoveHandle = props.Target("Move paper by clip", Root, new Vector3(0f, 0.012f, LeafLength * 0.5f), new Vector3(0.062f, 0.012f, 0.022f));
+        MoveBorders = new Collider[]
+        {
+            props.Target("Move sheet left edge", Root, new Vector3(-LeafWidth * 0.5f - 0.004f, 0.005f, 0f), new Vector3(0.008f, 0.012f, LeafLength + 0.01f)),
+            props.Target("Move sheet right edge", Root, new Vector3(LeafWidth * 0.5f + 0.004f, 0.005f, 0f), new Vector3(0.008f, 0.012f, LeafLength + 0.01f)),
+            props.Target("Move sheet bottom edge", Root, new Vector3(0f, 0.005f, -LeafLength * 0.5f - 0.006f), new Vector3(LeafWidth + 0.014f, 0.012f, 0.01f))
+        };
 
         props.Box("Header", Root, new Vector3(0f, Surface + 0.0002f, 0.128f), new Vector3(LeafWidth * 0.96f, 0.0006f, 0.022f), Level3DeskProps.Navy);
         props.Print("Title", Root, new Vector3(0f, Surface + 0.0007f, 0.128f), InnerWidth, 0.013f, title, Level3DeskProps.Cream, bold: true);
@@ -369,10 +381,10 @@ public sealed class Level3ComputationLeafModel
         tape.gameObject.layer = Root.gameObject.layer;
         tape.SetParent(Root, false);
         tape.localPosition = slot.Center + new Vector3(0.002f, 0.0012f, 0f);
-        float width = SlotWidth - 0.008f;
-        props.Box("Shadow", tape, new Vector3(0.0012f, -0.0006f, -0.0012f), new Vector3(width, 0.0004f, 0.0155f), Level3DeskProps.InkMuted);
-        props.Box("Paper", tape, Vector3.zero, new Vector3(width, 0.0011f, 0.0155f), Level3DeskProps.Paper);
-        props.Box("Curl", tape, new Vector3(width * 0.5f - 0.0015f, 0.0007f, 0f), new Vector3(0.003f, 0.0014f, 0.0155f), Level3DeskProps.Cream);
+        float width = AttachedTapeSize.x;
+        props.Box("Shadow", tape, new Vector3(0.0012f, -0.0006f, -0.0012f), new Vector3(width, 0.0004f, AttachedTapeDepth), Level3DeskProps.InkMuted);
+        props.Box("Paper", tape, Vector3.zero, new Vector3(width, 0.0011f, AttachedTapeDepth), Level3DeskProps.Paper);
+        props.Box("Curl", tape, new Vector3(width * 0.5f - 0.0015f, 0.0007f, 0f), new Vector3(0.003f, 0.0014f, AttachedTapeDepth), Level3DeskProps.Cream);
         props.Box("Clip", tape, new Vector3(-width * 0.5f + 0.004f, 0.0016f, 0f), new Vector3(0.007f, 0.0028f, 0.018f), Level3DeskProps.Brass);
         slot.Print = props.Print("Print", tape, new Vector3(0.003f, 0.0008f, 0f), width - 0.012f, 0.0105f, "", Level3DeskProps.Ink, TextAlignmentOptions.Right);
         GameObject frame = props.Frame("Selected", tape, new Vector3(0f, 0.0018f, 0f), width + 0.002f, 0.0175f, 0.0014f, Level3DeskProps.Highlight);
@@ -426,6 +438,16 @@ public sealed class Level3ComputationLeafModel
     // =========================================================
     // QUERIES
     // =========================================================
+
+    public IEnumerable<KeyValuePair<Collider, Hit>> TransferTargets
+    {
+        get { foreach (var t in targets) if (t.Value.Kind == HitKind.Slot || t.Value.Kind == HitKind.Total || t.Value.Kind == HitKind.Constant) yield return t; }
+    }
+
+    public IEnumerable<KeyValuePair<Collider, string>> TapeTargets
+    {
+        get { foreach (var t in targets) if (t.Value.Kind == HitKind.Slot) yield return new KeyValuePair<Collider, string>(t.Key, t.Value.Id); }
+    }
 
     public bool TryHit(Collider collider, out Hit hit)
     {
@@ -559,15 +581,17 @@ public sealed class Level3ComputationLeafModel
     /// <summary>A tape just landed in its slot: it settles in with a small pop.</summary>
     public void PopSlot(string field)
     {
-        if (field != null && slots.TryGetValue(field, out SlotView slot) && slot.Tape.gameObject.activeSelf) StartPop(slot.Tape);
+        if (field != null && slots.TryGetValue(field, out SlotView slot) && slot.Tape.gameObject.activeSelf) StartPop(slot.Tape, settle: true);
     }
 
-    private void StartPop(Transform target)
+    private void StartPop(Transform target, bool settle = false)
     {
         if (target == null) return;
-        pops.RemoveAll(p => p.target == target);
-        pops.Add((target, Time.unscaledTime));
-        target.localScale = Vector3.one * 0.01f;
+        for (int i = pops.Count - 1; i >= 0; i--)
+            if (pops[i].target == target)
+            { target.localScale = pops[i].scale; target.localPosition = pops[i].position; pops.RemoveAt(i); }
+        pops.Add((target, Time.unscaledTime, target.localScale, target.localPosition, settle));
+        if (settle) target.localPosition += Level3CalculatorModel.PlacementOffset(0f);
     }
 
     // =========================================================
@@ -622,6 +646,12 @@ public sealed class Level3ComputationLeafModel
     // MOTION
     // =========================================================
 
+    public void FinishPops()
+    {
+        foreach (var pop in pops)
+            if (pop.target != null) { pop.target.localScale = pop.scale; pop.target.localPosition = pop.position; }
+        pops.Clear();
+    }
     public void Tick()
     {
         float now = Time.unscaledTime;
@@ -634,18 +664,12 @@ public sealed class Level3ComputationLeafModel
         }
         for (int i = pops.Count - 1; i >= 0; i--)
         {
-            (Transform target, float start) = pops[i];
+            (Transform target, float start, Vector3 scale, Vector3 position, bool settle) = pops[i];
             if (target == null) { pops.RemoveAt(i); continue; }
             float t = Mathf.Clamp01((now - start) / PopSeconds);
-            target.localScale = Vector3.one * Mathf.Max(0.01f, EaseOutBack(t));
+            target.localScale = Level3CalculatorModel.PlacementScale(scale, t);
+            if (settle) target.localPosition = position + Level3CalculatorModel.PlacementOffset(t);
             if (t >= 1f) pops.RemoveAt(i);
         }
-    }
-
-    private static float EaseOutBack(float t)
-    {
-        const float c1 = 1.70158f, c3 = c1 + 1f;
-        float u = t - 1f;
-        return 1f + c3 * u * u * u + c1 * u * u;
     }
 }

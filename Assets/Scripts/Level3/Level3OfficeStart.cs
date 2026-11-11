@@ -18,7 +18,8 @@ using UnityEngine.SceneManagement;
 ///   what the copy still holds (Level 1's plaza quest crowd, the corkboard
 ///   side quest, the Client IDs icon, the waiting-area Marie and the old
 ///   popup tutorial) from Resources/Levels/Level_03/office_start.json, and
-///   hides the desk Case Folder so Level 1's folder flow cannot start.
+///   hides the desk Case Folder so Level 1's folder flow cannot start (from
+///   Bea's assignment Level3CaseFolder carries it in the bar, revised T03).
 ///   Objects are deactivated, never deleted; Levels 1 and 2 are untouched.
 /// - Keeps the shared office: environment, doors, player rig, cameras,
 ///   joysticks, EventSystem, audio, desk, book and service actors, with the
@@ -131,9 +132,15 @@ public sealed class Level3OfficeStart : MonoBehaviour
         EnsurePart<Level3DeskCalculator>(Level3DeskCalculator.ChildName);
         // T04: Bea, her plaza worktable and her papers.
         EnsurePart<Level3BeaTable>(Level3BeaTable.ChildName);
+        // Two of Level 1's plaza people, on their Level 1 spots and routines (ambient only).
+        EnsurePart<Level3PlazaLife>(Level3PlazaLife.ChildName);
         // T09: the Auditor's review of Bea's stamped computation and her review clock.
         EnsurePart<Level3Audit>(Level3Audit.ChildName);
+        EnsurePart<CaseFinale>("Case Finale");
         EnsurePart<Level3ReviewClock>(Level3ReviewClock.ChildName);
+        // Revised T03: the real Case Folder, carried from Bea's assignment, with her Client and Supporting Documents pages.
+        EnsurePart<Level3CaseFolder>(Level3CaseFolder.ChildName);
+        EnsurePart<Level2DeskStamps>(Level2DeskStamps.ChildName);
         Debug.Log($"[Level3] Office start v{SetupVersion}: switched off {HiddenCount} inherited object(s) and {DisabledCount} component(s).");
     }
 

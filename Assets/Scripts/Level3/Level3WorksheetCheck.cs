@@ -99,9 +99,20 @@ public struct Level3WorksheetGrants
 ///   the frozen XP joins the career total with the chapter result (T14).
 /// The answer key (worksheetDecisions, expectedFields) is read here and only
 /// here; it is never copied into the snapshot, a tape or the Bag.
+///
+/// REVISED T06 (5 November 2026, L3-worksheet-v2; bottom of this file): the
+/// paper machine's three batches are checked one at a time (CheckBatch): nine
+/// decisions (seven treatments, the R6/R7 reasons), first outcomes frozen once
+/// per batch, all-right batches accepted, the last one making the worksheet
+/// ready; no tapes, no link choice. The collected B-WORKSHEET is presented as
+/// Bea's Income & Expense Summary (SummaryRecord / SummaryTotals), whose exact
+/// totals the office reads. The twelve-decision members above remain only for
+/// legacy grades and the retired board; a legacy grade is never regraded.
 /// </summary>
 public static class Level3WorksheetCheck
 {
+    /// <summary>This check's assessment (twelve decisions), recorded with the frozen first grade; the revised nine-decision check (T06) records its own.</summary>
+    public const string AssessmentVersion = "L3-worksheet-v1";
     public const int DecisionCount = 12;
     public const int MaxXp = 60;
     public const int MinXp = 48;
@@ -462,6 +473,8 @@ public static class Level3WorksheetCheck
         Level3Phase phase = Level3ChapterRules.PhaseOf(candidate);
         if (candidate != null && phase == Level3Phase.WorksheetReady) { reason = "Every decision checks out. Collect the worksheet."; return CheckOutcome.Refused; }
         if (candidate == null || !Level3WorksheetRules.Editable(candidate)) { reason = "The worksheet cannot be checked right now."; return CheckOutcome.Refused; }
+        // T06 revision: once the machine's batch checks have started, the retired twelve-decision board never grades.
+        if (MachineChecked(candidate)) { reason = "Check each batch at Bea's machine."; return CheckOutcome.Refused; }
         if (candidate.worksheet == null) candidate.worksheet = new Level3WorksheetDraft();
         if (candidate.worksheetCheck == null) candidate.worksheetCheck = new Level3WorksheetResult();
 
@@ -475,6 +488,7 @@ public static class Level3WorksheetCheck
         if (!result.firstChecked)
         {
             result.firstChecked = true;
+            result.assessmentVersion = AssessmentVersion;
             result.firstRevision = revision;
             result.firstCorrect = eval.Correct;
             result.firstTotal = DecisionCount;
@@ -541,7 +555,8 @@ public static class Level3WorksheetCheck
             reason = "Check the worksheet first: every decision must check out before you collect it.";
             return Level3CommandOutcome.Refused;
         }
-        if (!Evaluate(candidate, definition).AllCorrect) { reason = "The worksheet needs another check before you collect it."; return Level3CommandOutcome.Refused; }
+        // T06 revision: every machine batch checks out (a pre-revision worksheet made ready on the old board does too).
+        if (!AllBatchesCorrect(candidate, definition)) { reason = "The worksheet needs another check before you collect it."; return Level3CommandOutcome.Refused; }
         Level3CommandOutcome moved = Level3ChapterRules.TryAdvance(candidate, Level3Phase.WorksheetReady, Level3Phase.BeaComputation, AcquireAction, out reason);
         if (moved != Level3CommandOutcome.Applied) return moved;
         Level3CaseProgress bea = candidate.Case(Level3ChapterRules.BeaCaseId);
@@ -585,6 +600,45 @@ public static class Level3WorksheetCheck
         return grants;
     }
 
+    /// <summary>Acquire the separate summary in the same candidate as chapter/rewards. Legacy folder snapshots are retained as historical records.</summary>
+    public static InventoryResult AcquireSummary(CampaignInventoryRecord inventory, InventoryCatalogue catalogue, Level3ChapterCheckpoint state, SlotRef? target = null, CaseDefinition definition = null, string actionId = "Level_03/summary-item")
+    {
+        if (inventory == null || catalogue == null) return InventoryResult.Reject("Inventory is not ready.");
+        if (!Collected(state)) return InventoryResult.Reject("Finish checking every batch first.");
+        if (InventoryRules.Owns(inventory, InventoryCatalogue.BeaSummary))
+            return new InventoryResult { Outcome = InventoryOutcome.NoChange, ItemId = InventoryCatalogue.BeaSummary, Location = InventoryRules.Find(inventory, InventoryCatalogue.BeaSummary) };
+        if (target.HasValue)
+        {
+            if (!target.Value.IsSlot || !InventoryRules.IsUsable(inventory, target.Value)) return InventoryResult.Reject("Choose an unlocked slot.");
+            InventorySlot slot = InventoryRules.SlotAt(inventory, target.Value);
+            if (!slot.IsEmpty && (target.Value.Area == InventoryArea.Bag || InventoryRules.FirstEmpty(inventory.bag, inventory.bagCapacity) < 0))
+                return InventoryResult.Reject("Make room in your Bag first.");
+        }
+        else if (InventoryRules.FirstEmpty(inventory.hotbar, inventory.hotbarCapacity) < 0 && InventoryRules.FirstEmpty(inventory.bag, inventory.bagCapacity) < 0) return InventoryResult.Reject(InventoryRules.BagFull);
+        var info = new InventoryItemRecord { itemId = InventoryCatalogue.BeaSummary, source = "Bea's table", workingDocumentId = WorksheetWorkId };
+        if (definition != null)
+        {
+            List<string> lines = ReferenceLines(state, definition);
+            for (int start = 0; start < lines.Count; start += 6)
+                info.referencePages.Add(new InventoryReferencePage { id = definition.caseId + "/" + WorksheetWorkId + "/" + start,
+                    title = SummaryTitle, lines = lines.GetRange(start, Math.Min(6, lines.Count - start)) });
+        }
+        InventoryItemRecord folder = InventoryRules.Record(inventory, InventoryCatalogue.CaseFolder);
+        string prefix = Level3ChapterRules.BeaCaseId + "/" + WorksheetWorkId;
+        if (folder != null && info.referencePages.Count == 0)
+            foreach (InventoryReferencePage page in folder.referencePages)
+                if (page.id == prefix || page.id.StartsWith(prefix + "/", StringComparison.Ordinal)) info.referencePages.Add(page);
+        InventoryResult result = InventoryRules.Acquire(inventory, catalogue, InventoryCatalogue.BeaSummary, 1, actionId, target, info);
+        if (result.Ok)
+            foreach (InventoryReferencePage page in info.referencePages) InventoryRules.KeepReference(inventory, InventoryCatalogue.BeaSummary, page);
+        if (result.Ok && folder != null)
+        {
+            folder.contents.RemoveAll(id => id == prefix);
+            folder.referencePages.RemoveAll(page => page.id == prefix || page.id.StartsWith(prefix + "/", StringComparison.Ordinal));
+        }
+        return result;
+    }
+
     /// <summary>The worksheet's once-only mastery claim (campaign/Level_03/bea-worksheet/mastery).</summary>
     public static string MasteryClaimId(PlayerProgressData data) =>
         CampaignRewards.ClaimId(data?.campaign?.campaignId, CampaignRewards.Level3, CampaignRewards.BeaWorksheet, CampaignRewards.MasteryKind);
@@ -624,5 +678,429 @@ public static class Level3WorksheetCheck
         if (state.worksheetCheck != null && state.worksheetCheck.firstChecked)
             lines.Add("First check: " + state.worksheetCheck.firstCorrect + "/" + state.worksheetCheck.firstTotal + " (" + TierName(state.worksheetCheck.firstTier) + ")");
         return lines;
+    }
+
+    // =========================================================
+    // T06 REVISED (5 November 2026): THREE MACHINE BATCHES, NINE DECISIONS
+    // (assessment L3-worksheet-v2, REVISION_PLAN registry)
+    // =========================================================
+    //
+    // The lever files; only a deliberate Check batch grades. Each batch's FIRST
+    // complete check freezes its own outcomes once (checkedBatches, firstWrong,
+    // firstCorrect, firstTotal); a recheck only refreshes the marks and never
+    // improves them. A batch is accepted (read-only, the next one opens) only by
+    // a saved check that finds every one of its decisions right; the last one
+    // moves the chapter to WorksheetReady. A chapter whose first check was frozen
+    // under the twelve-decision v1 board keeps that grade exactly: its batch
+    // checks mark and accept but never freeze a second grade.
+
+    public const string RevisedAssessmentVersion = "L3-worksheet-v2";
+    public const int RevisedDecisionCount = 9;
+    public const int RevisedGoldAt = 9;
+    public const int RevisedSilverAt = 7;
+    /// <summary>XP = 60 minus first-check wrong decisions: 51 at worst.</summary>
+    public const int RevisedMinXp = MaxXp - RevisedDecisionCount * XpPerWrong;
+    public const string RefuseBatchStale = "Bea's records changed meanwhile. Look at the tabs, then check again.";
+    public const string RefuseBatchUnchanged = "Nothing has changed since your last check.";
+    /// <summary>The collected item's presentation title (the same B-WORKSHEET identity; no second item).</summary>
+    public const string SummaryTitle = "Bea's Income & Expense Summary";
+    public const string SupportedDeductionsLabel = "Supported deductions";
+
+    /// <summary>The nine scored decisions in reveal order: seven treatments, then the R6/R7 reasons.</summary>
+    public static readonly string[] RevisedDecisionIds =
+        { "dest-R1", "dest-R2", "dest-R3", "dest-R4", "dest-R5", "dest-R6", "dest-R7", "reason-R6", "reason-R7" };
+
+    private static readonly string[] EarningsDecisions = { "dest-R1", "dest-R2" };
+    private static readonly string[] CostsDecisions = { "dest-R3", "dest-R4", "dest-R5" };
+    private static readonly string[] QuestionsDecisions = { "dest-R6", "dest-R7", "reason-R6", "reason-R7" };
+
+    /// <summary>A batch's scored decisions: 2 (earnings), 3 (costs), 4 (questions: two treatments, two reasons).</summary>
+    public static IReadOnlyList<string> DecisionsInBatch(string batch) =>
+        batch == Level3WorksheetRules.EarningsBatch ? EarningsDecisions : batch == Level3WorksheetRules.CostsBatch ? CostsDecisions
+        : batch == Level3WorksheetRules.QuestionsBatch ? QuestionsDecisions : (IReadOnlyList<string>)Array.Empty<string>();
+
+    /// <summary>"dest-R6" / "reason-R6" -> "R6" (null for anything else).</summary>
+    public static string RowOfDecision(string decisionId)
+    {
+        if (decisionId == null) return null;
+        if (decisionId.StartsWith("dest-", StringComparison.Ordinal)) return decisionId.Substring(5);
+        if (decisionId.StartsWith("reason-", StringComparison.Ordinal)) return decisionId.Substring(7);
+        return null;
+    }
+
+    public static bool IsReasonDecision(string decisionId) => decisionId != null && decisionId.StartsWith("reason-", StringComparison.Ordinal);
+
+    public static string BatchOfDecision(string decisionId) =>
+        Array.IndexOf(RevisedDecisionIds, decisionId) < 0 ? null : Level3WorksheetRules.BatchOf(RowOfDecision(decisionId));
+
+    /// <summary>Gold 9/9, Silver 7-8, Bronze 0-6 (BadgeTier as a number).</summary>
+    public static int RevisedTierFor(int correct) => correct >= RevisedGoldAt ? 3 : correct >= RevisedSilverAt ? 2 : 1;
+
+    public static int RevisedXpFor(int wrong) => Math.Max(RevisedMinXp, MaxXp - Math.Max(0, wrong) * XpPerWrong);
+
+    /// <summary>The first check was frozen under the twelve-decision board (a continued pre-revision save): that grade is final.</summary>
+    public static bool LegacyGraded(Level3ChapterCheckpoint state) =>
+        state?.worksheetCheck != null && state.worksheetCheck.firstChecked && state.worksheetCheck.assessmentVersion != RevisedAssessmentVersion;
+
+    /// <summary>A machine batch check has been saved (the revised assessment has begun).</summary>
+    public static bool MachineChecked(Level3ChapterCheckpoint state)
+    {
+        Level3WorksheetResult r = state?.worksheetCheck;
+        return r != null && (r.assessmentVersion == RevisedAssessmentVersion || (r.checkedBatches != null && r.checkedBatches.Count > 0) ||
+                             (r.acceptedBatches != null && r.acceptedBatches.Count > 0) || !string.IsNullOrEmpty(r.lastBatch));
+    }
+
+    /// <summary>The batch's first outcomes are frozen.</summary>
+    public static bool BatchFrozen(Level3ChapterCheckpoint state, string batch) =>
+        state?.worksheetCheck?.checkedBatches != null && state.worksheetCheck.checkedBatches.Contains(batch);
+
+    /// <summary>The player's own revised value: a treatment key ("income", "deduct", "leave-out") or a reason key; "" while not filed.</summary>
+    public static string RevisedValue(Level3ChapterCheckpoint state, string decisionId)
+    {
+        string row = RowOfDecision(decisionId);
+        if (row == null || state?.worksheet == null) return "";
+        return IsReasonDecision(decisionId) ? Level3WorksheetRules.SavedReason(state.worksheet, row) : Level3WorksheetRules.SavedTreatment(state.worksheet, row);
+    }
+
+    /// <summary>The content's answer in revised keys, read from the same decisions the v1 check reads (never copied into a save).</summary>
+    private static string RevisedExpected(CaseDefinition definition, string decisionId)
+    {
+        string expected = Expected(definition, decisionId);
+        if (expected == null) return null;
+        if (IsReasonDecision(decisionId))
+        {
+            foreach (string reason in Level3WorksheetRules.Reasons)
+                if (Level3WorksheetRules.ReasonLabel(reason) == expected) return reason;
+            return null;
+        }
+        foreach (string section in Level3WorksheetRules.Sections)
+            if (Level3WorksheetRules.SectionLabel(section) == expected) return Level3WorksheetRules.RevisedDestination(section);
+        return null;
+    }
+
+    /// <summary>
+    /// One batch: completeness (every row filed, R6/R7 with their reason, slips matching their
+    /// originals), then (when complete) its decisions against the content. Reads only.
+    /// </summary>
+    public static Level3BatchEvaluation EvaluateBatch(Level3ChapterCheckpoint state, CaseDefinition definition, string batch)
+    {
+        var eval = new Level3BatchEvaluation { Batch = batch };
+        List<Level3WorksheetRow> rows = Level3WorksheetRules.RowsOf(definition);
+        IReadOnlyList<string> batchRows = Level3WorksheetRules.RowsInBatch(batch);
+        if (rows.Count != Level3WorksheetRules.RowIds.Length || batchRows.Count == 0)
+        {
+            eval.MissingRows.Add("content");
+            eval.MissingLines.Add("Bea's records did not load.");
+            return eval;
+        }
+        Level3WorksheetDraft draft = state?.worksheet ?? new Level3WorksheetDraft();
+        foreach (string rowId in batchRows)
+        {
+            Level3WorksheetRow row = Find(rows, rowId);
+            Level3StripRecord strip = draft.Strip(rowId);
+            string missing = null;
+            if (strip == null || Level3WorksheetRules.RevisedDestination(strip.section) == "") missing = row.Label + " still needs filing.";
+            else if (strip.sourceId != row.SourceId || !SameAmount(strip.amount, row.Amount)) missing = row.Label + "'s slip does not match its original.";
+            else if (Level3WorksheetRules.NeedsReason(rowId) && Level3WorksheetRules.SavedReason(draft, rowId) == "") missing = row.Label + " needs a reason.";
+            if (missing == null) continue;
+            eval.MissingRows.Add(rowId);
+            eval.MissingLines.Add(missing);
+        }
+        if (eval.MissingRows.Count > 0) return eval;
+        eval.Complete = true;
+        foreach (string id in DecisionsInBatch(batch))
+        {
+            string value = RevisedValue(state, id);
+            string expected = RevisedExpected(definition, id);
+            bool correct = expected != null && expected == value;
+            eval.Decisions.Add(new Level3WorksheetDecision { Id = id, Correct = correct, Value = value });
+            if (correct) eval.Correct++;
+        }
+        return eval;
+    }
+
+    /// <summary>Every batch is complete and right (the summary may be collected). Reads only.</summary>
+    public static bool AllBatchesCorrect(Level3ChapterCheckpoint state, CaseDefinition definition)
+    {
+        foreach (string batch in Level3WorksheetRules.Batches)
+            if (!EvaluateBatch(state, definition, batch).AllCorrect) return false;
+        return true;
+    }
+
+    /// <summary>
+    /// The deliberate Check batch on the candidate (the open batch only, made on draft revision basedOn).
+    /// Incomplete / Unchanged / Refused change nothing. Checked: the first complete check of the batch
+    /// froze its outcomes (eval.Froze; never for a legacy grade), the marks were refreshed, and an
+    /// all-right batch was accepted (eval.Accepted; the last one also made the worksheet ready).
+    /// </summary>
+    public static CheckOutcome CheckBatch(Level3ChapterCheckpoint candidate, CaseDefinition definition, string batch, int basedOn,
+        out Level3BatchEvaluation eval, out string reason)
+    {
+        eval = null;
+        reason = null;
+        if (candidate == null || !Level3WorksheetRules.Editable(candidate)) { reason = "The batch cannot be checked right now."; return CheckOutcome.Refused; }
+        if (Array.IndexOf(Level3WorksheetRules.Batches, batch) < 0) { reason = "That is not one of Bea's batches."; return CheckOutcome.Refused; }
+        if (Level3WorksheetRules.BatchAccepted(candidate, batch)) { reason = "That batch is already accepted: you can read it, not change it."; return CheckOutcome.Refused; }
+        if (batch != Level3WorksheetRules.OpenBatch(candidate)) { reason = "That batch is not open yet."; return CheckOutcome.Refused; }
+        if (candidate.worksheet == null) candidate.worksheet = new Level3WorksheetDraft();
+        if (candidate.worksheetCheck == null) candidate.worksheetCheck = new Level3WorksheetResult();
+        if (basedOn != candidate.worksheet.revision) { reason = RefuseBatchStale; return CheckOutcome.Refused; }
+
+        eval = EvaluateBatch(candidate, definition, batch);
+        if (!eval.Complete) { reason = "Not checked yet: " + (eval.MissingLines.Count > 0 ? eval.MissingLines[0] : "something is missing."); return CheckOutcome.Incomplete; }
+        Level3WorksheetResult result = candidate.worksheetCheck;
+        int revision = candidate.worksheet.revision;
+        if (result.checks > 0 && result.lastBatch == batch && result.lastRevision == revision) { reason = RefuseBatchUnchanged; return CheckOutcome.Unchanged; }
+
+        List<string> wrong = eval.WrongIds();
+        if (!LegacyGraded(candidate) && !BatchFrozen(candidate, batch))
+        {
+            if (result.checkedBatches == null) result.checkedBatches = new List<string>();
+            if (result.firstWrong == null) result.firstWrong = new List<string>();
+            if (result.checkedBatches.Count == 0)
+            {
+                result.assessmentVersion = RevisedAssessmentVersion;
+                result.firstRevision = revision;
+            }
+            result.checkedBatches.Add(batch);
+            foreach (string id in wrong) if (!result.firstWrong.Contains(id)) result.firstWrong.Add(id);
+            result.firstCorrect += eval.Correct;
+            result.firstTotal += eval.Decisions.Count;
+            eval.Froze = true;
+            bool allFrozen = true;
+            foreach (string b in Level3WorksheetRules.Batches) allFrozen &= result.checkedBatches.Contains(b);
+            if (allFrozen)
+            {
+                // The one final result: nine first-check decisions, Gold 9 / Silver 7-8 / Bronze 0-6, XP 60 - wrong.
+                result.firstChecked = true;
+                result.firstTier = RevisedTierFor(result.firstCorrect);
+                result.firstXp = RevisedXpFor(result.firstWrong.Count);
+            }
+            if (!candidate.milestones.Contains(CheckedMilestone)) candidate.milestones.Add(CheckedMilestone);
+        }
+        result.checks++;
+        result.lastRevision = revision;
+        result.lastBatch = batch;
+        result.lastWrong = wrong;
+        result.lastValues = new List<string>();
+        foreach (Level3WorksheetDecision d in eval.Decisions) result.lastValues.Add(d.Id + "=" + d.Value);
+
+        if (eval.AllCorrect)
+        {
+            if (result.acceptedBatches == null) result.acceptedBatches = new List<string>();
+            result.acceptedBatches.Add(batch);
+            eval.Accepted = true;
+            if (Level3WorksheetRules.OpenBatch(candidate) == null)
+            {
+                Level3Phase phase = Level3ChapterRules.PhaseOf(candidate);
+                if (Level3ChapterRules.TryAdvance(candidate, phase, Level3Phase.WorksheetReady, ReadyAction, out reason) == Level3CommandOutcome.Refused)
+                    return CheckOutcome.Refused;
+                eval.Ready = true;
+            }
+        }
+        reason = null;
+        return CheckOutcome.Checked;
+    }
+
+    /// <summary>
+    /// A decision's mark from the last saved machine check, shown only while its value is unchanged
+    /// (a refile goes neutral until the next deliberate check).
+    /// </summary>
+    public static Mark BatchMark(Level3ChapterCheckpoint state, string decisionId)
+    {
+        Level3WorksheetResult result = state?.worksheetCheck;
+        string batch = BatchOfDecision(decisionId);
+        if (result == null || batch == null || result.checks == 0 || result.lastValues == null || result.lastBatch != batch) return Mark.None;
+        string prefix = decisionId + "=";
+        foreach (string entry in result.lastValues)
+        {
+            if (entry == null || !entry.StartsWith(prefix, StringComparison.Ordinal)) continue;
+            if (entry.Substring(prefix.Length) != RevisedValue(state, decisionId)) return Mark.None;
+            return result.lastWrong != null && result.lastWrong.Contains(decisionId) ? Mark.LookAgain : Mark.Confirmed;
+        }
+        return Mark.None;
+    }
+
+    /// <summary>A record's tab mark: look again when any of its decisions is; confirmed when all of them are; otherwise none.</summary>
+    public static Mark RowMark(Level3ChapterCheckpoint state, string rowId)
+    {
+        Mark dest = BatchMark(state, "dest-" + rowId);
+        if (!Level3WorksheetRules.NeedsReason(rowId)) return dest;
+        Mark why = BatchMark(state, "reason-" + rowId);
+        if (dest == Mark.LookAgain || why == Mark.LookAgain) return Mark.LookAgain;
+        return dest == Mark.Confirmed && why == Mark.Confirmed ? Mark.Confirmed : Mark.None;
+    }
+
+    /// <summary>The decisions of a batch the last check marked "look again" and whose values are still as checked (reveal order).</summary>
+    public static List<string> LookAgainIn(Level3ChapterCheckpoint state, string batch)
+    {
+        var ids = new List<string>();
+        foreach (string id in DecisionsInBatch(batch))
+            if (BatchMark(state, id) == Mark.LookAgain) ids.Add(id);
+        return ids;
+    }
+
+    // ---------- the collected summary (existing B-WORKSHEET) ----------
+
+    /// <summary>
+    /// Exact totals of every saved slip's printed amount by its treatment (Income / Deduct; Leave Out
+    /// counts in neither). The collected summary's figures and the office's worksheet totals.
+    /// </summary>
+    public static void SummaryTotals(Level3ChapterCheckpoint state, out decimal income, out decimal deductions)
+    {
+        income = 0m;
+        deductions = 0m;
+        Level3WorksheetDraft draft = state?.worksheet;
+        if (draft?.strips == null) return;
+        foreach (Level3StripRecord strip in draft.strips)
+        {
+            if (strip == null || Level3WorksheetRules.BatchOf(strip.rowId) == null || !Level3Calculator.TryParse(strip.amount, out decimal amount)) continue;
+            string treatment = Level3WorksheetRules.RevisedDestination(strip.section);
+            if (treatment == Level3WorksheetRules.Income) income += amount;
+            else if (treatment == Level3WorksheetRules.Deduct) deductions += amount;
+        }
+    }
+
+    /// <summary>"₱900,000.00": exact, from the decimal (never a float).</summary>
+    public static string Peso(decimal value) => "₱" + Level3Calculator.Format(Level3Calculator.Canonical(value));
+
+    /// <summary>One entry of the summary: its treatment, the record's printed label/amount and its source references (never an answer key).</summary>
+    public struct SummaryEntry
+    {
+        public string RowId;
+        public string Treatment;
+        public string Label;
+        public string Amount;
+        /// <summary>The row's own source reference, then any original that supports it ("EXP-B26 · RENT-26").</summary>
+        public string References;
+        /// <summary>A left-out row's saved reason label ("" when none).</summary>
+        public string Reason;
+    }
+
+    /// <summary>The player's filed rows in worksheet order (Income, then Deduct, then Leave Out), from the case content's printed facts.</summary>
+    public static List<SummaryEntry> SummaryEntries(Level3ChapterCheckpoint state, CaseDefinition definition)
+    {
+        var entries = new List<SummaryEntry>();
+        Level3CaseContent content = definition?.level3;
+        List<Level3WorksheetRow> rows = Level3WorksheetRules.RowsOf(definition);
+        Level3WorksheetDraft draft = state?.worksheet;
+        if (content == null || draft == null || rows.Count == 0) return entries;
+        foreach (string treatment in Level3WorksheetRules.Treatments)
+            foreach (Level3WorksheetRow row in rows)
+            {
+                if (Level3WorksheetRules.SavedTreatment(draft, row.RowId) != treatment) continue;
+                var refs = new List<string>();
+                string own = content.sources?.Find(s => s != null && s.sourceId == row.SourceId)?.reference;
+                if (!string.IsNullOrEmpty(own)) refs.Add(own);
+                if (treatment == Level3WorksheetRules.Deduct && content.rows != null)
+                    foreach (Level3RowDefinition support in content.rows)
+                    {
+                        if (support == null || support.relation != "supports:" + row.RowId) continue;
+                        string reference = content.sources?.Find(s => s != null && s.sourceId == support.sourceId)?.reference;
+                        if (!string.IsNullOrEmpty(reference) && !refs.Contains(reference)) refs.Add(reference);
+                    }
+                entries.Add(new SummaryEntry
+                {
+                    RowId = row.RowId, Treatment = treatment, Label = row.Label, Amount = Level3Calculator.Format(row.Amount),
+                    References = string.Join(" · ", refs),
+                    Reason = treatment == Level3WorksheetRules.LeaveOut ? Level3WorksheetRules.ReasonLabel(Level3WorksheetRules.SavedReason(draft, row.RowId)) : ""
+                });
+            }
+        return entries;
+    }
+
+    /// <summary>
+    /// The summary as an existing physical record (a plain working sheet, read in the one reader and in the
+    /// Case Folder's Supporting Documents): front = the two exact totals; back = each entry with its
+    /// supporting originals and the left-out records with their reasons. No taxable income, tax due,
+    /// credit or balance: those are the office's work. Null without Bea's rows.
+    /// </summary>
+    public static ClientRecord SummaryRecord(CaseDefinition definition, Level3ChapterCheckpoint state)
+    {
+        Level3CaseContent content = definition?.level3;
+        if (content == null || !content.IsSet || definition.caseId != Level3ChapterRules.BeaCaseId || state?.worksheet == null) return null;
+        SummaryTotals(state, out decimal income, out decimal deductions);
+        var record = new ClientRecord
+        {
+            id = Level3RecordRules.RecordId(definition.caseId, WorksheetWorkId),
+            npcId = definition.caseId,
+            type = ClientRecord.Plain,
+            source = WorksheetWorkId,
+            tab = "Summary",
+            title = "INCOME & EXPENSE SUMMARY",
+            name = content.taxpayer,
+            issuer = content.taxpayer,
+            reference = "Tax year " + content.taxYear,
+            date = "Checked at Bea's table"
+        };
+        record.rows.Add(new ClientRecordRow { label = "Income", value = Peso(income) });
+        record.rows.Add(new ClientRecordRow { label = SupportedDeductionsLabel, value = Peso(deductions) });
+        foreach (SummaryEntry entry in SummaryEntries(state, definition))
+        {
+            string kind = entry.Treatment == Level3WorksheetRules.Income ? "Income" : entry.Treatment == Level3WorksheetRules.Deduct ? "Deduction" : "Left out";
+            string why = entry.Treatment == Level3WorksheetRules.LeaveOut && entry.Reason.Length > 0 ? entry.Reason : entry.References;
+            record.backRows.Add(new ClientRecordRow { label = kind + " · " + why, value = entry.Label + " ₱" + entry.Amount });
+        }
+        return record;
+    }
+
+    /// <summary>A worksheet graded on the retired board (v1) whose two subtotal tapes are current: its Bag page keeps the original layout.</summary>
+    public static bool BoardPage(Level3ChapterCheckpoint state) =>
+        LegacyGraded(state) && IsCurrent(state, Level3WorksheetRules.Income) && IsCurrent(state, Level3WorksheetRules.Expenses);
+
+    /// <summary>
+    /// The collected worksheet's read-only Bag page: the revised summary (totals, entries with their
+    /// references, left-out records and reasons, the first-check result); a worksheet collected from the
+    /// retired board (v1 grade, current tapes) keeps its original section-by-section page.
+    /// </summary>
+    public static List<string> ReferenceLines(Level3ChapterCheckpoint state, CaseDefinition definition)
+    {
+        List<Level3WorksheetRow> rows = Level3WorksheetRules.RowsOf(definition);
+        if (BoardPage(state)) return ReferenceLines(state, rows);
+        var lines = new List<string>();
+        if (state?.worksheet == null || rows.Count == 0) return lines;
+        SummaryTotals(state, out decimal income, out decimal deductions);
+        lines.Add("Income: " + Peso(income));
+        lines.Add(SupportedDeductionsLabel + ": " + Peso(deductions));
+        foreach (SummaryEntry entry in SummaryEntries(state, definition))
+        {
+            if (entry.Treatment == Level3WorksheetRules.LeaveOut)
+                lines.Add("Left out: " + entry.Label + " ₱" + entry.Amount + (entry.Reason.Length > 0 ? " · " + entry.Reason : ""));
+            else
+                lines.Add(entry.Label + " ₱" + entry.Amount + (entry.References.Length > 0 ? " · " + entry.References : ""));
+        }
+        Level3WorksheetResult result = state.worksheetCheck;
+        if (result != null && result.firstChecked)
+            lines.Add((LegacyGraded(state) ? "First check: " : "First checks: ") + result.firstCorrect + "/" + result.firstTotal + " (" + TierName(result.firstTier) + ")");
+        return lines;
+    }
+}
+
+/// <summary>What one Check batch found (T06 revised). Presentation reads it; only a complete check is saved.</summary>
+public sealed class Level3BatchEvaluation
+{
+    public string Batch;
+    /// <summary>Every row of the batch filed (R6/R7 with a reason) and matching its original.</summary>
+    public bool Complete;
+    public readonly List<string> MissingRows = new List<string>();
+    public readonly List<string> MissingLines = new List<string>();
+    /// <summary>The batch's decisions in reveal order (only when complete).</summary>
+    public readonly List<Level3WorksheetDecision> Decisions = new List<Level3WorksheetDecision>();
+    public int Correct;
+    /// <summary>Set by CheckBatch: this check froze the batch's first outcomes (never on a recheck or for a legacy grade).</summary>
+    public bool Froze;
+    /// <summary>Set by CheckBatch: every decision right, the batch accepted (read-only; the next one opens).</summary>
+    public bool Accepted;
+    /// <summary>Set by CheckBatch: the last batch was accepted and the worksheet is ready to collect.</summary>
+    public bool Ready;
+
+    public int Wrong => Decisions.Count - Correct;
+    public bool AllCorrect => Complete && Decisions.Count > 0 && Correct == Decisions.Count;
+
+    public List<string> WrongIds()
+    {
+        var ids = new List<string>();
+        foreach (Level3WorksheetDecision d in Decisions) if (!d.Correct) ids.Add(d.Id);
+        return ids;
     }
 }

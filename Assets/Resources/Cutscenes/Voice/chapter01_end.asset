@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e268a9d5fe74eba9cb6ad142e1caf2a, type: 3}
+  m_Name: chapter01_end
+  m_EditorClassIdentifier: Assembly-CSharp::ChapterCinematicVoiceCatalogue
+  entries:
+  - id: vo_ch01_end_01_marie
+    speaker: "Marie"
+    text: "Thank you. I understand it now."
+    variant: ""
+    clip: {fileID: 8300000, guid: 335979b217324f1dbba3ae5c4f56e0a5, type: 3}
+  - id: vo_ch01_end_02_arthur
+    speaker: "Arthur"
+    text: "Good work. Another file is waiting."
+    variant: ""
+    clip: {fileID: 8300000, guid: 8bcc4cbf132e42839b0cec5fbefed661, type: 3}

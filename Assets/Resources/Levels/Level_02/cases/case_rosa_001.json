@@ -454,15 +454,15 @@
     "floorPath": "Environment/OfficeBuilding/Rooms/ConferenceRoom/Floors",
     "great": [
       "Thank you for explaining it. Now I know which records belong together.",
-      "And yes, the Taxpayer Assistance Desk prepared that first summary. I'll bring my receipts to you next time."
+      "And yes, CoastCare Tax Assistance, the Taxpayer Assistance Desk, prepared that first summary. I'll bring my receipts to you next time."
     ],
     "good": [
       "It took a little longer than I hoped, but I'm glad you checked it properly.",
-      "And yes, the Taxpayer Assistance Desk prepared that first summary."
+      "And yes, CoastCare Tax Assistance, the Taxpayer Assistance Desk, prepared that first summary."
     ],
     "okay": [
       "I thought it was finished before. Thank you for staying with it until it was right.",
-      "And yes, the Taxpayer Assistance Desk prepared that first summary."
+      "And yes, CoastCare Tax Assistance, the Taxpayer Assistance Desk, prepared that first summary."
     ],
     "farewellGreat": [
       {

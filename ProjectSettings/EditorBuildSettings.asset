@@ -20,5 +20,20 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Office_Level3.unity
     guid: 844c604a279e4b66ae226bf66f1dd99a
+  - enabled: 1
+    path: Assets/Scenes/Cutscenes/CS_Chapter01_End.unity
+    guid: d98560759e16a3f401f475823c2e374f
+  - enabled: 1
+    path: Assets/Scenes/Cutscenes/CS_Chapter02_End.unity
+    guid: bdbe904f22264564a42f2e96ec5e19ae
+  - enabled: 1
+    path: Assets/Scenes/Cutscenes/CS_Chapter03_End.unity
+    guid: dbf0e13f1576495b8fe49e4e54c5cfcb
+  - enabled: 1
+    path: Assets/Scenes/Cutscenes/CS_Chapter02_Start.unity
+    guid: f04a38cc708649c18e7c3fa6ecfa531c
+  - enabled: 1
+    path: Assets/Scenes/Cutscenes/CS_Chapter03_Start.unity
+    guid: 347300ffdc8b45e89b810ecfdb168586
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

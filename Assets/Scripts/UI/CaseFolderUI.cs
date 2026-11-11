@@ -113,6 +113,14 @@ public class CaseFolderUI : MonoBehaviour
     public static System.Action<int, PageBuilder> PageDecorator;
 
     /// <summary>
+    /// Optional level front page in place of "Taxpayer Information" (Level 3's
+    /// read-only Client page): drawn through its Render like a level page.
+    /// Null in Levels 1-2 (their editable page 1 is unchanged); never used by a
+    /// reference copy. Set and cleared by the level's code.
+    /// </summary>
+    public static System.Func<CaseData, CaseFolderPageContent> FrontPage;
+
+    /// <summary>
     /// Optional pages of THIS folder instance only, after the case's own pages
     /// (T25: Marie's "Supporting Documents" page on the Level 1 desk folder).
     /// Never copied to another instance (a reference copy ignores it), and
@@ -931,7 +939,7 @@ public class CaseFolderUI : MonoBehaviour
         ClearLevelPageObjects();
 
         boundContentRows = false;
-        if (index == Page1Index)
+        if (index == Page1Index && page.Render == null)
         {
             if (page1FieldRowsContainer != null)
             {
@@ -963,6 +971,7 @@ public class CaseFolderUI : MonoBehaviour
 
         if (!IsReference) PageDecorator?.Invoke(index, new PageBuilder(this));
         FitRowHeights();
+        Doc3DLayer.For(transform)?.InvalidateText();
         PageRendered?.Invoke(index);
     }
 
@@ -1086,8 +1095,9 @@ public class CaseFolderUI : MonoBehaviour
     {
         var list = new List<CaseFolderPageContent>();
 
+        CaseFolderPageContent front = !IsReference && FrontPage != null ? FrontPage(data) : null;
         list.Add(
-            new CaseFolderPageContent(
+            front ?? new CaseFolderPageContent(
                 "Taxpayer Information",
                 ""
             )
@@ -1134,6 +1144,9 @@ public class CaseFolderUI : MonoBehaviour
 
         /// <summary>The page's paper (for overlays such as stamp ink).</summary>
         public RectTransform Paper => ui.GetPageTurnRoot();
+
+        /// <summary>The same printed content column used by the first page.</summary>
+        public RectTransform ContentColumn => ui.page1FieldRowListRoot as RectTransform;
 
         public CaseFolderUI Owner => ui;
 

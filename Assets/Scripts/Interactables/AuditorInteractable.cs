@@ -702,7 +702,7 @@ public class AuditorInteractable : MonoBehaviour, IInteractable, INpcAvailabilit
         if (!AwaitingFolder || CaseManager.Instance == null || CaseManager.Instance.CurrentCase == null) return false;
         // Level 3: the carried inventory folder (nothing is stored in a HUD icon to release).
         bool levelFolder = LevelHandIn is ILevelFolder;
-        FolderToHUDIcon folder = levelFolder ? null : FolderInHand();
+        FolderToHUDIcon folder = levelFolder ? (LevelHandIn is Level3Audit ? Level2FolderHandoff.FindStore(gameObject.scene) : null) : FolderInHand();
         if (levelFolder ? !FolderReadyToHand() : folder == null) return false;
         if (submissionTray != null && !submissionTray.AcceptFromConversation()) return false;
         if (OfficeHudRuntime.Instance != null) OfficeHudRuntime.Instance.CloseCaseFolderView();

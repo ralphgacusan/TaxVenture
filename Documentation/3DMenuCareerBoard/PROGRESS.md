@@ -71,3 +71,13 @@ User feedback: a fresh/reset career showed two named badge papers despite 0/5 ba
 Internal verification: scratch build 0 errors / 29 baseline warnings; CareerBoardRegression 72/72 (including fresh zero-tier, earned count and presenter visibility checks); SettingsRegression 123/123; Level2Regression 1,280 PASS. User Play Mode/visual checks pending: fresh/reset career has five questions, earning a badge reveals only its own paper, existing medals still open their chapter.
 
 The same session adjusts settings action-button layout and reuses SceneFade for leave/replay fade-out and destination fade-in; handoff: Documentation/SettingsActions/README.md.
+
+## 2026-11-06: view-only Bag and a bigger top row
+
+The top row is now BACK, SHOP, BAG: 180 x 72 (was 150 x 56), font 30, blue, brass and green, with the same 3D `CareerBoardButton`. BAG opens `InventoryScreen.CreateViewOnly()`, the in-chapter panel on its own canvas over `PlayerProgressManager.SavedInventory`. Tap an item or ribbon to read about it, and JOURNAL shows the saved story facts. Moving, dragging, READ, TO BAR, PIN and SAVED PAPERS are off, and nothing is written. The tap or Back that closes the Bag or catalogue no longer also acts on the board.
+
+User Play Mode/visual checks pending: the row fits on screen, the three colours read well, and the Bag shows saved items on phone and tablet aspect ratios.
+
+## 2026-11-06: Level 2/3 opening entry
+
+Career chapter launch now delegates to `ChapterOpeningSequence.LoadChapter` after the existing launch mode and pending-ending checks. Catalogue destinations and read-only board/save boundaries are preserved. Fresh Story and career Replay use the authored opening, then the existing office; mid-chapter Story restores directly. The user's latest request overrides prior inactive Bayview opening routing; Bayview gameplay remains deferred. Verification is recorded in `Documentation/ChapterCutscenes/PROGRESS.md`; Unity/device acceptance remains the user's step.

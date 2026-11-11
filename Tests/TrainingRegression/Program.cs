@@ -94,15 +94,19 @@ string originalAfter = guide.lessons.First(l => l.id == "move").after;
 var catalog = Load<TrainingCatalogFile>("Assets/Resources/Tutorials/Training/training.json");
 string catalogProblems = catalog.Validate();
 Check(string.IsNullOrEmpty(catalogProblems), "training.json is valid: " + catalogProblems);
-Check(catalog.tabs.Select(t => t.id).SequenceEqual(new[] { "basics", "sidequest", "case" }), "tabs: Basics, Side Quest, Case");
+// Level 3 T16 (6 November 2026): a fourth tab, Bea's Case, holds the Level 3 paper-machine and office-stage drills.
+var guide3 = Load<GuideScript>("Assets/Resources/Tutorials/Level_03/guide.json");
+var guideIds3 = new HashSet<string>(guide3.lessons.Select(l => l.id));
+Check(catalog.tabs.Select(t => t.id).SequenceEqual(new[] { "basics", "sidequest", "case", "bea" }), "tabs: Basics, Side Quest, Case, Bea's Case");
 Check(catalog.tabs.Count(t => t.alwaysOpen) == 1 && catalog.FindTab("basics").alwaysOpen, "only Basics is open from the start");
 Check(catalog.cards.Count(c => c.tab == "basics") == 3 && catalog.cards.Count(c => c.tab == "sidequest") == 1 &&
-      catalog.cards.Count(c => c.tab == "case") == 3, "3 basics cards, 1 per side quest, 3 case cards");
+      catalog.cards.Count(c => c.tab == "case") == 3 && catalog.cards.Count(c => c.tab == "bea") == 2, "3 basics cards, 1 per side quest, 3 case cards, 2 Bea cards");
 foreach (TrainingCardDef card in catalog.cards)
 {
     Check(card.lessons.Length > 0, $"{card.id}: covers at least one lesson");
     foreach (string lesson in card.lessons)
-        Check(lesson.StartsWith("Level_01/") && guideIds.Contains(lesson.Substring(9)), $"{card.id}: lesson {lesson} exists in guide.json");
+        Check(card.tab == "bea" ? lesson.StartsWith("Level_03/") && guideIds3.Contains(lesson.Substring(9))
+                                : lesson.StartsWith("Level_01/") && guideIds.Contains(lesson.Substring(9)), $"{card.id}: lesson {lesson} exists in guide.json");
     Check(File.Exists(PathOf($"Assets/Resources/Tutorials/Training/Drills/{card.drill}.json")), $"{card.id}: drill file {card.drill}.json exists");
     Check(card.skills.Length > 0 && !string.IsNullOrWhiteSpace(card.title), $"{card.id}: has a title and skill lines");
 }
@@ -118,7 +122,7 @@ Check(Tab(first, "basics").Visible && Tab(first, "basics").Cards.All(c => c.Stat
       "first launch: Basics is open and every basics card is NEW");
 Check(!Tab(first, "sidequest").Visible && !Tab(first, "case").Visible, "first launch: Side Quest and Case are not shown");
 Check(Tab(first, "case").Cards.All(c => c.State == TrainingCardState.Locked), "first launch: case cards are locked");
-Check(first.Total == 7 && first.Unlocked == 3 && first.Mastered == 0, "first launch totals");
+Check(first.Total == 9 && first.Unlocked == 3 && first.Mastered == 0 && !Tab(first, "bea").Visible, "first launch totals (Bea's Case hidden)");
 
 var midLevel = new PlayerProgressData();
 midLevel.Normalize();
@@ -137,8 +141,16 @@ Check(Tab(mid2, "case").Visible && mid2.FindCard("case.values").Unlocked && !mid
 var finished = new PlayerProgressData { saveVersion = 3, levelsCompleted = 1, completedLevelIds = new List<string> { "Level_01" } };
 finished.Normalize();
 TrainingHubView done = TrainingCatalog.Build(catalog, finished);
-Check(done.Tabs.All(t => t.Visible) && done.Unlocked == 7 && done.Tabs.SelectMany(t => t.Cards).All(c => c.Seen == c.Total),
-      "an old save that finished Chapter 1 opens every Chapter 1 card");
+Check(done.Tabs.Where(t => t.Def.id != "bea").All(t => t.Visible) && !Tab(done, "bea").Visible && done.Unlocked == 7 &&
+      done.Tabs.Where(t => t.Def.id != "bea").SelectMany(t => t.Cards).All(c => c.Seen == c.Total),
+      "an old save that finished Chapter 1 opens every Chapter 1 card (Bea's Case waits for Chapter 3)");
+var chapter3 = new PlayerProgressData { saveVersion = 3, levelsCompleted = 3, completedLevelIds = new List<string> { "Level_01", "Level_02", "Level_03" } };
+chapter3.Normalize();
+TrainingHubView done3 = TrainingCatalog.Build(catalog, chapter3);
+var seenMachine = new PlayerProgressData(); seenMachine.Normalize(); seenMachine.RecordTutorialSeen("Level_03/worksheet-intro");
+TrainingHubView mid3 = TrainingCatalog.Build(catalog, seenMachine);
+Check(Tab(done3, "bea").Visible && done3.Unlocked == 9 && mid3.FindCard("bea.machine").Unlocked && !mid3.FindCard("bea.office").Unlocked,
+      "Bea's Case opens with Chapter 3 (completed, or each card on its own in-game lesson)");
 
 finished.RecordTrainingRun("basics.screen", false, 20f);
 finished.RecordTrainingRun("case.desk", true, 80f);
@@ -170,7 +182,11 @@ foreach (TrainingCardDef card in catalog.cards)
     if (!File.Exists(PathOf(rel))) continue;
     TrainingDrill drill = Load<TrainingDrill>(rel);
     Check(drill.id == card.drill, $"{card.drill}: id matches the file name");
-    Check(drill.scene == "Office_Level1" && drill.levelId == "Level_01", $"{card.drill}: practises in Office_Level1");
+    bool level3 = card.tab == "bea";
+    Check(level3 ? drill.scene == "Office_Level3" && drill.levelId == "Level_03" && !string.IsNullOrEmpty(drill.fixture) && string.IsNullOrEmpty(drill.practiceCase)
+                 : drill.scene == "Office_Level1" && drill.levelId == "Level_01", $"{card.drill}: practises in {(level3 ? "Office_Level3 from its fixture" : "Office_Level1")}");
+    var drillSceneNames = level3 ? new HashSet<string>(Regex.Matches(Read("Assets/Scenes/Office_Level3.unity"), @"m_Name: (.+)").Select(m => m.Groups[1].Value.Trim())) : sceneNames;
+    GuideScript drillGuide = level3 ? guide3 : guide;
     Check(drill.start == "plaza" || drill.start == "office", $"{card.drill}: start is plaza or office");
     if (drill.start == "office")
         Check(!string.IsNullOrEmpty(drill.spawn) && !string.IsNullOrEmpty(drill.face), $"{card.drill}: office start has spawn and face");
@@ -183,16 +199,16 @@ foreach (TrainingCardDef card in catalog.cards)
     if (!string.IsNullOrEmpty(drill.spawn)) paths.Add(drill.spawn);
     if (!string.IsNullOrEmpty(drill.face)) paths.Add(drill.face);
     foreach (string path in paths)
-        Check(sceneNames.Contains(path.Split('/').Last()), $"{card.drill}: scene object {path} exists in Office_Level1");
+        Check(drillSceneNames.Contains(path.Split('/').Last()), $"{card.drill}: scene object {path} exists in {drill.scene}");
     Check(!drill.hide.Any(p => p.Contains("Reception")), $"{card.drill}: never hides the reception (office door gate)");
     foreach (string step in drill.objectivesDone)
-        Check(Read("Assets/Resources/Levels/Level_01/objectives.json").Contains(step.Split('|')[0].Replace("area:", "")) ||
-              Read("Assets/Resources/Levels/Level_01/objectives.json").Contains(step), $"{card.drill}: objectivesDone {step} is a Level 1 step");
+        Check(Read($"Assets/Resources/Levels/{drill.levelId}/objectives.json").Contains(step.Split('|')[0].Replace("area:", "")) ||
+              Read($"Assets/Resources/Levels/{drill.levelId}/objectives.json").Contains(step), $"{card.drill}: objectivesDone {step} is a {drill.levelId} step");
 
     foreach (bool mastery in new[] { false, true })
     {
         string name = $"{card.drill} ({(mastery ? "mastery" : "guided")})";
-        TrainingDrillScript.Result run = TrainingDrillScript.Compose(guide, drill, mastery);
+        TrainingDrillScript.Result run = TrainingDrillScript.Compose(drillGuide, drill, mastery);
         TrainingRun source = mastery ? drill.mastery : drill.guided;
         Check(string.IsNullOrEmpty(run.Problems), $"{name}: composes cleanly: {run.Problems}");
         Check(run.Steps.Count == source.steps.Length && run.Steps.Count >= 3, $"{name}: every step survives ({run.Steps.Count})");
@@ -207,7 +223,7 @@ foreach (TrainingCardDef card in catalog.cards)
             {
                 Check(TouchOnly(page.text) && TouchOnly(page.textTouch), $"{name}: touch wording in {lesson.id}");
                 if (page.point != null && page.point.StartsWith("world:"))
-                    Check(sceneNames.Contains(page.point.Split('/').Last()), $"{name}: target {page.point} exists");
+                    Check(drillSceneNames.Contains(page.point.Split('/').Last()), $"{name}: target {page.point} exists");
             }
         if (mastery)
             Check(source.steps.Where(s => string.IsNullOrEmpty(s.use)).All(s => s.pages.All(p => string.IsNullOrEmpty(p.point))) &&

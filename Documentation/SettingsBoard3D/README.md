@@ -32,10 +32,18 @@ To use inspector values instead, add the `InGameSettings` component to an object
 
 ## What the player sees (design unchanged)
 - A navy control board with a brass rim, a recessed face and corner bolts, hanging on two cables, with a **SETTINGS** name plate and an **AUDIO** label.
-- Two rows. Each has a round icon badge (gold with a music note; cyan with a speaker), the titles **MUSIC** / **SOUND FX**, and a subtitle with a coloured **ON/OFF**.
-- Chunky 3D pill switches: brass ring, dark outline, a track that is mint when on and slate when off, gloss slashes, and a cream knob that slides with overshoot and squash. The whole row is the touch target.
+- Three rows (**MUSIC**, **SOUND FX**, **VOICES**). Each has a round icon badge, a title, a subtitle, a volume slider and a percentage readout (or **OFF**).
+- Volume sliders (`SettingsSlider3D`): brass ring, dark outline, a fill that is mint when on and slate when off, brass marks and the switch's cream knob. Tap to jump or drag left and right; the drag keeps working if the finger leaves the row.
+- Chunky 3D pill switches: brass ring, dark outline, a track that is mint when on and slate when off, gloss slashes, and a cream knob that slides with overshoot and squash. The right of the row is the switch's touch target.
 - "Changes are saved automatically" and the brass **BACK** button.
 - Motion: drop-in, a damped swing and a faint sway, rows popping in once, switch slides, and the lift-away.
+
+## Volume
+- Slider values are saved 0-1 in PlayerPrefs (`MusicVolume`, `SFXVolume`, `VoiceVolume`) by `AudioManager`, and written to disk when a drag ends. Output gain is the value squared.
+- Defaults reproduce the authored mix: music 50% (= the 3.5% gain, 100% is four times louder), SFX 100%, voices 100%.
+- SOUND FX also scales ambience and cutscene room tone; VOICES scales cutscene speech.
+- Dragging a switched-off row turns it on. Letting go at 0% turns it off. Switching on a row left at 0% restores 50%. Switching off keeps the slider's value.
+- While dragging, music is heard live and SOUND FX ticks every 10%. VOICES has no preview, because no line is playing on the board.
 
 ## Behaviour (same as the old SettingsPanel)
 - **Music**: the select sound plays, then `AudioManager.SetMusicEnabled`.
@@ -62,3 +70,7 @@ The board is on unnamed layer 30 and is drawn by a URP overlay camera stacked on
 - Layout and colours: constants at the top of `SettingsBoard3D`.
 - Which menu objects hide while open: `hideWhileOpen` on the component.
 - Dim strength: `backdropDim`.
+
+## Cutscene voices — 6 November 2026
+
+The shared board now includes VOICES (Spoken cutscene lines), default on, independently persisted under VoiceEnabled. Music and Sound FX retain their existing behavior. See [PROGRESS](PROGRESS.md) for layout and current verification.

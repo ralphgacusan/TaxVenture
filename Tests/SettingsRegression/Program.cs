@@ -24,6 +24,7 @@ string PathOf(params string[] parts) => Path.Combine(root, Path.Combine(parts));
 string Read(params string[] parts) => File.ReadAllText(PathOf(parts));
 string board = Read("Assets", "Scripts", "Settings", "SettingsBoard3D.cs");
 string toggle = Read("Assets", "Scripts", "Settings", "SettingsToggle3D.cs");
+string slider = Read("Assets", "Scripts", "Settings", "SettingsSlider3D.cs");
 string menuScene = Read("Assets", "Scenes", "3D Menu.unity");
 string mainMenu = Read("Assets", "Scripts", "MainMenu.cs");
 string mainMenuUi = Read("Assets", "Scripts", "UI", "MainMenuUI.cs");
@@ -97,7 +98,21 @@ Check(board.Contains("root.SetPositionAndRotation(cam.position + cam.forward * D
 Check(!board.Contains("TextMeshProUGUI") && !toggle.Contains("TextMeshProUGUI"), "board lettering is world TextMeshPro, not UI text");
 Check(board.Contains("CameraRenderType.Overlay") && board.Contains("cullingMask &= ~(1 << BoardLayer)"), "the board draws on its own overlay camera");
 Check(board.Contains("1 << BoardLayer, QueryTriggerInteraction"), "touches only hit the board");
-Check(toggle.Contains("AddHitBox(transform") && toggle.Contains("rowSize.x, rowSize.y"), "the whole row is the switch's touch area");
+Check(toggle.Contains("AddHitBox(transform") && board.Contains("new Vector2(switchHitWidth, RowSize.y)"), "the right of the row is the switch's touch area");
+Check(slider.Contains("AddHitBox(transform") && board.Contains("SliderWidth + 26f"), "the slider has its own touch area, clear of the switch");
+Check(board.Contains("pressTarget is SettingsSlider3D slider") && board.Contains("slider.DragTo(viewCamera.ScreenPointToRay(position))"), "a press keeps dragging its slider off the row");
+Check(slider.Contains("Time.unscaledDeltaTime") && !slider.Contains("Time.deltaTime") && !slider.Contains("TextMeshProUGUI"), "the slider runs on unscaled time with world lettering");
+Check(slider.Contains("HudTheme.Brass") && slider.Contains("HudTheme.TextPrimary") && board.Contains("SliderWidth,") && board.Contains(", Mint);"), "the slider uses the switch's brass, cream and mint");
+foreach (string channel in new[] { "musicSlider", "sfxSlider", "voiceSlider" })
+{
+    Check(board.Contains(channel + ".Interactable = optionsReady"), channel + " locks with the other options (modal, drop-in, leaving)");
+    Check(board.Contains(channel + ".SetValue("), channel + " shows the saved volume when opened");
+}
+Check(board.Contains("BindChannel(musicToggle, musicSlider") && board.Contains("BindChannel(sfxToggle, sfxSlider") && board.Contains("BindChannel(voiceToggle, voiceSlider"), "every row binds its switch to its slider");
+Check(board.Contains("value > 0f && !toggle.IsOn"), "dragging a switched-off row turns it on");
+Check(board.Contains("bool wanted = slider.Value > 0f"), "letting go at 0% turns the row off");
+Check(board.Contains("on && slider.Value <= 0f") && board.Contains("RestoredVolume"), "switching on a row left at 0% restores an audible level");
+Check(board.Contains("SaveVolumes()"), "a finished drag is written to disk");
 string wording = board + toggle;
 Check(!Regex.IsMatch(wording, "\"[^\"\\r\\n]*\\b([Cc]lick|[Mm]ouse|WASD)\\b[^\"\\r\\n]*\""), "player-facing text has no click / mouse wording");
 Check(toggle.Contains("EaseOutBack") && board.Contains("DropDuration") && board.Contains("LeaveDuration"), "motion: switch slide, drop-in and lift-away");
@@ -261,7 +276,7 @@ Check(checkpointer.Contains("if (!SaveCurrentCheckpoint()) return false;"), "bac
 string sceneFade = Read("Assets", "Scripts", "UI", "HUD", "SceneFade.cs");
 Check(Body(inGame, "public bool LeaveLevel").Contains("SceneFade.FadeOutThenLoad(destination, fadeInDestination: destination != Cutscene01Runtime.SceneName)"), "replay and leave use fade out plus destination fade in");
 Check(Body(inGame, "private void HideHud()").Contains("canvas.GetComponent<SceneFade>() != null"), "hiding settings HUD never hides or restores the transition curtain");
-Check(Body(sceneFade, "private IEnumerator FadeAndLoad").IndexOf("yield return Fade(", StringComparison.Ordinal) < Body(sceneFade, "private IEnumerator FadeAndLoad").IndexOf("SceneManager.LoadScene", StringComparison.Ordinal), "scene loading waits until fade to black finishes");
+Check(Body(sceneFade, "private IEnumerator FadeAndLoad").IndexOf("yield return Fade(", StringComparison.Ordinal) < Body(sceneFade, "private IEnumerator FadeAndLoad").IndexOf("MobilePerformance.LoadScene", StringComparison.Ordinal), "scene loading waits until fade to black finishes");
 Check(Body(sceneFade, "private IEnumerator Fade(").Contains("Time.unscaledDeltaTime"), "fades progress while settings hold timeScale at zero");
 Check(Body(sceneFade, "private static void HandleSceneLoaded").Contains("EnsureForScene(scene, requested)") && sceneFade.Contains("(!force && !OfficeLevelProfile.Allows"), "requested fade in also covers the menu destination");
 Check(board.Contains("if (success && (pendingAction == SettingsAction.Replay || pendingAction == SettingsAction.Menu ||"), "successful level exits (and a confirmed New Game) keep settings locked and paused until scene teardown");

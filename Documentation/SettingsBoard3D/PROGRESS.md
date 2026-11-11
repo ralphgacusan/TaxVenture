@@ -42,3 +42,22 @@ Play Mode checklist (in-game):
 6. Office_Level2: the settings button opens the same board.
 7. Set `pauseGameWhenOpen` to false in the JSON: NPCs keep moving while settings are open, but the player is still held.
 8. 3D Menu settings: unchanged (menu buttons pop out and back in).
+
+
+## 2026-11-06: independent cutscene VOICES toggle
+
+Added a third VOICES row, default on, to the existing shared menu/gameplay board. VoiceEnabled persists through SettingsManager/AudioManager independently of MusicEnabled/SFXEnabled; no changes to the existing Music/SFX click ordering. Rows are now 108 high at y=218/98/-22 (12-unit gaps), with unchanged board/font/switch sizes, footer at -99 and divider at -122. Actual phone rendering and touch acceptance remain pending.
+
+Current runtime and Editor compile with zero errors (21/10 inherited warnings); SettingsRegression 138/138, Career 72/72, Intro 44/44. Six production audio/settings preference checks pass against a fake Unity surface. No Unity launch/Play Mode or Git command. Full cutscene voice behavior and evidence: [ChapterCutscenes PROGRESS](../ChapterCutscenes/PROGRESS.md#cutscene-voiceover--6-november-2026).
+
+## 2026-11-06: volume sliders beside the switches
+- New `SettingsSlider3D` on every row of `SettingsBoard3D`, so the 3D Menu and in-game boards both get it. `AudioManager` owns the saved volumes; `ChapterCinematicPlayer` applies them to cutscene speech and sound. Rows are 114 tall with a three-line layout; the action and BACK buttons did not move. The switch's touch area is now the right of the row instead of the whole row.
+- Verification: runtime and Editor compile with no errors; SettingsRegression 153/153, ChapterCutscene 433/433, CareerBoard 79/79, IntroCutscene 44/44, Controls pass. AudioRegression: all new volume checks pass, but the suite stops on an older failure unrelated to volume (`Missing contextual SFX family hook: sfx_keyboard_type`). Play Mode: NOT RUN (user).
+
+Play Mode checklist:
+1. Main menu and in-game settings: drag each slider left and right, with touch and mouse. The knob follows, the percentage updates, and the drag holds when the finger drifts off the row.
+2. Music changes live; SOUND FX ticks every 10%; ambience follows SOUND FX in Office levels.
+3. Switch off and on: the slider keeps its value. Drag a switched-off row: it turns on. Let go at 0%: it turns off. Switch that row on: it returns at 50%.
+4. Set VOICES low and play a chapter cutscene: speech is quieter.
+5. Reopen settings, change scene, and restart: values are kept.
+6. Judge the music range: 100% is four times the default gain.

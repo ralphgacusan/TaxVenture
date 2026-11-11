@@ -20,6 +20,9 @@ public static class PaperInkStyle
     private const string PenInkHex = "#1C3D7A";
     private const string BlankInkHex = "#98A2B3";
 
+    /// <summary>The first-page prefab value size, shared by other printed form fields.</summary>
+    public const float FieldFontSize = 50f;
+
     // Row (case folder field).
     private static readonly Color FillInBox = new Color(0.9f, 0.935f, 0.98f, 1f);
     private static readonly Color FillInBoxEdge = new Color(0.36f, 0.46f, 0.62f, 0.7f);
@@ -119,6 +122,15 @@ public static class PaperInkStyle
         RectTransform decor = EnsureDecor(background.rectTransform);
         SetActive(decor, "Underline", !isDropTarget, () => CreateUnderline(decor));
         SetActive(decor, "Grip", true, () => CreateGrip(decor, new Vector2(1f, 0.5f), new Vector2(-18f, 0f)));
+    }
+
+    /// <summary>A reusable source amount, with the same rounded field, grip and entrance as the folder in warm amber.</summary>
+    public static void StyleSourceField(Image background)
+    {
+        StyleFieldRow(background, null, true, null, null);
+        if (background == null) return;
+        background.color = MarkerRest;
+        background.GetComponent<Outline>().effectColor = MarkerEdge;
     }
 
     /// <summary>Styles a tax-code value chip as a draggable highlighter mark.</summary>

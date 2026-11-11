@@ -2,16 +2,22 @@
   "_readme": [
     "LEVEL 3 GUIDE (T02 opening): same format as Tutorials/Level_01/guide.json. Arthur stays the guide.",
     "Arrows only for new places: Bea's plaza table (a runtime Level3Gameplay target). The office and reception are known places (no office waypoints).",
-    "Level 3 flags (Level3Checkpointer.Flag): assignmentReceived (the reception assignment is committed), toolPractice (the first task is the calculator), calculatorUp (the calculator is lifted at the desk), practiceFirstTape (tape 1 is attached), practiceDone (both practice tapes attached, saved). Cues (Level3DeskCalculator): CalculatorLifted, PracticeSourceSelected, PracticeTapePrinted, PracticeTapeAttached, beaRecordsCollected (Bea's handover is committed), atBeaTable (seated at her table). Cues: BeaTableSeated, BeaRecordRead.",
-    "T05 worksheet flags: worksheetUp (the board is lifted at Bea's table), worksheetAllPlaced (every strip has a section), worksheetDrafted (all placed and both notes filled in, saved). Cues (Level3WorksheetDesk): WorksheetLifted, WorksheetStripLifted, WorksheetStripPlaced, WorksheetNoteAnswered. Hands-on: each page waits for the player's own action; no page says whether a choice is right.",
+    "Level 3 flags (Level3Checkpointer.Flag): assignmentReceived (the reception assignment is committed; Bea's records are next), calculatorUp (the calculator is lifted at the desk), beaRecordsCollected (Bea's handover is committed), beaIntroDone (T04 buildup: Bea offered her organizer, or a restore skipped her first-encounter steps), atBeaTable (seated at her table). Cues: BeaTableSeated, BeaRecordRead. Legacy flags toolPractice, practiceFirstTape and practiceDone remain readable but no lesson uses them.",
+    "T04 buildup (4 November 2026): Arthur says nothing between Bea's handover and her Help Bea / Later offer: her envelope ('Open Bea's records') and her record ('Inspect a record') carry their own first-person prompts. bea-records waits for that offer and for the player to be standing; worksheet-intro starts at the first seat and no longer waits for bea-records. T05 replaced worksheet-intro's pages with its first-record steps (Feed the record / Choose where it belongs / Pull to file) on the same flag:atBeaTable entry.",
+    "T05 paper machine (4 November 2026): worksheet-intro waits for cue:MachineFed (a record half-fed), cue:MachineChosen (the first selector choice) and cue:WorksheetFiled (raised only after a lever filing is saved). worksheet-notes (same id) is now the Why? hint: flag:machineWhy (R6/R7 loaded with a treatment, no reason yet), waits for cue:MachineReasonChosen. machine-batch-filed: flag:machineBatchFiled (seated, every record of the open batch filed; T06 owns Check batch). Other flags: machineLoaded; worksheetDrafted (all seven filed with both reasons, saved). Cue MachineRecalled (a tab recalled). Each page waits for the player's own action and never names a treatment or reason; the old board's flags/cues (worksheetUp, worksheetAllPlaced, WorksheetLifted, WorksheetStripLifted, WorksheetStripPlaced, WorksheetNoteAnswered) stay readable for legacy only.",
+    "Revised T06 paper machine (5 November 2026): machine-batch-filed now points to CHECK BATCH and waits for cue:MachineBatchChecked or cue:MachineBatchAccepted (raised only after a saved check). worksheet-check (same id) is the look-again lesson: flag:machineLookAgain (seated, the open batch's last check marked a decision that is still as checked), waits for cue:MachineRecalled then a saved recheck. worksheet-corrections (same id) is the first accepted batch: flag:machineAccepted. worksheet-ready: flag:worksheetReady (all three batches accepted, saved), cue:MachineSummaryRead when the folded summary is opened (a preview), then flag:worksheetCollected. worksheet-subtotals now waits for flag:worksheetUp (the retired board only), so a revised run never shows tape lessons. Other T06 flags: machineChecked, machineSummary. No page names a treatment, reason or total.",
     "T06 check flags: worksheetCalcUp (the calculator stands beside the sheet at Bea's table), worksheetTapes (both subtotal tapes attached and current), worksheetChecked (the first complete check is saved), worksheetCorrecting (WorksheetCorrections), worksheetReady (every decision checks out, saved), worksheetCollected (the checked worksheet is collected, saved with its rewards). Cues (Level3WorksheetDesk): WorksheetCalcUp, WorksheetCalcSource, WorksheetTapePrinted, WorksheetTapeAttached, WorksheetChecked, WorksheetHint. No page names an answer; the check result itself is the board's and Arthur's line.",
     "T07 computation flags: beaComputation (Bea's computation phase), computationTotals (both totals picked), computationTaxable (a Taxable income tape is attached), computationRule (a rate band is picked), computationTaxDue (taxable income and tax due both had current tapes, saved), calculatorUp (the desk tools are lifted). Cues (Level3DeskCalculator): ComputationTotalChosen, ComputationRuleChosen, ComputationSourceUsed, ComputationTapeAttached. No page names a band, a total or a value; the book sections carry the method.",
     "T08 credit flags: beaInOffice (Bea waits in the conference room), certificateReceived (her certificate handover is saved), creditExplained (her question's right answer is saved), computationCredit (a certificate amount is linked to Tax credits), computationPayable (credit linked and a current Remaining payable tape, saved), certificateUp (the certificate is held up). Cues: CertificateRead (Level3CertificatePaper), ComputationCreditChosen (Level3DeskCalculator). The conference room is a known place: no arrow. No page names the credit amount or the balance; Section 9 carries the method.",
     "T09 review flags: beaStamped (the stamp covers the current sheet), beaStampStale (the sheet changed after it), beaReviewReturned (the last decided hand-in was returned), beaHeld (the last one was a justified hold), beaApproved (the approval is saved), reviewClockOn (Bea's review clock runs). Cues: StampPicked, SheetStamped (Level3DeskCalculator), BeaReviewReturned, BeaReviewApproved (Level3Audit). The Auditor is a known place: no arrow. No page names a line's value; Section 10 carries the method.",
-    "T03 practice: each step waits for the player's own action (waitFor cue), never for page taps; hint style keeps the calculator and card visible. The card is a fictional budget: no money, tax rule or score.",
-    "A resumed chapter marks the welcome and the calculator task as already shown (Level3ChapterRules.ImpliedLessons), so they never replay.",
+    "Revision (3 November 2026): the T03 budget practice lessons are retired with the practice itself; after the assignment Arthur points to Bea (bea-assignment). Revised T03: the calculator is introduced at its first office use: calculator-lesson (flag:calculatorLesson: the example card is up at Bea's computation before calculatorTaught is saved) waits for the player's own source tap, = and attach; it is implied once calculatorTaught is saved, so it never repeats. Flags calculatorLesson, calculatorTaught.",
+    "A resumed chapter marks the welcome and the tasks it has passed as already shown (Level3ChapterRules.ImpliedLessons), so they never replay.",
+    "T14 closing flags: closingFinding (Bea's draft question is next), findingRecorded (her supported finding is saved), messageRead (Quax's message is saved; the chapter result is pending), chapterResultPending, chapterComplete (the result's Continue is saved). closing-finding and closing-message are one short hint each; the chapter result itself is the existing result card.",
+    "Teaching pass (6 November 2026): worksheet-intro now runs on the practice packet's first slip (the stand card reads Practice 1 of 4; the packet always precedes Bea's first record) and its pull page also accepts cue:PracticeSlipFiled (a right practice pull; a wrong one raises cue:PracticeSlipRetry). sorting-practice: flag:sortingPractice (seated, the packet is due), waits for flag:sortingTaught (its one saved milestone). The desk examples reuse the calculator lesson's cues: tax-table-lesson (flag:taxLesson, the Practice Design Studio card is up) and withholding-lesson (flag:creditLesson) wait for the player's own source tap and for flag:taxTaught / flag:creditTaught. computation-rule now waits for flag:bandStep and credit-link for flag:creditStep (Bea's own step, once its example is done or was never due). Pages name the method, never Bea's band, credit or result.",
+    "Follow-up (6 November 2026, Level 2's watch-then-try pattern): Arthur first demonstrates each new teaching task himself in his bubble while the tools move on their own (the practice slips at Bea's table; each desk example). flag:atBeaTable, flag:sortingPractice and flag:calculatorLesson / flag:taxLesson / flag:creditLesson are false while his demonstration runs, so these hint pages are the player's turn. flag:sortingDemoSeen: the slip demonstration was watched (saved). His per-step lines and tips are Level3BeaTable.Level3Say asides, not lesson pages.",
     "The guide only observes: it never changes the chapter phase, rewards or papers.",
-    "Fields starting with '_' are notes and are ignored by the game."
+    "Fields starting with '_' are notes and are ignored by the game.",
+    "Polish pass (6 November 2026): genuinely new machine and calculator steps use the shared coach box and pointing hand (level3: targets, each resolved only while that part is the usable next action); familiar steps stay short hints. Retired or doubled lessons removed: worksheet-subtotals (old worksheet), worksheet-drafted, computation-totals (always already true), computation-done and credit-done (merged into the next step's line)."
   ],
   "enabled": true,
   "platform": "touch",
@@ -83,70 +89,19 @@
           "text": ""
         },
         {
-          "text": "Bea wants to know what she owes for 2026, worked out from her own records. Check in at reception first."
+          "text": "Bea wants to know what she owes for 2026, from her own records. Check in at reception first."
         }
       ]
     },
     {
-      "id": "calculator-intro",
-      "title": "THE DESK CALCULATOR",
+      "id": "bea-assignment",
+      "title": "BEA'S RECORDS",
       "when": "flag:assignmentReceived",
       "after": "welcome",
       "pages": [
         {
           "style": "hint",
-          "text": "Your first task is at your desk: sit down and tap the calculator. Every step you attach stays on its tape, so you can always show where a number came from.",
-          "hintSeconds": 9
-        }
-      ]
-    },
-    {
-      "id": "calculator-practice",
-      "title": "THE DESK CALCULATOR",
-      "when": "flag:calculatorUp",
-      "after": "calculator-intro",
-      "onlyIn": "mode:Workstation",
-      "pages": [
-        {
-          "style": "hint",
-          "text": "This card is a practice budget, not your money. Tap Budget: the calculator takes 100.00 and labels it on the tape.",
-          "waitFor": "cue:PracticeSourceSelected"
-        },
-        {
-          "style": "hint",
-          "text": "Now tap −, then Paper order, then =. The tape prints every step.",
-          "waitFor": "cue:PracticeTapePrinted"
-        },
-        {
-          "style": "hint",
-          "text": "Tap slot 1 on the card to choose where the tape goes, then tap it again to attach it.",
-          "waitFor": "cue:PracticeTapeAttached"
-        }
-      ]
-    },
-    {
-      "id": "calculator-own-turn",
-      "title": "YOUR TURN",
-      "when": "flag:practiceFirstTape",
-      "after": "calculator-practice",
-      "onlyIn": "mode:Workstation",
-      "pages": [
-        {
-          "style": "hint",
-          "text": "Your turn: tap slot 1's tape to start from what was left, take away the courier, press = and attach the result to slot 2.",
-          "waitFor": "flag:practiceDone|cue:PracticeTapeAttached"
-        }
-      ]
-    },
-    {
-      "id": "calculator-done",
-      "title": "PRACTICE DONE",
-      "when": "flag:practiceDone",
-      "after": "calculator-intro",
-      "pages": [
-        {
-          "style": "hint",
-          "text": "Nicely done. Take the calculator along: the same tape will carry Bea's real figures. Her records are waiting at her plaza table.",
+          "text": "Bea is waiting at her plaza table. Talk to her first.",
           "hintSeconds": 8
         }
       ]
@@ -154,153 +109,157 @@
     {
       "id": "bea-records",
       "title": "BEA'S RECORDS",
-      "when": "flag:beaRecordsCollected",
+      "when": "flag:beaIntroDone",
+      "onlyIn": "mode:FirstPerson",
+      "delay": 1,
       "pages": [
         {
           "style": "hint",
-          "text": "Her papers are on the table and in your Case Folder. Sit at her table and tap a paper to read it. Ask Bea about anything that looks odd.",
-          "hintSeconds": 10
-        }
-      ]
-    },
-    {
-      "id": "worksheet-intro",
-      "title": "BEA'S WORKSHEET",
-      "when": "flag:atBeaTable",
-      "after": "bea-records",
-      "onlyIn": "mode:Workstation",
-      "pages": [
-        {
-          "style": "hint",
-          "text": "The board nearest you is Bea's worksheet. Tap it to pick it up.",
-          "waitFor": "flag:worksheetUp|cue:WorksheetLifted"
-        },
-        {
-          "style": "hint",
-          "text": "Tap a record tab on the left, then + ADD on a row. The row comes off as a strip, keeping its amount and the record it came from.",
-          "waitFor": "cue:WorksheetStripLifted"
-        },
-        {
-          "style": "hint",
-          "text": "Now tap one of the four sections on the sheet to place the strip, or drag the strip there. Nothing is final: you can move it again.",
-          "waitFor": "cue:WorksheetStripPlaced"
-        },
-        {
-          "style": "hint",
-          "text": "Do the same for every row. UNDO takes back your last change, and READ ORIGINAL shows the paper a row came from.",
-          "hintSeconds": 9
-        }
-      ]
-    },
-    {
-      "id": "worksheet-notes",
-      "title": "CLAIM NOTES",
-      "when": "flag:worksheetAllPlaced",
-      "after": "worksheet-intro",
-      "onlyIn": "mode:Workstation",
-      "pages": [
-        {
-          "style": "hint",
-          "text": "Bea's own draft claims two costs. On each claim note, tap Reason and choose why it needs a second look. The printing note also asks which entry it relates to.",
-          "waitFor": "cue:WorksheetNoteAnswered"
-        },
-        {
-          "style": "hint",
-          "text": "Fill in the other note too. If you're unsure, read the originals or ask Bea.",
-          "waitFor": "flag:worksheetDrafted|cue:WorksheetNoteAnswered"
-        }
-      ]
-    },
-    {
-      "id": "worksheet-drafted",
-      "title": "WORKSHEET FILLED IN",
-      "when": "flag:worksheetDrafted",
-      "pages": [
-        {
-          "style": "hint",
-          "text": "Every row has a place and both notes are filled in. Look it over: you can still change anything.",
-          "hintSeconds": 9
-        }
-      ]
-    },
-    {
-      "id": "worksheet-subtotals",
-      "title": "SUBTOTAL TAPES",
-      "when": "flag:worksheetDrafted",
-      "after": "worksheet-drafted",
-      "onlyIn": "mode:Workstation",
-      "pages": [
-        {
-          "style": "hint",
-          "text": "Income and Allowable expenses each need a calculator tape. Your desk calculator is beside the worksheet: tap the SUBTOTAL slot at the foot of Income.",
-          "waitFor": "flag:worksheetCalcUp|cue:WorksheetCalcUp"
-        },
-        {
-          "style": "hint",
-          "text": "Tap each strip in Income with + between them, then =. Every amount keeps the record it came from.",
-          "waitFor": "cue:WorksheetTapePrinted"
-        },
-        {
-          "style": "hint",
-          "text": "Tap Income's SUBTOTAL to name it, then again to attach the tape. Then do the same for Allowable expenses.",
-          "waitFor": "cue:WorksheetTapeAttached"
-        },
-        {
-          "style": "hint",
-          "text": "If you move a strip later, its section's tape is tagged CHANGED: make a new one and attach it.",
+          "text": "Her records are in your Case Folder too. Ask her about anything odd.",
           "hintSeconds": 8
         }
       ]
     },
     {
-      "id": "worksheet-check",
-      "title": "CHECK THE WORKSHEET",
-      "when": "flag:worksheetTapes",
-      "after": "worksheet-subtotals",
+      "id": "worksheet-intro",
+      "title": "BEA'S RECORDS",
+      "when": "flag:atBeaTable",
+      "onlyIn": "mode:Workstation",
+      "pages": [
+        {
+          "text": "Feed the record: drag the card into the slot, or tap card, then slot.",
+          "waitFor": "cue:MachineFed",
+          "point": "level3:card",
+          "gesture": "drag",
+          "to": "level3:intake",
+          "box": "top"
+        },
+        {
+          "text": "Choose where it belongs: turn the dial or tap a label.",
+          "waitFor": "cue:MachineChosen",
+          "point": "level3:dial",
+          "gesture": "tap",
+          "box": "top"
+        },
+        {
+          "text": "Pull to file: drag the lever down, or tap it.",
+          "waitFor": "cue:WorksheetFiled|cue:PracticeSlipFiled",
+          "point": "level3:lever",
+          "gesture": "tap",
+          "box": "top"
+        }
+      ]
+    },
+    {
+      "id": "sorting-practice",
+      "title": "PRACTICE SLIPS",
+      "when": "flag:sortingPractice",
+      "after": "worksheet-intro",
       "onlyIn": "mode:Workstation",
       "pages": [
         {
           "style": "hint",
-          "text": "Both subtotals have tapes. When you're ready, tap CHECK. Your first complete check sets Bea's grade, and you can still fix things after it. Tax Code Book sections 4 and 5 can help.",
-          "waitFor": "flag:worksheetChecked|cue:WorksheetChecked"
+          "text": "Same four slips. I'll say how each one went.",
+          "waitFor": "flag:sortingTaught"
+        }
+      ]
+    },
+    {
+      "id": "worksheet-notes",
+      "title": "WHY?",
+      "when": "flag:machineWhy",
+      "after": "worksheet-intro",
+      "onlyIn": "mode:Workstation",
+      "pages": [
+        {
+          "text": "This one also asks why. Tap Why? and pick a reason.",
+          "waitFor": "cue:MachineReasonChosen",
+          "point": "level3:why",
+          "gesture": "tap",
+          "box": "top"
+        }
+      ]
+    },
+    {
+      "id": "machine-batch-filed",
+      "title": "BATCH FILED",
+      "when": "flag:machineBatchFiled",
+      "after": "worksheet-intro",
+      "onlyIn": "mode:Workstation",
+      "pages": [
+        {
+          "text": "Batch filed. Tap CHECK BATCH when you're ready.",
+          "waitFor": "cue:MachineBatchChecked|cue:MachineBatchAccepted",
+          "point": "level3:batch",
+          "gesture": "tap",
+          "box": "top"
+        }
+      ]
+    },
+    {
+      "id": "worksheet-check",
+      "title": "LOOK AGAIN",
+      "when": "flag:machineLookAgain",
+      "after": "machine-batch-filed",
+      "onlyIn": "mode:Workstation",
+      "pages": [
+        {
+          "style": "hint",
+          "text": "A ? tab means look again: tap it, check its original, refile it.",
+          "waitFor": "cue:MachineRecalled"
+        },
+        {
+          "style": "hint",
+          "text": "Then tap CHECK AGAIN. Your first check stays as it was.",
+          "waitFor": "cue:MachineBatchChecked|cue:MachineBatchAccepted"
         }
       ]
     },
     {
       "id": "worksheet-corrections",
-      "title": "LOOK AGAIN",
-      "when": "flag:worksheetCorrecting",
-      "after": "worksheet-check",
+      "title": "BATCH ACCEPTED",
+      "when": "flag:machineAccepted",
+      "after": "machine-batch-filed",
       "onlyIn": "mode:Workstation",
       "pages": [
         {
           "style": "hint",
-          "text": "A ? means look again. Tap a marked place, then HINT for help, or read its original. Fix it, then CHECK AGAIN. Your first grade stays as it is.",
-          "waitFor": "flag:worksheetReady|cue:WorksheetHint"
+          "text": "Accepted records are read only. Tap a total window to see what's in it.",
+          "hintSeconds": 8
         }
       ]
     },
     {
       "id": "worksheet-ready",
-      "title": "READY TO COLLECT",
+      "title": "BEA'S SUMMARY",
       "when": "flag:worksheetReady",
       "onlyIn": "mode:Workstation",
       "pages": [
         {
-          "style": "hint",
-          "text": "Every decision checks out. Tap COLLECT WORKSHEET: it goes into Bea's Case Folder for her computation.",
-          "waitFor": "flag:worksheetCollected"
+          "text": "Bea's summary is out. Tap or drag it to read.",
+          "waitFor": "cue:MachineSummaryRead|flag:worksheetCollected",
+          "point": "level3:summary",
+          "gesture": "tap",
+          "box": "top"
+        },
+        {
+          "text": "Drag it to your Bag or a hotbar slot to keep it.",
+          "waitFor": "flag:worksheetCollected",
+          "point": "level3:summary",
+          "gesture": "drag",
+          "to": "hud:bag",
+          "box": "top"
         }
       ]
     },
     {
       "id": "worksheet-collected",
-      "title": "WORKSHEET COLLECTED",
+      "title": "SUMMARY COLLECTED",
       "when": "flag:worksheetCollected",
       "pages": [
         {
           "style": "hint",
-          "text": "Bea's checked worksheet is in your Case Folder, with both tapes. Her totals are ready for the computation.",
+          "text": "Bea's summary is in your Case Folder. Her computation is next, at your desk.",
           "hintSeconds": 8
         }
       ]
@@ -313,22 +272,47 @@
       "pages": [
         {
           "style": "hint",
-          "text": "Bea's computation is on the clipboard at your desk, beside the calculator. Sit down and tap it.",
-          "waitFor": "flag:calculatorUp|cue:CalculatorLifted"
+          "text": "Bea's computation is in your Case Folder. Sit at your desk to start.",
+          "waitFor": "mode:Workstation|flag:calculatorUp|cue:CalculatorLifted"
         }
       ]
     },
     {
-      "id": "computation-totals",
-      "title": "TOTALS FIRST",
-      "when": "flag:calculatorUp",
+      "id": "calculator-lift",
+      "title": "YOUR CALCULATOR",
+      "when": "flag:calculatorToLift",
+      "after": "computation-intro",
+      "onlyIn": "mode:Workstation",
+      "pages": [
+        {
+          "text": "Tap the calculator to lift it.",
+          "waitFor": "flag:calculatorUp|cue:CalculatorLifted",
+          "point": "level3:calculator",
+          "gesture": "tap"
+        }
+      ]
+    },
+    {
+      "id": "calculator-lesson",
+      "title": "THE DESK CALCULATOR",
+      "when": "flag:calculatorLesson",
       "after": "computation-intro",
       "onlyIn": "mode:Workstation",
       "pages": [
         {
           "style": "hint",
-          "text": "Tap PICK on Gross income and choose the total it comes from. Then PICK Allowable expenses. Nothing is filled in for you.",
-          "waitFor": "flag:computationTotals"
+          "text": "Example only. Select Income, then tap the display; or drag it there.",
+          "waitFor": "cue:PracticeSourceSelected"
+        },
+        {
+          "style": "hint",
+          "text": "Choose −, transfer Costs to the display, then press =.",
+          "waitFor": "cue:PracticeTapePrinted"
+        },
+        {
+          "style": "hint",
+          "text": "Drag tape to the field, or select tape then tap the field.",
+          "waitFor": "flag:calculatorTaught|cue:PracticeTapeAttached"
         }
       ]
     },
@@ -336,26 +320,45 @@
       "id": "computation-taxable",
       "title": "TAXABLE INCOME",
       "when": "flag:computationTotals",
-      "after": "computation-totals",
+      "after": "calculator-lesson",
       "onlyIn": "mode:Workstation",
       "pages": [
         {
           "style": "hint",
-          "text": "Taxable income is gross income minus allowable expenses (Tax Code Book, Section 6). Tap Gross income, −, Allowable expenses, =, then tap Taxable income twice.",
+          "text": "Income, minus, deductions, equals. Drag the printed result into Taxable income.",
           "waitFor": "flag:computationTaxable|cue:ComputationTapeAttached"
+        }
+      ]
+    },
+    {
+      "id": "tax-table-lesson",
+      "title": "THE TAX TABLE",
+      "when": "flag:taxLesson",
+      "after": "computation-taxable",
+      "onlyIn": "mode:Workstation",
+      "pages": [
+        {
+          "style": "hint",
+          "text": "Your turn: select Taxable income, then tap the display.",
+          "waitFor": "cue:PracticeSourceSelected"
+        },
+        {
+          "style": "hint",
+          "text": "Subtract threshold, =; times rate, =; plus base tax, =. Then attach.",
+          "waitFor": "flag:taxTaught|cue:PracticeTapeAttached"
         }
       ]
     },
     {
       "id": "computation-rule",
       "title": "THE RATE BAND",
-      "when": "flag:computationTaxable",
+      "when": "flag:bandStep",
       "after": "computation-taxable",
       "onlyIn": "mode:Workstation",
       "pages": [
         {
           "style": "hint",
-          "text": "Tap PICK on Rate band and choose the row of the annual table that holds the taxable income (Section 7). Its floor, base tax and rate appear as chips.",
+          "text": "Find Section 7's annual bands in your Tax Code Book, then drag a band into Annual band.",
           "waitFor": "flag:computationRule|cue:ComputationRuleChosen"
         }
       ]
@@ -369,20 +372,8 @@
       "pages": [
         {
           "style": "hint",
-          "text": "Section 8: taxable income minus the floor is the excess; only the excess takes the rate; then add the base tax. Attach each step, or press = after each and keep going on one tape, then attach it to Tax due.",
+          "text": "Follow the formula: subtract threshold, multiply rate, add base. Press = after each, then attach Tax due.",
           "waitFor": "flag:computationTaxDue"
-        }
-      ]
-    },
-    {
-      "id": "computation-done",
-      "title": "TAX DUE",
-      "when": "flag:computationTaxDue",
-      "pages": [
-        {
-          "style": "hint",
-          "text": "Taxable income and tax due are on Bea's sheet, every step on its tape. Next comes the tax already withheld from her fees.",
-          "hintSeconds": 8
         }
       ]
     },
@@ -390,25 +381,43 @@
       "id": "credit-certificate",
       "title": "ONE MORE PAPER",
       "when": "flag:computationTaxDue",
-      "after": "computation-done",
       "pages": [
         {
           "style": "hint",
-          "text": "Bea is waiting in the conference room with one more paper. Talk to her there.",
+          "text": "Tax due is attached. Bea has one more paper: talk to her in the conference room.",
           "waitFor": "flag:certificateReceived"
+        }
+      ]
+    },
+    {
+      "id": "withholding-lesson",
+      "title": "TAX WITHHELD",
+      "when": "flag:creditLesson",
+      "after": "credit-certificate",
+      "onlyIn": "mode:Workstation",
+      "pages": [
+        {
+          "style": "hint",
+          "text": "Your turn: select Tax due, then tap the display.",
+          "waitFor": "cue:PracticeSourceSelected"
+        },
+        {
+          "style": "hint",
+          "text": "Tax due − tax withheld, then =. The payment is already income.",
+          "waitFor": "flag:creditTaught|cue:PracticeTapeAttached"
         }
       ]
     },
     {
       "id": "credit-link",
       "title": "TAX CREDITS",
-      "when": "flag:creditExplained",
+      "when": "flag:creditStep",
       "after": "credit-certificate",
       "onlyIn": "mode:Workstation",
       "pages": [
         {
           "style": "hint",
-          "text": "Tap PICK on Tax credits and choose the amount from Bea's certificate (Tax Code Book, Section 9). The blue tab beside it holds the certificate up to read.",
+          "text": "Open her certificate from your Bag. Tax already withheld counts toward payment (Section 9).",
           "waitFor": "flag:computationCredit|cue:ComputationCreditChosen"
         }
       ]
@@ -422,20 +431,8 @@
       "pages": [
         {
           "style": "hint",
-          "text": "Remaining payable is tax due minus tax credits. Tap Tax due, −, Tax credits, =, then tap Remaining payable twice.",
+          "text": "Remaining payable is tax due minus the tax credit.",
           "waitFor": "flag:computationPayable"
-        }
-      ]
-    },
-    {
-      "id": "credit-done",
-      "title": "COMPUTATION READY",
-      "when": "flag:computationPayable",
-      "pages": [
-        {
-          "style": "hint",
-          "text": "Every line of Bea's computation is on its tape. It still needs your review before it goes back to her.",
-          "hintSeconds": 8
         }
       ]
     },
@@ -443,12 +440,11 @@
       "id": "review-stamp",
       "title": "STAMP THE SHEET",
       "when": "flag:computationPayable",
-      "after": "credit-done",
       "onlyIn": "mode:Workstation",
       "pages": [
         {
           "style": "hint",
-          "text": "Tap READY or NOT READY beside Bea's sheet, then tap its stamp box. READY means ready for computation review, not filed or paid (Tax Code Book, Section 10).",
+          "text": "All three results are attached. Open the Case Folder and drag READY or NOT READY onto its front page.",
           "waitFor": "flag:beaStamped|cue:SheetStamped"
         }
       ]
@@ -461,7 +457,7 @@
       "pages": [
         {
           "style": "hint",
-          "text": "Take your Case Folder to the Auditor. When he asks for it, drag it to him or tap its icon.",
+          "text": "Take the Case Folder to the Auditor. When he asks, drag it to him or tap its icon.",
           "waitFor": "flag:beaApproved|flag:beaReviewReturned|flag:beaHeld"
         }
       ]
@@ -473,7 +469,7 @@
       "pages": [
         {
           "style": "hint",
-          "text": "The Auditor marked one line on Bea's sheet. Start there, check what depends on it, stamp the current sheet, then hand the folder back.",
+          "text": "Start with the line he marked in the Case Folder. Fix it, stamp again, hand it back.",
           "hintSeconds": 9
         }
       ]
@@ -485,8 +481,33 @@
       "pages": [
         {
           "style": "hint",
-          "text": "Bea's computation is approved for review. Her copy is waiting with the Auditor.",
+          "text": "Approved. Collect Bea's copy beside the Auditor, then take it to her.",
           "hintSeconds": 8
+        }
+      ]
+    },
+    {
+      "id": "closing-finding",
+      "title": "HER DRAFT",
+      "when": "flag:closingFinding",
+      "pages": [
+        {
+          "style": "hint",
+          "text": "Bea has one question about her draft. Say only what her papers show.",
+          "waitFor": "flag:findingRecorded"
+        }
+      ]
+    },
+    {
+      "id": "closing-message",
+      "title": "A MESSAGE",
+      "when": "flag:findingRecorded",
+      "after": "closing-finding",
+      "pages": [
+        {
+          "style": "hint",
+          "text": "The receptionist has a message for you.",
+          "waitFor": "flag:messageRead"
         }
       ]
     }

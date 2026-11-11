@@ -1,4 +1,4 @@
-"""Check T01 Markdown fixtures using Decimal. No Unity, production data or saves."""
+"""Check stable tax, legacy v1 and revised v2 Markdown fixtures. No Unity or saves."""
 from datetime import date
 from decimal import Decimal as D, ROUND_HALF_UP
 from pathlib import Path
@@ -212,11 +212,35 @@ def verify():
     for r in wrongs:
         check(tuple(map(D, r[1:4])) == calculated[r[0]], 'independently computed wrong fixture: ' + r[0])
     check(company[5]-calculated['marine-draft'][2] == D('30000'), 'company correction effect')
+    # The old twelve-decision table remains a compatibility contract, not the
+    # new activity. Verify the new registry independently against those sources.
+    revision = (PACK / 'REVISION_PLAN.md').read_text(encoding='utf-8-sig')
+    revised = table(revision, '| decisionId | batch | expected treatment | expected reason |')
+    expected_ids = ['dest-R' + str(i) for i in range(1, 8)] + ['reason-R6', 'reason-R7']
+    check([r[0] for r in revised] == expected_ids, 'v2 nine unique treatment/reason decisions')
+    check(len({r[0] for r in revised}) == 9, 'v2 no duplicate decision IDs')
+    check([r[1] for r in revised] == ['earnings'] * 2 + ['costs'] * 3 + ['questions'] * 4,
+          'v2 batches contain two earnings, three costs, two treatments plus two reasons')
+    mapping = {'Income': 'Income', 'Allowable expenses': 'Deduct',
+               'Not deductible': 'Leave Out', 'Supporting only': 'Leave Out'}
+    for current, legacy in zip(revised[:7], decisions[:7]):
+        check(current[2:] == [mapping[legacy[1]], '-'], 'v2 preserves source treatment: ' + current[0])
+        check(current[0].split('-', 1)[1] in rows, 'v2 treatment has original source row')
+    check([r[2:] for r in revised[7:]] == [['-', 'Personal purpose'], ['-', 'Already represented']],
+          'v2 distinct non-deductible and already-counted reasons')
+    scores = table(revision, '| wrong | correct | tier | xp |')
+    check(len(scores) == 10, 'v2 all first-check wrong-count outcomes')
+    for wrong, row in enumerate(scores):
+        correct = 9 - wrong
+        tier = 'Gold' if correct == 9 else 'Silver' if correct >= 7 else 'Bronze'
+        check(row == [str(wrong), str(correct), tier, str(60 - wrong)], 'v2 score/XP outcome ' + str(wrong))
+    check(60 - 9 == 51 and 60 + 100 == 160, 'v2 XP bounds and Bea-only current chapter maximum')
+    check(60 + 100 + 100 == 260, 'future two-case XP maximum remains documented')
     return checks
 
 
 if __name__ == '__main__':
     try:
-        print(f'PASS: {verify()} T01 content assertions against Markdown; exact Decimal; documentation only.')
+        print(f'PASS: {verify()} stable/legacy/revision content assertions against Markdown; exact Decimal; documentation only.')
     except (ValueError, KeyError, IndexError) as error:
         raise SystemExit('FAIL: ' + str(error))

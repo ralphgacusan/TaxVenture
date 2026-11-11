@@ -127,6 +127,8 @@ public sealed class OfficeObjectives : MonoBehaviour
         GameplayEvents.OnWithholdingCertificateReceived += HandleWithholdingCertificateReceived;
         GameplayEvents.OnRemainingPayableAttached += HandleRemainingPayableAttached;
         GameplayEvents.OnBeaCaseApproved += HandleBeaCaseApproved;
+        GameplayEvents.OnChapterMessageRead += HandleChapterMessageRead;
+        GameplayEvents.OnChapterWrapUpConfirmed += HandleChapterWrapUpConfirmed;
         GameplayEvents.OnAuditReturned += HandleAuditReturned;
         GameplayEvents.OnFinalAssessmentStamped += HandleFinalAssessmentStamped;
         GameplayEvents.OnAnnotationsChecked += HandleAnnotationsChecked;
@@ -177,6 +179,8 @@ public sealed class OfficeObjectives : MonoBehaviour
         GameplayEvents.OnWithholdingCertificateReceived -= HandleWithholdingCertificateReceived;
         GameplayEvents.OnRemainingPayableAttached -= HandleRemainingPayableAttached;
         GameplayEvents.OnBeaCaseApproved -= HandleBeaCaseApproved;
+        GameplayEvents.OnChapterMessageRead -= HandleChapterMessageRead;
+        GameplayEvents.OnChapterWrapUpConfirmed -= HandleChapterWrapUpConfirmed;
         GameplayEvents.OnAuditReturned -= HandleAuditReturned;
         GameplayEvents.OnFinalAssessmentStamped -= HandleFinalAssessmentStamped;
         GameplayEvents.OnAnnotationsChecked -= HandleAnnotationsChecked;
@@ -240,6 +244,8 @@ public sealed class OfficeObjectives : MonoBehaviour
     private void HandleWithholdingCertificateReceived() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.WithholdingCertificateReceived));
     private void HandleRemainingPayableAttached() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.RemainingPayableAttached));
     private void HandleBeaCaseApproved() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.BeaCaseApproved));
+    private void HandleChapterMessageRead() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.ChapterMessageRead));
+    private void HandleChapterWrapUpConfirmed() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.ChapterWrapUpConfirmed));
     private void HandleAuditReturned() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.AuditReturned));
     private void HandleFinalAssessmentStamped() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.FinalAssessmentStamped));
     private void HandleAnnotationsChecked() => Record(ObjectiveTriggers.EventKey(ObjectiveTriggers.AnnotationsChecked));

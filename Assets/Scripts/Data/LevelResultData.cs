@@ -7,6 +7,7 @@
 /// object rather than needing to re-derive facts from CaseData/scattered
 /// state.
 /// </summary>
+[System.Serializable]
 public class LevelResultData
 {
     public ClientOutcomeBranch Branch;

@@ -1,76 +1,73 @@
-# T02 — Enter a safely specialized Level 3 scene with resumable chapter state
+# T02 — Continue the existing chapter with safe revised entry and legacy resume
 
 Status: **Implemented, internally verified; user manual pending**. Blocked by: T01.
 
-Priority: P1. Phase: A — Chapter entry. Estimated scope: M+; one safe entry/resume slice; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
+Execution readiness: implemented 3 November 2026 against retained T01 (evidence below and in [PROGRESS](../PROGRESS.md)). User Unity/device acceptance is open; next ticket T03.
+
+Priority: P1. Phase: A — Continuation. Estimated scope: M; one fresh agent context. If real call-site work exceeds this bound, record a bounded split before adding unrelated framework work.
 
 ## Goal and visible accomplishment
 
-An isolated Level3 attempt enters the familiar office at reception, reads the appropriate next task and restores the same campaign state without starting old quests.
+A fresh revised attempt receives Bea’s assignment and goes to her records; a legacy attempt resumes its real work, including approved Bea/copyAtAuditor, without resetting or paying again.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Implemented 30 October 2026 on an implementation instruction; evidence is in [PROGRESS](../PROGRESS.md), limitations in [KNOWN_ISSUES](../KNOWN_ISSUES.md).
+Revision: **3 November 2026**. Read [REVISION_PLAN](../REVISION_PLAN.md), [SPEC](../SPEC.md), [reuse map](../REUSE_AND_ARCHITECTURE.md), [visual contract](../WORLD_AND_FEEDBACK.md), [verification](../VERIFICATION.md) and [AGENTS](../AGENTS.md). Planned refers to changed revision acceptance, not absence of reusable implementation. Historical baseline: T02 entry/save and later inventory continuation were historically internal-verified; T09 Audit/ReviewClock/reward code now exists beyond the old tracker cutoff. Preserve it and establish its actual current verification state.
 
 ## Existing systems to reuse
 
-Verified existing paths relative to repository root; recheck live behavior rather than rely on stale comments:
+Existing source paths relative to repository root; inspect live callbacks/content before changing them. Narrow Level_03 adapters only; no duplicate folder/stamp/calculator/input/save/shop framework.
 
-- `Assets/Scenes/Office_Level2.unity`
-- `Assets/Editor/Level2SceneSetup.cs`
-- `Assets/Scripts/Data/OfficeLevelCatalog.cs`
-- `Assets/Scripts/RewardsSystem/PlayerProgressManager.cs`
+- `Assets/Scripts/Level3/Level3OfficeStart.cs`
+- `Assets/Scripts/Level3/Level3ChapterRules.cs`
+- `Assets/Scripts/Level3/Level3Checkpointer.cs`
 - `Assets/Scripts/RewardsSystem/PlayerProgressData.cs`
-- `Assets/Scripts/Level2/Level2Checkpointer.cs`
-- `Assets/Scripts/FSM/GameStateMachine.cs`
-
-New L3 components/resources below were outputs of this ticket; later tickets extend them rather than adding frameworks.
+- `Assets/Scripts/RewardsSystem/PlayerProgressManager.cs`
+- `Assets/Scripts/Level3/Level3ReviewRules.cs`
+- `Tests/Level3Regression/Program.cs`
+- `Tests/VerifyLevel3Scene.py`
 
 ## Work and interaction mechanics
 
-1. Follow SCENE_REUSE exactly: inspect current source/destination/hashes, copy saved Office_Level2 once into proposed Office_Level3 with distinct GUID, preserve source scenes/prefabs and never overwrite existing work. Record all inherited owners and serialized/runtime target bindings.
-2. Add a versioned Level3Gameplay root and opted-in OfficeLevelCatalog mapping/capabilities. Disable only old quest/start/reward/checkpoint controllers identified by inspection. Preserve current first-person input, camera, lighting, services, audio and physical desk tools. Keep normal Career3 entry comingSoon; use disposable development fixtures.
-3. Extend the existing signed checkpoint/command owner with SPEC's bounded two-case skeleton, active case identity and phases. Save/load the reception/task/practice admission state and preserve actual wallet/trust/Rosa history/settings/inventory/ownership. Extend Notes/folder/book scope deliberately; do not retire carried chapter tools accidentally.
-4. Wire existing receptionist dialogue, OfficeObjectives, guide/Notes observers and coarse GameStateMachine mapping. First task is the calculator introduction. A resumed phase must not replay reception, old acquisition/rewards or prototype filing flow. Prevent legacy LevelComplete from firing after a single case.
-5. Exercise save/reload/failed-save/mode isolation through real commands. Normalize only new L3 defaults when no L3 checkpoint exists; no reset/import of the user's actual save. Keep existing signed-save/future-version policy. Scene setup is idempotent; subscriptions/holds are scoped and released on disable.
+1. Inspect actual T01–T09 source/resources, local scene edits, mode guards and tests. Record what runs versus only exists. Locate/restore the minimal Level3Regression project using existing suite conventions if absent; compile production before tests. No speculative refactoring or scene recopy.
+2. Change only L3 fresh admission to skip mandatory ToolPractice/budget tapes; preserve serialized enum identities. Start Bea independent review hours after the first required activity lesson, retaining any existing started clock. Keep Career3 Coming Soon.
+3. Implement the narrow versioned/idempotent snapshot adapter in REVISION_PLAN: map old destinations by row/source; retain frozen v1 grades/XP, acquisitions, tapes, claims, stage inputs, approvals/copy/clock and all inventory. Add only required presentation/assessment fields; unknown future version retains data and blocks safely.
+4. Build disposable old-state fixtures at every documented boundary. Migrate candidate -> signed persist -> quiet publish; failure changes nothing. Legacy ToolPractice advances only its retired gate, never grants practice teaching/mastery/rewards. Restore approved Bea directly into delivery.
+5. Reconcile the static scene check with the authorized current scene: replace only obsolete source-copy equality after recording present references/baseline. Preserve missing-script/duplicate-owner/prefab limitations as explicit findings; do not mask them or repair unrelated scenes.
 
 ## Assets, motion and feedback
 
-Reuse saved scene/environment/player/camera/EventSystem/light/material references. New scene .meta and small Level3 configuration/builder only; no new world reconstruction.
-
-Follow WORLD_AND_FEEDBACK and fixed document types. Bind every new world object to actual 3D body, collider/target, correct source/record identity and existing camera/input/audio ownership. Record resolved anchors/clip names and any unsupported asset assumption. No user scene-assembly chores or claims of rendered acceptance from declarations.
+Implement this slice with actual existing 3D bodies, readable paper faces, reachable targets and current page/camera/audio ownership. One active task/primary action; temporary source/reference only on demand. Reuse L1/L2 styling and quiet lift/settle/feed/stamp cues. No tiny auto-shrunk text, full-tool overlay or correctness flash on draft placement. Bind models/colliders/callbacks here; T17 cannot substitute for this ticket’s visual implementation. User verifies rendered/touch/feel results.
 
 ## Integration requirements
 
-Runtime lives in `Assets/Scripts/Level3` and `Resources/Levels/Level_03`. Keep L1/L2 mapping and startup unchanged. Preserve both eventual case subrecords from the beginning, but implement only entry transitions in this slice. No second save/FSM manager.
-
-Preserve current L1/L2 scenes, source prefabs/GUIDs, signed save owner, mode guards, input/FSM/dialogue/audio frameworks and Android controls. Normal L3 Career remains unavailable until T18. No L4 filing, ending, stand, drawer or global archive feature is added.
+Preserve shared L1/L2 behavior, existing serialized identities/source scenes and all campaign possessions. Keep current exact-decimal L3 rules/provenance; no float prototype bridge. Use existing input/dialogue/FSM/guide/Bag/reward owners. Career3 stays gated until T18, L4/L5 remain unavailable. No remote ticket, package, scene recopy or global cleanup.
 
 ## Persistence and failure rules
 
-Use the existing candidate→save→publish command boundary and stable chapter/case/action IDs. Validate actual prerequisites/revision/source before committing. Failed write leaves prior state, source/copy and retry available, with no success effect. Quiet restore does not raise acquisition/reward/choice/consumption events. Back, repeated input, disable and app focus interruption settle pointer state and release only owned holds. Story/replay/practice/Editor distinctions protect live campaign data.
+Candidate -> signed persist -> publish before success effects. Validate mode/case/source/revision/prerequisites/action IDs; duplicates do not award. Preserve legacy grades/claims/approved snapshots/copies and quiet restores. Failure keeps prior state/source/copy retryable. Clear only owned pointer/selection/locks on Back/settings/disable/focus/camera return; independent work can be left. Practice/replay/Editor cannot mutate live story state.
 
 ## Internal checks — AI source/build/regressions only
 
-- [x] Source L1/L2 immediate-baseline hashes remain unchanged; destination GUID is distinct; setup reruns without duplicates. (L1 `148D871C…62FE`, L2 `F5B8538E…19E7` before and after; Office_Level3 GUID `844c604a279e4b66ae226bf66f1dd99a`; one runtime root, none serialized: VerifyLevel3Scene PASS.)
-- [x] Isolated L3 has one active owner per input/manager role and no inherited L1/L2 quest/reward starts. (Owner counts equal Office_Level2's, including its inherited second GameStateMachine component; Level 1 quest objects hidden, popup tutorial and desk folder flow off, Rosa parts never built, legacy completion states refused.)
-- [x] Reception→practice task and save/resume round-trip use existing observers and exact carried campaign state. (Level3Regression: candidate/round trip equal except `campaign.levelThree`; quiet-restore triggers/lessons; history line read only.)
-- [x] Failed writes and non-story attempts do not replace live campaign data; Career3 remains unavailable. (Injected temp-file failure leaves both save generations and the published state unchanged, retry succeeds; Editor/replay/practice/no-Chapter-2 never write; chapters.json unchanged.)
-- [x] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count. (Commands and counts in PROGRESS; Level1LivingPlazaRegression keeps 4 pre-existing failures in untouched files.)
+- [x] Fresh assignment reaches BeaRecords without two budget tapes; actual T09 code/harness/build results are recorded.
+- [x] Legacy draft, frozen grade, collected worksheet, partial computation and approved copy round-trip with possessions/claims unchanged.
+- [x] Migration repeated/failed/unknown-version cases are quiet, failure-safe and never award or erase state.
+- [x] Current scoped scene/build/Career checks distinguish obsolete creation assertions from real unresolved references.
+- [x] Build actual changed production paths and run targeted command/save/failure/mode checks plus affected shared regressions; record commands/counts/warnings, not historical passes.
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 
-- [ ] User confirms import, spawn/facing, actual movement/look/joysticks, lighting/doors/walls, no duplicate actors and safe reception camera.
-- [ ] Inspect applicable actual imported references, 3D bodies, paper text, targets, motion, camera/control recovery and Android layout. Manual acceptance remains pending until the user reports it; static tests are not a substitute.
+- [ ] Use disposable fresh and legacy fixtures; confirm next task and retained papers/results, no inherited quests or extra reward.
+- [ ] Confirm first-person reception/desk access and no requirement to perform removed budget practice.
+- [ ] Confirm real 3D targets/animations/text/safe areas/Back/focus/audio on supported devices; no source declaration counts as visual acceptance.
 
 ## Handoff and completion definition
 
-Delivered: Office_Level3 (byte copy of the saved Office_Level2, new GUID); `Level3OfficeStart` (Level3Gameplay root v1, config-driven hide/disable, reception placement, history greeting filter); `Level3Checkpointer` (chapter entry/resume, AssignBea command, legacy guard, guide flags, settings exit); `Level3ChapterRules`; `Level3ContentValidator` with the `level3` case DTO; Level_03 level/start/objectives/rewards/guide and both case files; `campaign.levelThree` in the signed save; `Level3SceneSetup` (append-only build entry on import); Level3Regression and VerifyLevel3Scene. Bag/hotbar presentation in Level 3 is split out (KNOWN_ISSUES L3-18) and must land before T04 acquisitions.
+Deliver the goal above through its real entry point, including persistence, presentation and checked limitations. Update [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md) with actual evidence and remaining user checks; do not mark implemented for documentation presence. User owns Unity and every Git operation.
 
-Next: user imports and checks T02 in Unity, then T03 consumes the ToolPractice phase.
+### Evidence — 3 November 2026 (internal only)
 
-Direct dependents: T03, T04. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Git operations and user acceptance remain user-owned.
+- Fresh: `AssignBea` is Reception -> BeaRecords (same action id); no tapes, practice completion or teaching marker. Receptionist line, objectives and Arthur's `bea-assignment` hint send the player to Bea; the four practice lessons are retired. Bea's clock starts once her first worksheet row is placed (`Level3ChapterRules.BeaWorkIndependent`); a started clock is never restarted.
+- Continue: snapshot version 2. `Level3ChapterRules.TryContinueLegacy` copies a usable version 1 snapshot exactly (ToolPractice -> BeaRecords under `Level_03/practice-retired`; frozen grade labelled `L3-worksheet-v1`; `calculatorTaught` from tapes actually attached). `Level3Checkpointer` writes it, then restores quietly; a failed write keeps the old snapshot, stays not ready and retries. Unusable/newer snapshots stay Blocked and untouched.
+- Commands and counts are in PROGRESS (Level3Regression 1064/1064 including 140 revision checks; five mutation probes caught). Pre-existing suite gaps and T02 limits are in KNOWN_ISSUES L3-R14–L3-R22.
+- Still open: user Play Mode/device checks above; a disposable legacy-save route inside Unity (L3-19).
 
-## 30 October 2026 — Bag/hotbar continuation follow-up
-
-Implemented/internal-verified; user manual pending. User override: every collected item stays across Levels1–3, regardless of usefulness. L3 now uses shared HudHotbar with its own ready/resume/blocked branch. Chapter entry no longer retires IDs, marked records or carried tools. Folder contents accumulate; older papers/player annotations have saved read-only pages, never current-case transfer or answer keys. Current-folder submission still requires the actual stored folder.
-
-Direct L3 Editor testing previews a deep local copy only from a compatible completedL2 campaign; changes never write live possessions. Otherwise isolated inventory starts empty. Old already-deleted items/missing paper text are not fabricated. Career3 remains comingSoon. See PROGRESS for exact paths,245/245 L3 checks, previous-level regressions and user import/read/move/exit tests. No scene, actual save, Unity or Git operation occurred. Next remains T03.
+Direct dependents: T03, T04. Continue the revised index, retaining prior working changes and historical results.

@@ -81,7 +81,7 @@ Check(rosa.documents.Count == 9 && rosa.review.initialDocumentIds.Count == 3 && 
     "nine case documents (3 starting pages + 6 records), only 3 held at the start, every field keyed");
 Check(rosa.potentialIssues == null || rosa.potentialIssues.Count == 0, "no potential issue is listed in the folder (it would show the answer)");
 Check(rosa.clientFinale != null && rosa.clientFinale.enabled && rosa.clientFinale.modelPath == "Level2Gameplay/RosaStall/Rosa" &&
-      new[] { rosa.clientFinale.great, rosa.clientFinale.good, rosa.clientFinale.okay }.All(l => l.Count >= 2 && l.Last().Contains("Taxpayer Assistance Desk prepared that first summary")),
+      new[] { rosa.clientFinale.great, rosa.clientFinale.good, rosa.clientFinale.okay }.All(l => l.Count >= 2 && l.Last().Contains("CoastCare Tax Assistance, the Taxpayer Assistance Desk, prepared that first summary")),
     "Rosa's ending (T11): her stall model, lines for each tier, each ending with the neutral Desk confirmation");
 var graded = rosa.GradedFields().Select(f => f.key).ToList();
 Check(graded.SequenceEqual(new[] { "residencyStatus", "taxpayerType", "incomeSource" }), "Rosa grades the three inherited taxpayer facts");
@@ -345,7 +345,7 @@ Check(stampDragSrc.Contains("standModel.SetActive(false)") && stampDragSrc.Conta
     "the desk's own stamp model hides while its hand stamp is up and comes back on return");
 Check(stampDragSrc.Contains("\"READY\" : \"NOT READY\"") && stampDragSrc.Contains("Part(PrimitiveType.Cube, \"Pad\"") && stampDragSrc.Contains("Part(PrimitiveType.Sphere, \"Grip\""),
     "each hand stamp is a clear 3D stamp (grip, block printed READY / NOT READY, inked pad)");
-Check(stampDragSrc.Contains("ShowGhost(aimLocal)") && stampDragSrc.Contains("GhostAlpha") && stampDragSrc.Contains("PulseGhost()") && stampDragSrc.Contains("Level2DeskStamps.InkTextFor(type)"),
+Check(stampDragSrc.Contains("ShowGhost(aimLocal)") && stampDragSrc.Contains("GhostAlpha") && stampDragSrc.Contains("PulseGhost()") && stampDragSrc.Contains("owner.InkText(type)") && deskStampsSrc.Contains("CaseBinding.InkText(type) : InkTextFor(type)"),
     "while dragging over the front page a see-through ghost of the exact imprint shows where it lands");
 Check(stampDragSrc.Contains("ReviewInkMotion.Mode.FadeOut") && Src("Scripts/UI/ReviewInkMark.cs").Contains("ReviewInkMotion.Play(mark, ReviewInkMotion.Mode.Pop)"),
     "a recorded stamp's ink pops in; a rejected press leaves a faint mark that fades");
@@ -354,7 +354,7 @@ Check(stampDragSrc.Contains("StartCoroutine(Thump(paper))") && stampDragSrc.Cont
     "impact: squash-and-spring about the pad, paper thump and an ink ring burst");
 Check(!Regex.IsMatch(stampDragSrc, @"Time\.deltaTime|new WaitForSeconds\(") && stampDragSrc.Contains("Time.unscaledDeltaTime"),
     "stamp motion runs on real time, so a pause can never freeze a stamp mid-press");
-Check(Regex.IsMatch(stampDragSrc, @"try\s*\{\s*ReviewInkMark\.PopNext = true;\s*outcome = Level2PreliminaryStamp\.Stamp"),
+Check(Regex.IsMatch(stampDragSrc, @"try\s*\{\s*ReviewInkMark\.PopNext = true;\s*outcome = owner\.CommitAt"),
     "an error during the decision can never leave a stamp stuck on the paper");
 foreach (string file in new[] { "Scripts/Level2/FindingSlot.cs", "Scripts/UI/ReviewInkMotion.cs", "Scripts/Level2/Level2StampDrag.cs", "Scripts/Level2/Level2DeskStamps.cs" })
     Check(!Regex.IsMatch(Src(file), @"GetComponent(InChildren)?<[^>]+>\([^)]*\)\s*\?\?"), $"{Path.GetFileName(file)}: no '??' after GetComponent (Unity fake-null)");
@@ -363,7 +363,7 @@ Check(stampDragSrc.Contains("dragScreen + grabOffset") && stampDragSrc.Contains(
     "a lifted or dragged stamp is drawn by the overlay stamp camera, never behind the folder");
 Check(deskStampsSrc.Contains("onFrontPage = inside && Folder.CurrentPageIndex == StampPageIndex()"), "a stamp lands anywhere inside its stamp page");
 Check(Regex.IsMatch(stampDragSrc, @"if \(onFront\)\s*\{\s*Play\(Press\(aimLocal\)\)"), "release on the front page presses where the ghost was; anywhere else glides back with no penalty");
-Check(Regex.IsMatch(stampDragSrc, @"/ SlamSeconds\)[\s\S]*?Level2PreliminaryStamp\.Stamp\(type, local, pressTilt\);[\s\S]*?/ LiftOffSeconds\)"),
+Check(Regex.IsMatch(stampDragSrc, @"/ SlamSeconds\)[\s\S]*?owner\.CommitAt\(type, local, pressTilt, targetPage\)[\s\S]*?;[\s\S]*?/ LiftOffSeconds\)"),
     "the decision is made once, at impact (after the press, before the rebound)");
 Check(stampDragSrc.Contains("if (!lifted || busy || owner == null || !owner.Active) return false;"), "taps during a press are ignored");
 Check(deskStampsSrc.Contains("PollPointer();") && deskStampsSrc.Contains("stamp.ScreenHit(view, screen, out float distance, includeStand)") && !stampDragSrc.Contains("IPointerDownHandler"),
@@ -2112,7 +2112,7 @@ Check(Src("Scripts/UI/HUD/OfficeHudRuntime.cs").Contains("OfficeObjectives.Creat
 Check(Src("Scripts/UI/Guide/GuideRuntime.cs").Contains("string levelId = OfficeLevelProfile.LevelIdFor(this);"), "guide loads the scene's level");
 Check(Regex.IsMatch(Src("Scripts/Data/CaseProgressionManager.cs"), @"OfficeLevelProfile\.LevelIdFor\(gameObject\.scene\)[\s\S]{0,200}StartLevel\(string\.IsNullOrEmpty\(sceneLevelId\) \? startingLevelId : sceneLevelId\)"),
     "the copied CaseProgressionManager starts the scene's level, not its serialized Level_01");
-Check(Src("Scripts/UI/TaxCodeBookUI.cs").Contains("LevelBookLeaves.Load(OfficeLevelProfile.LevelIdFor(this))"), "the book appends the level's leaves");
+Check(Src("Scripts/UI/TaxCodeBookUI.cs").Contains("LevelBookLeaves.Load(OfficeLevelProfile.LevelIdFor(this), sections)"), "the book appends the level's leaves");
 Check(!Regex.IsMatch(Src("Scripts/Data/CaseData.cs"), @"ResetForRetry\(\)[\s\S]*?review\s*=") , "an audit retry never clears the review state");
 Check(Src("Scripts/Training/PracticeModeRuntime.cs").Contains("PlayerPlacement.PlaceBetween(gameObject.scene, drill.spawn, drill.face)"),
     "Tutorial Hub drills keep the same placement (shared PlayerPlacement)");
@@ -3029,7 +3029,7 @@ Check(trayC.Contains("if (AuditorInteractable.TalkFirst)") && !Src("Scripts/Leve
 // Client Copy and follow-through.
 string copySrc = Src("Scripts/UI/HUD/ClientCopyHandover.cs");
 Check(copySrc.Contains("level != OfficeLevelCatalog.Level1Id && level != OfficeLevelCatalog.Level2Id") &&
-      copySrc.Contains("else if (claims) grants = manager.CommitLevelTwoFollowThrough();") &&
+      copySrc.Contains("else if (claims) grants = manager.CommitLevelTwoFollowThrough(LevelCompleteUI.CreateLevelResult());") &&
       copySrc.Contains("if (!grants.Saved)") && copySrc.Contains("ClientCopyRules.CanHandOver(phase)"),
     "consistency: Level 2 uses the same Client Copy flow; delivery commits Rosa's follow-through once and a failed save stays retryable");
 Check(copySrc.Contains("rosa = Level2RosaConsultation.Instance != null ? Level2RosaConsultation.Instance.Rosa : null;"),
@@ -3280,7 +3280,7 @@ Check(consult33.Contains("Level1ConsultationRecord candidate") && consult33.Cont
       consult33.Contains("}, () => { inVisit = false; });"), "T33: completed talk consumes a visit, cancellation and failed saving leave it repeatable");
 string card33 = Src("Scripts/UI/LevelCompleteUI.cs");
 Check(card33.Contains("BuildChapterTwoScreen(result, manager)") && card33.Contains("Chapter 2 Complete") &&
-      card33.Contains("Hearts = 0, MaxHearts = 0, PassingPercent = 0") && card33.Contains("Future chapters are coming soon."),
+      card33.Contains("Hearts = 0, MaxHearts = 0, PassingPercent = 0") && card33.Contains("Return to Career to continue your story."),
     "T33: story closing uses delivery and actual wallet/trust without a mastery pass or future-chapter unlock claim");
 
 // T33 physical stamp ownership and screen-overlay ordering.
@@ -3293,7 +3293,7 @@ Check(stamps33.Contains("if (!needed && !Active) ReleaseToolLayer();") && !stamp
     "T33: shared model capture survives until both return flights land");
 Check(stamps33.Contains("mainRenderedStampLayer") && stamps33.Contains("ready?.ResetToStand();") && stamps33.Contains("if (!focused) PutAway();"),
     "T33: disabled/focus-lost stamp owner restores models and the camera culling bit");
-Check(hand33.Contains("bool onFront = TryAim(screen, out aimLocal);") && hand33.Contains("packetRevision != targetRevision"),
+Check(hand33.Contains("bool onFront = TryAim(screen, out aimLocal);") && hand33.Contains("!owner.RevisionCurrent(targetRevision)") && stamps33.Contains("Level2OfficeStart.Review.packetRevision == revision"),
     "T33: releasing elsewhere or changing page/revision before impact cannot commit a stale impression");
 Check(layers33.Contains("source.GetComponentsInChildren(false, pageCanvases);"),
     "T33: the active document footprint reuses its canvas list instead of allocating an array per frame");

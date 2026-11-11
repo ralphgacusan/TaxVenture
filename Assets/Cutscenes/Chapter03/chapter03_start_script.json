@@ -1,0 +1,31 @@
+{
+  "id": "chapter03.start",
+  "title": "The File Returns",
+  "scene": "CS_Chapter03_Start",
+  "duration": 15.0,
+  "fadeInSeconds": 0.25,
+  "fadeOutSeconds": 0.25,
+  "cueFadeSeconds": 0.1,
+  "charsPerLine": 46,
+  "shotStarts": [
+    0.0,
+    4.8,
+    10.1
+  ],
+  "cues": [
+    {
+      "voice": "vo_ch03_start_01_receptionist", "speaker": "Receptionist",
+      "text": "Bayview's income records arrived, with the original entries.",
+      "start": 5.2,
+      "end": 9.8,
+      "variant": ""
+    },
+    {
+      "voice": "vo_ch03_start_02_arthur", "speaker": "Arthur",
+      "text": "Check whether the summary agrees.",
+      "start": 10.5,
+      "end": 14.5,
+      "variant": ""
+    }
+  ]
+}

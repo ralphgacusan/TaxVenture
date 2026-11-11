@@ -115,6 +115,8 @@ public static class HudIconArt
             case "reviewed": Folder(u, v, ref c, true); break;
             case "profiles": Cards(u, v, ref c); break;
             case "papers": Papers(u, v, ref c); break;
+            case "summary": Summary(u, v, ref c); break;
+            case "certificate": Summary(u, v, ref c); if (v > .72f && v < .8f && u > .25f && u < .75f) c = new Color32(52,104,132,255); break;
             case "book": Book(u, v, ref c); break;
             case "bag": Satchel(u, v, ref c); break;
             case "postcard": Postcard(u, v, ref c); break;
@@ -215,6 +217,16 @@ public static class HudIconArt
             Over(ref c, Color.Lerp(C(150, 116, 58), C(236, 206, 140), (v - 0.68f) / 0.1f));            // brass bar
             if (v > 0.75f) Over(ref c, new Color(1f, 1f, 1f, 0.2f));
         }
+    }
+
+    private static void Summary(float u, float v, ref Color c)
+    {
+        if (!RoundRect(u, v, 0.29f, 0.24f, 0.75f, 0.82f, 0.025f, 0f, out _)) return;
+        Over(ref c, C(246, 238, 216));
+        if (v > 0.70f && u > 0.62f && v > 0.70f + (0.75f - u)) Over(ref c, C(212, 199, 167));
+        if (u > 0.34f && u < 0.65f && v > 0.65f && v < 0.70f) Over(ref c, C(186, 148, 76));
+        if (u > 0.34f && u < 0.69f && ((v > 0.52f && v < 0.55f) || (v > 0.42f && v < 0.45f))) Over(ref c, C(38, 49, 62));
+        if (u > 0.34f && u < 0.59f && v > 0.32f && v < 0.34f) Over(ref c, C(120, 119, 107));
     }
 
     private static void Pouch(float u, float v, ref Color c)

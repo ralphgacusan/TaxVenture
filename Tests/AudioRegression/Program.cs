@@ -316,6 +316,40 @@ Check(toolkitSoundSource.Split("private IEnumerator SettleInto(")[1].Split("priv
       toolkitSoundSource.Split("private void UpdateInk(")[1].Split("private Quaternion HeldPen")[0].Contains("PlayExactEffect(\"sfx_card_return_02\""),
     "Side Quest 2 landing and physical highlight sweep use requested card sounds");
 Call(audio, "OnDestroy");
+// ---------- Volume sliders ----------
+Call(audio, "OnDestroy");
+audio = new AudioManager(); Call(audio, "Awake"); Call(audio, "Start");
+var volumeMusic = Field<AudioSource>(audio, "musicSource");
+var volumeSfx = Field<AudioSource>(audio, "sfxSource");
+var volumeAmbience = Field<AudioSource>(audio, "ambienceSource");
+bool Near(float a, float b) => Math.Abs(a - b) < 0.0005f;
+void Settle() { Advance(audio, 2f); Call(audio, "Update"); }
+Settle();
+Check(Near(audio.GetMusicVolume(), 0.5f) && Near(audio.GetSFXVolume(), 1f) && Near(audio.GetVoiceVolume(), 1f), "Sliders default to the authored mix");
+Check(Near(volumeMusic.volume, 0.035f) && Near(volumeSfx.volume, 1f) && Near(volumeAmbience.volume, 0.45f), "Default sliders leave every level unchanged");
+audio.SetMusicVolume(1f); Settle();
+Check(Near(volumeMusic.volume, 0.14f), "Music can go louder than the default");
+audio.SetMusicVolume(0.25f); Settle();
+Check(Near(volumeMusic.volume, 0.00875f), "Music volume follows a squared curve");
+audio.SetMusicVolume(0f); Settle();
+Check(Near(volumeMusic.volume, 0f) && audio.IsMusicEnabled(), "Music slider at zero is silent without changing the switch");
+audio.SetSFXVolume(0.5f); Settle();
+Check(Near(volumeSfx.volume, 0.25f) && Near(volumeAmbience.volume, 0.1125f), "SFX slider scales effects and ambience together");
+Check(Near(volumeMusic.volume, 0f), "SFX slider does not touch music");
+audio.SetVoiceVolume(0.5f);
+Check(Near(AudioManager.VoiceGain, 0.25f) && Near(AudioManager.SFXGain, 0.25f), "Cutscene sources read the same curve");
+audio.SetSFXVolume(5f);
+Check(Near(audio.GetSFXVolume(), 1f), "Out-of-range volumes clamp");
+audio.SetMusicVolume(0.75f); audio.SetSFXVolume(0.5f);
+audio.SetMusicEnabled(false); audio.SetSFXEnabled(false); Settle();
+Check(Near(audio.GetMusicVolume(), 0.75f) && Near(audio.GetSFXVolume(), 0.5f), "Switching off keeps the slider value");
+audio.SetMusicEnabled(true); audio.SetSFXEnabled(true); Settle();
+Check(Near(volumeMusic.volume, 0.035f * 2.25f) && Near(volumeSfx.volume, 0.25f), "Switching back on returns to the slider value");
+Call(audio, "OnDestroy");
+audio = new AudioManager(); Call(audio, "Awake");
+Check(Near(audio.GetMusicVolume(), 0.75f) && Near(audio.GetSFXVolume(), 0.5f) && Near(audio.GetVoiceVolume(), 0.5f), "Volumes survive manager recreation");
+Check(Near(Field<AudioSource>(audio, "sfxSource").volume, 0.25f), "A recreated manager applies the saved SFX volume");
+
 Console.WriteLine($"Audio regression: {checks} checks passed.");
 
 namespace UnityEngine
@@ -357,7 +391,10 @@ namespace UnityEngine
     public static class PlayerPrefs
     {
         private static readonly Dictionary<string, int> values = new Dictionary<string, int>();
+        private static readonly Dictionary<string, float> floats = new Dictionary<string, float>();
         public static int GetInt(string key, int fallback) => values.TryGetValue(key, out int value) ? value : fallback;
+        public static float GetFloat(string key, float fallback) => floats.TryGetValue(key, out float value) ? value : fallback;
+        public static void SetFloat(string key, float value) => floats[key] = value;
         public static void SetInt(string key, int value) => values[key] = value;
         public static void Save() { }
     }
@@ -372,7 +409,7 @@ namespace UnityEngine
 namespace UnityEngine.SceneManagement
 {
     public struct Scene { public string name; }
-    public enum LoadSceneMode { Single }
+    public enum LoadSceneMode { Single, Additive }
     public static class SceneManager
     {
         public static string ActiveSceneName = "3D Menu";
@@ -400,3 +437,5 @@ namespace UnityEngine.Events
 {
     public delegate void UnityAction();
 }
+
+public static class ChapterEndingSequence { public static bool BlocksGameplay => false; }

@@ -1,68 +1,76 @@
-# T09 — Stamp and review Bea’s current computation with recoverable review hours
+# T09 — Reuse the existing stamps and reconcile Bea’s wired review and clock
 
-Status: **Planned**. Blocked by: T08.
+**5 November user follow-up:** whole-case READY/NOT READY stamp on the front, shared foreground reservation and saved ink on reopen away from the desk; original Levels1/2 copy-drop presentation reused during the Auditor handover line. Collection is saved before flight, idempotent and quietly restored. Shared read-only copy mark/icon tag reused. See latest PROGRESS for checks and manual acceptance; T10's remaining Bea explanation/delivery is still Planned.
 
-Priority: P1. Phase: C — Review and approval. Estimated scope: M+; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
+**5 November 2026 implementation:** Stamping already ran through the shared Level2DeskStamps/Level2StampDrag set bound by Level3CaseFolder (ICaseStamp: Bea's case, computation revision, free-position StampAt, save before ink); the L3 procedural READY/NOT READY bodies in Level3DeskCalculatorReview were no longer built and are now removed with their call sites (one stamp set, one input owner). The review now judges the fixed leaves correctly: with no Income/Deductions fields the collected summary is the input, so an early or wrong taxable tape is returned at Taxable income rather than an unfillable Gross income line. The Auditor says one line (approval, or one problem plus the next action, at most 24 words, no value; a justified hold starts "Good hold."); the longer reason moves to the existing Audit Summary under WHY with "Marked: <field>". The Computation leaf holding his mark gets a quiet red outline, a " · Auditor's mark" caption tag and his short line in its note until the next hand-in. Approval/100 coins/XP/frozen figures/copyAtAuditor/clock stop, refusals, retries/cap and the clock/voucher adapter are reused unchanged. See PROGRESS and KNOWN_ISSUES L3-R94–L3-R99.
+
+Status: **Implemented, internally verified; user manual pending**. Blocked by: T08.
+
+Priority: P1. Phase: C — Review. Estimated scope: M; one fresh agent context. If real call-site work exceeds this bound, record a bounded split before adding unrelated framework work.
 
 ## Goal and visible accomplishment
 
-Players recommend readiness with the familiar physical stamps, submit through the Auditor conversation, correct root causes and earn one approved-case result.
+Use the familiar physical stamps on the actual Case Folder and hand it to the Auditor; approved current work saves a result and copyAtAuditor, returned work remains correctable.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Current request is documentation only; future implementation requires an implementation instruction.
+Revision: **3 November 2026**. Read [REVISION_PLAN](../REVISION_PLAN.md), [SPEC](../SPEC.md), [reuse map](../REUSE_AND_ARCHITECTURE.md), [visual contract](../WORLD_AND_FEEDBACK.md), [verification](../VERIFICATION.md) and [AGENTS](../AGENTS.md). Planned refers to changed revision acceptance, not absence of reusable implementation. Historical baseline: This work is source-present/wired despite old Planned label. Preserve and verify actual root-cause/approval/coins/copy/clock implementation; revise physical integration rather than rebuilding T09.
 
 ## Existing systems to reuse
 
-Verified existing paths relative to repository root; recheck live behavior rather than rely on stale comments:
+Existing source paths relative to repository root; inspect live callbacks/content before changing them. Narrow Level_03 adapters only; no duplicate folder/stamp/calculator/input/save/shop framework.
 
+- `Assets/Scripts/Level3/Level3ReviewRules.cs`
+- `Assets/Scripts/Level3/Level3Audit.cs`
+- `Assets/Scripts/Level3/Level3ReviewClock.cs`
+- `Assets/Scripts/Level3/Level3DeskCalculatorReview.cs`
+- `Assets/Scripts/UI/Stamp3DDrag.cs`
+- `Assets/Scripts/UI/StampCaseFolderUI.cs`
 - `Assets/Scripts/Level2/Level2DeskStamps.cs`
-- `Assets/Scripts/Level2/Level2StampDrag.cs`
-- `Assets/Scripts/Level2/Level2Audit.cs`
-- `Assets/Scripts/Data/FinalAssessment.cs`
-- `Assets/Scripts/UI/HUD/OfficeHours.cs`
-- `Assets/Scripts/RewardsSystem/CampaignVouchers.cs`
-- `Assets/Scripts/RewardsSystem/PlayerProgressManager.cs`
-
-New L3 components/resources mentioned below are proposed outputs, not verified existing APIs. Prefer existing owners/adapters and level configuration; do not copy global frameworks.
+- `Assets/Scripts/Interactables/AuditorInteractable.cs`
 
 ## Work and interaction mechanics
 
-1. Reuse actual stamp lift/ghost/ink/return and talk-first requested-folder hand-in. Introduce narrow case/revision adapters where current classes are Rosa-bound; do not fork all physics/presentation or reuse Rosa effects/claim IDs. Helper says Ready for computation review, not filed/paid.
-2. Validate supported sources/treatment, regime/year/rule, numeric chain, credit, current revisions and stamp. Correct readiness can approve; justified Not Ready retains open work; premature Ready, stale/false hold or wrong source returns targeted root-cause notes. Prevent old form-filing steps from being required.
-3. Map root causes to computation fields/source/book help, with existing100 XP/2-per-mistake/1-per-retry/max15 loss. Do not count every dependent stale result as a separate root mistake. Draft edits/hints/wrong drops are unpenalized. Ordinary errors/holds/retries never invoke ethics or reduce Public Trust.
-4. Connect Bea16-active-minute review budget admitted after tool practice, existing pause predicates/active reading and free next morning. Reuse existing voucher adapter with distinct case claim; consume one/+180 active seconds/save clock atomically. One per case across days, two carried; no statutory deadline promise or playable drawer.
-5. On actual supported approval, save Bea result/XP/frozen computation and100-coin claim, stop Bea clock, stage read-only copy AtAuditor. Do not clear the entire chapter checkpoint, complete chapter or award delivery trust. Save failure leaves review/copy predecessor retryable; unchanged/repeated hand-in cannot pay or recreate copy.
+1. Use T02 verification baseline. Inspect actual shared stamp stand/models/lift/ghost/ink/return path and adapt L3 case/revision callbacks. Current L3 BuildStamp creates duplicate procedural bodies and hides originals; replace that admission only after reused shared presentation works. No new stamp mesh/set/framework.
+2. Stamp covers current folder computation revision. Same Ready/Not Ready meaning for computation review only. Current typed/source/rule/credit/balance/root facts govern approval; supported hold stays open, stale/premature/false hold returns focused note. Prevent legacy prepare-return/archive/completion transitions.
+3. Retain existing Auditor talk-first requested hotbar Case Folder handover and T09 candidate-save-publish review. One earliest root, existing retries/cap, no Trust/ethics loss. Unchanged hand-in does not charge again; failed save keeps folder/source and retries.
+4. Retain once-only100-coin approval, frozen figures/XP, stopped clock and atAuditor copy; no delivery reward/early chapter completion. Shared AuditSummary/result surface only, no new dashboard.
+5. Keep clock/voucher adapter: Bea16 active minutes starts with independent outdoor activity after mandatory lesson; preserve legacy started clock, existing pause policy, warnings/free next morning/no Trust penalty/+180 one voucher for Bea. The separate10-minute company allowance remains deferred with T11/T12.
 
 ## Assets, motion and feedback
 
-Existing stamps/folder/audit paper/result card/clock UI and supplied stamp cue family. Chapter-specific review copy and clear root-cause labels; no new tray workflow.
+Read [OFFICE_CASE_PLAY](../OFFICE_CASE_PLAY.md), approved 4 November, for the concise physical office flow. One active stage/task, details on demand, existing folder left/calculator right/short tape between. Put unused tools down before shared-stamp focus; use actual free-position ghost/press/ink/return. Ready is player judgment, not automatic correctness. Three short result summaries, working on demand. Auditor return shows one earliest issue plus next action (target≤24 words), with longer explanation behind Help; do not dump validation/provenance codes. Reopen the affected stage, preserve earlier work, mark only true dependents Recalculate. One existing concise approval surface, not stacked reward/modals; keep current clock/retry/XP rules and honest-error Trust protection. Verify current shared-stamp integration before relying on the older baseline’s duplicate-model description.
 
-Follow WORLD_AND_FEEDBACK and fixed document types. Bind every new world object to actual 3D body, collider/target, correct source/record identity and existing camera/input/audio ownership. Record resolved anchors/clip names and any unsupported asset assumption. No user scene-assembly chores or claims of rendered acceptance from declarations.
+Implement this slice with actual existing 3D bodies, readable paper faces, reachable targets and current page/camera/audio ownership. One active task/primary action; temporary source/reference only on demand. Reuse L1/L2 styling and quiet lift/settle/feed/stamp cues. No tiny auto-shrunk text, full-tool overlay or correctness flash on draft placement. Bind models/colliders/callbacks here; T17 cannot substitute for this ticket’s visual implementation. User verifies rendered/touch/feel results.
 
 ## Integration requirements
 
-This is the first adopter of case-aware review/clock/copy admission to be reused by company T12. Preserve L1/L2 current outcomes/timers. Include real higher-level command round trips, not only validator helpers.
-
-Preserve current L1/L2 scenes, source prefabs/GUIDs, signed save owner, mode guards, input/FSM/dialogue/audio frameworks and Android controls. Normal L3 Career remains unavailable until T18. No L4 filing, ending, stand, drawer or global archive feature is added.
+Preserve shared L1/L2 behavior, existing serialized identities/source scenes and all campaign possessions. Keep current exact-decimal L3 rules/provenance; no float prototype bridge. Use existing input/dialogue/FSM/guide/Bag/reward owners. Career3 stays gated until T18, L4/L5 remain unavailable. No remote ticket, package, scene recopy or global cleanup.
 
 ## Persistence and failure rules
 
-Use the existing candidate→save→publish command boundary and stable chapter/case/action IDs. Validate actual prerequisites/revision/source before committing. Failed write leaves prior state, source/copy and retry available, with no success effect. Quiet restore does not raise acquisition/reward/choice/consumption events. Back, repeated input, disable and app focus interruption settle pointer state and release only owned holds. Story/replay/practice/Editor distinctions protect live campaign data.
+Candidate -> signed persist -> publish before success effects. Validate mode/case/source/revision/prerequisites/action IDs; duplicates do not award. Preserve legacy grades/claims/approved snapshots/copies and quiet restores. Failure keeps prior state/source/copy retryable. Clear only owned pointer/selection/locks on Back/settings/disable/focus/camera return; independent work can be left. Practice/replay/Editor cannot mutate live story state.
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] Correct approval, justified hold, false hold, premature/stale stamp, wrong-case hand-in and unchanged review behave as specified.
-- [ ] Root cause deductions/cap and final100-coin approval claim occur once; no trust/ethics delta or premature chapter completion.
-- [ ] 16-minute admission/pause/rollover/voucher/failure/reload behavior preserves actual work and separate claims.
-- [ ] Approval→copyAtAuditor survives reload; result replay cannot recreate delivered copy or clear active chapter state.
-- [ ] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count.
+- [x] Active runtime strings/prompts and fallback errors follow OFFICE_CASE_PLAY: short task/action copy, optional detail, no debug/provenance dump or answer-key reveal; actual bindings inspected.
+
+
+- [x] Shared original stamp bodies and folder target perform one persisted revision stamp; duplicate L3 models/input owners retired safely.
+- [x] Approval, justified hold, earliest-root returns, stale/false/premature stamp and unchanged hand-in behave without legacy filing.
+- [x] Approval100 coins/XP/frozen snapshot/copyAtAuditor occurs once, survives reload and failed-write retry, no delivery Trust.
+- [x] Clock start/pause/cutoff/rollover/voucher preserve work/claims and legacy timing; actual current T09 regression evidence recorded.
+- [x] Build actual changed production paths and run targeted command/save/failure/mode checks plus affected shared regressions; record commands/counts/warnings, not historical passes.
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 
-- [ ] User checks actual stamp body/ghost/ink focus on all papers, no clipping, requested handover, readable review correction and clock/voucher presentation.
-- [ ] Inspect applicable actual imported references, 3D bodies, paper text, targets, motion, camera/control recovery and Android layout. Manual acceptance remains pending until the user reports it; static tests are not a substitute.
+- [ ] Apply OFFICE_CASE_PLAY on a supported phone: one task/primary action, no overlapping instructions, readable values/details, short satisfying physical feedback, sound-off clarity and safe Back/focus behavior.
+
+
+- [ ] Same stamp feel/body/ghost/ink/return as earlier levels, no collision/duplicate model/new controls.
+- [ ] Hand in/receive returned folder, correct only marked step, recover next morning; notes/clock do not crowd computation.
+- [ ] Confirm real 3D targets/animations/text/safe areas/Back/focus/audio on supported devices; no source declaration counts as visual acceptance.
 
 ## Handoff and completion definition
 
-Approved Bea computation with durable result/100 coins and pending Client Copy. Next T10.
+Deliver the goal above through its real entry point, including persistence, presentation and checked limitations. Update [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md) with actual evidence and remaining user checks; do not mark implemented for documentation presence. User owns Unity and every Git operation.
 
-Direct dependents: T10, T12. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Mark implemented/internal-verified only after real entry points and checks work; Git operations and user acceptance remain user-owned. No commits, scene edits or gameplay implementation are performed by authoring this ticket.
+Direct dependents: T10. Deferred future dependent: T12. Continue the revised index, retaining prior working changes and historical results.

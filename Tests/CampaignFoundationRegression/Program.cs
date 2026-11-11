@@ -533,11 +533,11 @@ Check(menuEntry.Contains("RuntimeInitializeLoadType.SubsystemRegistration") &&
     "Play Mode static state resets and the requested opening cannot be skipped");
 string presenter = Src("UI", "Menu", "CareerBoardPresenter.cs");
 Check(Index(presenter, "CampaignRun.Begin(CareerProgress.LaunchMode(chapter));") > 0 &&
-      Index(presenter, "CampaignRun.Begin(CareerProgress.LaunchMode(chapter));") < Index(presenter, "SceneManager.LoadScene(chapter.Def.scene);"),
+      Index(presenter, "CampaignRun.Begin(CareerProgress.LaunchMode(chapter));") < Index(presenter, "MobilePerformance.LoadScene(chapter.Def.scene);"),
     "career launches set Story or Replay before loading");
 string shop = Body(presenter, "private void OpenShop()");
 shop = shop.Substring(0, Index(shop, "private void ShowShopNotice"));
-Check(presenter.Contains("\"Shop Button\", \"SHOP\", new Vector3(-525f, 420f, -10f)") && shop.Contains("CampaignMenu.ShopUnlocked(") &&
+Check(presenter.Contains("\"Shop Button\", \"SHOP\", new Vector3(-481f, RowY, -10f)") && shop.Contains("CampaignMenu.ShopUnlocked(") &&
       !shop.Contains("Save(") && !shop.Contains("campaign."), "the Shop entry sits beside BACK in the progress module, respects the lock and changes nothing");
 
 // =====================================================================
@@ -2773,7 +2773,7 @@ ShopProduct standTeaser13 = shop13.Find(ShopCatalogue.ComparisonStand), computer
 Check(cup13.IsDecor && cup13.price == 30 && cup13.section == ShopCatalogue.SectionOffice && cup13.anchors.SequenceEqual(new[] { "desk_corner" }) &&
       print13.IsDecor && print13.price == 60 && print13.anchors.SequenceEqual(new[] { "wall_above_filing" }) &&
       standTeaser13.requires.StartsWith("pending:") && standTeaser13.requiresLabel == "Coming later" && standTeaser13.price == 120 &&
-      computer13.requires.StartsWith("pending:") && computer13.requiresLabel == "Requires corrected Level 3" && computer13.price == 250 &&
+      computer13.requires == "chapter:Level_03" && computer13.anchors.SequenceEqual(new[] { "printer_desk" }) && computer13.requiresLabel == "Requires corrected Level 3" && computer13.price == 250 &&
       shop13.InSection(ShopCatalogue.SectionSupplies).Select(p => p.id).SequenceEqual(new[] { "bookmark_set", "review_voucher", "satchel", "belt_pouch", "big_satchel", "second_pouch" }) &&
       shop13.InSection(ShopCatalogue.SectionOffice).Select(p => p.id).SequenceEqual(new[] { "pencil_cup", "island_print", "comparison_stand", "office_computer" }) &&
       shop13.FindAnchor("desk_corner").kind == ShopDecorAnchor.KindSurface && shop13.FindAnchor("desk_corner").side == "right" &&
@@ -2928,8 +2928,8 @@ string presenter13 = Src("UI", "Menu", "CareerBoardPresenter.cs");
 string openShop13 = Between(presenter13, "private void OpenShop()", "private void ShowShopNotice(");
 Check(!presenter13.Contains("ShopAtCounterMessage") && openShop13.Contains("ShowShopNotice(CampaignMenu.ShopLockedMessage);") &&
       Index(openShop13, "CampaignMenu.ShopUnlocked(") < Index(openShop13, "SupplyShopScreen.CreateStandalone()") &&
-      openShop13.Contains("menuShop.Open(firstVisit: false);") && presenter13.Contains("ApplyInputGate(ready && !ShopOpen);") &&
-      presenter13.Contains("if (progressDirty && ready && !ShopOpen)") && presenter13.Contains("if (menuShop != null) Destroy(menuShop.gameObject);"),
+      openShop13.Contains("menuShop.Open(firstVisit: false);") && presenter13.Contains("ApplyInputGate(ready && !overlayOpen);") &&
+      presenter13.Contains("if (progressDirty && ready && !OverlayOpen)") &&presenter13.Contains("if (menuShop != null) Destroy(menuShop.gameObject);"),
     "the menu's SHOP opens the same catalogue book once unlocked (locked: the requirement only); the board waits behind it and catches up after");
 var introducers13 = Directory.EnumerateFiles(Path.Combine(root, "Assets", "Scripts"), "*.cs", SearchOption.AllDirectories)
     .Where(f => File.ReadAllText(f).Contains("MarkShopIntroduced()") && !f.EndsWith("PlayerProgressManager.cs")).Select(Path.GetFileName).ToList();

@@ -6,8 +6,9 @@ using UnityEngine;
 /// A chunky 3D pill switch for the Settings board: a brass outer ring, a dark
 /// outline, a coloured track (mint when on, slate when off) with two gloss
 /// slashes, and a cream knob that slides across with a little overshoot and
-/// squash. The whole settings row is the touch target, so it is easy to hit
-/// on a phone. Shares the tap handling of the career board (CareerBoardTarget).
+/// squash. The right of the settings row is the touch target, so it is easy to
+/// hit on a phone without reaching the row's volume slider. Shares the tap
+/// handling of the career board (CareerBoardTarget).
 /// </summary>
 public sealed class SettingsToggle3D : CareerBoardTarget
 {
@@ -36,25 +37,25 @@ public sealed class SettingsToggle3D : CareerBoardTarget
     public event Action<SettingsToggle3D, bool> Changed;
 
     /// <summary>
-    /// rowCenter / rowSize: the whole row (touch area, hover tint on rowMaterial).
-    /// pillCenter is relative to the row.
+    /// center: the pill, relative to the row. hitCenter / hitSize: the touch area around it.
+    /// rowMaterial: tinted while the switch is hovered.
     /// </summary>
-    public static SettingsToggle3D Create(Transform parent, string name, Vector3 rowCenter, Vector2 rowSize,
-        Material rowMaterial, Vector3 pillCenter, Vector2 pillSize, Color onColor)
+    public static SettingsToggle3D Create(Transform parent, string name, Vector3 center, Material rowMaterial,
+        Vector3 hitCenter, Vector2 hitSize, Vector2 pillSize, Color onColor)
     {
-        Transform root = CareerBoardKit.Node(name, parent, rowCenter);
+        Transform root = CareerBoardKit.Node(name, parent, center);
         var toggle = root.gameObject.AddComponent<SettingsToggle3D>();
-        toggle.Build(rowSize, rowMaterial, pillCenter, pillSize, onColor);
+        toggle.Build(rowMaterial, hitCenter, hitSize, pillSize, onColor);
         return toggle;
     }
 
-    private void Build(Vector2 rowSize, Material row, Vector3 pillCenter, Vector2 size, Color on)
+    private void Build(Material row, Vector3 hitCenter, Vector2 hitSize, Vector2 size, Color on)
     {
         rowMaterial = row;
         rowColor = row != null && row.HasProperty("_BaseColor") ? row.GetColor("_BaseColor") : Color.gray;
         onColor = on;
         pillSize = size;
-        pill = CareerBoardKit.Node("Switch", transform, pillCenter);
+        pill = CareerBoardKit.Node("Switch", transform, Vector3.zero);
 
         // Rings from the back forward: brass ring, dark outline, track.
         Pill(pill, "Brass ring", size + new Vector2(22f, 22f), 6f, 10f, CareerBoardKit.Lit(HudTheme.Brass, materials, 0.6f));
@@ -79,12 +80,12 @@ public sealed class SettingsToggle3D : CareerBoardTarget
         Disc(knob, "Knob shine", knobSize * 0.32f, -16.4f, 1f, CareerBoardKit.Lit(Color.white, materials, 0.95f))
             .transform.localPosition = new Vector3(-knobSize * 0.18f, knobSize * 0.18f, -16.4f);
 
-        AddHitBox(transform, new Vector3(0f, 0f, -6f), new Vector3(rowSize.x, rowSize.y, 24f));
+        AddHitBox(transform, hitCenter, new Vector3(hitSize.x, hitSize.y, 24f));
         Apply();
     }
 
     /// <summary>A capsule facing the camera: a box between two discs.</summary>
-    private static void Pill(Transform parent, string name, Vector2 size, float z, float depth, Material material)
+    internal static void Pill(Transform parent, string name, Vector2 size, float z, float depth, Material material)
     {
         float r = size.y * 0.5f;
         CareerBoardKit.Box(parent, name + " middle", new Vector3(0f, 0f, z), new Vector3(Mathf.Max(0.1f, size.x - size.y), size.y, depth), material);
@@ -92,7 +93,7 @@ public sealed class SettingsToggle3D : CareerBoardTarget
         Disc(parent, name + " right", size.y, z, depth, material).transform.localPosition = new Vector3(size.x * 0.5f - r, 0f, z);
     }
 
-    private static MeshRenderer Disc(Transform parent, string name, float diameter, float z, float depth, Material material)
+    internal static MeshRenderer Disc(Transform parent, string name, float diameter, float z, float depth, Material material)
     {
         MeshRenderer disc = CareerBoardKit.Box(parent, name, new Vector3(0f, 0f, z), new Vector3(diameter, depth * 0.5f, diameter),
             material, PrimitiveType.Cylinder);

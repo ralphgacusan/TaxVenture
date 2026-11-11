@@ -1,41 +1,44 @@
 {
   "_readme": [
-    "Level 3 objectives (T02: the opening only; later tickets add their steps). Notes shows one chapter at a readable size.",
-    "Triggers observe committed chapter state: ChapterAssignmentReceived is raised only after the reception assignment is saved (or kept, outside a story run); CalculatorPracticeAttached is raised by T03 after its practice tape is attached and saved. ClientRecordsCollected is raised by T04 only after Bea's handover is saved (or kept, outside a story run). WorksheetDrafted is raised by T05 the first time every worksheet strip has a section and both claim notes are filled in (saved first); it never says whether they are right.",
-    "T06: WorksheetReady is raised when a saved check finds every worksheet decision right and both subtotals supported; WorksheetCollected when the checked worksheet is collected, saved together with its 60 coins and +2 Public Trust.",
+    "Level 3 objectives: three short sections like Level 1's (the side quest, the tax case, the follow-through); Notes shows one section at a readable size. Section order keeps every step's order and trigger, so saved progress reads the same (triggers, never indices).",
+    "Triggers observe committed chapter state: ChapterAssignmentReceived is raised only after the reception assignment is saved (or kept, outside a story run); Revision (3 November 2026): the budget practice step is retired, so the assignment leads straight to Bea's records (CalculatorPracticeAttached is no longer an objective). ClientRecordsCollected is raised by T04 only after Bea's handover is saved (or kept, outside a story run). WorksheetDrafted is raised by T05 the first time all seven records are filed at Bea's paper machine with both Why? reasons (each filing saved first); it never says whether they are right.",
+    "T06: WorksheetReady is raised when a saved check finds every worksheet decision right and both subtotals supported; WorksheetCollected when the checked worksheet is collected, saved together with its 60 coins and +2 Public Trust. Revised T06 (5 November 2026): WorksheetReady is raised when the paper machine's last batch check is saved with every decision right (all three batches accepted); WorksheetCollected when Bea's Income & Expense Summary (the same B-WORKSHEET) is collected with its rewards. Triggers unchanged.",
     "T07: TaxDueAttached is raised the first time Bea's taxable income and tax due both have current tapes on her computation sheet (saved). It is structural: it never says whether they are right; the review (T09) judges them.",
     "T08: WithholdingCertificateReceived is raised when Bea's certificate handover in the conference room is saved; RemainingPayableAttached the first time a credit is linked and the remaining payable has a current tape (saved). Both are structural, never a grade.",
+    "T10: ClientCopyPickedUp is raised after the collected copy is saved (before its flight); ClientCopyHandedOver after Bea's explained delivery is saved with its +4 Public Trust. A resume implies both from the saved copy phase.",
     "T09: BeaCaseApproved is raised when the Auditor's approval of Bea's stamped computation is saved together with its 100 coins (a returned review or a hold never raises it).",
+    "T14: FindingRecorded (the existing finding event) is raised after Bea's supported finding is saved; ChapterMessageRead after the receptionist's message is heard and saved (the chapter result is then pending); ChapterWrapUpConfirmed after the result's Continue is saved with the chapter's completion. A resume implies each from the saved closing step.",
     "Fields starting with '_' are notes and are ignored by the game."
   ],
   "objectives": [
     {
-      "title": "Bea's computation",
+      "title": "Finish Side Quest 3",
       "steps": [
         {
           "text": "Check in at reception.",
           "trigger": "event:ChapterAssignmentReceived"
         },
         {
-          "text": "Practise with the desk calculator.",
-          "trigger": "event:CalculatorPracticeAttached"
-        },
-        {
           "text": "Meet Bea at her plaza table and collect her records.",
           "trigger": "event:ClientRecordsCollected"
         },
         {
-          "text": "Build Bea's worksheet: place every row and fill in both claim notes.",
+          "text": "Prepare Bea's records at the machine on her table.",
           "trigger": "event:WorksheetDrafted"
         },
         {
-          "text": "Add up both subtotals, check the worksheet and fix anything marked.",
+          "text": "Check each batch at the machine and fix anything marked.",
           "trigger": "event:WorksheetReady"
         },
         {
-          "text": "Collect Bea's checked worksheet.",
+          "text": "Collect Bea's Income & Expense Summary.",
           "trigger": "event:WorksheetCollected"
-        },
+        }
+      ]
+    },
+    {
+      "title": "Finish Bea's Tax Case",
+      "steps": [
         {
           "text": "Work out Bea's taxable income and tax due at your desk.",
           "trigger": "event:TaxDueAttached"
@@ -51,6 +54,31 @@
         {
           "text": "Stamp Bea's computation and hand her Case Folder to the Auditor.",
           "trigger": "event:BeaCaseApproved"
+        }
+      ]
+    },
+    {
+      "title": "Follow Through with Bea",
+      "steps": [
+        {
+          "text": "Collect Bea's copy from the Auditor.",
+          "trigger": "event:ClientCopyPickedUp"
+        },
+        {
+          "text": "Answer Bea's question and give her the copy.",
+          "trigger": "event:ClientCopyHandedOver"
+        },
+        {
+          "text": "Tell Bea what her draft shows.",
+          "trigger": "event:FindingRecorded"
+        },
+        {
+          "text": "Hear the mayor's message at reception.",
+          "trigger": "event:ChapterMessageRead"
+        },
+        {
+          "text": "Confirm your chapter result.",
+          "trigger": "event:ChapterWrapUpConfirmed"
         }
       ]
     }

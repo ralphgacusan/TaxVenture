@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 
@@ -7,7 +8,7 @@ using TMPro;
 /// One small selectable "chip" for a clickable value embedded in a Tax
 /// Code Book section. Source-only — the Tax Code never receives values.
 /// </summary>
-public class TaxCodeValueChip : MonoBehaviour, IDataValueSource
+public class TaxCodeValueChip : MonoBehaviour, IDataValueSource, IPointerUpHandler
 {
     [SerializeField] private TextMeshProUGUI chipText;
     [SerializeField] private ValueClickSource clickSource;
@@ -42,6 +43,8 @@ public class TaxCodeValueChip : MonoBehaviour, IDataValueSource
 
     public DataValue GetDataValue()
     {
+        if (clickableValue.semanticKey == Level3ValueTransfer.BandKey)
+            return Level3ValueTransfer.Band(Level3Checkpointer.Active?.State, CaseManager.Instance?.CurrentDefinition, clickableValue.enumValue);
         object raw;
 
         if (clickableValue.type == DataValueType.Number)
@@ -65,6 +68,20 @@ public class TaxCodeValueChip : MonoBehaviour, IDataValueSource
             clickableValue.type,
             clickableValue.semanticKey);
     }
+
+    // Only the appended Level 3 band chips own this cleanup; legacy book values keep their behavior.
+    private void CancelBand()
+    {
+        if (clickableValue?.semanticKey != Level3ValueTransfer.BandKey ||
+            !ReferenceEquals(ValueTransferManager.Instance?.SelectedSourceComponent, this)) return;
+        dragSource?.OnEndDrag(null);
+        ValueTransferManager.Instance.ClearSelection();
+    }
+    public void OnPointerUp(PointerEventData e) { if (clickableValue?.semanticKey == Level3ValueTransfer.BandKey && Level3DeskToolHitTarget.Canceled(e)) CancelBand(); }
+    private void OnDisable() => CancelBand();
+    private void OnApplicationFocus(bool focused) { if (!focused) CancelBand(); }
+    private void OnApplicationPause(bool paused) { if (paused) CancelBand(); }
+    private void Update() { if (clickableValue?.semanticKey == Level3ValueTransfer.BandKey && (InGameSettings.IsOpen || DialogueUI.IsAnyDialogueActive || CameraController.Instance?.CurrentMode != CameraController.CameraMode.Workstation)) CancelBand(); }
 
     private float ParseNumeric(string text)
     {

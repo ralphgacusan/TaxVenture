@@ -1,66 +1,71 @@
-# T08 — Inspect the 2307 credit and compute Bea’s remaining balance
+# T08 — Transfer the withholding credit and finish the third calculation stage
+
+**5 November conference pickup / split-page follow-up:** Tax due stays on Computation page3; only Tax credit and Remaining payable occupy the next leaf. After the player advances past Bea’s opening thank-you line, during her handover line the actual Level1 ClientCopyPickup component and motion drops a Type8 paper beside her; the talk finishes normally. Click the waiting paper afterward: B-WHT plus a required readable `bea_certificate` Bag item commit in one signed write before flight. Failed/full-inventory collection leaves it retryable; a saved offer restores the uncollected paper. Bag/hotbar click or drag opens the existing physical certificate; its exact amount bands work at the desk. No Take menu or duplicate Supporting Documents paper. Existing certificate source/credit/remaining-payable rules stay authoritative; manual rendered acceptance is pending.
+
+**Callback repair:** DialogueSession clones authored lines. Bea now triggers presentation using the admitted line index, with a consumed one-shot guard and immediate-current-line fallback like the Auditor; no authored-object identity comparison. The reader owner is ensured on demand by Bea or the calculator. Latest PROGRESS records the reproduced failing test, passing fix and remaining native acceptance.
 
 Status: **Implemented, internally verified; user manual pending**. Blocked by: T07.
 
-Priority: P1. Phase: C — Credit and balance. Estimated scope: M; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
+Priority: P1. Phase: C — Credit and balance. Estimated scope: S–M; one fresh agent context. If real call-site work exceeds this bound, record a bounded split before adding unrelated framework work.
 
 ## Goal and visible accomplishment
 
-Players acquire a real Type 8 source, distinguish credit from expense and attach the remaining 50,000 balance without duplicating certificate income.
+Collect Bea’s presented paper after her conference conversation, open its Bag item, transfer a printed amount to Tax credit, and attach manually calculated Remaining payable on the Tax and payment leaf.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Implemented 31 October 2026 on an implementation instruction; evidence in [PROGRESS](../PROGRESS.md), limitations in [KNOWN_ISSUES](../KNOWN_ISSUES.md).
+Revision: **3 November 2026**. Read [REVISION_PLAN](../REVISION_PLAN.md), [SPEC](../SPEC.md), [reuse map](../REUSE_AND_ARCHITECTURE.md), [visual contract](../WORLD_AND_FEEDBACK.md), [verification](../VERIFICATION.md) and [AGENTS](../AGENTS.md). Planned refers to changed revision acceptance, not absence of reusable implementation. Historical baseline: Type8 certificate, Bea conference-room travel, credit explanation/source checks and remaining-payable rules already exist. Integrate into folder StageC without rebuilding paper/model or duplicating questions.
 
 ## Existing systems to reuse
 
-Verified existing paths relative to repository root; recheck live behavior rather than rely on stale comments:
+Existing source paths relative to repository root; inspect live callbacks/content before changing them. Narrow Level_03 adapters only; no duplicate folder/stamp/calculator/input/save/shop framework.
 
+- `Assets/Scripts/Level3/Level3CertificateRules.cs`
+- `Assets/Scripts/Level3/Level3CertificatePaper.cs`
+- `Assets/Scripts/Level3/Level3BeaInteractable.cs`
+- `Assets/Scripts/Level3/Level3BeaOfficeVisit.cs`
+- `Assets/Scripts/Level3/Level3ComputationRules.cs`
 - `Assets/Scripts/SideQuest1/SupportingDocumentFace.cs`
-- `Assets/Scripts/SideQuest1/ClientRecordPaper.cs`
-- `Assets/Scripts/UI/SupportingDocumentsPageLink.cs`
-- `Assets/Scripts/UI/DialogueSession.cs`
-- `Assets/Scripts/UI/TaxCodeBookUI.cs`
-
-New L3 components/resources mentioned below are proposed outputs, not verified existing APIs. Prefer existing owners/adapters and level configuration; do not copy global frameworks.
 
 ## Work and interaction mechanics
 
-1. Verify current Type 8 implementation, then add only the missing 2307 face/body/source mapping needed by B-WHT and later C-WHT. Follow fixed layout: blue header, payer/payee/period, income payment/withheld amounts/reference, clear purpose; physical paper thickness and source attachment preserved.
-2. Bea’s office credit-step conversation hands over B-WHT only at valid phase, with actual acquisition saved before source is viewable. Read250,000 already included in R2 and12,500 credit. No additional250,000 revenue strip or withholding-rate exercise.
-3. Implement CONTENT’s credit-versus-expense explanation choices through existing UI: wrong answer opens generic book help, retains draft, no trust/ethics penalty; inspect returns to same context. A correct dialogue answer never auto-fills credit.
-4. Player selects certificate withholding, links Credits, computes62,500−12,500=50,000, and attaches Remaining Payable tape. Permit content mistakes for review; currency calculations use T01 exact policy, no silent negative clamp. Credit-only edits dirty balance/stamp, preserving base/tax tapes.
-5. Save acquisition, explanation state, source references, calculation revision and tapes under Bea subrecord. Same presentation supports company certificate later; Type 3 salary certificate or all-eight gallery is not a prerequisite. No approval/reward until actual T09 review.
+1. Keep same Bea actor’s table->conference route after worksheet collection; at credit step present B-WHT during dialogue, then acquire it once by post-talk pickup through the existing command. Keep acquired/year/payee/source requirements and credit-versus-expense help, concise and contextual.
+2. Use the existing world pickup motion with a paper visual. Save offer for restore; collect chapter evidence plus readable Bag item atomically before flight. One readable certificate opens from its inventory icon; no duplicate Supporting Documents paper. Use existing exact-value transfer adapter, not special detached credit chooser/extra clipboard tab. Both printed amounts stay legible; selecting income payment as credit may remain a wrong draft for review.
+3. StageC shows current Tax due and chosen Tax credit; manual physical subtraction/equals/printed-tape attachment to Remaining payable. Retain certificate income subset of R2, do not add income or deduct expense again. Negative wrong results remain visible with need-to-check state, no clamp.
+4. Credit-only changes invalidate balance/stamp, not taxable/tax-due work. Existing unsupported typed/foreign-case/stale tape rules remain. Preserve T08 legacy acquired/explained/credit/payable selections quietly and no duplicate handover.
 
 ## Assets, motion and feedback
 
-New Type 8 presentation only if absent, reusing standard body/face builders. Existing client/source handover/printing and generic credit reference; no realistic official form reproduction or new portrait.
-
-Follow WORLD_AND_FEEDBACK and fixed document types. Bind every new world object to actual 3D body, collider/target, correct source/record identity and existing camera/input/audio ownership. Record resolved anchors/clip names and any unsupported asset assumption. No user scene-assembly chores or claims of rendered acceptance from declarations.
+Read [OFFICE_CASE_PLAY](../OFFICE_CASE_PLAY.md), amended 5 November. Reuse the Auditor’s side-placement/drop/hover/flight and existing reach/dialogue gates with the real paper look. A revealed handover line presents it, one closing line finishes the talk, then clicking collects it. No Take menu. Read through Bag/hotbar click/drag; reuse paper focus/turn/drag/clamp and exact amount bands. The payment leaf has two stable fields with manual calculator keys/tape attachment; no page Calculate/Help, prior-stage collapse or tool rearrangement. User verifies actual layout, motion, source readability and interruption behavior.
 
 ## Integration requirements
 
-Source identity250,000 subset of400,000 and same tax year must be explicit. Keep reference/client documents read-only. T09 receives current supported credit/balance facts and dependency status.
-
-Preserve current L1/L2 scenes, source prefabs/GUIDs, signed save owner, mode guards, input/FSM/dialogue/audio frameworks and Android controls. Normal L3 Career remains unavailable until T18. No L4 filing, ending, stand, drawer or global archive feature is added.
+Preserve shared L1/L2 behavior, existing serialized identities/source scenes and all campaign possessions. Keep current exact-decimal L3 rules/provenance; no float prototype bridge. Use existing input/dialogue/FSM/guide/Bag/reward owners. Career3 stays gated until T18, L4/L5 remain unavailable. No remote ticket, package, scene recopy or global cleanup.
 
 ## Persistence and failure rules
 
-Use the existing candidate→save→publish command boundary and stable chapter/case/action IDs. Validate actual prerequisites/revision/source before committing. Failed write leaves prior state, source/copy and retry available, with no success effect. Quiet restore does not raise acquisition/reward/choice/consumption events. Back, repeated input, disable and app focus interruption settle pointer state and release only owned holds. Story/replay/practice/Editor distinctions protect live campaign data.
+Candidate -> signed persist -> publish before success effects. Validate mode/case/source/revision/prerequisites/action IDs; duplicates do not award. Preserve legacy grades/claims/approved snapshots/copies and quiet restores. Failure keeps prior state/source/copy retryable. Clear only owned pointer/selection/locks on Back/settings/disable/focus/camera return; independent work can be left. Practice/replay/Editor cannot mutate live story state.
 
 ## Internal checks — AI source/build/regressions only
 
-- [x] B-WHT actual admission/acquisition/view/return/Bag link and Type 8 field mapping are correct and recoverable. (Handed over only at the credit step, saved before it shows, one action id, a repeat or resume is quiet; prints as Type 8 with payer, payee, period, reference, purpose, the income payment with where it is counted and the tax withheld band; listed in the Case Folder by source id; never on her table; the company's packet prints with the same builder.)
-- [x] Credit entry stays separate from expense/revenue;250,000 not duplicated; result50,000 and current source/year required. (Tax credits takes only the acquired certificate's printed amounts; the 250,000 is never a total choice, a sheet source or a strip; 62,500 − 12,500 = 50,000 supported; another payee or a period outside the year never supports.)
-- [x] Wrong explanations/missing source/manual value/cross-case certificate cannot grant approval or penalize trust. (A wrong answer saves nothing and opens Section 9; no linked credit, a typed balance or another case's certificate is refused or kept unsupported; nothing in the credit step touches trust, ethics, coins or a grade; there is no approval before T09.)
-- [x] Credit-only edit preserves unrelated calculations; failure/reload does not duplicate paper or reset draft. (A new credit marks only the payable stale and moves the revision; signed round trip; a T07 save resumes with the certificate still due; an injected write failure keeps disk and live state and the handover can be retried once.)
-- [x] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count. (Commands and counts in PROGRESS; suites built out of tree; mutation runs recorded.)
+- [x] Active runtime strings/prompts and fallback errors follow OFFICE_CASE_PLAY: short task/action copy, optional detail, no debug/provenance dump or answer-key reveal; actual bindings inspected.
+
+
+- [x] B-WHT acquisition/explanation/credit source ownership persists once; cancel/failure retains predecessor.
+- [x] Correct credit12,500 yields50,000; wrong printed income/credit-as-expense/cross-case/typed drafts remain unsupported.
+- [x] Credit-only edit keeps StageA/B results current and invalidates only balance/stamp.
+- [x] StageC uses actual folder support and shared transfers/calculator, old credit tab/view not duplicated.
+- [x] Build actual changed production paths and run targeted command/save/failure/mode checks plus affected shared regressions; record commands/counts/warnings, not historical passes.
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 
-- [ ] User checks Type 8 recognizable layout, labels/amounts/period readability, depth/extraction, accessible dialogue and source return on phone.
-- [ ] Inspect applicable actual imported references, 3D bodies, paper text, targets, motion, camera/control recovery and Android layout. Manual acceptance remains pending until the user reports it; static tests are not a substitute.
+- [ ] Apply OFFICE_CASE_PLAY on a supported phone: one task/primary action, no overlapping instructions, readable values/details, short satisfying physical feedback, sound-off clarity and safe Back/focus behavior.
+
+
+- [ ] Read certificate and choose amount without dialogue overlap; paper/font size matches previous levels.
+- [ ] Inspect/reopen source and prior working, close/back/settings safely; three-stage result is clear without extra panels.
+- [ ] Confirm real 3D targets/animations/text/safe areas/Back/focus/audio on supported devices; no source declaration counts as visual acceptance.
 
 ## Handoff and completion definition
 
-Complete but unreviewed Bea computation with supported certificate and payable tape. Next T09.
+Deliver the goal above through its real entry point, including persistence, presentation and checked limitations. Update [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md) with actual evidence and remaining user checks; do not mark implemented for documentation presence. User owns Unity and every Git operation.
 
-Direct dependents: T09. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Mark implemented/internal-verified only after real entry points and checks work; Git operations and user acceptance remain user-owned. No commits, scene edits or gameplay implementation are performed by authoring this ticket.
+Direct dependents: T09, T12. Continue the revised index, retaining prior working changes and historical results.

@@ -1,68 +1,69 @@
-# T17 — Polish the complete physical chapter flow and mobile presentation
+# T17 — Polish the integrated physical chapter and retire superseded L3 views
 
-Status: **Planned**. Blocked by: T13, T14, T15, T16.
+Status: **In progress**. Blocked by: T13, T14, T15, T16. (6 November 2026: T14–T16 internal-verified; T13's L3-R106 base-capacity decision still open; late-state fixtures and all device/timing acceptance outstanding.)
 
-Priority: P1. Phase: F — Integrated polish. Estimated scope: M; scoped fixes only; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
+**6 November 2026 integration pass (partial):** Walked the Bea-only graph in source. Added 33 behavioral/wiring checks: every saved phase from a fresh chapter to the completed office ticks exactly a prefix of the 14 Notes steps (one active step; none ahead of an earlier one), a completed office restores with every step ticked and no guide lesson replayed, every guide `flag:` is a real Level3Checkpointer fact, no case/source/row identifiers or unfilled tokens appear in guide pages, Notes steps or closing lines, each closing seam has one owner (Bea's copy delivery, the receptionist message, the chapter card and its acknowledgment), and the legacy single-case completion route is refused in every phase. Traced the retired views: the old worksheet board (Level3WorksheetDesk/…DeskReview) is never constructed (no AddComponent, not in the scene); its two guide flags are null-safe and its tape lesson can no longer show; the source stays as legacy evidence for the regression pins (removal is a bounded follow-up, KNOWN_ISSUES L3-R131). The practice card model is live (calculator first-use example). No production change was needed by these checks. Not done: Editor fixtures for approved/delivered/closing/computer states (playtest uses normal play or an existing save), L3-R106, and every Unity/device/readability/timing check (playtest script in PROGRESS).
+
+Priority: P1. Phase: F — Integration polish. Estimated scope: M; one fresh agent context. If real call-site work exceeds this bound, record a bounded split before adding unrelated framework work.
 
 ## Goal and visible accomplishment
 
-The implemented chapter feels like a continuous client-service adventure with readable paper interactions, phase-correct dialogue and consistent audio/input ownership.
+The Bea outside/office/review/delivery/closing loop feels continuous, readable and restrained, with no surviving mandatory old board/clipboard/budget/service-task path. The deferred company case is outside this integration pass.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Current request is documentation only; future implementation requires an implementation instruction.
+Revision: **3 November 2026**. Read [REVISION_PLAN](../REVISION_PLAN.md), [SPEC](../SPEC.md), [reuse map](../REUSE_AND_ARCHITECTURE.md), [visual contract](../WORLD_AND_FEEDBACK.md), [verification](../VERIFICATION.md) and [AGENTS](../AGENTS.md). Planned refers to changed revision acceptance, not absence of reusable implementation. Historical baseline: Per-ticket presentation is required earlier. T17 tunes and integrates a working chapter; it does not defer all visual work or rebuild existing props.
 
 ## Existing systems to reuse
 
-Verified existing paths relative to repository root; recheck live behavior rather than rely on stale comments:
+Existing source paths relative to repository root; inspect live callbacks/content before changing them. Narrow Level_03 adapters only; no duplicate folder/stamp/calculator/input/save/shop framework.
 
-- `Assets/Scripts/UI/WorkstationUI.cs`
-- `Assets/Scripts/UI/HUD/HudWindowLock.cs`
-- `Assets/Scripts/Player/CameraController.cs`
-- `Assets/Scripts/UI/DialogueUI.cs`
-- `Assets/Scripts/FSM/NPC/NpcLife.cs`
-- `Assets/Scripts/AudioManager/AudioEnvironment.cs`
+- `Assets/Scripts/Level3/Level3WorksheetModel.cs`
+- `Assets/Scripts/Level3/Level3ComputationLeafModel.cs`
+- `Assets/Scripts/Level3/Level3DeskCalculatorReview.cs`
+- `Assets/Scripts/UI/HUD/CaseFolder3DView.cs`
 - `Assets/Scripts/UI/Books/PageTurnStage.cs`
-
-New L3 components/resources mentioned below are proposed outputs, not verified existing APIs. Prefer existing owners/adapters and level configuration; do not copy global frameworks.
+- `Assets/Scripts/UI/HUD/HudWindowLock.cs`
+- `Assets/Resources/Levels/Level_03/objectives.json`
+- `Assets/Resources/Tutorials/Level_03/guide.json`
 
 ## Work and interaction mechanics
 
-1. Trace actual start→practice→Bea records→worksheet→computation→review→delivery→company→closing→Career/optional office route. Remove repeated first-day movement/shop/reference instructions, false old objectives, stale client names and any unimplemented completion promise. Do not defer missing gameplay here as vague polish.
-2. Check every first/repeat/resume dialogue/guide marker against committed phase and history. Prioritize actionable clue, review reaction, then small talk. Keep flexible inquiry, two equal service plans, limited journal finding and one actor owner; no extra ethical branch.
-3. Tune existing physical motions/focus/typography/paper depth/source tabs/calculator keys/tape/claim links/stamp/copy to WORLD_AND_FEEDBACK. All effects remain presentation after their domain commit; instant settle/Back cannot skip actions or award. Support narrow/tall/wide screens without tiny all-at-once layout.
-4. Audit input/joystick/camera/Back/app-focus/disable/scene-transition ownership through nested book/dialogue/shop/result states. Prevent tap-through, early look release, stuck held strip and repeated sound. Reuse AudioLibrary/AudioEnvironment/settings; rate-limit cues, no direct SFX bypass.
-5. Optional Bea keepsake may use the existing collect/read pattern with neutral artist note and no reward/essential clue; omit if it would expand scope or unresolved art. All core assets/assembly are AI work. Record actual user-measured timing/frame-time/touch/render/audio acceptance separately; do not invent performance success.
+Follow [OFFICE_CASE_PLAY](../OFFICE_CASE_PLAY.md) for whole-flow copy/pacing acceptance. T07–T10 must already implement it: T17 observes/refines Bea’s active A/B/C stages, source/rule/certificate, return-note and delivery views on phone. Record missed taps, repeated reading, obscured values, duplicated guide/objective/dialogue and stalled animation; verify the user can identify the current action and explain tax due versus remaining payable. Keep complete details on demand and shorten/page before shrinking. Do not add Nina/Marine play or make it a release prerequisite.
+
+
+1. Walk the current source/objective/guide/binding graph for all old and revised views. Remove or disable proven-unused L3 four-zone/notes/subtotal dock/computation leaf/duplicate stamp builder paths only after replacements and legacy restores pass. Keep historical decoders/shared helpers/source records; no speculative shared cleanup.
+2. Tune one-record/one-stage composition, actual type/number size/safe areas/target reach, on-demand originals/rate/working, contextual copy budgets and stable camera. Rewrite/page text before shrinking; no simultaneous tool/panel pile-up.
+3. Reuse paper lift/settle, result feed/clip, page turns, stamp and NPC/emote cues. One quiet cue per meaningful action and one final side-quest card; avoid per-tap correctness/popups/confetti/shakes. Cosmetic skip cannot skip saved commands.
+4. Provide disposable seed fixtures/user scripts for fresh/base/upgraded, legacy draft/frozen/collected/approved, wrong work, cutoff, copy delivery and completed office. User performs Unity/device/readability/audio/path/actual performance checks; AI owns ready scene targets, not user assembly.
+5. Measure beginner segment/full play against relaxed15–20-minute target. Record help/repeated reading/missed taps/occlusion/actual performance; tune friction without removing learning or adding timer pressure. Fix observed issues within scope; preserve inherited warnings honestly.
 
 ## Assets, motion and feedback
 
-No new asset family. Tune existing authored3D assemblies; optional small card uses supplied/procedural print and existing keepsake behavior. Missing rigs/audio documented with practical existing fallback.
-
-Follow WORLD_AND_FEEDBACK and fixed document types. Bind every new world object to actual 3D body, collider/target, correct source/record identity and existing camera/input/audio ownership. Record resolved anchors/clip names and any unsupported asset assumption. No user scene-assembly chores or claims of rendered acceptance from declarations.
+Implement this slice with actual existing 3D bodies, readable paper faces, reachable targets and current page/camera/audio ownership. One active task/primary action; temporary source/reference only on demand. Reuse L1/L2 styling and quiet lift/settle/feed/stamp cues. No tiny auto-shrunk text, full-tool overlay or correctness flash on draft placement. Bind models/colliders/callbacks here; T17 cannot substitute for this ticket’s visual implementation. User verifies rendered/touch/feel results.
 
 ## Integration requirements
 
-No reward/ethics/economy/tax changes or global renderer fix hidden in polish. Shared UI fixes are narrowly adopted and regression-tested in L1/L2. Initial24–30minute chapter/16+10active budgets are tuning targets, not measured evidence.
-
-Preserve current L1/L2 scenes, source prefabs/GUIDs, signed save owner, mode guards, input/FSM/dialogue/audio frameworks and Android controls. Normal L3 Career remains unavailable until T18. No L4 filing, ending, stand, drawer or global archive feature is added.
+Preserve shared L1/L2 behavior, existing serialized identities/source scenes and all campaign possessions. Keep current exact-decimal L3 rules/provenance; no float prototype bridge. Use existing input/dialogue/FSM/guide/Bag/reward owners. Career3 stays gated until T18, L4/L5 remain unavailable. No remote ticket, package, scene recopy or global cleanup.
 
 ## Persistence and failure rules
 
-Use the existing candidate→save→publish command boundary and stable chapter/case/action IDs. Validate actual prerequisites/revision/source before committing. Failed write leaves prior state, source/copy and retry available, with no success effect. Quiet restore does not raise acquisition/reward/choice/consumption events. Back, repeated input, disable and app focus interruption settle pointer state and release only owned holds. Story/replay/practice/Editor distinctions protect live campaign data.
+Candidate -> signed persist -> publish before success effects. Validate mode/case/source/revision/prerequisites/action IDs; duplicates do not award. Preserve legacy grades/claims/approved snapshots/copies and quiet restores. Failure keeps prior state/source/copy retryable. Clear only owned pointer/selection/locks on Back/settings/disable/focus/camera return; independent work can be left. Practice/replay/Editor cannot mutate live story state.
 
 ## Internal checks — AI source/build/regressions only
 
-- [ ] All required phases/targets/content paths bind; stale inherited quests/tutorials/reward/case names absent from active route.
-- [ ] Nested input/camera/coroutine cancellation and event lifetime assertions cover actual ownership seams.
-- [ ] Only actual saved operations emit bounded audio/emote/coin/heart effects, honoring settings.
-- [ ] Known issues distinguish fixed source problems from user render/device/manual gaps; no placeholder art called final.
-- [ ] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count.
+- [ ] Bea-only production graph has one active owner/surface per tool; old required gates/copy/sidequest paths removed, legacy data readable. Deferred company paths remain inactive.
+- [ ] Objectives/guide/dialogue/camera/audio correspond to committed revised phases, no source-answer leaks/repeated tutorials. (6 Nov: objectives/guide/text checked internally; dialogue/camera/audio need Unity.)
+- [ ] All interrupts/save/reload/modes/fixtures pass current targeted integration, shared L1/L2 behavior preserved.
+- [ ] Manual scripts/artifact evidence and actual measured vs pending results are recorded without static-render claims.
+- [ ] Build actual changed production paths and run targeted command/save/failure/mode checks plus affected shared regressions; record commands/counts/warnings, not historical passes.
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 
-- [ ] User checks complete free and upgraded routes, all choices/corrections, motion/grounding/readability/sound/touch/camera, measured Android performance and actual fun/pacing.
-- [ ] Inspect applicable actual imported references, 3D bodies, paper text, targets, motion, camera/control recovery and Android layout. Manual acceptance remains pending until the user reports it; static tests are not a substitute.
+- [ ] Play complete chapter on supported phone sizes/orientations; text/targets/collisions/NPC route/input recovery comfortable.
+- [ ] Assess outside/office rhythm, restrained animation/sound/reward density and timing; no oversized worksheet or tiny multi-panel layout remains.
+- [ ] Confirm real 3D targets/animations/text/safe areas/Back/focus/audio on supported devices; no source declaration counts as visual acceptance.
 
 ## Handoff and completion definition
 
-Integrated polish with truthful internal/user evidence and no unresolved hidden assembly chores. Next T18.
+Deliver the goal above through its real entry point, including persistence, presentation and checked limitations. Update [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md) with actual evidence and remaining user checks; do not mark implemented for documentation presence. User owns Unity and every Git operation.
 
-Direct dependents: T18. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Mark implemented/internal-verified only after real entry points and checks work; Git operations and user acceptance remain user-owned. No commits, scene edits or gameplay implementation are performed by authoring this ticket.
+Direct dependents: T18. Continue the revised index, retaining prior working changes and historical results.

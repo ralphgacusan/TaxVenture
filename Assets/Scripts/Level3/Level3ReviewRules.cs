@@ -14,7 +14,10 @@ public class Level3ReviewCaseContent
 public class Level3ReviewRootNote
 {
     public string id;
+    /// <summary>The longer explanation (the Audit Summary's detail, behind "Read the Audit Summary").</summary>
     public string note;
+    /// <summary>T09 revision: what he says, one problem plus the next action (at most 24 words, no value).</summary>
+    public string line;
 }
 
 /// <summary>The Auditor's review lines (CONTENT "Review returned" / "Bea approval").</summary>
@@ -58,7 +61,10 @@ public sealed class Level3ReviewDecision
     /// <summary>This hand-in is a retry (a changed hand-in after a returned review).</summary>
     public bool Retry;
     public int Xp;
+    /// <summary>The longer reason (the Audit Summary's detail).</summary>
     public string Note = "";
+    /// <summary>T09 revision: what he says, one problem plus the next action (Line, at most 24 words).</summary>
+    public string Line = "";
 
     public bool Returned => Outcome == Level3ReviewOutcome.PrematureApproval || Outcome == Level3ReviewOutcome.FalseHold || Outcome == Level3ReviewOutcome.StaleStamp;
 }
@@ -101,12 +107,57 @@ public struct Level3ReviewGrants
 ///   "atAuditor" and stops her clock. ApplyApprovalGrants adds the once-only
 ///   100 coins and the case's mastery claim in the same save. No trust,
 ///   ethics or chapter completion.
-/// - Clock: Bea's 16 active minutes start after the protected practice; the
+/// - Clock: Bea's 16 active minutes start once her record work is independent; the
 ///   cutoff rolls to a free next morning with all work kept; the first miss is
 ///   the one punctuality mark (inside the cap).
 /// </summary>
 public static class Level3ReviewRules
 {
+    /// <summary>The physical folder is on the desk or with its recipient, so it occupies no carried slot.</summary>
+    public static bool FolderInWorld(Level3ChapterCheckpoint state)
+    {
+        Level3CaseProgress bea = state?.Case(Level3ChapterRules.BeaCaseId);
+        return bea?.folder?.onDesk == true || bea?.copyPhase == CopyAtAuditor || Level3DeliveryRules.Delivered(state);
+    }
+
+    /// <summary>Attached papers are physical folder contents, not carried inventory slots.
+    /// Uses the same removal command as a world handoff; acquisition remains the paper's existing path.</summary>
+    public static InventoryResult SyncFolderInventory(CampaignInventoryRecord inventory, InventoryCatalogue catalogue,
+        Level3ChapterCheckpoint state)
+    {
+        if (inventory == null || catalogue == null) return InventoryResult.Reject("Inventory is not ready.");
+        var result = new InventoryResult { Outcome = InventoryOutcome.NoChange };
+        Level3CaseProgress bea = state?.Case(Level3ChapterRules.BeaCaseId);
+        Level3FolderPacket packet = bea?.folder;
+        if (FolderInWorld(state))
+        {
+            result = InventoryRules.Remove(inventory, catalogue, InventoryCatalogue.CaseFolder, null);
+            InventoryRules.Unpin(inventory, InventoryCatalogue.CaseFolder);
+        }
+        foreach (string item in new[] { InventoryCatalogue.BeaSummary, InventoryCatalogue.BeaCertificate })
+        {
+            bool attached = item == InventoryCatalogue.BeaSummary ? packet?.summaryAttached == true : packet?.certificateAttached == true;
+            if (!attached || !InventoryRules.Owns(inventory, item)) continue;
+            InventoryItemRecord paper = InventoryRules.Record(inventory, item);
+            if (paper?.referencePages != null)
+                foreach (InventoryReferencePage page in paper.referencePages)
+                    InventoryRules.KeepReference(inventory, InventoryCatalogue.CaseFolder, page);
+            InventoryResult removed = InventoryRules.Remove(inventory, catalogue, item, null);
+            InventoryRules.Unpin(inventory, item);
+            if (removed.Changed) result = removed;
+        }
+        // A deliberate Auditor copy pickup receives a new normal inventory item in that same candidate.
+        if (bea?.review?.approved == true && bea.copyPhase == Level3DeliveryRules.CopyCarried &&
+            !InventoryRules.Owns(inventory, InventoryCatalogue.CaseFolder))
+        {
+            if (InventoryRules.FirstEmpty(inventory.hotbar, inventory.hotbarCapacity) < 0 &&
+                InventoryRules.FirstEmpty(inventory.bag, inventory.bagCapacity) < 0) return InventoryResult.Reject(InventoryRules.BagFull);
+            return InventoryRules.Acquire(inventory, catalogue, InventoryCatalogue.CaseFolder, 1, "Level_03/bea-client-copy-item", null,
+                new InventoryItemRecord { itemId = InventoryCatalogue.CaseFolder, source = "Auditor" });
+        }
+        return result;
+    }
+
     public const string ResourcePath = "Levels/Level_03/review";
     public const string StampReady = "ready";
     public const string StampHold = "hold";
@@ -131,6 +182,86 @@ public static class Level3ReviewRules
     public const string RefuseNoStamp = "Stamp Bea's computation first: Ready for computation review, or Not Ready if something is still open.";
     public const string RefuseClosed = "Today's review window has closed. Bring it to me tomorrow morning; your work is kept.";
     public const string RefuseUnchanged = "This is the same computation and stamp I already went through. Change what I marked, stamp again, then bring it back.";
+
+    public const string PersonalField = "personal-info", IncomeField = "IncomeSource", SupportingField = "supporting-documents";
+
+    public static void CaptureFolder(Level3ChapterCheckpoint state, CaseData data)
+    {
+        if (state?.Case(Bea) == null || data == null) return;
+        Level3FolderPacket folder = state.Case(Bea).folder ??= new Level3FolderPacket();
+        folder.fullName = data.fullName ?? "";
+        folder.tin = data.tin ?? "";
+        folder.classification = data.residencyStatus?.ToString() ?? "";
+        folder.taxpayerType = data.taxpayerType?.ToString() ?? "";
+        folder.incomeSource = data.incomeSource?.ToString() ?? "";
+    }
+
+    public static string FolderProblem(Level3FolderPacket folder, CaseDefinition definition)
+    {
+        // Historical pure computation snapshots have no folder packet; the runtime captures the actual folder before every hand-in.
+        if (folder == null) return "";
+        string tin = definition?.documents?.Find(d => d.documentName == "B-ID")?.fields?.Find(f => f.label == "TIN")?.displayValue;
+        if (folder.fullName != definition?.fullName || string.IsNullOrEmpty(folder.tin) || folder.tin != tin ||
+            folder.classification != "ResidentCitizen" || folder.taxpayerType != "Professional") return PersonalField;
+        if (folder.incomeSource != "ProfessionalIncome") return IncomeField;
+        if (!folder.summaryAttached || !folder.certificateAttached) return SupportingField;
+        return "";
+    }
+
+    /// <summary>Milestone T01: unclipping a paper needs an ordinary slot for it (it is already carried, or one is free).</summary>
+    public const string RefuseUnclipFull = "Your bar and Bag are full, so it stays clipped in Bea's folder. Make room to unclip it.";
+
+    /// <summary>Milestone T01: the paper already has its own slot, or the bar or Bag has a free one.</summary>
+    public static bool RoomFor(CampaignInventoryRecord inventory, string itemId) =>
+        inventory != null && (InventoryRules.Owns(inventory, itemId) ||
+                              InventoryRules.FirstEmpty(inventory.hotbar, inventory.hotbarCapacity) >= 0 ||
+                              InventoryRules.FirstEmpty(inventory.bag, inventory.bagCapacity) >= 0);
+
+    /// <summary>
+    /// Clips (or unclips) Bea's summary or certificate in her folder. Milestone T01: with the carried
+    /// inventory given, unclipping is refused when the paper would have no slot to go to (it stays
+    /// attached and readable); nothing is evicted, and attaching never needs room.
+    /// </summary>
+    public static Level3CommandOutcome SetAttachment(Level3ChapterCheckpoint state, string source, bool attached, out string reason,
+        CampaignInventoryRecord inventory = null)
+    {
+        reason = null;
+        Level3CaseProgress bea = state?.Case(Bea);
+        if (bea == null || !Level3ComputationRules.Editable(state, Bea) ||
+            (source != Level3WorksheetCheck.WorksheetWorkId && source != Level3ChapterRules.BeaCreditSource)) return Level3CommandOutcome.Refused;
+        if (source == Level3WorksheetCheck.WorksheetWorkId ? !Level3WorksheetCheck.Collected(state) : !Level3CertificateRules.Acquired(state))
+            return Level3CommandOutcome.Refused;
+        bea.folder ??= new Level3FolderPacket();
+        bool previous = source == Level3WorksheetCheck.WorksheetWorkId ? bea.folder.summaryAttached : bea.folder.certificateAttached;
+        if (previous == attached) return Level3CommandOutcome.Duplicate;
+        string item = source == Level3WorksheetCheck.WorksheetWorkId ? InventoryCatalogue.BeaSummary : InventoryCatalogue.BeaCertificate;
+        if (!attached && inventory != null && !RoomFor(inventory, item)) { reason = RefuseUnclipFull; return Level3CommandOutcome.Refused; }
+        if (source == Level3WorksheetCheck.WorksheetWorkId) bea.folder.summaryAttached = attached;
+        else bea.folder.certificateAttached = attached;
+        bea.computation.revision++;
+        return Level3CommandOutcome.Applied;
+    }
+
+    public static void ResetReturnedFolder(Level3ChapterCheckpoint state, Level3ReviewDecision decision)
+    {
+        Level3CaseProgress bea = state?.Case(Bea);
+        if (bea?.folder == null || decision == null || decision.Outcome == Level3ReviewOutcome.Approved) return;
+        bea.folder.onDesk = true;
+        if (!decision.Returned) return;
+        bea.stamp = new Level3StampRecord();
+        if (decision.Field == StampField)
+        {
+            // A fresh physical stamp belongs to a new attempt even when its type is the same wrong choice.
+            bea.computation.revision++;
+            return;
+        }
+        int revision = bea.computation.revision;
+        bool explained = bea.computation.creditExplained;
+        bea.computation = new Level3ComputationRecord { revision = revision + 1, creditExplained = explained };
+        state.tapes.RemoveAll(t => t.caseId == Bea);
+        bea.folder.fullName = bea.folder.tin = bea.folder.classification = bea.folder.taxpayerType = bea.folder.incomeSource = "";
+        bea.folder.summaryAttached = bea.folder.certificateAttached = false;
+    }
 
     private static string Bea => Level3ChapterRules.BeaCaseId;
 
@@ -170,7 +301,7 @@ public static class Level3ReviewRules
     /// <summary>The note for a root (content first, then the built-in one); never a client value.</summary>
     public static string Note(Level3ReviewContent content, string root, string field, Level3RootKind kind)
     {
-        string label = field == StampField ? "The stamp" : Level3ComputationRules.SectionLabel(field);
+        string label = VisibleLabel(field);
         string help = content?.roots?.Find(r => r != null && r.id == (kind == Level3RootKind.AsExpense ? "credit-as-expense" : root))?.note ?? BuiltInNote(root, kind);
         switch (kind)
         {
@@ -181,16 +312,123 @@ public static class Level3ReviewRules
         }
     }
 
+    /// <summary>The longest spoken return (OFFICE_CASE_PLAY: one problem plus the next action).</summary>
+    public const int LineWordBudget = 24;
+
+    /// <summary>
+    /// T09 revision: the line on the Case Folder a root points to. The fixed leaves have no Gross/Expenses
+    /// fields (the summary feeds Taxable income) and no separate working lines (one chain is Tax due), so
+    /// those roots mark the visible field that holds them. "stamp" stays the stamp.
+    /// </summary>
+    public static string VisibleField(string field)
+    {
+        switch (field)
+        {
+            case Level3ComputationRules.Gross:
+            case Level3ComputationRules.Expenses: return Level3ComputationRules.Taxable;
+            case Level3ComputationRules.Excess:
+            case Level3ComputationRules.Marginal: return Level3ComputationRules.TaxDue;
+            default: return field ?? "";
+        }
+    }
+
+    /// <summary>The page's own label of a line ("Annual band", "Tax credit"...): the words the player sees.</summary>
+    public static string VisibleLabel(string field)
+    {
+        switch (VisibleField(field))
+        {
+            case StampField: return "Your stamp";
+            case IncomeField: return "Income source";
+            case PersonalField: return "Taxpayer information";
+            case SupportingField: return "Supporting Documents";
+            case Level3ComputationRules.Rule: return "Annual band";
+            case Level3ComputationRules.Credits: return "Tax credit";
+            default: return Level3ComputationRules.SectionLabel(VisibleField(field));
+        }
+    }
+
+    /// <summary>
+    /// What the Auditor says about a root: one short problem and the next action (at most 24 words, never a
+    /// value). Empty, stale and typed lines share one wording per kind; a wrong line uses its root's content line.
+    /// The longer reason stays in Note (the Audit Summary).
+    /// </summary>
+    public static string Line(Level3ReviewContent content, string root, string field, Level3RootKind kind)
+    {
+        if (field == IncomeField) return "Check the Income Sources field. Use Section 3, complete the folder again, then stamp it.";
+        if (field == PersonalField) return "Taxpayer information is missing or does not match Bea's papers. Complete the folder again before stamping.";
+        if (field == SupportingField) return "The summary or withholding certificate is not attached. I cannot verify the figures. Complete the folder and attach both papers.";
+        string label = VisibleLabel(field);
+        bool stampRoot = root == StampRevisionRoot || root == StampDecisionRoot;
+        switch (stampRoot ? Level3RootKind.Wrong : kind)
+        {
+            case Level3RootKind.Missing: return label + " is still empty. Attach it, stamp again, then bring the folder back.";
+            case Level3RootKind.Stale: return label + " needs recalculating. Work it out again, attach it, then stamp again.";
+            case Level3RootKind.Typed: return label + " uses a typed number. Use amounts from Bea's papers, then stamp again.";
+        }
+        string id = kind == Level3RootKind.AsExpense ? "credit-as-expense" : root;
+        string authored = content?.roots?.Find(r => r != null && r.id == id)?.line;
+        return !string.IsNullOrWhiteSpace(authored) ? authored : BuiltInLine(id);
+    }
+
+    private static string BuiltInLine(string root)
+    {
+        switch (root)
+        {
+            case "income-sum":
+            case "expense-sum":
+            case "taxable-operation": return "Check your taxable income. Use Income minus Supported deductions from Bea's summary.";
+            case "rule-selection": return "Check your tax band. Open the annual table and compare your taxable income.";
+            case "tax-formula": return "Check your tax due. Apply the rate only above the threshold, then add the base tax.";
+            case "credit-source": return "Check your tax credit. Use the tax withheld on Bea's certificate.";
+            case "credit-as-expense": return "The credit came off too early. Subtract it from tax due, not from income.";
+            case "balance-operation": return "Check your remaining payable. Take tax due minus the tax credit.";
+            case StampRevisionRoot: return "Your stamp is older than the sheet. Stamp it again, then bring it back.";
+            case StampDecisionRoot: return "Every line is supported, so no hold is needed. Stamp it Ready, then bring it back.";
+            default: return "Check the line I marked against Bea's papers, then stamp again.";
+        }
+    }
+
+    /// <summary>
+    /// T09 revision: the visible field the Auditor's last return or hold marked on the Case Folder ("" when
+    /// none: nothing handed in, approved, or only the stamp was at issue). It stays until the next hand-in.
+    /// </summary>
+    public static string MarkedField(Level3ChapterCheckpoint state)
+    {
+        Level3ReviewRecord review = state?.Case(Bea)?.review;
+        if (review == null || review.approved) return "";
+        if (review.lastOutcome != "premature" && review.lastOutcome != "hold") return "";
+        string field = VisibleField(review.lastField);
+        return field == StampField ? "" : field;
+    }
+
+    /// <summary>His last return's spoken line, for the Case Folder's note ("" when nothing is marked or open).</summary>
+    public static string MarkedLine(Level3ChapterCheckpoint state, Level3ReviewContent content)
+    {
+        Level3ReviewRecord review = state?.Case(Bea)?.review;
+        if (review == null || review.approved || review.lastRoot.Length == 0) return "";
+        if (review.lastOutcome != "premature" && review.lastOutcome != "hold" && review.lastOutcome != "false-hold" && review.lastOutcome != "stale-stamp") return "";
+        return Line(content, review.lastRoot, review.lastField, LastKind(state));
+    }
+
+    /// <summary>The kind of the last decided root, read back from the sheet as it was judged (Wrong when unknown).</summary>
+    private static Level3RootKind LastKind(Level3ChapterCheckpoint state)
+    {
+        Level3ReviewRecord review = state.Case(Bea).review;
+        if (review.lastRoot == StampRevisionRoot) return Level3RootKind.Stale;
+        if (review.lastRoot == StampDecisionRoot) return Level3RootKind.Wrong;
+        return review.lastKind != null && Enum.TryParse(review.lastKind, out Level3RootKind kind) ? kind : Level3RootKind.Wrong;
+    }
+
     private static string BuiltInNote(string root, Level3RootKind kind)
     {
         if (kind == Level3RootKind.AsExpense) return "The withholding credit was taken off before the tax: it comes off the tax due at the end (Tax Code Book, Section 9).";
         switch (root)
         {
-            case "income-sum": return "Gross income comes from the checked worksheet's Income subtotal (Section 6).";
-            case "expense-sum": return "Allowable expenses come from the checked worksheet's subtotal, not the draft claims (Sections 4 and 5).";
-            case "taxable-operation": return "Taxable income is gross income minus allowable expenses, from the two lines above (Section 6).";
+            case "income-sum": return "Taxable income starts from the Income total on Bea's collected summary (Tax Code Book, Section 6).";
+            case "expense-sum": return "Only the Supported deductions total on her summary comes off, not her draft claims (Sections 4 and 5).";
+            case "taxable-operation": return "Taxable income is the summary's Income minus its Supported deductions, both taken from the paper itself (Section 6).";
             case "rule-selection": return "The rate band is the row of the annual table that holds the taxable income (Section 7).";
-            case "tax-formula": return "Tax due is the band's base tax plus its rate on the excess over the floor only (Section 8).";
+            case "tax-formula": return "Tax due is the band's base tax plus its rate on the amount above the threshold only, never on the whole income (Section 8).";
             case "credit-source": return "Tax credits are the tax withheld on Bea's own certificate for this year (Section 9).";
             case "balance-operation": return "The remaining payable is tax due minus tax credits (Section 9).";
             case StampRevisionRoot: return "Stamp the sheet as it is now, then bring it back.";
@@ -242,6 +480,24 @@ public static class Level3ReviewRules
         bea.stamp.type = type;
         bea.stamp.revision = revision;
         bea.stamp.actionId = "Level_03/bea-stamp@" + revision + "/" + type;
+        return Level3CommandOutcome.Applied;
+    }
+
+    /// <summary>Same review recommendation, placed anywhere on the current folder page.
+    /// Position is presentation metadata and cannot approve work or grant rewards.</summary>
+    public static Level3CommandOutcome StampAt(Level3ChapterCheckpoint candidate, string type,
+        int page, float x, float y, float tilt, out string reason)
+    {
+        reason = null;
+        if (page < 0 || page > 32 || float.IsNaN(x) || float.IsInfinity(x) ||
+            float.IsNaN(y) || float.IsInfinity(y) || float.IsNaN(tilt) || float.IsInfinity(tilt))
+        { reason = "Choose a position on the Case Folder."; return Level3CommandOutcome.Refused; }
+        Level3CommandOutcome outcome = Stamp(candidate, type, out reason);
+        if (outcome == Level3CommandOutcome.Refused) return outcome;
+        Level3StampRecord mark = candidate.Case(Bea).stamp;
+        if (outcome == Level3CommandOutcome.Duplicate && mark.placed && mark.page == page &&
+            mark.x == x && mark.y == y && mark.tilt == tilt) return outcome;
+        mark.placed = true; mark.page = page; mark.x = x; mark.y = y; mark.tilt = tilt;
         return Level3CommandOutcome.Applied;
     }
 
@@ -311,8 +567,18 @@ public static class Level3ReviewRules
         Level3ReviewRecord review = bea.review ?? new Level3ReviewRecord();
         Level3ComputationFacts facts = Level3ComputationRules.Evaluate(state, definition, Bea);
         bool open = EarliestRoot(facts, out string root, out string field, out Level3RootKind kind) || !facts.Complete;
+        string folderProblem = FolderProblem(bea.folder, definition);
+        if (!string.IsNullOrEmpty(folderProblem))
+        {
+            open = true; root = folderProblem; field = folderProblem; kind = Level3RootKind.Missing;
+        }
         bool ready = bea.stamp.type == StampReady;
-        if (!StampCurrent(state, Bea))
+        if (bea.folder != null && open)
+        {
+            // A real field/paper/calculation issue is not merely a stamp error, even when the stamp is also stale.
+            decision.Outcome = ready ? Level3ReviewOutcome.PrematureApproval : Level3ReviewOutcome.SupportedHold;
+        }
+        else if (!StampCurrent(state, Bea))
         {
             decision.Outcome = Level3ReviewOutcome.StaleStamp;
             decision.Root = StampRevisionRoot;
@@ -334,6 +600,7 @@ public static class Level3ReviewRules
             decision.Kind = kind;
         }
         decision.Note = decision.Root.Length > 0 ? Note(content, decision.Root, decision.Field, decision.Kind) : "";
+        decision.Line = decision.Root.Length > 0 ? Line(content, decision.Root, decision.Field, decision.Kind) : "";
         // A justified hold is acknowledged: it never charges the problem the player found.
         decision.NewRoot = decision.Returned && decision.Root.Length > 0 && !review.chargedRoots.Contains(decision.Root);
         bool lastReturned = review.lastOutcome == "premature" || review.lastOutcome == "false-hold" || review.lastOutcome == "stale-stamp";
@@ -365,6 +632,7 @@ public static class Level3ReviewRules
         if (decision.Retry) review.retries++;
         review.lastRoot = decision.Root;
         review.lastField = decision.Field;
+        review.lastKind = decision.Root.Length > 0 ? decision.Kind.ToString() : "";
         review.lastSignature = Signature(candidate, Bea);
         switch (decision.Outcome)
         {
@@ -375,7 +643,12 @@ public static class Level3ReviewRules
             case Level3ReviewOutcome.Approved: review.lastOutcome = "approved"; break;
         }
         review.xp = decision.Xp;
-        if (decision.Outcome != Level3ReviewOutcome.Approved) return Level3CommandOutcome.Applied;
+        if (decision.Outcome != Level3ReviewOutcome.Approved)
+        {
+            ResetReturnedFolder(candidate, decision);
+            return Level3CommandOutcome.Applied;
+        }
+        if (bea.folder != null) bea.folder.onDesk = false;
 
         Level3ComputationFacts facts = Level3ComputationRules.Evaluate(candidate, definition, Bea);
         review.approved = true;
@@ -390,6 +663,20 @@ public static class Level3ReviewRules
         bea.copyPhase = CopyAtAuditor;
         if (!candidate.milestones.Contains(ApprovedMilestone)) candidate.milestones.Add(ApprovedMilestone);
         if (bea.clock != null) bea.clock.cutoffPending = false;
+        reason = null;
+        return Level3CommandOutcome.Applied;
+    }
+
+    /// <summary>Collect the approved case copy once; the caller persists this candidate before its pickup flies.</summary>
+    public static Level3CommandOutcome CollectCopy(Level3ChapterCheckpoint candidate, out string reason)
+    {
+        reason = "Bea's approved copy isn't ready to collect.";
+        var bea = candidate?.Case(Bea);
+        if (candidate == null || Level3ChapterRules.PhaseOf(candidate) != Level3Phase.BeaDelivery ||
+            candidate.activeCaseId != Bea || bea?.review?.approved != true) return Level3CommandOutcome.Refused;
+        if (bea.copyPhase == "carried") { reason = null; return Level3CommandOutcome.Duplicate; }
+        if (bea.copyPhase != CopyAtAuditor) return Level3CommandOutcome.Refused;
+        bea.copyPhase = "carried";
         reason = null;
         return Level3CommandOutcome.Applied;
     }
@@ -428,11 +715,16 @@ public static class Level3ReviewRules
     /// <summary>Her case is approved: her clock has stopped for good.</summary>
     public static bool CaseDone(Level3ChapterCheckpoint state) => state?.Case(Bea)?.review?.approved == true;
 
-    /// <summary>Her 16 active minutes are due to start: the protected practice is done and her case is still open.</summary>
+    /// <summary>
+    /// Her 16 active minutes are due to start: her record work has become
+    /// independent (Level3ChapterRules.BeaWorkIndependent: after the first
+    /// compulsory worksheet lesson) and her case is still open. A clock that
+    /// already started is never started again or reset.
+    /// </summary>
     public static bool ClockDue(Level3ChapterCheckpoint state)
     {
         Level3Phase phase = Level3ChapterRules.PhaseOf(state);
-        return phase >= Level3Phase.BeaRecords && phase <= Level3Phase.BeaComputation && state.Case(Bea)?.clock?.started != true && !CaseDone(state);
+        return Level3ChapterRules.BeaWorkIndependent(state) && phase <= Level3Phase.BeaComputation && state.Case(Bea)?.clock?.started != true && !CaseDone(state);
     }
 
     public static Level3CommandOutcome StartClock(Level3ChapterCheckpoint candidate, Level3ReviewContent content, out string reason)

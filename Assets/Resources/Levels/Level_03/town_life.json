@@ -2,9 +2,11 @@
   "_readme": [
     "Level 3 plaza people (Level3TownContent, read by Level3BeaTable). T04: Bea at her worktable beside her Level 1 bench; Nina arrives with T11.",
     "Lines follow CONTENT.md 'Dialogue content and transitions'. The introduction works whether or not the player met Bea in Level 1.",
-    "Completing the introduction hands her records over once (saved before anything shows). Cancelling it changes nothing; the next talk starts it again.",
+    "Completing the introduction hands her records over once (saved before anything shows). Cancelling it changes nothing; the next talk starts it again. After a failed save the next talk plays only its last line (the envelope line) before trying again.",
+    "T04 buildup (4 November 2026): after the saved handover she slides her closed envelope into reach; the player opens it and inspects the record that comes forward. When it is put back, organizerIntro plays and its last line waits for helpChoice (sit at her table) or laterChoice (no penalty, nothing saved). continuePrompt opens her questions with helpChoice first afterwards and on any restore with her records already handed over. None of this saves, grades or starts her review clock.",
+    "Copy budget: about 30 words per turn, prompts of 10 words or fewer; no line names a treatment, a reason or a reward.",
     "inquiries: repeatable questions after the handover; contextSources puts a question first when the player last read that record. Answers never decide a worksheet treatment; every graded fact is also printed on the papers.",
-    "T08: once her worksheet is collected Bea walks (toOffice doorway points, then officeSpotPath, the conference room's client spot) and waits there; a resumed chapter finds her there already. When her tax due is on the sheet, certificateHandover hands B-WHT over (saved before it shows), certificateReadLine holds it up to read, then creditQuestion offers creditAnswers: 'credit' is saved (it fills in nothing), 'income' opens the book's Credit Versus Expense help and comes back, 'inspect' shows the certificate again. No trust, ethics or grade comes from any answer.",
+    "T08 update (5 November): certificateHandover presents Bea's paper beside her mid-conversation; certificateReadLine finishes the talk. The player clicks the waiting paper afterward to collect B-WHT plus its Bag item in one signed save. Existing pickup motion and paper/icon reader are reused.",
     "Fields starting with '_' are notes and are ignored by the game."
   ],
   "bea": {
@@ -29,8 +31,7 @@
       },
       {
         "speaker": "Npc",
-        "text": "I kept the receipts this time. That means I can subtract all of them, right?",
-        "emote": "question"
+        "text": "I'm saving for a studio. Could you help me check my records?"
       },
       {
         "speaker": "Player",
@@ -38,14 +39,20 @@
       },
       {
         "speaker": "Npc",
-        "text": "Here's my whole 2026: my income sheet, my cost list, the receipts, and a rough list of what I hoped to claim."
-      },
-      {
-        "speaker": "Npc",
-        "text": "I'll spread them out on my table. Sit down and read them, and ask me anything.",
-        "emote": "heart"
+        "text": "I kept every receipt. Can I count them all? I'm unsure what belongs as business costs.",
+        "emote": "thinking"
       }
     ],
+    "organizerIntro": [
+      {
+        "speaker": "Npc",
+        "text": "See my little organizer? We can use it to prepare a clear summary.",
+        "emote": "idea"
+      }
+    ],
+    "helpChoice": "Help Bea",
+    "laterChoice": "Later",
+    "continuePrompt": "Ready to sort them? Ask me anything first if you like.",
     "inquiryPrompt": "What would you like to know?",
     "inquiryAgain": "Anything else?",
     "inquiries": [
@@ -78,6 +85,12 @@
           "B-ID",
           "B-BG"
         ]
+      },
+      {
+        "id": "work",
+        "question": "What are you working on?",
+        "answer": "Sketches for a new shop sign. Drawing is the easy part; receipts, not so much.",
+        "contextSources": []
       }
     ],
     "leaveChoice": "I'll review the papers first.",
@@ -129,19 +142,11 @@
     "certificateHandover": [
       {
         "speaker": "Npc",
-        "text": "Oh! Before you finish, one more paper. Harbor Menu withheld some tax when they paid me for their menus.",
+        "text": "One more paper. Harbor Menu already withheld some tax from my menu fees. Here's the certificate.",
         "emote": "sparkles"
-      },
-      {
-        "speaker": "Npc",
-        "text": "They gave me this certificate for it. That payment is already in my menu fees, by the way."
-      },
-      {
-        "speaker": "Player",
-        "text": "Thanks. Let me see it."
       }
     ],
-    "certificateReadLine": "Here it is. Read it, then lower it when you're ready.",
+    "certificateReadLine": "I'll leave it here for you. Take it when we're done.",
     "creditQuestion": "A client withheld some tax from a payment. Is that another business expense?",
     "creditAnswers": [
       {
@@ -160,6 +165,53 @@
         "reply": "Sure, here it is again."
       }
     ],
-    "helpBack": "Back to Bea's question"
+    "helpBack": "Back to Bea's question",
+    "_copyDelivery": "T10 (5 November): at the conference-room spot Bea asks one balance question while her approved copy's tax and payment lines are docked beside the dialogue. Only Remaining payable answers it (saved first); Tax due or Tax credit gets one contextual hint and the same question waits, with nothing saved and no penalty. The handover line then waits for the actual copy: drag the folder onto her or tap its icon. Delivery saves the copy, ClosingFinding and +4 Public Trust once before her thanks.",
+    "copyWaitingLine": "The Auditor still has my copy? I'll wait here for it.",
+    "balanceQuestion": "Before I keep it: how much is left to pay after the tax already withheld?",
+    "balancePrompt": "Point to the figure on her copy",
+    "taxDueHint": "That's the whole tax, before the withheld tax comes off. Which line shows what's left?",
+    "creditHint": "That's what Harbor Menu already withheld for me. Which line shows what's still left?",
+    "balanceReply": "So that's what I still pay. The withheld tax already counts toward it. That makes sense.",
+    "copyHandoverLine": "May I keep this copy with my records?",
+    "copyHandoverPrompt": "Drag the client copy to Bea",
+    "copyRetryPrompt": "It didn't save. Drag the client copy to Bea again.",
+    "deliveredLine": "Thank you. Now I know what I still owe, and why.",
+    "afterDeliveryLine": "Thanks again. I'll keep my copy with my records.",
+    "_finding": "T14 (6 November): after her delivery Bea asks one question about her own draft (DRAFT-B26, issued by her). The player picks the statement her file supports: the private party purchases and the printing bill listed a second time (the draft's 354,000 against the 300,000 cost schedule). Intent and a wider pattern are not shown by one file: one reply each, the same question waits, nothing saved, no penalty. Review her records ends the talk and opens her papers; the question waits. Figures match case_bea_001 (checked by the regression).",
+    "findingQuestion": "Before I go: my draft listed ₱354,000 in costs, but you used ₱300,000. What did my papers show?",
+    "findingPrompt": "Choose what her file shows",
+    "findingTitle": "WHAT BEA'S FILE SHOWS",
+    "findingReview": "Review her records",
+    "findingChoices": [
+      {
+        "id": "supported",
+        "text": "Party ₱24,000 was private; printing ₱30,000 listed twice.",
+        "reply": "So my originals corrected the draft by ₱54,000. That shows the mistake, not why it was made."
+      },
+      {
+        "id": "intent",
+        "text": "Someone added those costs on purpose.",
+        "reply": "My papers show what was wrong, not why. Let's keep to what they show."
+      },
+      {
+        "id": "pattern",
+        "text": "Drafts like this must all be wrong.",
+        "reply": "My file only covers my own draft. It can't show anything about others."
+      }
+    ],
+    "findingNext": "The receptionist said a message came for you.",
+    "afterFindingLine": "The receptionist has a message for you."
+  },
+  "_reception": "T14: once Bea's finding is saved, the existing receptionist passes on Mayor Quax's message (Arthur stays the guide). Her lines, then the player's one acknowledgment: no choice, no Trust or reward. Hearing it to the end is saved (ClosingFinding -> WrapUpPending) and the chapter result follows; cancelling saves nothing.",
+  "reception": {
+    "speakerName": "Receptionist",
+    "portraitId": "default",
+    "quaxMessage": [
+      { "speaker": "Npc", "text": "Mayor Quax left a message for you." },
+      { "speaker": "Npc", "text": "\"Thank you for Bea's careful work. Bring me only what the records support.\"" },
+      { "speaker": "Npc", "text": "\"If our process lets mistakes through, I want to know where.\"" },
+      { "speaker": "Player", "text": "I'll keep to what the records show." }
+    ]
   }
 }

@@ -22,7 +22,18 @@ using System.Collections;
 /// - Virtual joystick is hidden.
 /// - Main Camera moves to the assigned interview viewpoint.
 ///
-/// There is NO third-person camera.
+/// The same camera writer also supports outdoor third-person exploration.
+///
+/// Milestone T03 (Office_Level1 only, ExplorationRules.AdoptsMixedCamera):
+/// exploration (CameraMode.FirstPerson, serialized value unchanged) has two
+/// views. Outdoors the same FirstPersonCameraController writes a collision-
+/// shortened third-person orbit and Elijah's ExplorationBody is shown;
+/// indoors it is the original first-person view with hands. The region
+/// changes on the office entrance's threshold line with a hysteresis band
+/// (floor detection only away from doorways: spawns, placements, reloads),
+/// and never while a task, conversation, viewer, hold or transition owns the
+/// controls, or while the previous view blend runs. Every return path keeps
+/// the current view, because the view lives here, not in the task.
 /// </summary>
 public class CameraController : MonoBehaviour
 {
@@ -245,6 +256,7 @@ public class CameraController : MonoBehaviour
     private void Start()
     {
         CurrentMode = CameraMode.FirstPerson;
+        SetupMixedExploration();
 
         // Enable normal first-person systems.
         SetFirstPersonSystems(true);
@@ -263,6 +275,156 @@ public class CameraController : MonoBehaviour
         DebugTrace.Log(
             "[CameraController] Initialized in FirstPerson mode."
         );
+    }
+
+    // =============================================================
+    // T03: MIXED EXPLORATION (outdoor third person / indoor first person)
+    // =============================================================
+
+    private bool mixedExploration;
+    private ExplorationRules.Region region = ExplorationRules.Region.Indoor;
+    private ExplorationBody body;
+    private JumpButton jumpButton;
+    private float floorDisagreeSince = -1f;
+    private float nextFloorCheck;
+    private ExplorationRules.Region? floorRegion;
+    private readonly RaycastHit[] floorHits = new RaycastHit[16];
+    private bool bodyHiddenForTask;
+
+    /// <summary>T03: this scene plays the mixed outdoor/indoor exploration loop.</summary>
+    public bool MixedExplorationAdopted => mixedExploration;
+    /// <summary>T03: the region the exploration view follows.</summary>
+    public ExplorationRules.Region Region => region;
+    /// <summary>T03: exploration is (heading to) the outdoor third-person view.</summary>
+    public bool IsThirdPersonView => mixedExploration && CameraWriter != null && CameraWriter.ThirdPerson;
+
+    /// <summary>
+    /// T03: the look controller that actually writes the Main Camera. The office scenes carry two
+    /// (one on Main Camera, one on a helper object this controller references); both get the same
+    /// view so their poses agree, and only the Main Camera one moves the camera.
+    /// </summary>
+    private FirstPersonCameraController CameraWriter
+    {
+        get
+        {
+            Camera cam = MainCamera;
+            FirstPersonCameraController onCamera = cam != null ? cam.GetComponent<FirstPersonCameraController>() : null;
+            return onCamera != null ? onCamera : firstPersonCamera;
+        }
+    }
+    /// <summary>T03: the player's own eye point (reach and line of sight are measured from it, never the follow camera).</summary>
+    public Vector3 PlayerEye => CameraWriter != null ? CameraWriter.EyePosition : (PlayerRoot != null ? PlayerRoot.position : Vector3.zero);
+    public ExplorationBody Body => body;
+    /// <summary>T03: the gameplay movement the exploration camera follows (grounding, take-off floor).</summary>
+    public PlayerMovement Movement => playerMovement;
+    public JumpButton Jump => jumpButton;
+
+    private void SetupMixedExploration()
+    {
+        mixedExploration = ExplorationRules.AdoptsMixedCamera(gameObject.scene.name) && firstPersonCamera != null && CameraWriter != null && playerMovement != null;
+        // Sprint remains available when the stored third-person/jump pilot is disabled.
+        if (virtualJoystick != null) virtualJoystick.ShowSprintRing(ExplorationRules.AdoptsSprint(gameObject.scene.name));
+        if (!mixedExploration) return;
+        // One canonical Elijah height (ExplorationRules.ElijahRestHeight) for exploration and conversation.
+        body = ExplorationBody.Ensure(playerMovement);
+        if (body != null && !string.IsNullOrEmpty(body.Problem)) Debug.LogWarning("[CameraController] T03 exploration body: " + body.Problem);
+        jumpButton = JumpButton.Create(virtualJoystick, playerMovement);
+        ExplorationPracticeCurb.Ensure(gameObject.scene, PlayerRoot);
+        floorRegion = FloorRegion();
+        region = floorRegion ?? ExplorationRules.Region.Outdoor;
+        ApplyExplorationView(true);
+    }
+
+    private void Update()
+    {
+        if (!mixedExploration) return;
+        HideBodyDuringTasks();
+        ExplorationRules.Region next = NextRegion();
+        if (next == region) return;
+        FirstPersonCameraController writer = CameraWriter;
+        bool exploring = isActiveAndEnabled && CurrentMode == CameraMode.FirstPerson && writer != null && writer.enabled && firstPersonCamera.enabled;
+        // Deferred, not dropped: the next free frame re-evaluates where the player actually is.
+        if (!ExplorationRules.CanSwitchView(exploring, activeTransition != null, DialogueUI.IsAnyDialogueActive || dialogueHoldsControls,
+                PlayerControlHold.IsHeld, profileViewerControls != null, writer.IsBlending)) return;
+        region = next;
+        ApplyExplorationView(false);
+    }
+
+    /// <summary>The doorway line decides near the entrance; elsewhere the floor (after it has disagreed for a moment).</summary>
+    private ExplorationRules.Region NextRegion()
+    {
+        Transform player = PlayerRoot;
+        if (player == null) return region;
+        if (OfficeDoorGate.TryGetEntrance(out Vector3 centre, out Vector3 outward, out float halfWidth))
+        {
+            Vector3 offset = player.position - centre;
+            offset.y = 0f;
+            float past = Vector3.Dot(offset, outward);
+            float along = Vector3.Dot(offset, Vector3.Cross(Vector3.up, outward));
+            if (Mathf.Abs(along) <= halfWidth + 0.5f && Mathf.Abs(past) <= 3f)
+            {
+                floorDisagreeSince = -1f;
+                return ExplorationRules.RegionAtDoor(region, past, along, halfWidth);
+            }
+        }
+        if (Time.unscaledTime >= nextFloorCheck)
+        {
+            nextFloorCheck = Time.unscaledTime + 0.2f;
+            floorRegion = FloorRegion();
+        }
+        if (!floorRegion.HasValue || floorRegion.Value == region) { floorDisagreeSince = -1f; return region; }
+        if (floorDisagreeSince < 0f) floorDisagreeSince = Time.unscaledTime;
+        return ExplorationRules.RegionFromFloor(region, floorRegion, Time.unscaledTime - floorDisagreeSince);
+    }
+
+    /// <summary>Which root the floor under the player belongs to (the same grouping AudioEnvironment uses); bounded cast.</summary>
+    private ExplorationRules.Region? FloorRegion()
+    {
+        Transform player = PlayerRoot;
+        if (player == null) return null;
+        int count = Physics.RaycastNonAlloc(player.position + Vector3.up * 0.5f, Vector3.down, floorHits, 5f,
+            Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        float nearest = float.PositiveInfinity;
+        ExplorationRules.Region? found = null;
+        for (int i = 0; i < count; i++)
+        {
+            RaycastHit hit = floorHits[i];
+            if (hit.collider.transform.IsChildOf(player) || hit.distance >= nearest) continue;
+            for (Transform part = hit.collider.transform; part != null; part = part.parent)
+            {
+                bool office = string.Equals(part.name, "OfficeBuilding", System.StringComparison.OrdinalIgnoreCase);
+                bool outside = string.Equals(part.name, "Outside", System.StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(part.name, "Env", System.StringComparison.OrdinalIgnoreCase);
+                if (!office && !outside) continue;
+                found = outside ? ExplorationRules.Region.Outdoor : ExplorationRules.Region.Indoor;
+                nearest = hit.distance;
+                break;
+            }
+        }
+        return found;
+    }
+
+    /// <summary>One view for writer, body and hands together.</summary>
+    private void ApplyExplorationView(bool instant)
+    {
+        bool tp = ExplorationRules.ThirdPersonFor(region);
+        FirstPersonCameraController writer = CameraWriter;
+        if (writer != null) writer.SetThirdPerson(tp, instant);
+        if (firstPersonCamera != null && firstPersonCamera != writer) firstPersonCamera.SetThirdPerson(tp, true);
+        if (body != null) body.SetPerspectiveShown(tp);
+        FirstPersonHands hands = Hands;
+        if (hands != null) hands.SetThirdPersonView(tp, body != null ? body.LeftHand : null);
+        DebugTrace.Log("[CameraController] Exploration view: " + (tp ? "third person (outdoors)" : "first person (indoors)"));
+    }
+
+    /// <summary>Fixed task views (desk, interview, corkboard) never show the outdoor body in their frame.</summary>
+    private void HideBodyDuringTasks()
+    {
+        if (body == null) return;
+        bool task = CurrentMode == CameraMode.Workstation || CurrentMode == CameraMode.Interview || CurrentMode == CameraMode.CorkboardSideQuest;
+        if (task == bodyHiddenForTask) return;
+        bodyHiddenForTask = task;
+        if (task) body.HideFor(this); else body.ReleaseHide(this);
     }
 
     // =============================================================

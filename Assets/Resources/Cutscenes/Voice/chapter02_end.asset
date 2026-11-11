@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e268a9d5fe74eba9cb6ad142e1caf2a, type: 3}
+  m_Name: chapter02_end
+  m_EditorClassIdentifier: Assembly-CSharp::ChapterCinematicVoiceCatalogue
+  entries:
+  - id: vo_ch02_end_01_rosa_responsible
+    speaker: "Rosa"
+    text: "You checked it with me. Thank you."
+    variant: "rosa.responsible_completed"
+    clip: {fileID: 8300000, guid: eae1def861bc4943956b44b813abc55a, type: 3}
+  - id: vo_ch02_end_01_rosa_promise
+    speaker: "Rosa"
+    text: "Next time, please check before you promise."
+    variant: "rosa.promise_resolved"
+    clip: {fileID: 8300000, guid: 1be893d803dd4fadb8f991e242ee0ba5, type: 3}
+  - id: vo_ch02_end_01_rosa_dismissive
+    speaker: "Rosa"
+    text: "Thank you for finishing the review."
+    variant: "rosa.dismissive_completed"
+    clip: {fileID: 8300000, guid: a0fa68e33c524194b8de2c8616bf360c, type: 3}
+  - id: vo_ch02_end_01_rosa_neutral
+    speaker: "Rosa"
+    text: "Thank you for explaining the corrected copy."
+    variant: "rosa.neutral"
+    clip: {fileID: 8300000, guid: 11e92b60f1834332bd4fe4029fbb1e6d, type: 3}
+  - id: vo_ch02_end_02_receptionist
+    speaker: "Receptionist"
+    text: "Bea's next. She's bringing her receipts."
+    variant: ""
+    clip: {fileID: 8300000, guid: 81d92c2c0df743f29e982988455b831a, type: 3}

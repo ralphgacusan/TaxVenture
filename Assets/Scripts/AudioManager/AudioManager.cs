@@ -11,6 +11,14 @@ public class AudioManager : MonoBehaviour
 
     private const string MusicEnabledKey = "MusicEnabled";
     private const string SFXEnabledKey = "SFXEnabled";
+    private const string VoiceEnabledKey = "VoiceEnabled";
+    public const string MusicVolumeKey = "MusicVolume";
+    public const string SFXVolumeKey = "SFXVolume";
+    public const string VoiceVolumeKey = "VoiceVolume";
+    /// <summary>Slider defaults: these reproduce the authored mix exactly (music can still go louder).</summary>
+    public const float DefaultMusicSlider = 0.5f;
+    public const float DefaultSFXSlider = 1f;
+    public const float DefaultVoiceSlider = 1f;
     private const float MusicVolume = 0.035f;
     private const float AmbienceVolume = 0.45f;
     private const float FamilyDebounce = 0.08f;
@@ -29,6 +37,10 @@ public class AudioManager : MonoBehaviour
     private AudioSource ambienceSource;
     private bool musicEnabled;
     private bool sfxEnabled;
+    private bool voiceEnabled;
+    private float musicSlider = DefaultMusicSlider;
+    private float sfxSlider = DefaultSFXSlider;
+    private float voiceSlider = DefaultVoiceSlider;
     private bool isOutdoor;
     private bool ambienceContextActive;
     private bool completionMusicRequested;
@@ -90,18 +102,19 @@ public class AudioManager : MonoBehaviour
         musicSource.playOnAwake = false;
         musicSource.spatialBlend = 0f;
         musicSource.loop = true;
-        musicSource.volume = MusicVolume;
+        musicSource.volume = MusicLevel;
         musicSource.mute = !musicEnabled;
 
         sfxSource.playOnAwake = false;
         sfxSource.loop = false;
         sfxSource.spatialBlend = 0f;
+        sfxSource.volume = Gain(sfxSlider);
         sfxSource.mute = !sfxEnabled;
 
         ambienceSource.playOnAwake = false;
         ambienceSource.loop = true;
         ambienceSource.spatialBlend = 0f;
-        ambienceSource.volume = AmbienceVolume;
+        ambienceSource.volume = AmbienceLevel;
         ambienceSource.mute = !sfxEnabled;
 
 
@@ -109,7 +122,6 @@ public class AudioManager : MonoBehaviour
         if (library != null)
         {
             achievementSFX = library.Find("sfx_reward_achievement_01");
-            keyboardSFX = library.Find("sfx_keyboard_type_01");
             mouseClickSelectSFX = library.Find("sfx_ui_click_01");
             paper2SFX = library.Find("sfx_page_turn_01");
             paperSFX = library.Find("sfx_paper_rustle_01");
@@ -134,9 +146,19 @@ public class AudioManager : MonoBehaviour
         UpdateMusic();
         UpdateAmbience();
 
-        if (Time.unscaledTime < nextButtonScan) return;
-        nextButtonScan = Time.unscaledTime + 0.25f;
+        // Searching every button is slow, so it runs when a finger lands: a click only fires on
+        // release, which means any button being pressed is wired before its click.
+        if (!PointerPressedThisFrame() && Time.unscaledTime < nextButtonScan) return;
+        nextButtonScan = Time.unscaledTime + 2f;
         WireButtons();
+    }
+
+    private static bool PointerPressedThisFrame()
+    {
+        if (Input.GetMouseButtonDown(0)) return true;
+        for (int i = 0; i < Input.touchCount; i++)
+            if (Input.GetTouch(i).phase == TouchPhase.Began) return true;
+        return false;
     }
 
     private void LateUpdate()
@@ -193,6 +215,7 @@ public class AudioManager : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        if (mode == LoadSceneMode.Additive && scene.name.StartsWith("CS_Chapter", StringComparison.Ordinal)) return;
         completionMusicRequested = false;
         ApplySceneDefaults(scene.name);
         SetupMusic();
@@ -233,7 +256,8 @@ public class AudioManager : MonoBehaviour
     public void PlayDocumentSFX(bool closing = false) => PlayFamily(closing ? "document_close" : "document_open", 0.6f);
 
     public void PlayAchievementSFX() => PlayFamily("sfx_reward_achievement_01", 1f, achievementSFX);
-    public void PlayKeyboardSFX() => PlayFamily("sfx_keyboard_type_01", 1f, keyboardSFX);
+    /// <summary>A key press is one short click: the 10-15 second typing recordings played on after the action ended.</summary>
+    public void PlayKeyboardSFX() => PlayMouseClickSelectSFX();
     public void PlayMouseClickSelectSFX() => PlayFamily("sfx_ui_click_01", 1f, mouseClickSelectSFX);
     public void PlayPaper2SFX() => PlayFamily("sfx_page_turn_01", 1f, paper2SFX);
     public void PlayPaperSFX() => PlayFamily("sfx_paper_rustle_01", 1f, paperSFX);
@@ -324,6 +348,8 @@ public class AudioManager : MonoBehaviour
         SetupMusic();
     }
 
+    public void RefreshCinematicAudio() { SetupMusic(); SetupAmbience(); }
+
     public void SetCompletionMusic(bool enabled)
     {
         completionMusicRequested = enabled;
@@ -336,7 +362,7 @@ public class AudioManager : MonoBehaviour
         musicSource.mute = !musicEnabled;
 
         string sceneName = SceneManager.GetActiveScene().name;
-        if (sceneName == "Cutscene1.0" || sceneName == "Cutscene2.0")
+        if (ChapterEndingSequence.BlocksGameplay || sceneName.StartsWith("CS_Chapter", StringComparison.Ordinal) || sceneName == "Cutscene1.0" || sceneName == "Cutscene2.0")
         {
             activeMusicPlaylist = new AudioClip[0];
             musicContextKey = "cutscene";
@@ -344,7 +370,7 @@ public class AudioManager : MonoBehaviour
             pendingMusicClip = null;
             musicSource.Stop();
             musicSource.clip = null;
-            musicSource.volume = MusicVolume;
+            musicSource.volume = MusicLevel;
             musicTargetVolume = 0f;
             return;
         }
@@ -407,11 +433,11 @@ public class AudioManager : MonoBehaviour
         {
             musicChangePending = false;
             pendingMusicClip = null;
-            musicTargetVolume = musicEnabled ? MusicVolume : 0f;
+            musicTargetVolume = musicEnabled ? MusicLevel : 0f;
             if (clip != null && musicEnabled && !musicSource.isPlaying)
             {
                 musicSource.loop = activeMusicPlaylist.Length <= 1;
-                musicSource.volume = MusicVolume;
+                musicSource.volume = MusicLevel;
                 musicSource.Play();
             }
             return;
@@ -439,7 +465,7 @@ public class AudioManager : MonoBehaviour
         }
 
         musicTargetVolume = musicEnabled && musicSource.clip != null
-            ? MusicVolume
+            ? MusicLevel
             : 0f;
         if (!musicChangePending) MoveVolume(musicSource, musicTargetVolume);
     }
@@ -455,7 +481,7 @@ public class AudioManager : MonoBehaviour
         if (musicSource.clip != null && musicEnabled)
         {
             musicSource.Play();
-            musicTargetVolume = MusicVolume;
+            musicTargetVolume = MusicLevel;
         }
     }
 
@@ -465,13 +491,13 @@ public class AudioManager : MonoBehaviour
         ambienceSource.mute = !sfxEnabled;
 
         string sceneName = SceneManager.GetActiveScene().name;
-        if (sceneName == "Cutscene1.0" || sceneName == "Cutscene2.0")
+        if (ChapterEndingSequence.BlocksGameplay || sceneName.StartsWith("CS_Chapter", StringComparison.Ordinal) || sceneName == "Cutscene1.0" || sceneName == "Cutscene2.0")
         {
             ambienceChangePending = false;
             pendingAmbienceClip = null;
             ambienceSource.Stop();
             ambienceSource.clip = null;
-            ambienceSource.volume = AmbienceVolume;
+            ambienceSource.volume = AmbienceLevel;
             ambienceTargetVolume = 0f;
             return;
         }
@@ -492,11 +518,11 @@ public class AudioManager : MonoBehaviour
         {
             ambienceChangePending = false;
             pendingAmbienceClip = null;
-            ambienceTargetVolume = clip != null ? AmbienceVolume : 0f;
+            ambienceTargetVolume = clip != null ? AmbienceLevel : 0f;
             if (clip != null && !ambienceSource.isPlaying)
             {
                 ambienceSource.loop = true;
-                ambienceSource.volume = AmbienceVolume;
+                ambienceSource.volume = AmbienceLevel;
                 ambienceSource.Play();
             }
             return;
@@ -518,7 +544,7 @@ public class AudioManager : MonoBehaviour
         }
         if (!ambienceChangePending)
         {
-            ambienceTargetVolume = ambienceSource.clip != null ? AmbienceVolume : 0f;
+            ambienceTargetVolume = ambienceSource.clip != null ? AmbienceLevel : 0f;
             MoveVolume(ambienceSource, ambienceTargetVolume);
         }
     }
@@ -534,7 +560,7 @@ public class AudioManager : MonoBehaviour
         if (ambienceSource.clip != null)
         {
             ambienceSource.Play();
-            ambienceTargetVolume = AmbienceVolume;
+            ambienceTargetVolume = AmbienceLevel;
         }
     }
 
@@ -611,12 +637,68 @@ public class AudioManager : MonoBehaviour
     }
 
     public bool IsSFXEnabled() => sfxEnabled;
+    public bool IsVoiceEnabled() => voiceEnabled;
+
+    public void SetVoiceEnabled(bool enabled)
+    {
+        voiceEnabled = enabled;
+        PlayerPrefs.SetInt(VoiceEnabledKey, enabled ? 1 : 0);
+        PlayerPrefs.Save();
+    }
     public void TestSelectSFX() => PlaySelectSFX();
+
+    // =========================================================
+    // VOLUME SLIDERS (0-1, independent of the on/off switches)
+    // =========================================================
+
+    private float MusicLevel => MusicVolume * Gain(musicSlider / DefaultMusicSlider);
+    private float AmbienceLevel => AmbienceVolume * Gain(sfxSlider);
+
+    /// <summary>Squared, because hearing is logarithmic: halfway on the slider sounds about half as loud.</summary>
+    private static float Gain(float slider) => slider * slider;
+
+    private static float Clamp01(float value) => Math.Max(0f, Math.Min(1f, value));
+
+    public float GetMusicVolume() => musicSlider;
+    public float GetSFXVolume() => sfxSlider;
+    public float GetVoiceVolume() => voiceSlider;
+
+    /// <summary>The volume setters are live and safe every drag frame; call SaveVolumes when the drag ends.</summary>
+    public void SetMusicVolume(float value)
+    {
+        musicSlider = Clamp01(value);
+        PlayerPrefs.SetFloat(MusicVolumeKey, musicSlider);
+    }
+
+    public void SetSFXVolume(float value)
+    {
+        sfxSlider = Clamp01(value);
+        PlayerPrefs.SetFloat(SFXVolumeKey, sfxSlider);
+        if (sfxSource != null) sfxSource.volume = Gain(sfxSlider);
+    }
+
+    public void SetVoiceVolume(float value)
+    {
+        voiceSlider = Clamp01(value);
+        PlayerPrefs.SetFloat(VoiceVolumeKey, voiceSlider);
+    }
+
+    public void SaveVolumes() => PlayerPrefs.Save();
+
+    /// <summary>Multiplier for sound effects played on other sources (cutscene room tone and cues).</summary>
+    public static float SFXGain => Gain(Instance != null ? Instance.sfxSlider : Clamp01(PlayerPrefs.GetFloat(SFXVolumeKey, DefaultSFXSlider)));
+
+    /// <summary>Multiplier for spoken lines (cutscene voice source).</summary>
+    public static float VoiceGain => Gain(Instance != null ? Instance.voiceSlider : Clamp01(PlayerPrefs.GetFloat(VoiceVolumeKey, DefaultVoiceSlider)));
 
     private void LoadSettings()
     {
         musicEnabled = PlayerPrefs.GetInt(MusicEnabledKey, 1) == 1;
         sfxEnabled = PlayerPrefs.GetInt(SFXEnabledKey, 1) == 1;
+        voiceEnabled = PlayerPrefs.GetInt(VoiceEnabledKey, 1) == 1;
+        musicSlider = Clamp01(PlayerPrefs.GetFloat(MusicVolumeKey, DefaultMusicSlider));
+        sfxSlider = Clamp01(PlayerPrefs.GetFloat(SFXVolumeKey, DefaultSFXSlider));
+        voiceSlider = Clamp01(PlayerPrefs.GetFloat(VoiceVolumeKey, DefaultVoiceSlider));
     }
 
     private void OnDestroy()

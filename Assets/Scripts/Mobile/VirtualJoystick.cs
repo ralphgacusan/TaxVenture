@@ -18,6 +18,8 @@ public class VirtualJoystick : MonoBehaviour,
     [SerializeField, Range(0.1f, 2f)] private float sensitivity = 1f;
 
     public Vector2 Input { get; private set; }
+    /// <summary>T03: stick travel before the dead zone/response curve (0 centre, 1 walking rim, 1.65 sprint extension).</summary>
+    public float RawMagnitude { get; private set; }
     public float Horizontal => Input.x;
     public float Vertical => Input.y;
     public bool IsHeld => isHeld;
@@ -116,7 +118,8 @@ public class VirtualJoystick : MonoBehaviour,
         Vector2 rawVector = new Vector2(
             travel.x > Mathf.Epsilon ? fromCenter.x / travel.x : 0f,
             travel.y > Mathf.Epsilon ? fromCenter.y / travel.y : 0f);
-        rawVector = Vector2.ClampMagnitude(rawVector, 1f);
+        rawVector = Vector2.ClampMagnitude(rawVector, sprintRing != null && sprintRing.gameObject.activeSelf ? ExplorationRules.SprintTravelLimit : 1f);
+        RawMagnitude = rawVector.magnitude;
 
         float boundedDeadZone = Mathf.Clamp(deadZone, 0f, 0.95f);
         float boundedSensitivity = Mathf.Clamp(sensitivity, 0.1f, 2f);
@@ -231,6 +234,8 @@ public class VirtualJoystick : MonoBehaviour,
         SetHeld(false);
         activePointerId = 0;
         Input = Vector2.zero;
+        RawMagnitude = 0f;
+        SetSprintLit(false);
     }
 
     private void SetHeld(bool held)
@@ -250,6 +255,8 @@ public class VirtualJoystick : MonoBehaviour,
         SetHeld(false);
         activePointerId = 0;
         Input = Vector2.zero;
+        RawMagnitude = 0f;
+        SetSprintLit(false);
 
         if (handle != null && visualsCached)
         {
@@ -259,6 +266,87 @@ public class VirtualJoystick : MonoBehaviour,
 
         if (handleImage != null && visualsCached)
             handleImage.color = homeHandleColor;
+    }
+
+    // =========================================================
+    // T03: THE INDICATED SPRINT RING (adopted scenes only)
+    // =========================================================
+
+    private Image sprintRing;
+    private bool sprintLit;
+    private GameObject sprintMarker;
+    private TraversalIcon sprintIcon;
+    private TMPro.TextMeshProUGUI sprintLabel;
+    private static Sprite ringSprite;
+    private static readonly Color RingIdle = new Color(1f, 1f, 1f, 0.22f);
+    private static readonly Color RingLit = new Color(1f, 0.86f, 0.45f, 0.75f);
+
+    /// <summary>Shows the outer ring that marks where pushing the stick turns walking into sprinting.</summary>
+    public void ShowSprintRing(bool show)
+    {
+        if (show && sprintRing == null && background != null)
+        {
+            var host = new GameObject("SprintRing", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var rect = (RectTransform)host.transform;
+            rect.SetParent(background, false);
+            rect.SetAsFirstSibling();
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = background.rect.center;
+            Vector2 travel = GetTravelRadius(background.rect);
+            float sprintDiameter = 2f * Mathf.Min(travel.x, travel.y) * ExplorationRules.SprintEnter;
+            rect.sizeDelta = new Vector2(sprintDiameter, sprintDiameter);
+            sprintRing = host.GetComponent<Image>();
+            sprintRing.sprite = RingSprite();
+            sprintRing.raycastTarget = false;
+            sprintRing.color = sprintLit ? RingLit : RingIdle;
+            sprintMarker = new GameObject("SprintMarker", typeof(RectTransform));
+            var markerRect = (RectTransform)sprintMarker.transform;
+            markerRect.SetParent(background, false);
+            markerRect.anchorMin = markerRect.anchorMax = new Vector2(0.5f, 0.5f);
+            markerRect.anchoredPosition = background.rect.center + Vector2.up * (Mathf.Min(travel.x, travel.y) * ExplorationRules.SprintTravelLimit + 38f);
+            markerRect.sizeDelta = new Vector2(64f, 64f);
+            sprintIcon = sprintMarker.AddComponent<TraversalIcon>();
+            sprintIcon.Symbol = TraversalIcon.Kind.Sprint;
+            sprintIcon.color = RingIdle;
+            sprintIcon.raycastTarget = false;
+            sprintLabel = HudTheme.CreateLabel("Pace", markerRect, "RUN", 22f, RingIdle, TMPro.TextAlignmentOptions.Center, TMPro.FontStyles.Bold);
+            sprintLabel.raycastTarget = false;
+            sprintLabel.rectTransform.anchorMin = sprintLabel.rectTransform.anchorMax = new Vector2(0.5f, 0f);
+            sprintLabel.rectTransform.anchoredPosition = new Vector2(0f, -12f);
+            sprintLabel.rectTransform.sizeDelta = new Vector2(100f, 28f);
+        }
+        if (sprintRing != null) sprintRing.gameObject.SetActive(show);
+        if (sprintMarker != null) sprintMarker.SetActive(show);
+    }
+
+    /// <summary>Lights the ring while the held stick is sprinting.</summary>
+    public void SetSprintLit(bool lit)
+    {
+        sprintLit = lit;
+        if (sprintRing != null) sprintRing.color = lit ? RingLit : RingIdle;
+        if (sprintIcon != null) sprintIcon.color = lit ? RingLit : new Color(1f, 1f, 1f, 0.65f);
+        if (sprintLabel != null) { sprintLabel.color = lit ? RingLit : new Color(1f, 1f, 1f, 0.65f); sprintLabel.text = lit ? "RUNNING" : "RUN"; }
+    }
+
+    /// <summary>A soft ring at the stick's outer edge (the sprint zone), built once.</summary>
+    private static Sprite RingSprite()
+    {
+        if (ringSprite != null) return ringSprite;
+        const int size = 128;
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { name = "SprintRing", wrapMode = TextureWrapMode.Clamp };
+        var pixels = new Color32[size * size];
+        float outer = size * 0.5f - 1f, inner = outer * 0.84f;
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float d = new Vector2(x - size * 0.5f + 0.5f, y - size * 0.5f + 0.5f).magnitude;
+                float a = Mathf.Clamp01(outer - d) * Mathf.Clamp01(d - inner);
+                pixels[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255f));
+            }
+        texture.SetPixels32(pixels);
+        texture.Apply(false, true);
+        ringSprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        return ringSprite;
     }
 
     public void Show()

@@ -89,11 +89,30 @@ public sealed class ClientCopyHandover : MonoBehaviour
     /// <summary>The copy is beside the Auditor or carried.</summary>
     public static bool InProgress => Instance != null &&
         (Instance.phase == ClientCopyPhase.AtAuditor || Instance.phase == ClientCopyPhase.Carried);
+    /// <summary>
+    /// A chapter that owns its own client's copy handover (Level 3 T10: Bea), using the same
+    /// folder icon tap/drag and awaited dialogue action. Null in Levels 1-2 (this class owns it there).
+    /// </summary>
+    public interface ILevelDelivery
+    {
+        /// <summary>The client's conversation waits on the handover line for the copy.</summary>
+        bool AwaitingCopy { get; }
+        string ClientName { get; }
+        /// <summary>Folder icon tap during the handover step: true when consumed.</summary>
+        bool TryIconTap();
+        /// <summary>A folder drag released during the handover step (null outside it: the icon's own behaviour).</summary>
+        HudDragOutcome? ResolveDrop(Vector2 screen);
+    }
+
+    public static ILevelDelivery LevelDelivery;
+
+    private static bool LevelAwaiting => LevelDelivery != null && LevelDelivery.AwaitingCopy;
+
     /// <summary>True while only the folder icon should respond during the handover prompt.</summary>
-    public static bool AwaitingHandoverAction => (Instance != null && Instance.AwaitingHandover()) || AuditorInteractable.AwaitingFolder;
+    public static bool AwaitingHandoverAction => (Instance != null && Instance.AwaitingHandover()) || AuditorInteractable.AwaitingFolder || LevelAwaiting;
 
     /// <summary>Marie's step only (the Auditor's folder hand-in is AuditorInteractable.AwaitingFolder).</summary>
-    public static bool AwaitingClientCopy => Instance != null && Instance.AwaitingHandover();
+    public static bool AwaitingClientCopy => (Instance != null && Instance.AwaitingHandover()) || LevelAwaiting;
     /// <summary>Case editing and submission stay disabled after approval, through the result-card acknowledgement.</summary>
     public static bool CaseActionsBlocked => InProgress || (Instance != null && Instance.phase == ClientCopyPhase.Done) ||
         (PlayerProgressManager.Instance != null &&
@@ -105,7 +124,11 @@ public sealed class ClientCopyHandover : MonoBehaviour
     public string SavedPhase => ClientCopyRules.ToSaved(phase);
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() => CaseFolderFieldRow.ReadOnly = false;
+    private static void ResetStatics()
+    {
+        CaseFolderFieldRow.ReadOnly = false;
+        LevelDelivery = null;
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void InitializeForLoadedScenes()
@@ -300,6 +323,7 @@ public sealed class ClientCopyHandover : MonoBehaviour
     {
         get
         {
+            if (LevelAwaiting && !string.IsNullOrWhiteSpace(LevelDelivery.ClientName)) return LevelDelivery.ClientName;
             CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
             return def != null && def.clientFinale != null && !string.IsNullOrWhiteSpace(def.clientFinale.name) ? def.clientFinale.name : "your client";
         }
@@ -386,17 +410,22 @@ public sealed class ClientCopyHandover : MonoBehaviour
 
     private void SpawnPickup(bool animated)
     {
-        Scene scene = gameObject.scene;
-        Transform model = WithMesh(FindInScene(scene, FolderModelPath)) ?? WithMesh(FindInScene(scene, FallbackFolderModelPath));
-        AuditorInteractable auditor = FindAnyObjectByType<AuditorInteractable>(FindObjectsInactive.Exclude);
-        RectTransform icon = OfficeHudRuntime.Instance != null ? OfficeHudRuntime.Instance.CaseFolderIcon : null;
-        if (model == null || auditor == null)
+        pickup = SpawnAuditorCopy(gameObject.scene, animated, OnPickedUp);
+        if (pickup == null)
         {
-            // Nothing to float: the copy goes straight into the icon.
             Debug.LogWarning("[ClientCopy] The folder model or the Auditor was not found; the copy goes straight to the folder icon.");
             OnPickedUp();
-            return;
         }
+    }
+
+    /// <summary>The shared Levels 1/2 folder model, cover stamp, placement and pickup flight; optional save-before-flight for chapter owners.</summary>
+    public static ClientCopyPickup SpawnAuditorCopy(Scene scene, bool animated, System.Action pickedUp,
+        System.Func<RectTransform> collectBeforeFlight = null)
+    {
+        Transform model = WithMesh(FindInScene(scene, FolderModelPath)) ?? WithMesh(FindInScene(scene, FallbackFolderModelPath));
+        AuditorInteractable auditor = AuditorInteractable.Current;
+        RectTransform icon = OfficeHudRuntime.Instance != null ? OfficeHudRuntime.Instance.CaseFolderIcon : null;
+        if (model == null || auditor == null || icon == null) return null;
 
         Vector3 floor = auditor.transform.position;
         float height = 1.7f;
@@ -422,8 +451,8 @@ public sealed class ClientCopyHandover : MonoBehaviour
         Vector3 top = Vector3.up * Mathf.Cos(tipBack) - toPlayer * Mathf.Sin(tipBack);
         Quaternion restRotation = Quaternion.LookRotation(top, cover);
         Vector3? from = animated ? floor + Vector3.up * (height * 0.55f) + toPlayer * 0.2f : (Vector3?)null;
-        pickup = ClientCopyPickup.Create(scene, model.gameObject, rest, restRotation, from, icon, OnPickedUp);
-        if (pickup == null) OnPickedUp();
+        return ClientCopyPickup.Create(scene, model.gameObject, rest, restRotation, from, icon, pickedUp,
+            collectBeforeFlight: collectBeforeFlight);
     }
 
     /// <summary>The candidate only when it has a mesh to show (an empty clone would float the stamp alone).</summary>
@@ -470,7 +499,14 @@ public sealed class ClientCopyHandover : MonoBehaviour
     /// <summary>The CLIENT COPY stamp on the folder's front page (top right).</summary>
     private static void DecoratePage(int index, CaseFolderUI.PageBuilder page)
     {
-        if (index != 0 || !CopyActive || page == null || page.Paper == null) return;
+        if (!CopyActive) return;
+        DecorateCopyPage(index, page);
+    }
+
+    /// <summary>The same read-only copy marking for chapter adapters using the shared folder.</summary>
+    public static void DecorateCopyPage(int index, CaseFolderUI.PageBuilder page)
+    {
+        if (index != 0 || page == null || page.Paper == null) return;
         Rect paper = page.Paper.rect;
         float width = Mathf.Max(240f, paper.width * 0.38f);
         RectTransform stamp = ClientCopyStamp.Build(page.Paper, width, new Vector2(paper.width * 0.22f, paper.height * 0.38f), -10f);
@@ -711,7 +747,7 @@ public sealed class ClientCopyHandover : MonoBehaviour
         bool claims = !LevelTwo || (manager != null && manager.UsesLevelTwoStory && !Level2Checkpointer.IsDirectEditorAttempt);
         PlayerProgressManager.StoryGrants grants;
         if (!LevelTwo) grants = manager != null ? manager.CommitFollowThrough() : default;
-        else if (claims) grants = manager.CommitLevelTwoFollowThrough();
+        else if (claims) grants = manager.CommitLevelTwoFollowThrough(LevelCompleteUI.CreateLevelResult());
         else grants = new PlayerProgressManager.StoryGrants { Saved = true };
         DialogueUI dialogue = DialogueUI.Active;
         if (!grants.Saved)
@@ -786,7 +822,6 @@ public sealed class ClientCopyHandover : MonoBehaviour
         if (finishing) return;
         finishing = true;
         pendingResult ??= LevelTwo ? LevelCompleteUI.CreateLevelResult() : LevelCompleteUI.CreateSavedCaseResult();
-        if (CaseFinale.Instance != null) CaseFinale.Instance.PlayAfterHandover();
         if (LevelCompleteUI.Instance != null) LevelCompleteUI.Instance.ShowAfterHandover(pendingResult);
         else Debug.LogWarning("[ClientCopy] LevelCompleteUI is missing; the case result card cannot show.");
     }

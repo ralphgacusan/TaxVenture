@@ -18,3 +18,5 @@ MonoBehaviour:
   cratePrefab: {fileID: 1414887969237499401, guid: 6e3cfe8cda1ce5449b002fd1348507fc, type: 3}
   booksPrefab: {fileID: 1678797560971030, guid: a75d54721660055458ad1b98221ba023, type: 3}
   solidMaterial: {fileID: 2100000, guid: 56075b5ff19276a4eb803a05821c08f0, type: 2}
+  computerMonitorPrefab: {fileID: 1911445299336768, guid: 830cb1fbbcb273c4f804922226ab2712, type: 3}
+  computerKeyboardPrefab: {fileID: 1324923166343894, guid: 38e262f87c3088345a95b8ff628f0ce5, type: 3}

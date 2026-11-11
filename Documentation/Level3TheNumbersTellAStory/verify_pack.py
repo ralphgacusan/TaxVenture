@@ -8,11 +8,11 @@ PACK = Path(__file__).resolve().parent
 ROOT = PACK.parents[1]
 EXPECTED = {
     'T01': [], 'T02': ['T01'], 'T03': ['T02'],
-    'T04': ['T02', 'T03'], 'T05': ['T04'], 'T06': ['T03', 'T05'],
-    'T07': ['T01', 'T06'], 'T08': ['T07'], 'T09': ['T08'],
-    'T10': ['T09'], 'T11': ['T10'], 'T12': ['T01', 'T09', 'T11'],
-    'T13': ['T06', 'T12'], 'T14': ['T10', 'T12', 'T13'],
-    'T15': ['T14'], 'T16': ['T06', 'T12', 'T14'],
+    'T04': ['T02'], 'T05': ['T04'], 'T06': ['T05'],
+    'T07': ['T01', 'T03', 'T06'], 'T08': ['T07'], 'T09': ['T08'],
+    'T10': ['T09'], 'T11': ['T10'], 'T12': ['T01', 'T08', 'T09', 'T11'],
+    'T13': ['T06', 'T10'], 'T14': ['T10', 'T13'],
+    'T15': ['T14'], 'T16': ['T06', 'T14'],
     'T17': ['T13', 'T14', 'T15', 'T16'], 'T18': ['T17'],
 }
 REQUIRED = [
@@ -20,6 +20,8 @@ REQUIRED = [
     'CONTENT.md', 'SCENE_REUSE.md', 'WORLD_AND_FEEDBACK.md',
     'REWARDS_AND_VALIDATION.md', 'VERIFICATION.md', 'PROGRESS.md',
     'KNOWN_ISSUES.md', 'TICKETS.md', 'TAX_AUTHORITY.md', 'FIXTURE_CONTRACT.md',
+    'REVISION_PLAN.md', 'SIDE_QUEST_MACHINE.md', 'OFFICE_CASE_PLAY.md',
+    'images/side-quest-machine-storyboard.svg',
 ]
 HEADINGS = [
     'Goal and visible accomplishment', 'Existing systems to reuse',
@@ -30,6 +32,7 @@ HEADINGS = [
     'Handoff and completion definition',
 ]
 STATUSES = {'Planned', 'In progress',
+            'Deferred — future second case; excluded from the current Bea-only release',
             'Implemented, internally verified; user manual pending', 'User accepted'}
 
 
@@ -118,7 +121,7 @@ for path in sorted((PACK / 'tickets').glob('T*.md')):
             errors.append(f'{key}: inconsistent downstream {dependent}')
 
 if set(actual) != set(EXPECTED):
-    errors.append(f'Ticket set mismatch: expected18, got {len(actual)}')
+    errors.append(f'Ticket set mismatch: expected {len(EXPECTED)}, got {len(actual)}')
 
 visited, active = set(), set()
 def visit(key):
@@ -148,14 +151,19 @@ for key, path in actual.items():
 # Fixtures check the documented arithmetic, not the future gameplay implementation.
 from decimal import Decimal as D
 fixtures = {
-    'worksheet decisions': (7 + 2 + 1 + 2, 12),
-    'chapter coins': (60 + 100 + 100, 260),
-    'max mastery XP': (60 + 100 + 100, 260),
-    'service trust': (2 + 4 + 4, 10),
-    'responsible history': (46 + 6 + 2 + 10, 64),
-    'unsupported history': (46 + 6 - 8 + 10, 54),
-    'dismissive history': (46 + 6 - 3 + 10, 59),
-    'earned through L3': (160 + 160 + 260, 580),
+    'legacy v1 worksheet decisions': (7 + 2 + 1 + 2, 12),
+    'revised v2 worksheet decisions': (7 + 2, 9),
+    'current Bea-only chapter coins': (60 + 100, 160),
+    'current Bea-only maximum mastery XP': (60 + 100, 160),
+    'current Bea-only service trust': (2 + 4, 6),
+    'responsible history': (46 + 6 + 2 + 6, 60),
+    'unsupported history': (46 + 6 - 8 + 6, 50),
+    'dismissive history': (46 + 6 - 3 + 6, 55),
+    'earned through current L3': (160 + 160 + 160, 480),
+    'future two-case chapter coins': (60 + 100 + 100, 260),
+    'future two-case mastery XP': (60 + 100 + 100, 260),
+    'future two-case service trust': (2 + 4 + 4, 10),
+    'earned if future company case is added': (160 + 160 + 260, 580),
     'existing permanent products': (40 + 50 + 90 + 60 + 100 + 30 + 60, 430),
     'Bea due': (D(22500) + D('.20') * (D(600000) - D(400000)), D(62500)),
     'Bea balance': (D(62500) - D(12500), D(50000)),
@@ -170,7 +178,7 @@ try:
     content_checks = verify()
 except (ValueError, KeyError, IndexError) as error:
     content_checks = 0
-    errors.append(f'T01 content: {error}')
+    errors.append(f'Content/revision contract: {error}')
 
 if errors:
     print('\n'.join('FAIL: ' + message for message in errors))
@@ -180,5 +188,5 @@ status_counts = {status: sum(f'Status: **{status}**.' in bodies[path] for path i
                  for status in sorted(STATUSES)}
 print(f'PASS: {len(actual)} tickets; statuses {status_counts}; dependency DAG/order; {link_count} local links; '
       f'{source_count} existing source references; {len(fixtures)} arithmetic fixtures; '
-      f'{content_checks} T01 content assertions; {words} ticket words. '
+      f'{content_checks} stable/legacy/revision content assertions; {words} ticket words. '
       'Documentation only; no gameplay/Unity verification.')

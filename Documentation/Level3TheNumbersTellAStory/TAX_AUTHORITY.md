@@ -1,3 +1,5 @@
+> **3 November revision scope.** The gameplay revision changes presentation, assessment and tool flow, not the financial/tax assumptions documented below. The named educator, corporate certificate provenance and rounding acceptance gates remain open as previously recorded. No new legal research or educator approval is claimed by rewriting tickets. Current design authority: [REVISION_PLAN](REVISION_PLAN.md).
+
 # T01 — Tax authority and curriculum release gate
 
 Research checked **30 October 2026 (Asia/Manila)**. Status: primary-source research completed for the bounded computations; **educator approval unavailable**. These are fictional completed calendar-year 2026 packets, not records of an already elapsed real 2026 or filing advice. No financial fixture was changed. Later legislation/issuances must be checked again before graded release; this research is not an assertion that every possible 2026 exception has been exhausted.

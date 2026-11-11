@@ -123,6 +123,30 @@
       "container": true,
       "scope": "Level_02",
       "returnsToWorld": false
+    },
+    {
+      "id": "bea_summary",
+      "label": "Bea's Income & Expense Summary",
+      "category": "Case Files",
+      "icon": "summary",
+      "description": "Bea's checked income and supported expenses. Turn it over for the entries and their sources; return it to her stand or keep it in your Bag.",
+      "required": true,
+      "stackLimit": 1,
+      "container": false,
+      "scope": "",
+      "returnsToWorld": false
+    },
+    {
+      "id": "bea_certificate",
+      "label": "Bea's Withholding Certificate",
+      "category": "Case Files",
+      "icon": "certificate",
+      "description": "Bea's printed withholding certificate. Read it from your Bag; transfer its amounts at your desk.",
+      "required": true,
+      "stackLimit": 1,
+      "container": false,
+      "scope": "",
+      "returnsToWorld": false
     }
   ],
   "journal": [

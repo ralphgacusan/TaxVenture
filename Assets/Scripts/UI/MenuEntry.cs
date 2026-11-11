@@ -84,6 +84,7 @@ public static class MenuEntry
             ResumeLevelOneEndFlow();
             return;
         }
+        if (TryResumeEnding()) return;
         if (HasCareerAccess)
         {
             Continue(cameraManager);
@@ -144,6 +145,7 @@ public static class MenuEntry
             ResumeLevelOneEndFlow();
             return true;
         }
+        if (TryResumeEnding()) return true;
         if (!HasCareerAccess) return false;
         if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
         if (cameraManager != null)
@@ -165,6 +167,20 @@ public static class MenuEntry
         OpenSettings = false;
         openingUnskippable = false;
         SceneFade.FadeOutThenLoad("Office_Level1", fadeInDestination: true);
+    }
+
+    private static bool TryResumeEnding()
+    {
+        PlayerProgressManager manager = PlayerProgressManager.Instance;
+        if (manager == null || !manager.CanContinueCampaign || !ChapterEndingRules.Pending(manager.CurrentProgress)) return false;
+        string chapter = manager.CurrentProgress.campaign.ending.chapterId;
+        storyLaunching = true;
+        CampaignRun.Begin(CampaignRunMode.Story);
+        OpenLevelSelect = false;
+        OpenSettings = false;
+        openingUnskippable = false;
+        SceneFade.FadeOutThenLoad(chapter == "Level_01" ? "Office_Level1" : chapter == "Level_02" ? "Office_Level2" : "Office_Level3", fadeInDestination: true);
+        return true;
     }
 
     /// <summary>True: the next 3D Menu load opens on the level select (progress) view.</summary>

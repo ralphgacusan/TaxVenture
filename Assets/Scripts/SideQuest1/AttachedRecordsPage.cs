@@ -98,7 +98,7 @@ public sealed class AttachedRecordsPage : MonoBehaviour, IClientRecordHolder
     /// active case's page list is rebuilt on every opening; never a fixed page number).
     /// </summary>
     public static AttachedRecordsPage Create(GameObject host, Transform folderRoot, CaseFolderUI pages, int pageIndex, string ownerId,
-        IList<ClientRecord> records, RecordPageLayout layout, Func<bool> folderOpen, string pageRole = null)
+        IList<ClientRecord> records, RecordPageLayout layout, Func<bool> folderOpen, string pageRole = null, ISet<string> reserveOnly = null)
     {
         if (host == null || folderRoot == null || pages == null || pages.PaperRect == null || records == null) return null;
         var page = host.AddComponent<AttachedRecordsPage>();
@@ -108,7 +108,7 @@ public sealed class AttachedRecordsPage : MonoBehaviour, IClientRecordHolder
         page.pageRole = pageRole;
         page.ownerId = ownerId;
         page.folderOpen = folderOpen;
-        page.Build(records, layout ?? RecordPageLayout.Default, folderRoot.gameObject.layer);
+        page.Build(records, layout ?? RecordPageLayout.Default, folderRoot.gameObject.layer, reserveOnly);
         pages.PageRendered += page.HandlePageRendered;
         pages.Closing += page.GatherAll;
         return page;
@@ -125,7 +125,12 @@ public sealed class AttachedRecordsPage : MonoBehaviour, IClientRecordHolder
         if (detachedWorkspace != null) Destroy(detachedWorkspace.gameObject);
     }
 
-    private void Build(IList<ClientRecord> records, RecordPageLayout layout, int layer)
+    private readonly Dictionary<string, Transform> reservedSlots = new Dictionary<string, Transform>();
+    private readonly Dictionary<string, Vector2> reservedSizes = new Dictionary<string, Vector2>();
+    public Transform SlotFor(string source) => source != null && reservedSlots.TryGetValue(source, out Transform slot) ? slot : null;
+    public Vector2 SlotSizeFor(string source) => source != null && reservedSizes.TryGetValue(source, out Vector2 size) ? size : Vector2.one;
+
+    private void Build(IList<ClientRecord> records, RecordPageLayout layout, int layer, ISet<string> reserveOnly = null)
     {
         detachedWorkspace = new GameObject("Detached Records " + ownerId).transform;
         SceneManager.MoveGameObjectToScene(detachedWorkspace.gameObject, gameObject.scene);
@@ -154,7 +159,10 @@ public sealed class AttachedRecordsPage : MonoBehaviour, IClientRecordHolder
             slot.gameObject.layer = layer;
             slot.SetParent(pageAnchor, false);
             slot.localPosition = new Vector3(slots[i].x, 0.0004f, slots[i].z);
-            papers.Add(ClientRecordPaper.Create(this, slot, detachedWorkspace, records[i], new Vector2(slots[i].width, slots[i].height), layer));
+            reservedSlots[records[i].source ?? records[i].id] = slot;
+            reservedSizes[records[i].source ?? records[i].id] = new Vector2(slots[i].width, slots[i].height);
+            if (reserveOnly == null || !reserveOnly.Contains(records[i].source))
+                papers.Add(ClientRecordPaper.Create(this, slot, detachedWorkspace, records[i], new Vector2(slots[i].width, slots[i].height), layer));
         }
         pageAnchor.gameObject.SetActive(false);
     }
@@ -395,7 +403,7 @@ public sealed class AttachedRecordsPage : MonoBehaviour, IClientRecordHolder
         return false;
     }
 
-    private bool OverOwnPage(Vector2 screen)
+    public bool OverOwnPage(Vector2 screen)
     {
         Camera camera = ViewCamera;
         if (camera == null || !FolderOpen || !folderRoot.gameObject.activeInHierarchy) return false;

@@ -8,7 +8,8 @@
     "cases: cases in the level; only used for the EXP/hearts maximum before the first result is saved.",
     "badgeSlots: how many badge spaces the story board shows (filled in sideQuests order; the rest stay empty until a new side quest is added).",
     "sideQuests: one paper per side quest. chapterId: the chapter it belongs to (tapping it opens that chapter). number: the side quest number written on its badge paper. The badge art and name come from that chapter's rewards.json sideQuest (badgeId, badgeName, badgeEmblem, badgeRibbon).",
-    "Fields starting with '_' are notes and are ignored by the game."
+    "Fields starting with '_' are notes and are ignored by the game.",
+    "5 November 2026: Chapter 3 is enabled after completed Chapter 2 for user-requested APK playtesting. This does not mark T18 release/content/device acceptance complete; Chapters 4–5 remain Coming Soon."
   ],
   "chapters": [
     {
@@ -30,9 +31,33 @@
       "cases": 1,
       "campaignPending": false
     },
-    { "id": "Level_03", "number": 3, "noteTitle": "New chapter", "title": "New Chapter", "description": "A new chapter of your career is on its way.", "comingSoon": true },
-    { "id": "Level_04", "number": 4, "noteTitle": "New chapter", "title": "New Chapter", "description": "A new chapter of your career is on its way.", "comingSoon": true },
-    { "id": "Level_05", "number": 5, "noteTitle": "New chapter", "title": "New Chapter", "description": "A new chapter of your career is on its way.", "comingSoon": true }
+    {
+      "id": "Level_03",
+      "number": 3,
+      "noteTitle": "Bea's records",
+      "title": "The Numbers Tell a Story",
+      "description": "Help Bea organize her records and work through her income, deductions and tax.",
+      "comingSoon": false,
+      "scene": "Office_Level3",
+      "cases": 1,
+      "campaignPending": false
+    },
+    {
+      "id": "Level_04",
+      "number": 4,
+      "noteTitle": "New chapter",
+      "title": "New Chapter",
+      "description": "A new chapter of your career is on its way.",
+      "comingSoon": true
+    },
+    {
+      "id": "Level_05",
+      "number": 5,
+      "noteTitle": "New chapter",
+      "title": "New Chapter",
+      "description": "A new chapter of your career is on its way.",
+      "comingSoon": true
+    }
   ],
   "badgeSlots": 5,
   "sideQuests": [
@@ -47,6 +72,12 @@
       "chapterId": "Level_02",
       "title": "Mark the Money!",
       "description": "Mark Aling Rosa's four records with the income toolkit at her market stall. Part of Chapter 2."
+    },
+    {
+      "number": 3,
+      "chapterId": "Level_03",
+      "title": "Worth the Tax?",
+      "description": "Sort Bea's records with the paper machine. Part of Chapter 3."
     }
   ]
 }

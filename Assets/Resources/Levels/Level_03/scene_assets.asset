@@ -16,3 +16,5 @@ MonoBehaviour:
   beaPrefab: {fileID: 1464604485386400, guid: 1a96e91537e0d7f48809b9484dff7f3e, type: 3}
   npcController: {fileID: 9100000, guid: 2e8c12097e1e471a86e5e5d07745decd, type: 2}
   worktablePrefab: {fileID: 5507815067105631450, guid: ee79087d0378f68499e00c8f9bb31663, type: 3}
+  guardPrefab: {fileID: 1611835758375592, guid: 1d5338d27c0839b46892a6390262c9d4, type: 3}
+  ambientPrefab: {fileID: 1742387174060844, guid: 08a2f1fda95d8de42ba936230a0610fe, type: 3}

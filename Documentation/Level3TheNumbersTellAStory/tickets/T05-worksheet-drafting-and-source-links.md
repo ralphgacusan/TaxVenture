@@ -1,66 +1,74 @@
-# T05 — Reconstruct a reversible source-linked worksheet at Bea’s table
+# T05 — Feed, select and lever-file records through the compact machine
 
-Status: **Implemented, internally verified; user manual pending**. Blocked by: T04.
+Status: **Implemented, internally verified; user manual pending**. Blocked by: T04. Built 4 November 2026: see PROGRESS (T05 entry) and KNOWN_ISSUES L3-R58–L3-R66.
 
-Priority: P1. Phase: B — Side-quest drafting. Estimated scope: M; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
+Priority: P1. Phase: B — Side-quest drafting. Estimated scope: M; one fresh agent context. If real call-site work exceeds this bound, record a bounded split before adding unrelated framework work.
 
 ## Goal and visible accomplishment
 
-Players lift seven working strips from originals, place them into four sections and explain two questionable claims without answer-revealing snapping.
+Implement the physical read → half-feed → select → pull → next-paper loop, neutral draft totals and recall tabs. The machine replaces direct three-tray sorting, not the worksheet rules/save owner. Read [SIDE_QUEST_MACHINE](../SIDE_QUEST_MACHINE.md), including its state table, exact record registry, motion table, visual composition and failure boundaries.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Implemented 30 October 2026 on an implementation instruction; evidence in [PROGRESS](../PROGRESS.md), limitations in [KNOWN_ISSUES](../KNOWN_ISSUES.md).
+Revision: **3 November 2026 — approved paper-machine interaction**. Status remains Planned; source presence is reuse evidence, not acceptance. Retain source/save identities and work serially from the current continuation.
 
 ## Existing systems to reuse
 
-Verified existing paths relative to repository root; recheck live behavior rather than rely on stale comments:
+Existing source paths relative to repository root; inspect live callbacks/content before changing them. Narrow Level_03 adapters only; no duplicate folder/stamp/calculator/input/save/shop framework.
 
-- `Assets/Scripts/Level2/IncomeToolkit.cs`
-- `Assets/Scripts/Level2/AnnotationPaper.cs`
-- `Assets/Scripts/UI/Books/PageTurnStage.cs`
-- `Assets/Scripts/SideQuest1/ClientRecordPaper.cs`
-- `Assets/Scripts/UI/WorkstationUI.cs`
-
-New L3 components/resources mentioned below are proposed outputs, not verified existing APIs. Prefer existing owners/adapters and level configuration; do not copy global frameworks.
+- `Assets/Scripts/Level3/Level3WorksheetRules.cs`
+- `Assets/Scripts/Level3/Level3WorksheetDesk.cs`
+- `Assets/Scripts/Level3/Level3WorksheetModel.cs`
+- `Assets/Scripts/Level3/Level3WorksheetHints.cs`
+- `Assets/Scripts/Level3/Level3Checkpointer.cs`
+- `Assets/Scripts/Level3/Level3DeskProps.cs`
 
 ## Work and interaction mechanics
 
-1. Reuse existing workstation/physical record handling and build L3-specific worksheet behavior, not a cloned Rosa annotation game. Left source/current center worksheet/right tool dock with narrow-screen paging; physical tray/strip/claim/tape bodies and labels follow WORLD_AND_FEEDBACK.
-2. Source row→Add to worksheet lifts a strip retaining row/source ID and printed amount. Re-extraction focuses existing strip. R5 annual printing and R7 individual invoice have different source IDs/shared PRINT-26, so mistaken double counting stays possible while infinite technical copies do not.
-3. Implement Income, Allowable expenses, Not deductible and Supporting only. Accept all plausible wrong destinations neutrally. Tap-place and optional broad-target drag have identical semantics; off-target returns safely, Undo last move works, no draft action changes mastery/trust.
-4. Two claim notes require personal-purpose and already-represented reasons plus R7 related-entry selection. Keep fields accessible regardless of wrong destination; offer neutral reason candidates and any eligible related row until Check. A wrong placement must neither hide required fields nor expose the correct answer.
-5. Each edit updates saved draft/source links, current selected row/section and appropriate subtotal-dirty flags through the existing checkpoint. Exit/reopen/back/disable settle held strips without erasing placements. Maintain single input/camera owner, still reading and bounded layout updates. Grading and rewards remain disabled until T06’s complete Check path.
+1. Reuse R1/R2 earnings, R3/R4/R5 costs, R6/R7 questions; only the current batch is available. One card on a stand, one compact machine, max three current-batch review tabs; no old board, permanent notes, source fan or field calculator.
+2. Drag current slip to intake or tap slip then intake. Snap gently and half-feed while leaving title/amount visible. Off-target returns safely; mechanical target accepts any owned current row without a correctness cue. Loading does not classify, alter totals or consume an original.
+3. Enable selector after loading, neutral for each new/unfiled row. Tap a category or rotate between Income/Deduct/Leave Out detents. All choices accept every row. The lever stays raised until category and required reason exist; explain missing input in one short prompt.
+4. For R6/R7 only, show the compact Why? picker after selection for every destination, with plausible neutral existing reason options. Preserve pending choices during original viewing and deliberate B-PRINT/B-EXP comparison. No auto-reason, answer-revealing label or extra scored link form.
+5. Pull down and release past a deliberate threshold, or tap handle, to execute one atomic worksheet edit through existing CommitWorksheet. Candidate validates row/case/revision/batch/mode and writes category+reason together. Do not mutate the saved draft during selector preview. Save failure keeps the half-fed choices retryable; no feed-success effects.
+6. After publish, animate lever/rollers/full suction behind a slot lip, then tab settle and next paper. Every valid classification receives identical neutral effects, including wrong choices. Busy gating and consumed pointer release prevent double filing/tap-through; skip/interrupt settles committed state without another command.
+7. Review tabs show title/current category; tap to recall before Check or during T06 correction. Keep the old durable row until replacement saves. Cancel preserves it; refile replaces, never duplicates. Accepted earlier batches are read-only. Recalled rows retain saved choices; new rows start neutral.
+8. Totals use exact selected draft amounts, including wrong choices; no hidden expected-answer correction, arithmetic grade or half-fed contribution. Compact Income/Deductions windows only. Original source/transaction identity follows every choice automatically.
+9. Teach feed/select/pull once without revealing treatment. Update BeaWorkIndependent/guide semantics to first successful saved filing, not intake or dial rotation. Preserve running legacy clock, frozen grade, drafts and possessions. Back/settings/focus/leave release only owned locks; uncommitted paper returns safely, committed work restores quietly.
+10. Implement actual body/slot/stand/dial/lever pivots/rollers/colliders and readable faces using current asset candidates plus minimal Level3DeskProps parts. Follow contract timing, existing palette/font/audio and tap alternatives. Expose current-batch completeness to T06; no pretend success/check button until T06 owns actual checks.
 
 ## Assets, motion and feedback
 
-New worksheet/strip/claim/relationship-clip assemblies using existing physical paper geometry/material/printing. No asset-only delivery: real extraction/place/undo/source-open entry points must work.
-
-Follow WORLD_AND_FEEDBACK and fixed document types. Bind every new world object to actual 3D body, collider/target, correct source/record identity and existing camera/input/audio ownership. Record resolved anchors/clip names and any unsupported asset assumption. No user scene-assembly chores or claims of rendered acceptance from declarations.
+Follow [machine visual/motion contract](../SIDE_QUEST_MACHINE.md) and [world contract](../WORLD_AND_FEEDBACK.md). Same existing low-poly scene, paper/font/material vocabulary and restrained sound/settings; no oversized navy/brass board, new art theme, full-screen flat substitute or auto-shrunk labels. Real anchored 3D bodies, reachable targets and correct slot occlusion are required in this slice. Implementer binds everything; user checks actual Unity/phone rendering. The linked storyboard is a mechanical reference, not final visual acceptance.
 
 ## Integration requirements
 
-T03 calculator will fill subtotal fields in T06. This ticket supplies the same persisted draft the grader consumes; no private presentation-only choices or hidden answer keys in Bag. Keep L2 toolkit behavior unchanged.
+Preserve shared L1/L2 behavior, existing serialized identities/source scenes and all campaign possessions. Keep current exact-decimal L3 rules/provenance; no float prototype bridge. Use existing input/dialogue/FSM/guide/Bag/reward owners. Career3 stays gated until T18, L4/L5 remain unavailable. No remote ticket, package, scene recopy or global cleanup.
 
-Preserve current L1/L2 scenes, source prefabs/GUIDs, signed save owner, mode guards, input/FSM/dialogue/audio frameworks and Android controls. Normal L3 Career remains unavailable until T18. No L4 filing, ending, stand, drawer or global archive feature is added.
+### Entry from the T04 buildup (4 November)
+
+Start in the seated workspace the buildup opens: `Level3BeaTable.TrySit` after Help Bea, or the seat after Later or a restore (`Step == Ready`). Never replay her introduction, envelope, reveal or handover; acquisition stays `CommitBeaRecords`. Replace `worksheet-intro`'s pages (same id, `flag:atBeaTable`, Workstation, no `after`) with "Feed the record" / "Choose where it belongs" / "Pull to file", each waiting on the real action. Bea's T04 lines name no treatment and the buildup leaves the draft empty and her clock unstarted; T05 moves `BeaWorkIndependent` to the first saved filing. Keep one live table target: machine colliders are seated-only, and the seat box's Interactable layer stays the table's switch.
 
 ## Persistence and failure rules
 
-Use the existing candidate→save→publish command boundary and stable chapter/case/action IDs. Validate actual prerequisites/revision/source before committing. Failed write leaves prior state, source/copy and retry available, with no success effect. Quiet restore does not raise acquisition/reward/choice/consumption events. Back, repeated input, disable and app focus interruption settle pointer state and release only owned holds. Story/replay/practice/Editor distinctions protect live campaign data.
+Candidate -> signed persist -> publish before success effects. Validate mode/case/source/revision/prerequisites/action IDs; duplicates do not award. Preserve legacy grades/claims/approved snapshots/copies and quiet restores. Failure keeps prior state/source/copy retryable. Clear only owned pointer/selection/locks on Back/settings/disable/focus/camera return; independent work can be left. Practice/replay/Editor cannot mutate live story state.
 
 ## Internal checks — AI source/build/regressions only
 
-- [x] All7 rows extract once, wrong plausible trays accept, original sources stay unchanged, R7/R5 remain distinct. (R1-R7 resolve from the real case file; each lifts once and a repeat only focuses its strip; all 28 row/section pairs are accepted with the same outcome; R5 (B-EXP) and R7 (B-PRINT) share PRINT-26 but stay separate strips; Undo returns a strip to its untouched record.)
-- [x] Tap-place/drag/Undo/source tabs change the same saved model; foreign-case sources and mechanical invalidity give explicit safe refusal. (Tap-tap and drag-drop both call the one Place command through Level3Checkpointer.CommitWorksheet; non-rows, other-case rows, sources not handed over, unknown sections/notes/reasons, self-links and edits outside WorksheetDraft/WorksheetCorrections are refused with a plain reason and no change.)
-- [x] Both reasons and related link remain reachable on every wrong destination; no per-drop correctness leak. (Both notes take all five reasons and the link with R6/R7 in every section or none, even before lifting; a fully wrong and the right draft get identical outcomes and messages edit by edit; the saved draft holds only player keys; the worksheet code never reads the answer key.)
-- [x] Exit/reentry/reload/failed draft commit restore stable placements and release holds, no mastery/reward events. (Draft round-trips through the signed save and resumes; a T04 save without a draft resumes empty; an injected write failure keeps disk and live state; leaving, settings, dialogue, pause and focus loss settle the board and any held strip; drafting changes no coins, trust, XP or mastery.)
-- [x] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count. (Commands and counts in PROGRESS; suites built out of tree.)
+- [x] Half-feed is uncommitted; lever saves destination+reason atomically; failed/double pull and interrupted feed preserve exactly one row.
+- [x] Tap/drag and tap/pull parity; new neutral selector; loaded-header readability; neutral wrong filing; recall/cancel replaces no duplicate. (Parity/readability by command, geometry and font checks only.)
+- [x] Totals follow published wrong/right choices; first saved filing clock boundary and legacy quiet restore remain correct.
+- [x] Seven entries preserve source identity; three batches/selector treatments work without correctness snapping. (Later batches via accepted-batch fixtures; T06 writes acceptance.)
+- [x] Automatic totals reflect selected entries; no field calculator/subtotal gate; source totals never read expected answers.
+- [x] R6/R7 reasons accessible on any placement; repeated extraction/undo/cancel/save failure have defined outcomes.
+- [x] Legacy choices map correctly through T02; existing batch state/draft restores without duplicate events.
+- [x] Build actual changed production paths and run targeted command/save/failure/mode checks plus affected shared regressions; record commands/counts/warnings, not historical passes.
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 
-- [ ] User checks section paging/readability, finger offset/occlusion, broad targets, neutral cues, paper depth/motion, no pixel-precision gate or camera clipping.
-- [ ] Inspect applicable actual imported references, 3D bodies, paper text, targets, motion, camera/control recovery and Android layout. Manual acceptance remains pending until the user reports it; static tests are not a substitute.
+- [ ] Drag or tap slip into slot; exposed header stays readable; selector starts neutral; Why?/Compare return to same pending row.
+- [ ] Pull or tap lever; paper enters behind lip, rollers move, tab settles and next arrives briskly; wrong choices feel identical.
+- [ ] Recall/cancel/retry, off-target drop, Back/settings/focus and camera return preserve safe poses, reachable targets and clean audio.
 
 ## Handoff and completion definition
 
-Complete editable physical worksheet with source/claim relationships. Next T06.
+Deliver the goal above through its real entry point, including persistence, presentation and checked limitations. Update [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md) with actual evidence and remaining user checks; do not mark implemented for documentation presence. User owns Unity and every Git operation.
 
-Direct dependents: T06. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Mark implemented/internal-verified only after real entry points and checks work; Git operations and user acceptance remain user-owned. No commits, scene edits or gameplay implementation are performed by authoring this ticket.
+Direct dependents: T06. Continue the revised index, retaining prior working changes and historical results.

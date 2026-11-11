@@ -23,13 +23,14 @@ public static class LevelBookLeaves
     private class BookFile
     {
         public List<TaxCodeSection> sections;
+        public List<string> omitSharedSections;
     }
 #pragma warning restore 0649
 
     public static string ResourcePath(string levelId) => $"Levels/{levelId}/book";
 
     /// <summary>The level's extra leaves (empty when it has none).</summary>
-    public static List<TaxCodeSection> Load(string levelId)
+    public static List<TaxCodeSection> Load(string levelId, List<TaxCodeSection> shared = null)
     {
         var leaves = new List<TaxCodeSection>();
         if (string.IsNullOrEmpty(levelId)) return leaves;
@@ -50,6 +51,9 @@ public static class LevelBookLeaves
         }
 
         if (parsed == null || parsed.sections == null) return leaves;
+        if (shared != null && parsed.omitSharedSections != null)
+            shared.RemoveAll(section => section != null && parsed.omitSharedSections.Exists(prefix =>
+                !string.IsNullOrWhiteSpace(prefix) && section.heading != null && section.heading.StartsWith(prefix + " ", StringComparison.Ordinal)));
         for (int i = 0; i < parsed.sections.Count; i++)
         {
             TaxCodeSection section = parsed.sections[i];

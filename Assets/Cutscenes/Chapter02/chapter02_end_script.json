@@ -1,0 +1,18 @@
+{
+  "id": "chapter02.end",
+  "title": "A Familiar Name",
+  "scene": "CS_Chapter02_End",
+  "duration": 15.0,
+  "fadeInSeconds": 0.25,
+  "fadeOutSeconds": 0.25,
+  "cueFadeSeconds": 0.1,
+  "charsPerLine": 46,
+  "shotStarts": [0.0, 4.8, 10.1],
+  "cues": [
+    { "voice": "vo_ch02_end_01_rosa_responsible", "speaker": "Rosa", "text": "You checked it with me. Thank you.", "start": 0.6, "end": 4.6, "variant": "rosa.responsible_completed" },
+    { "voice": "vo_ch02_end_01_rosa_promise", "speaker": "Rosa", "text": "Next time, please check before you promise.", "start": 0.6, "end": 4.6, "variant": "rosa.promise_resolved" },
+    { "voice": "vo_ch02_end_01_rosa_dismissive", "speaker": "Rosa", "text": "Thank you for finishing the review.", "start": 0.6, "end": 4.6, "variant": "rosa.dismissive_completed" },
+    { "voice": "vo_ch02_end_01_rosa_neutral", "speaker": "Rosa", "text": "Thank you for explaining the corrected copy.", "start": 0.6, "end": 4.6, "variant": "rosa.neutral" },
+    { "voice": "vo_ch02_end_02_receptionist", "speaker": "Receptionist", "text": "Bea's next. She's bringing her receipts.", "start": 10.5, "end": 14.5, "variant": "" }
+  ]
+}

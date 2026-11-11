@@ -23,7 +23,8 @@
   "tabs": [
     { "id": "basics", "title": "Basics", "color": "#4E8FD8", "alwaysOpen": true },
     { "id": "sidequest", "title": "Side Quest", "color": "#E2903C" },
-    { "id": "case", "title": "Case", "color": "#4FA874" }
+    { "id": "case", "title": "Case", "color": "#4FA874" },
+    { "id": "bea", "title": "Bea's Case", "color": "#8E6FC2" }
   ],
 
   "cards": [
@@ -93,6 +94,26 @@
       "lessons": ["Level_01/office-hours", "Level_01/store-folder", "Level_01/exit-desk", "Level_01/auditor", "Level_01/submit", "Level_01/submit-drag", "Level_01/audit-approved"],
       "drill": "case_handin",
       "lockedNote": "You'll meet the Auditor in Chapter 1."
+    },
+    {
+      "id": "bea.machine",
+      "tab": "bea",
+      "number": 1,
+      "title": "Worth the Tax?",
+      "skills": ["Feed one record", "Income, deduct or leave out", "Check each batch"],
+      "lessons": ["Level_03/worksheet-intro", "Level_03/worksheet-notes", "Level_03/machine-batch-filed", "Level_03/worksheet-check", "Level_03/worksheet-ready"],
+      "drill": "l3_machine",
+      "lockedNote": "You'll meet Bea's paper machine in Chapter 3."
+    },
+    {
+      "id": "bea.office",
+      "tab": "bea",
+      "number": 2,
+      "title": "Three Office Stages",
+      "skills": ["Taxable income", "Tax due from the table", "Credit and what's left"],
+      "lessons": ["Level_03/computation-intro", "Level_03/computation-taxable", "Level_03/computation-tax", "Level_03/credit-link", "Level_03/credit-payable"],
+      "drill": "l3_office",
+      "lockedNote": "You'll work out Bea's tax in Chapter 3."
     }
   ]
 }

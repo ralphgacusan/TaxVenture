@@ -81,8 +81,8 @@ public sealed class HudDragItem : MonoBehaviour, IHudDragVisual
         for (int i = item.childCount - 1; i >= 0; i--) Destroy(item.GetChild(i).gameObject);
         buildContent?.Invoke(item, size);
 
-        position = IconLocal();
         target = ToLocal(screenPosition);
+        position = IconLocal();
         tilt = restTilt;
         elapsed = 0f;
         state = State.Following;
@@ -246,6 +246,19 @@ public sealed class HudDragItem : MonoBehaviour, IHudDragVisual
     }
 
     /// <summary>A small Notes page: paper stack, tape, title and a few ruled, ticked lines.</summary>
+    public static void BuildSummaryPaper(RectTransform root, Vector2 size)
+    {
+        NotesPaperView.BuildPaperStack(root, NotesBack, NotesPaper, 0.45f);
+        var heading = HudTheme.CreateLabel("Heading", root, "BEA\'S SUMMARY", 20f, HudTheme.BrassSoft, TMPro.TextAlignmentOptions.Center, TMPro.FontStyles.Bold);
+        heading.rectTransform.anchorMin = new Vector2(0.1f, 0.72f);
+        heading.rectTransform.anchorMax = new Vector2(0.9f, 0.92f);
+        heading.rectTransform.offsetMin = heading.rectTransform.offsetMax = Vector2.zero;
+        var body = HudTheme.CreateLabel("Printed Lines", root, "Income\n────────\nSupported expenses\n────────", 18f, new Color32(38, 49, 62, 255), TMPro.TextAlignmentOptions.TopLeft);
+        body.rectTransform.anchorMin = new Vector2(0.12f, 0.12f);
+        body.rectTransform.anchorMax = new Vector2(0.88f, 0.68f);
+        body.rectTransform.offsetMin = body.rectTransform.offsetMax = Vector2.zero;
+    }
+
     public static void BuildNotesPaper(RectTransform root, Vector2 size)
     {
         float u = size.x / 230f;

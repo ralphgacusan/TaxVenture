@@ -75,7 +75,7 @@ public static class SettingsBoardSetup
             Check(!board.MusicToggle.IsOn && board.SfxToggle.IsOn, "switches show the given values");
             Physics.SyncTransforms();
             PhysicsScene physics = preview.GetPhysicsScene();
-            foreach (CareerBoardTarget target in new CareerBoardTarget[] { board.MusicToggle, board.SfxToggle, board.BackButton })
+            foreach (CareerBoardTarget target in new CareerBoardTarget[] { board.MusicToggle, board.SfxToggle, board.VoiceToggle, board.MusicSlider, board.SfxSlider, board.VoiceSlider, board.BackButton })
             {
                 Vector3 screen = camera.WorldToScreenPoint(target.transform.position + target.transform.forward * -0.01f);
                 Check(screen.z > 0f && screen.x > 0f && screen.y > 0f && screen.x < camera.pixelWidth && screen.y < camera.pixelHeight,

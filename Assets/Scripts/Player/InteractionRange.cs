@@ -25,7 +25,49 @@ public static class InteractionRange
         if (target == null) return false;
         Transform player = CameraController.Instance != null ? CameraController.Instance.PlayerRoot : null;
         if (player == null) return true;
-        return FlatDistance(player.position, target) <= reach;
+        if (FlatDistance(player.position, target) > reach) return false;
+        // T03: with the follow camera outdoors, a tap must also be in the player's own line of sight.
+        CameraController owner = CameraController.Instance;
+        if (owner != null && owner.IsThirdPersonView)
+            return !Occluded(owner.PlayerEye, ClosestPoint(owner.PlayerEye, target), target.transform, player);
+        return true;
+    }
+
+    private static readonly RaycastHit[] sightHits = new RaycastHit[8];
+
+    /// <summary>
+    /// T03: something solid (not the target, not the player, not a trigger) lies between the
+    /// player's eye and the point. One bounded cast.
+    /// </summary>
+    public static bool Occluded(Vector3 eye, Vector3 point, Transform target, Transform player)
+    {
+        Vector3 to = point - eye;
+        float distance = to.magnitude;
+        if (distance < 0.05f) return false;
+        int count = Physics.RaycastNonAlloc(eye, to / distance, sightHits, distance - 0.03f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < count; i++)
+        {
+            Transform hit = sightHits[i].collider != null ? sightHits[i].collider.transform : null;
+            if (hit == null) continue;
+            if (target != null && (hit.IsChildOf(target) || target.IsChildOf(hit))) continue;
+            if (player != null && hit.IsChildOf(player)) continue;
+            return true;
+        }
+        return false;
+    }
+
+    private static Vector3 ClosestPoint(Vector3 from, Component target)
+    {
+        Vector3 best = target.transform.position;
+        float bestDistance = (best - from).sqrMagnitude;
+        foreach (Collider c in target.GetComponentsInChildren<Collider>(false))
+        {
+            if (c == null || !c.enabled) continue;
+            Vector3 p = c is MeshCollider mc && !mc.convex ? c.bounds.ClosestPoint(from) : c.ClosestPoint(from);
+            float d = (p - from).sqrMagnitude;
+            if (d < bestDistance) { bestDistance = d; best = p; }
+        }
+        return best;
     }
 
     public static float FlatDistance(Vector3 from, Component target)

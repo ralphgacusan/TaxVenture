@@ -9,6 +9,8 @@
     <Compile Include="Program.cs" />
     <Compile Include="../T19Regression.cs" Link="T19Regression.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/PlayerProgressData.cs" Link="PlayerProgressData.cs" />
+    <Compile Include="../../Assets/Scripts/Data/ReviewClock.cs" Link="ReviewClock.cs" />
+    <Compile Include="../../Assets/Scripts/Data/OfficeHoursMath.cs" Link="OfficeHoursMath.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/MasteryBoundary.cs" Link="MasteryBoundary.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/CareerProgress.cs" Link="CareerProgress.cs" />
     <Compile Include="../../Assets/Scripts/RewardsSystem/CampaignRun.cs" Link="CampaignRun.cs" />

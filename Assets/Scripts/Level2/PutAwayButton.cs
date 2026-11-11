@@ -53,6 +53,7 @@ public sealed class PutAwayButton : MonoBehaviour
         button.group = frame.gameObject.AddComponent<CanvasGroup>();
         button.group.alpha = 0f;
         button.group.interactable = button.group.blocksRaycasts = false;
+        frame.gameObject.AddComponent<HudSortingKeeper>().Order = OfficeHudRuntime.ExitDeskSortingOrder;
         Button click = frame.gameObject.AddComponent<Button>();
         click.targetGraphic = rim;
         click.onClick.AddListener(button.Press);
@@ -61,6 +62,7 @@ public sealed class PutAwayButton : MonoBehaviour
 
     public void SetVisible(bool visible)
     {
+        OfficeHudRuntime.Instance?.RegisterDeskAction(transform as RectTransform, false, visible);
         alpha = Mathf.MoveTowards(alpha, visible ? 1f : 0f, Time.unscaledDeltaTime * 8f);
         group.alpha = alpha;
         group.interactable = group.blocksRaycasts = visible;

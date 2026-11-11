@@ -271,7 +271,7 @@ public sealed class HudObjectiveTracker : MonoBehaviour
     private void RefreshCase()
     {
         CaseProgressionManager manager = CaseProgressionManager.Instance;
-        int total = manager != null ? manager.TotalCasesInLevel : 0;
+        int total = manager != null ? manager.PresentedCasesInLevel : 0;
         // Only worth the space when a level has more than one case.
         caseChip.gameObject.SetActive(total > 1);
         if (total > 1) caseText.SetText("CASE {0} / {1}", Mathf.Min(manager.CurrentCaseNumber, total), total);

@@ -28,6 +28,17 @@ check(re.search(r"private void OnDisable\(\)\s*\{[^}]*UpdateRaycastState\(\);", 
 check(re.search(r"private void OnEnable\(\)\s*\{[^}]*UpdateRaycastState\(\);", submittable),
       "Re-enabling a folder handler restores its availability gate")
 
+# The serialized storage target can be a separate, invisible FolderHUDDropArea.
+# Availability belongs to the actual icon, which observes the pickup notification.
+folder = source("CaseFolder/FolderToHUDIcon.cs")
+restore = folder.split("public void RestoreStored()", 1)[1].split("public void ReleaseQuietly()", 1)[0]
+icon = source("UI/HUD/HudIconButton.cs")
+check("GameplayEvents.OnClientCopyPickedUp += RefreshFolderAvailability;" in icon and
+      "GameplayEvents.OnClientCopyPickedUp -= RefreshFolderAvailability;" in icon,
+      "Actual folder button observes copy pickup and releases its subscription")
+check("GameplayEvents.Raise" not in restore and "folderHUDIcon.GetComponent<HudIconButton>" not in restore,
+      "Quiet copy storage neither replays progression nor assumes the drop area is a button")
+
 drag = source("UI/HUD/HudIconDragOpen.cs")
 check("button.IsInteractable()" in drag,
       "Dragging respects button and parent CanvasGroup availability")

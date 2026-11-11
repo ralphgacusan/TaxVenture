@@ -1,63 +1,67 @@
-# Level 3 implementation specification
+# Level 3 implementation specification — revision 2
 
-## Current continuation rule — 30 October 2026
+Office presentation update — **4 November 2026**: [OFFICE_CASE_PLAY](OFFICE_CASE_PLAY.md) governs the approved Bea office interaction, short screen copy, progressive detail and restrained print/clip/stamp/review/delivery feedback in T07–T10; T17 verifies the complete experience. Sources/financial fixtures remain intact, richer details stay accessible and no production work is claimed.
 
-The user explicitly requires every collected Bag/hotbar item to stay across Levels 1 → 2 → 3, whether useful in the next chapter or not. This supersedes older retirement instructions in this pack/proposal/tickets. Keep ownership, quantities, slots, contents, pins, capacities and readable prior records; scope limits current-case use, never ownership. Consumed supplies stay consumed, explicit put-back remains deliberate, and confirmed New Game is still a new campaign. Replay/Practice/Editor remain isolated from live story inventory. Already deleted historical data is not fabricated from answer keys.
+Current outdoor interaction: [SIDE_QUEST_MACHINE](SIDE_QUEST_MACHINE.md) governs T04–T06. Feed halfway → select treatment/reason → lever-file → next record → Check batch/correct → collect the small summary (existing B-WORKSHEET) into Bag/Case Folder support for office use. It supersedes direct three-bin placement and giant worksheet presentation; source facts, nine-decision grading, legacy results and rewards are unchanged.
 
-Level 3 now adopts the shared Bag/hotbar with its own checkpoint branch. Prior IDs open in the actual card reader; retained acquired-paper/player-annotation text uses read-only saved-paper pages, without CaseManager rebinding or value transfer. No global historical filing/archive gameplay is introduced.
+Authority: [REVISION_PLAN](REVISION_PLAN.md), approved 3 November 2026, is the detailed current contract. Existing financial/source tables in [FIXTURE_CONTRACT](FIXTURE_CONTRACT.md) remain valid; its explicitly labeled v1 interaction/scoring sections are historical compatibility only. The [earlier proposal](../Level3DesignProposal.md) is background, not an instruction to rebuild removed mechanics.
 
+## Scope and owners
 
-Authority: [proposal](../Level3DesignProposal.md), the user's two attached requirements, latest existing campaign amendments, and verified live behavior. T01 completes content/schema preparation only; runtime work remains in subsequent tickets. Stable IDs below are **proposed**, not existing APIs/assets.
+Keep Chapter Level_03, Office_Level3, existing Level3Gameplay root, L3-BEA-001, the retained L3-MARINE-001 future fixture, worth_the_tax_3 badge, existing sources/claims/currency/equipment. The current release and active story path contain Bea's case only. The company case is deferred with its tickets and documentation preserved; it is not a second current case or a completion/release prerequisite. Keep all Bag/hotbar ownership, quantities, slots, capacities, pins and readable prior records across L1 -> L2 -> L3. Used supplies stay used. No re-created answer-key annotations, global archive or new save manager.
 
-## Identity and resources
+Use GameStateMachine as coarse runtime owner, Level3ChapterRules/Checkpointer as bounded saved phase/command owners. Objectives/guide/UI observe committed progress; they cannot grant it. Retain enum identities and legacy ToolPractice compatibility; fresh progression skips mandatory budget practice. First-use calculator instruction is a local saved teaching fact, not another chapter phase framework.
 
-Chapter `Level_03`; proposed scene `Assets/Scenes/Office_Level3.unity`; owned root `Level3Gameplay`; cases `L3-BEA-001` and `L3-MARINE-001`; badge `worth_the_tax_3`. Planned level-specific runtime paths: `Assets/Scripts/Level3/`; pure data/rules in existing Data/RewardsSystem conventions as appropriate; resources under `Assets/Resources/Levels/Level_03/` and `Assets/Resources/Tutorials/Level_03/`. All are proposed destinations. Preserve serialized enum values and original GUIDs; each new asset needs a unique .meta.
+## Current phase mapping
 
-Planned content files: level.json, office_start.json, objectives.json, book.json, rewards.json, town_life.json, scene_assets.asset, two case JSONs, worksheet/rules content as a small authored structure, and guide.json. Reuse actual loaders where compatible; do not create files that no production entry point reads. T01 fixes the smallest compatible shape in [FIXTURE_CONTRACT](FIXTURE_CONTRACT.md): two existing case envelopes each gain an optional L3-only content block with exact decimal strings, explicit source/field/transaction bindings and separate immutable expected answers. T02 implements and validates that contract; no production resources exist from T01.
+| Phase | Player-visible responsibility | Exit gate |
+|---|---|---|
+| Reception | Bea appointment | Committed assignment -> BeaRecords |
+| ToolPractice (legacy only) | Quiet compatibility route | T02 mapping, no invented teaching reward |
+| BeaRecords | Talk, acquire originals | Actual saved handover -> WorksheetDraft |
+| WorksheetDraft / WorksheetCorrections | Three batches, one record at a time, automatic totals | Complete batch checks freeze once; all corrected -> WorksheetReady |
+| WorksheetReady | Collect folded summary from machine output into Bag/folder | Atomic item/reward/grade claims -> BeaComputation |
+| BeaComputation | Existing folder; totals/rule/credit transfers; three calculated results | Current stamp and actual hand-in |
+| BeaReview | Existing Auditor review | Return -> computation; approval/result/copy saved -> BeaDelivery |
+| BeaDelivery | Copy pickup, one relevant explanation, actual handover | +4 Trust once -> ClosingFinding |
+| ClosingFinding / WrapUpPending | Limited finding, mayor message, result acknowledgment | Completion saved only on acknowledgment |
+| CompletedOffice | Optional shop/computer/exit | No reopened review or repeated rewards |
 
-## Deterministic chapter phases
+The company phases are retained for future compatibility and the deferred T11/T12 case design; they are not part of the current release path: CompanyAppointment, CompanyComputation, CompanyReview, and CompanyDelivery.
 
-| Phase | Admission/action | Durable exit and next phase | Error/recovery |
-|---|---|---|---|
-| Reception | Story starts from completed L2, or isolated development fixture | Receive Bea assignment → ToolPractice | No fresh campaign/reset; checkpoint wins over intro |
-| ToolPractice | Existing guide/workstation lesson, office-budget sample | Player attaches 80 and 72 tapes → BeaRecords | No score/coins/trust/campaign spending; cancel/resume |
-| BeaRecords | Talk at plaza table, inspect/hand over B records | Actual acquisition → WorksheetDraft | Full Bag/save failure retains source |
-| WorksheetDraft | Seven strips, two claim notes, relationship, subtotals | Deliberate complete Check → WorksheetCorrections or WorksheetReady | Incomplete draft never freezes grade |
-| WorksheetCorrections | Existing frozen first grade; player edits wrong work | All twelve correct and current totals → WorksheetReady | Preserve correct work; Exit Desk works |
-| WorksheetReady | Deliberate worksheet pickup | Same save grants +60 coins/+2 trust and stores mastery → BeaComputation | No reward before acquisition or on replay |
-| BeaComputation | Select worksheet totals, apply individual rule/credit | Current work stamped and submitted → BeaReview | Rule/input changes invalidate dependents, not originals |
-| BeaReview | Talk-first requested folder handover to Auditor | Supported approval +100 coins; copy AtAuditor → BeaDelivery | Returned audit focuses root cause; justified hold stays open |
-| BeaDelivery | Pickup copy, service-plan/explanation, awaited handover | Delivery +4 trust, retain frozen Bea result → CompanyAppointment | Failed commit retains copy; no premature room reuse |
-| CompanyAppointment | Receptionist gives second case and C records | Company active binding → CompanyComputation | Atomic binding only after Bea delivery; copies/source IDs stay scoped |
-| CompanyComputation | Resolve personal trip, corporate rate, credit, balance | Current stamp/submission → CompanyReview | No second scored side quest or second field fetch loop |
-| CompanyReview | Same physical audit with company facts | Approval +100 coins; copy AtAuditor → CompanyDelivery | Correct before completion; root error penalties only |
-| CompanyDelivery | Explain higher amount, awaited correct-client handover | +4 trust → ClosingFinding | Claim unsupported motive must be corrected, no new misconduct system |
-| ClosingFinding | Retain summary/original, choose supported journal fact | Mayor message seen → WrapUpPending | Review records returns safely; no extra trust |
-| WrapUpPending | Read chapter receipt, acknowledge Continue | Chapter completed → Career or optional CompletedOffice | Failed save keeps final card pending, no award replay |
-| CompletedOffice | Optional supply counter/computer after completion | Leave → Career | No review timer, reopened case, copy, or second completion |
+Exact 9-decision batches, scoring, transfer provenance, result dependencies, authored values, presentation limits, clocks, user journey and legacy resume table are defined in REVISION_PLAN. Do not retain old 12-decision grading as the new activity merely to keep old tests green. Preserve it only for legacy saves/results. No mandatory separate subtotal/excess/marginal attachments.
 
-Use existing GameStateMachine as the active coarse game phase owner. Chapter phase is saved domain data with a bounded transition validator, following L2's existing review-data pattern; it is not a second ticking FSM framework. Explicitly map coarse states to chapter phases and suppress old mandatory PrepareReturn/ArchiveCase/LevelComplete transitions that would skip L3's two-case delivery sequence. Objectives and guides observe committed state.
+## User stories
 
-The 16-active-minute Bea review starts after protected tool teaching, covers field/office independent work, pauses only under existing policy, and has next-day recovery. Company receives a fresh 10-active-minute window at its own admission; no unseen inherited deadline. One voucher per case, two carried; +180 active seconds and consumed quantity save atomically. These are initial tuning fixtures, not measured playtest results.
+1. As a returning player, I want my possessions and history intact, so that this chapter continues my career.
+2. As a player, I want one readable record and a compact feed/selector/lever machine, so that I can reason without managing a crowded board.
+3. As a learner, I want a deliberate check of a small batch, so that I can correct misunderstandings before proceeding.
+4. As a player, I want my first checked choices retained, so that corrections and mastery have distinct meanings.
+5. As a consultant, I want to collect my corrected worksheet, so that the outside task supplies my office case.
+6. As a returning player, I want the familiar Case Folder and transfer gesture, so that new calculations build on tools I know.
+7. As a learner, I want to choose supported inputs and the rule, so that the calculator does arithmetic without deciding the case for me.
+8. As a learner, I want to see base tax, excess and credit clearly, so that I understand the three results.
+9. As a player, I want unchanged working preserved when I edit one input, so that correction feels manageable.
+10. As a consultant, I want the existing stamp and Auditor review, so that I recommend readiness and receive focused correction.
+11. As a player, I want free next-day recovery, so that a missed review window never erases work.
+12. As a client, I want an explained copy delivered, so that approval resolves my actual concern.
+13. **Deferred future case:** As a learner, I want a shorter company challenge with less guidance, so that I can apply the same process independently.
+14. As a player, I want a qualified story discovery, so that the investigation builds without claiming unsupported intent.
+15. As a player, I want an optional usable computer upgrade, so that my office develops without a purchase gate.
+16. As a resuming player, I want old drafts/grades/approvals/copies restored safely, so that the revision does not erase or repay my work.
+17. As a mobile player, I want large readable targets and reliable Back/settings/focus recovery, so that physical interaction remains comfortable.
+18. As a replaying player, I want mastery practice isolated from my campaign, so that learning cannot spend or duplicate story possessions.
 
-## Checkpoint and commands
+## Data and transaction boundaries
 
-Extend the existing signed save/checkpoint owner with a bounded chapter snapshot: schema version; current phase/activeCaseId; intro/practice milestones; acquired source IDs; worksheet draft/reasons/link/current totals; first-check frozen correct/total/wrong IDs/tier; correction state; selected service plan and completion; per-case source fingerprint, taxpayer fields, supported amount bindings, selected tax regime/year/rule, tape expression/source edges/result/destination, dirty dependency flags, packet/stamp revisions, review root-cause history, case XP/result; separate clocks/voucher flags; copy phases; dialogue facts; finding/wrap-up/epilogue facts. Keep Bea's frozen result through the company case. Do not serialize Unity objects, animation frames, raw camera transforms, answer keys or speculative allegation as verified finding.
+Exact money remains invariant decimal data owned by existing L3 rules. Adapt existing value-transfer interfaces; no AsFloat/prototype calculation bridge. Source ownership, case, row, reporting year, selected rule, tape provenance and revisions survive transfers/restores. Supported chains, not matching final numbers, allow approval. Wrong plausible same-case choices remain editable drafts; foreign sources and structurally invalid actions are refused neutrally.
 
-Every durable operation validates run mode, chapter/case/source ownership, prerequisites, revision, and duplicate action ID before candidate/save/publish. A failed write returns to the preceding state with the actionable source/copy still available and no success FX. Restoring state never emits reward/acquisition/dialogue-choice events. Drafts save at stable edits and app pause/quit using existing bounded dirty-save behavior, not every frame or key animation.
+Bounded additive snapshot fields cover assessment/presentation version, three batch first outcomes/accepted state, first-use instruction marker and any necessary per-case stage/copy facts. Preserve existing source/tape/computation/review state rather than duplicating it for each UI. Legacy migrations are candidate -> signed persist -> quiet publish, idempotent and failure-safe; unknown future data is retained/blocked. No answer keys in saves.
 
-Claim activities: `bea-worksheet`, `bea-case-approved`, `bea-follow-through`, `marine-case-approved`, `marine-follow-through`; kind separates coins/trust/mastery as existing owners require. Scope uses campaign/Level_03/activity/kind. Voucher claims also use case ID. Case XP is per case; side-quest XP once only. Do not call Rosa-specific commit/delta APIs for Bea.
+Each durable command owns all associated effects: batch freeze, worksheet collection, approval, voucher use, explanation/handover, closing and purchase. A company case switch remains a future command only if the deferred second case is activated. Duplicate action IDs cannot grant twice. Failed writes keep prior work and actionable source/copy. Full result aggregation never double-awards worksheet XP or writes a completed level record early. Source/credit changes invalidate only dependents. Copy reading is not a mutation.
 
-## Input, calculations and validation
+## Implementation and release
 
-Same first-person exploration, Workstation/Interview views, joysticks and existing window locks. One pointer/action owner. Tap-place equivalent to dragging; target release, cancel, Android Back, settings interruption, disable and camera-return callbacks release only their own ownership. Exit Desk is allowed during independent worksheet/calculation work; never repeat L2's superseded quest-wide exit lock or first-CHECK forced conversation.
+Local specification readiness: **ready-for-agent**; no remote issue publication. Follow the active Bea-only sequence in [TICKETS](TICKETS.md): T07–T10, T13–T18. T11/T12 and company content remain preserved as deferred future work, outside the current release dependency graph. Expand only required seams, move existing functionality to the reused surfaces in bounded slices, retire obsolete L3 interaction owners after their replacements work. Each feature ticket includes readable 3D presentation, input/animation/save integration and targeted checks; T17 polishes, it does not rescue missing visual implementation.
 
-Source extraction carries source row identity and printed amount automatically. Re-extraction focuses existing strip. Valid-content destinations accept wrong answers until deliberate Check; mechanical invalidity such as a foreign case source is refused with an explicit reason. Two claim notes/reason fields and their relationship field stay accessible regardless of placement. Twelve independent checks are defined in CONTENT; subtotal arithmetic is checked against the player's chosen set so one treatment error is not double-penalized.
-
-Calculator needs persistent selected-source chips, editable expression, basic operators/percent, draft tape, explicit result attachment and source viewing. Use exact money and explicit rounding policy after T01 authority review; no float tolerance that permits wrong cents, silent negative clamping or implicit zero. Authored cases avoid loss/overpayment; unexpected negative work remains visible/check-needed. Percent means A ×20% = A ×0.20, not ambiguous consumer addition shortcuts. Equivalent valid expressions using supported inputs/rules pass. A matching final number alone is insufficient evidence.
-
-Dependency chain: source/treatment → totals → taxable income → rule/tax due → credit/balance → stamp. Credit-only changes invalidate balance/stamp, not income arithmetic. Reading/moving a paper is not a revision. Old tapes remain labeled stale until explicitly replaced. Stamp remains player's recommendation for computation review, not filing/payment certification. Holds do not finish unresolved work.
-
-## Release and continuity
-
-Chapter 3 remains coming soon during partial tickets; isolated fixtures do not write live story. T18 verifies and exposes normal Career entry using actual completed L2 and readiness configuration, not a mutable player flag or score gate. Computer eligibility additionally requires completed L3 AND a shipped functional device slice. Stand remains pending. L4/L5 remain coming soon. No ending calculation, return filing, nation/guide remapping, or historical-folder archive is added.
+T18 enables the Bea-only Career3 release only after actual internal integration and the applicable Bea content-authority gates are satisfied. Company-only authority gates do not block this release; the future company release must resolve them before activating T11/T12. Keep user visual/device acceptance distinct; unresolved user-reported blockers prevent user-accepted claims. L4/L5, simulated filing, endings, comparison stand, drawer and broad archive stay outside this revision.

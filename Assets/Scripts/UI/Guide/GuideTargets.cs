@@ -13,7 +13,7 @@ using UnityEngine.SceneManagement;
 /// TARGETS:
 ///   hud:objective  hud:progress  hud:timer  hud:minimap  hud:notes
 ///   hud:exp  hud:reputation  hud:coins (individual resource focus)
-///   hud:folder  hud:profiles  hud:settings  hud:icons  hud:joystick
+///   hud:folder  hud:profiles  hud:settings  hud:icons  hud:joystick  hud:jump
 ///   hud:look  hud:prompt  hud:exit
 ///   world:&lt;scene path&gt;      a 3D object (its renderers' outline)
 ///   type:&lt;ComponentName&gt;    the best active one (on screen, still useful)
@@ -23,6 +23,8 @@ using UnityEngine.SceneManagement;
 ///                           clipped to its page, the front one taken out, the ID card taken
 ///                           out, or the records' page itself (where they go back)
 ///   waypoint                the current objective goal (see ObjectiveGuide)
+///   level3:card|intake|dial|lever|why|batch|summary|calculator  Bea's machine and the desk
+///                           calculator, only while that part is the usable next action
 /// </summary>
 public sealed class GuideTargets
 {
@@ -43,8 +45,10 @@ public sealed class GuideTargets
     public static readonly string[] HudNames =
     {
         "objective", "progress", "exp", "reputation", "coins", "timer", "minimap", "notes", "folder", "profiles", "settings", "icons",
-        "joystick", "look", "prompt", "exit", "card", "continue", "bag", "slot", "book", "reviewed"
+        "joystick", "jump", "look", "prompt", "exit", "card", "continue", "bag", "slot", "book", "reviewed"
     };
+
+    public static readonly string[] Level3Names = { "card", "intake", "dial", "lever", "why", "batch", "summary", "calculator" };
 
     private const float CacheSeconds = 0.4f;
 
@@ -88,7 +92,9 @@ public sealed class GuideTargets
             return TryParseScreen(key, out _, out _) ? null : "screen: needs x,y (0..1) or x,y,w,h";
         if (key.StartsWith("record:", StringComparison.Ordinal))
             return Array.IndexOf(RecordNames, key.Substring(7)) >= 0 ? null : $"unknown record target (use {string.Join(", ", RecordNames)})";
-        return $"target \"{key}\" must start with hud:, world:, type:, ui:, screen:, record: or be waypoint";
+        if (key.StartsWith("level3:", StringComparison.Ordinal))
+            return Array.IndexOf(Level3Names, key.Substring(7)) >= 0 ? null : $"unknown level3 target (use {string.Join(", ", Level3Names)})";
+        return $"target \"{key}\" must start with hud:, world:, type:, ui:, screen:, record:, level3: or be waypoint";
     }
 
     /// <summary>"screen:0.7,0.5" or "screen:0.7,0.5,0.3,0.4" (centre and size as screen fractions).</summary>
@@ -152,6 +158,14 @@ public sealed class GuideTargets
         if (key.StartsWith("hud:", StringComparison.Ordinal)) return FromRect(ResolveHud(key.Substring(4)));
 
         if (key.StartsWith("record:", StringComparison.Ordinal)) return ResolveRecord(key.Substring(7));
+
+        if (key.StartsWith("level3:", StringComparison.Ordinal))
+        {
+            string part = key.Substring(7);
+            return FromTransform(part == "calculator"
+                ? Level3DeskCalculator.Instance?.GuideBody
+                : Level3BeaTable.Instance?.GuidePart(part));
+        }
 
         if (key.StartsWith("ui:", StringComparison.Ordinal))
         {
@@ -397,6 +411,8 @@ public sealed class GuideTargets
             case "settings": return HudPath("PermanentHUD/Settings/SettingsButton");
             case "icons": return HudPath("PermanentHUD/IconButtons");
             case "joystick": return HudPath("MobileControls/Joystick");
+            // T03: the right-side jump control built beside the stick in Office_Level1.
+            case "jump": return HudPath("MobileControls/" + JumpButton.ObjectName);
             case "look":
             {
                 RectTransform look = HudPath("MobileControls/LookJoystick");

@@ -60,6 +60,8 @@ public static class ObjectiveTriggers
     public const string WithholdingCertificateReceived = "WithholdingCertificateReceived"; // GameplayEvents.OnWithholdingCertificateReceived (Level 3)
     public const string RemainingPayableAttached = "RemainingPayableAttached";     // GameplayEvents.OnRemainingPayableAttached (Level 3)
     public const string BeaCaseApproved = "BeaCaseApproved";                       // GameplayEvents.OnBeaCaseApproved (Level 3)
+    public const string ChapterMessageRead = "ChapterMessageRead";                 // GameplayEvents.OnChapterMessageRead (Level 3 T14)
+    public const string ChapterWrapUpConfirmed = "ChapterWrapUpConfirmed";         // GameplayEvents.OnChapterWrapUpConfirmed (Level 3 T14)
 
     public static readonly string[] Events =
     {
@@ -72,7 +74,8 @@ public static class ObjectiveTriggers
         ToolkitDemoFinished, AnnotationTutorialCompleted, AnnotationsChecked, IncomeQuestCompleted,
         OfficeReviewCompleted, FinalAssessmentStamped, AuditReturned, ReviewDayRolled,
         ChapterAssignmentReceived, CalculatorPracticeAttached, ClientRecordsCollected, WorksheetDrafted,
-        WorksheetReady, WorksheetCollected, TaxDueAttached, WithholdingCertificateReceived, RemainingPayableAttached, BeaCaseApproved
+        WorksheetReady, WorksheetCollected, TaxDueAttached, WithholdingCertificateReceived, RemainingPayableAttached, BeaCaseApproved,
+        ChapterMessageRead, ChapterWrapUpConfirmed
     };
 
     /// <summary>Live counters a step may show next to its text.</summary>

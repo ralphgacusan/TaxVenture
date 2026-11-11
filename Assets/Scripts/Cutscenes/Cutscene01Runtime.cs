@@ -6,6 +6,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.Playables;
 using UnityEngine.SceneManagement;
+using UnityEngine.Timeline;
 using UnityEngine.UI;
 
 /// <summary>
@@ -20,7 +21,8 @@ using UnityEngine.UI;
 ///   flow: 0.25 s fades, then SceneManager.LoadScene).
 /// - The cutscene ends when the longest PlayableDirector stops. Without a
 ///   playable Timeline it ends after fallbackDurationSeconds.
-/// - Keeps authored scene text; creates no subtitle or title overlay.
+/// - Reuses chapter subtitles, timed from the existing dialogue AudioTrack.
+///   Authored scene text/audio/animation stay intact.
 /// - Remembers a completed viewing; first viewing cannot be skipped.
 /// DOES NOT: play, pause or rebind any director, or touch authored audio.
 /// </summary>
@@ -33,6 +35,9 @@ public sealed class Cutscene01Runtime : MonoBehaviour
 
     private CutsceneSubtitleTrack track;
     private PlayableDirector master;
+    private PlayableDirector subtitleDirector;
+    private ChapterCinematicScript subtitleScript;
+    private ChapterCinematicPlayer.SubtitleView subtitles;
     private bool masterPlayed;
     private float elapsed;
     private bool leaving;
@@ -43,6 +48,9 @@ public sealed class Cutscene01Runtime : MonoBehaviour
     private Rect appliedSafeArea;
     private Vector2Int appliedScreen;
     private GameObject skipButton;
+    private List<Camera> shotCameras;
+    private Camera backdropCamera;
+    private int backdropMask;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void InitializeForLoadedScenes()
@@ -90,7 +98,6 @@ public sealed class Cutscene01Runtime : MonoBehaviour
         track = LoadTrack();
         if (track == null) track = new CutsceneSubtitleTrack();
         if (track.lines == null) track.lines = new List<CutsceneSubtitleLine>();
-        track.lines.Clear(); // Cutscene 2.0 uses its authored visuals, with no added subtitles.
         if (string.IsNullOrWhiteSpace(track.nextScene)) track.nextScene = "Office_Level1";
 
         PlayerProgressData progress = PlayerProgressManager.Instance != null ? PlayerProgressManager.Instance.CurrentProgress : null;
@@ -99,12 +106,14 @@ public sealed class Cutscene01Runtime : MonoBehaviour
         BuildUi();
         EnsureEventSystem();
         FindMasterDirector();
+        BindSubtitlesToAudio();
         StartCoroutine(Fade(1f, 0f, track.fadeInSeconds));
     }
 
     private void OnDestroy()
     {
         if (master != null) master.stopped -= HandleMasterStopped;
+        subtitles?.Dispose();
     }
 
     // =========================================================
@@ -132,6 +141,40 @@ public sealed class Cutscene01Runtime : MonoBehaviour
         Debug.Log($"[Cutscene01] Following director '{master.name}' ({master.duration:0.00} s).");
     }
 
+    private void BindSubtitlesToAudio()
+    {
+        if (track.useTimelineClipTimes)
+            foreach (PlayableDirector director in FindObjectsByType<PlayableDirector>())
+            {
+                if (director == null || director.gameObject.scene != gameObject.scene
+                    || !(director.playableAsset is TimelineAsset timeline)) continue;
+                var clips = new List<CutsceneAudioSpan>();
+                foreach (TrackAsset output in timeline.GetOutputTracks())
+                {
+                    if (!(output is AudioTrack) || output.mutedInHierarchy
+                        || (!string.IsNullOrEmpty(track.timelineTrack) && output.name != track.timelineTrack)) continue;
+                    foreach (TimelineClip clip in output.GetClips())
+                        if (clip.asset is AudioPlayableAsset audio && audio.clip != null)
+                            clips.Add(new CutsceneAudioSpan(audio.clip.name, clip.start, clip.duration,
+                                clip.clipIn, clip.timeScale, audio.clip.length));
+                }
+                if (!track.ApplyAudioClipTimes(clips)) continue;
+                subtitleDirector = director;
+                Debug.Log($"[Cutscene01] Subtitles follow dialogue audio in '{director.name}' ({track.lines.Count} cues).");
+                break;
+            }
+        if (subtitleDirector == null)
+            Debug.LogWarning("[Cutscene01] No matching dialogue Timeline; using the authored audio-timed subtitle fallback.");
+        subtitleScript = track.SubtitlePresentation();
+    }
+
+    private void UpdateSubtitle()
+    {
+        double time = subtitleDirector != null ? subtitleDirector.time : master != null ? master.time : elapsed;
+        ChapterCinematicCue cue = subtitleScript?.CueAt(time, "");
+        subtitles?.Set(cue?.speaker, cue?.text, cue != null ? subtitleScript.CueAlpha(cue, time) : 0f);
+    }
+
     private void HandleMasterStopped(PlayableDirector director)
     {
         if (masterPlayed) Finish();
@@ -152,7 +195,7 @@ public sealed class Cutscene01Runtime : MonoBehaviour
             if (masterPlayed)
             {
                 bool atEnd = master.duration > 0d && master.time >= master.duration - 0.001d;
-                if (master.state != PlayState.Playing || atEnd)
+                if (atEnd)
                 {
                     Finish();
                     return;
@@ -162,6 +205,7 @@ public sealed class Cutscene01Runtime : MonoBehaviour
             {
                 // The director never started: run on our own clock instead.
                 master.stopped -= HandleMasterStopped;
+                if (subtitleDirector == master) subtitleDirector = null;
                 master = null;
             }
         }
@@ -171,9 +215,50 @@ public sealed class Cutscene01Runtime : MonoBehaviour
             return;
         }
 
+        UpdateSubtitle();
     }
 
-    private void LateUpdate() => ApplySafeArea();
+    private void LateUpdate()
+    {
+        ApplySafeArea();
+        HideCoveredBackdropCamera();
+    }
+
+    /// <summary>
+    /// The scene's Main Camera sits under every shot camera, so it would draw the whole office
+    /// each frame only to be painted over. While a shot covers it, it draws nothing. It stays
+    /// enabled so Camera.main keeps working, and returns when no shot is active.
+    /// </summary>
+    private void HideCoveredBackdropCamera()
+    {
+        if (shotCameras == null) CollectCameras();
+        if (backdropCamera == null) return;
+        bool covered = false;
+        for (int i = 0; i < shotCameras.Count && !covered; i++)
+            covered = shotCameras[i] != null && shotCameras[i].isActiveAndEnabled;
+        int mask = covered ? 0 : backdropMask;
+        if (backdropCamera.cullingMask != mask) backdropCamera.cullingMask = mask;
+    }
+
+    private void CollectCameras()
+    {
+        shotCameras = new List<Camera>();
+        Camera[] cameras = FindObjectsByType<Camera>(FindObjectsInactive.Include);
+        foreach (Camera camera in cameras)
+            if (camera.gameObject.scene == gameObject.scene && camera.CompareTag("MainCamera"))
+            {
+                backdropCamera = camera;
+                backdropMask = camera.cullingMask;
+                break;
+            }
+        if (backdropCamera == null) return;
+        foreach (Camera camera in cameras)
+            if (camera != backdropCamera && camera.gameObject.scene == gameObject.scene &&
+                camera.targetTexture == null && camera.depth > backdropCamera.depth &&
+                camera.rect == new Rect(0f, 0f, 1f, 1f) &&
+                (camera.clearFlags == CameraClearFlags.Skybox || camera.clearFlags == CameraClearFlags.SolidColor))
+                shotCameras.Add(camera);
+    }
 
     // =========================================================
     // ENDING
@@ -189,6 +274,7 @@ public sealed class Cutscene01Runtime : MonoBehaviour
     {
         if (leaving) return;
         leaving = true;
+        subtitles?.Hide();
         if (PlayerProgressManager.Instance != null) PlayerProgressManager.Instance.MarkLevelOneIntroSeen();
         if (skipButton != null) skipButton.SetActive(false);
         StopAllCoroutines();
@@ -199,7 +285,7 @@ public sealed class Cutscene01Runtime : MonoBehaviour
     {
         yield return Fade(black.alpha, 1f, track.fadeOutSeconds);
         Debug.Log($"[Cutscene01] Cutscene finished. Loading {track.nextScene}.");
-        SceneManager.LoadScene(track.nextScene);
+        MobilePerformance.LoadScene(track.nextScene);
     }
 
     private IEnumerator Fade(float from, float to, float seconds)
@@ -236,6 +322,7 @@ public sealed class Cutscene01Runtime : MonoBehaviour
         safeRoot = HudTheme.CreateRect("Safe Area", transform);
         HudTheme.Stretch(safeRoot);
 
+        subtitles = new ChapterCinematicPlayer.SubtitleView(safeRoot);
         if (canSkip) BuildSkipButton();
 
         // Black overlay over everything, full screen (not inset).

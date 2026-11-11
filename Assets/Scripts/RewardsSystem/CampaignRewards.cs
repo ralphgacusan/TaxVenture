@@ -20,8 +20,9 @@ using System;
 ///   Public Trust +2 and 60 coins, in the same write as the collection
 ///   (Level3WorksheetCheck.ApplyAcquisitionGrants). T09: Bea's approved
 ///   computation gives 100 coins in the same write as the approval
-///   (Level3ReviewRules.ApplyApprovalGrants); no trust. Her follow-through and
-///   the company case arrive with T10/T12.
+///   (Level3ReviewRules.ApplyApprovalGrants); no trust. T10: her explained
+///   delivery earns Public Trust +1..4 (Level3DeliveryRules.ApplyDeliveryGrants);
+///   the deferred company case would arrive with T12.
 /// - Each grant is claimed once by the stable tuple
 ///   campaignId/levelId/activityId/kind (never a run, scene or animation id).
 ///   A claimed grant returns AlreadyClaimed and changes nothing, so a replay,
@@ -49,6 +50,8 @@ public static class CampaignRewards
     /// <summary>Level 3's required side quest: Bea's corrected worksheet, collected (Worth the Tax?).</summary>
     public const string BeaWorksheet = "bea-worksheet";
     public const string BeaCaseApproved = "bea-case-approved";
+    /// <summary>T10: Bea's explained balance and delivered copy (Level3DeliveryRules.ApplyDeliveryGrants).</summary>
+    public const string BeaFollowThrough = "bea-follow-through";
     public const string TrustKind = "trust";
     public const string CoinsKind = "coins";
     public const string RepairKind = "repair";
@@ -97,7 +100,8 @@ public static class CampaignRewards
         new Reward(Level2, RosaFollowThrough, TrustKind, 4, "Aling Rosa Santos: follow-through"),
         new Reward(Level3, BeaWorksheet, TrustKind, 2, "Bea's records organized and checked"),
         new Reward(Level3, BeaWorksheet, CoinsKind, 60, "Bea's corrected worksheet"),
-        new Reward(Level3, BeaCaseApproved, CoinsKind, 100, "Bea's computation approved")
+        new Reward(Level3, BeaCaseApproved, CoinsKind, 100, "Bea's computation approved"),
+        new Reward(Level3, BeaFollowThrough, TrustKind, 4, "Beatriz Mendoza: follow-through")
     };
 
     /// <summary>The catalogued amount (0 when there is no such reward).</summary>
@@ -145,11 +149,23 @@ public static class CampaignRewards
     /// claim and a ledger line together. Claimed: no change. Unknown id,
     /// non-positive amount, no campaign or a coin overflow: Rejected, no change.
     /// </summary>
-    public static Change Grant(PlayerProgressData candidate, string levelId, string activityId, string kind)
+    public static Change Grant(PlayerProgressData candidate, string levelId, string activityId, string kind) =>
+        Grant(candidate, levelId, activityId, kind, null);
+
+    public static Change GrantBeaFollowThrough(PlayerProgressData candidate, int wrongAnswers) =>
+        Grant(candidate, Level3, BeaFollowThrough, TrustKind, Level3DeliveryRules.FollowThroughTrust(wrongAnswers));
+
+    private static Change Grant(PlayerProgressData candidate, string levelId, string activityId, string kind, int? earnedAmount)
     {
         var change = new Change { Outcome = Outcome.Rejected, Kind = kind };
         if (candidate == null || !candidate.HasCampaign || !TryFind(levelId, activityId, kind, out Reward reward) || reward.Amount <= 0)
             return change;
+        if (earnedAmount.HasValue)
+        {
+            if (levelId != Level3 || activityId != BeaFollowThrough || kind != TrustKind || earnedAmount.Value < 1 || earnedAmount.Value > reward.Amount)
+                return change;
+            reward.Amount = earnedAmount.Value;
+        }
         CampaignRecord campaign = candidate.campaign;
         change.Reason = reward.Reason;
         change.Before = kind == TrustKind ? campaign.publicTrust : campaign.coins;

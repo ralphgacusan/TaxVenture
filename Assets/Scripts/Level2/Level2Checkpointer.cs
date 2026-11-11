@@ -192,6 +192,8 @@ public sealed class Level2Checkpointer : MonoBehaviour
         CaseData data = CaseManager.Instance != null ? CaseManager.Instance.CurrentCase : null;
         CaseReviewState review = data?.review;
         PlayerProgressManager progress = PlayerProgressManager.Instance;
+        // A delivered Story run can reload only to show its saved ending/result, never a fresh review checkpoint.
+        if (progress != null && progress.UsesLevelTwoStory && Level2CampaignRules.FollowThroughDone(progress.CurrentProgress)) return true;
         if (!Level2Checkpoint.NeedsCheckpoint(review))
         {
             // Rosa has her copy: the checkpoint kept for it ends (a story run's follow-through write already ended it).

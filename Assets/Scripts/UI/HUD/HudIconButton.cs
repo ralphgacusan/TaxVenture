@@ -80,6 +80,7 @@ public class HudIconButton : MonoBehaviour
 
                 GameplayEvents.OnCaseFolderOpened += RefreshFolderAvailability;
                 GameplayEvents.OnCaseFolderStored += RefreshFolderAvailability;
+                GameplayEvents.OnClientCopyPickedUp += RefreshFolderAvailability;
                 GameplayEvents.OnCaseFolderReturned += RefreshFolderAvailability;
                 GameplayEvents.OnCaseCompleted += RelockCaseFolder;
                 RefreshFolderAvailability();
@@ -118,6 +119,7 @@ public class HudIconButton : MonoBehaviour
 
                 GameplayEvents.OnCaseFolderOpened -= RefreshFolderAvailability;
                 GameplayEvents.OnCaseFolderStored -= RefreshFolderAvailability;
+                GameplayEvents.OnClientCopyPickedUp -= RefreshFolderAvailability;
                 GameplayEvents.OnCaseFolderReturned -= RefreshFolderAvailability;
                 GameplayEvents.OnCaseCompleted -= RelockCaseFolder;
 

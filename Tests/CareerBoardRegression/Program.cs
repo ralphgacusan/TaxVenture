@@ -162,7 +162,8 @@ using (JsonDocument doc = JsonDocument.Parse(File.ReadAllText(jsonPath)))
     Check(chapters[0].GetProperty("id").GetString() == "Level_01" &&
           chapters[0].GetProperty("scene").GetString() == "Cutscene2.0", "chapters.json: Chapter 1 scene");
     Check(chapters[1].GetProperty("scene").GetString() == "Office_Level2", "chapters.json: Chapter 2 scene");
-    Check(chapters.Skip(2).All(c => c.GetProperty("comingSoon").GetBoolean()), "chapters.json: 3-5 coming soon");
+    Check(!chapters[2].GetProperty("comingSoon").GetBoolean() && chapters[2].GetProperty("scene").GetString() == "Office_Level3" &&
+        chapters.Skip(3).All(c => c.GetProperty("comingSoon").GetBoolean()), "chapters.json: Chapter 3 playtest route, 4-5 coming soon");
     Check(doc.RootElement.GetProperty("sideQuests")[0].GetProperty("chapterId").GetString() == "Level_01",
         "chapters.json: side quest belongs to Chapter 1");
     Check(doc.RootElement.GetProperty("badgeSlots").GetInt32() == 5 && doc.RootElement.GetProperty("sideQuests")[0].GetProperty("number").GetInt32() == 1,
@@ -241,9 +242,25 @@ foreach (var (card, height) in new[] { ("Career Card", "CareerCardHeight"), ("Go
 Check(cardsInside, "every CAREER card sits fully on its board, below the name plate");
 Check(presenter.IndexOf("OriginalBoardMesh(out Mesh mesh", StringComparison.Ordinal) > 0 && presenter.IndexOf("OriginalBoardMesh(out Mesh mesh", StringComparison.Ordinal) < presenter.IndexOf("CareerBoardKit.Prop(corkboardPrefab", StringComparison.Ordinal),
     "the boards use the scene's plain board mesh first (no papered prop even if the scene field is stale)");
-Match back = Regex.Match(presenter, @"""Back Button"", ""<  BACK"", new Vector3\((-?[\d.]+)f, (-?[\d.]+)f");
-float backBottom = float.Parse(back.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture) - 28;
+float rowY = Const("RowY");
+Match rowSize = Regex.Match(presenter, @"RowButtonSize = new Vector2\((-?[\d.]+)f, (-?[\d.]+)f\)");
+float rowWidth = float.Parse(rowSize.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+float rowHeight = float.Parse(rowSize.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture);
+float backBottom = rowY - rowHeight * 0.5f;
 Check(backBottom > progressRect[3] + 27, "BACK sits above the CAREER plate, not on it");
+float RowX(string name, string label) => float.Parse(Regex.Match(presenter, @"""" + name + @""", """ + label + @""", new Vector3\((-?[\d.]+)f, RowY").Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+float backX = RowX("Back Button", "<  BACK"), shopX = RowX("Shop Button", "SHOP"), bagX = RowX("Bag Button", "BAG");
+Check(backX + rowWidth < shopX && shopX + rowWidth < bagX, "the top row reads BACK, SHOP, BAG, left to right, without touching");
+Check(presenter.Contains("RowButtonSize, BackFace,") && presenter.Contains("RowButtonSize, ShopFace,") && presenter.Contains("RowButtonSize, BagFace,"), "the top row's buttons share one size and each has its own colour");
+Check(rowHeight > 56 && rowWidth > 150, "the top row's buttons are bigger than before (150 x 56)");
+
+// The career board's Bag is the in-chapter panel in a view-only mode.
+string bagScreen = File.ReadAllText(Path.Combine(root, "Assets", "Scripts", "UI", "HUD", "InventoryScreen.cs"));
+Check(presenter.Contains("menuBag = InventoryScreen.CreateViewOnly();") && presenter.Contains("if (bagButton != null) bagButton.Interactable = boardInput;"), "BAG opens the same Bag panel, view only, and waits behind the sheet like SHOP");
+Check(presenter.Contains("if (ready && !launchStarted && !overlayOpen && !overlayJustClosed)"), "the tap or Back that closes the Bag or catalogue does not also act on the board");
+Check(bagScreen.Contains("if (viewOnly || tile.Locked) return false;") && bagScreen.Contains("if (viewOnly) foreach (Button action in actionButtons) action.gameObject.SetActive(false);"), "the view-only Bag cannot drag and hides the action bar");
+Check(bagScreen.Contains("savedButton.gameObject.SetActive(!viewOnly && !string.IsNullOrEmpty(chosen) && hotbar.HasSavedRecords(chosen));"), "tapping an item in the view-only Bag reaches the details sheet (no hotbar on the menu)");
+Check(bagScreen.Contains("if (!viewOnly && !Inv.hand.IsEmpty)") &&bagScreen.Contains("if (!viewOnly) hotbar.Commit(r => InventoryRules.SetSelected(r, cursor));") && bagScreen.Contains("if (!viewOnly) hotbar.Commit(rec => InventoryRules.MarkJournalSeen(rec, ids));"), "the view-only Bag writes nothing when it closes or shows the journal");
 
 // Every paper flies out the same way: a negative tilt must not read as ~356 degrees (that spun Chapters 1, 3 and 5).
 Check(presenter.Contains("Mathf.DeltaAngle(0f, sourcePaper.transform.localEulerAngles.z)"), "sheet fly-out uses the paper tilt in -180..180");

@@ -600,7 +600,7 @@ public sealed class Level2StampDrag : MonoBehaviour
         busy = true;
         CaseFolderUI targetFolder = owner.Folder;
         int targetPage = targetFolder != null ? targetFolder.CurrentPageIndex : -1;
-        int targetRevision = Level2OfficeStart.Review != null ? Level2OfficeStart.Review.packetRevision : -1;
+        int targetRevision = owner.PacketRevision;
         if (!owner.TryContactPose(local, pressTilt, out _, out _, out _, out _, out float stampSize))
         {
             busy = false;
@@ -639,7 +639,7 @@ public sealed class Level2StampDrag : MonoBehaviour
         // A modal, page turn or edit before contact cancels this press; never stamp a different revision.
         if (!owner.CanPoint || owner.Folder != targetFolder || targetFolder == null || !targetFolder.IsShowing ||
             targetFolder.CurrentPageIndex != targetPage || targetPage != owner.StampPageIndex() ||
-            Level2OfficeStart.Review == null || Level2OfficeStart.Review.packetRevision != targetRevision)
+            !owner.RevisionCurrent(targetRevision))
         {
             ResetBody();
             yield return Travel(home, Facing(homeUp), size, HomeSeconds, size * 0.2f, followFolder: true);
@@ -662,7 +662,7 @@ public sealed class Level2StampDrag : MonoBehaviour
         try
         {
             ReviewInkMark.PopNext = true;
-            outcome = Level2PreliminaryStamp.Stamp(type, local, pressTilt);
+            outcome = owner.CommitAt(type, local, pressTilt, targetPage) ? PreliminaryReview.Outcome.Recorded : PreliminaryReview.Outcome.NoRule;
         }
         catch (System.Exception error)
         {
@@ -675,7 +675,7 @@ public sealed class Level2StampDrag : MonoBehaviour
         bool recorded = outcome == PreliminaryReview.Outcome.Recorded;
         if (!recorded && paper != null)
         {
-            GameObject faint = ReviewInkMark.CreateAt(paper, Level2DeskStamps.InkTextFor(type), local, pressTilt);
+            GameObject faint = ReviewInkMark.CreateAt(paper, owner.InkText(type), local, pressTilt);
             ReviewInkMark.SetStyle(faint, Level2DeskStamps.InkColorFor(type), 0.6f);
             ReviewInkMotion.Play(faint, ReviewInkMotion.Mode.FadeOut);
         }
@@ -752,7 +752,7 @@ public sealed class Level2StampDrag : MonoBehaviour
         if (ghost == null || ghost.transform.parent != paper)
         {
             HideGhost();
-            ghost = ReviewInkMark.CreateAt(paper, Level2DeskStamps.InkTextFor(type), local, pressTilt);
+            ghost = ReviewInkMark.CreateAt(paper, owner.InkText(type), local, pressTilt);
             ghost.name = "StampGhost";
             ReviewInkMark.SetStyle(ghost, Level2DeskStamps.InkColorFor(type), GhostAlpha);
             if (AudioManager.Instance != null) AudioManager.Instance.PlayMouseClickSelectSFX();

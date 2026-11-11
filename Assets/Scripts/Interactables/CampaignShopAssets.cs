@@ -11,6 +11,8 @@ using UnityEngine;
 /// - books:   Assets/Synty/PolygonOffice/Prefabs/Props/Desk Props/SM_Prop_Book_Group_02.prefab
 /// - solid material (T13): Assets/3D Models/CaseFolder/OpenCaseFolder/Materials/Material_0.001.mat,
 ///   a URP Lit material that DecorModels clones per colour (white base map) for the decor models.
+/// - computer (Level 3 T15): Assets/Synty/PolygonOffice/Prefabs/Props/Desk Props/SM_Prop_Computer_Monitor_01.prefab
+///   and SM_Prop_Computer_Keyboard_01.prefab, the office computer decor (DecorModels.BuildComputer).
 /// The counter instantiates scoped copies under its own root. Lives at
 /// Resources/Campaign/shop_assets.asset (same pattern as Level2SceneAssets).
 /// </summary>
@@ -25,6 +27,8 @@ public sealed class CampaignShopAssets : ScriptableObject
     public GameObject cratePrefab;
     public GameObject booksPrefab;
     public Material solidMaterial;
+    public GameObject computerMonitorPrefab;
+    public GameObject computerKeyboardPrefab;
 
     public static CampaignShopAssets Load() => Resources.Load<CampaignShopAssets>(ResourcePath);
 }

@@ -104,6 +104,10 @@ public static class GameplayEvents
     public static event Action OnRemainingPayableAttached;
     // Level 3 (T09): the Auditor approved Bea's computation (saved with its 100 coins). Notification only.
     public static event Action OnBeaCaseApproved;
+    // Level 3 (T14): the receptionist delivered Quax's message, then the chapter result was
+    // acknowledged (each saved first). Bea's finding reuses OnFindingRecorded. Notification only.
+    public static event Action OnChapterMessageRead;
+    public static event Action OnChapterWrapUpConfirmed;
 
     // Small observation-only cues for the guide ("cue:<name>" in guide.json),
     // e.g. FindingsPaperLifted. They never change gameplay state.
@@ -205,6 +209,12 @@ public static class GameplayEvents
 
     public static void RaiseBeaCaseApproved()
         => OnBeaCaseApproved?.Invoke();
+
+    public static void RaiseChapterMessageRead()
+        => OnChapterMessageRead?.Invoke();
+
+    public static void RaiseChapterWrapUpConfirmed()
+        => OnChapterWrapUpConfirmed?.Invoke();
 
     public static void RaiseGuideCue(string name)
     {

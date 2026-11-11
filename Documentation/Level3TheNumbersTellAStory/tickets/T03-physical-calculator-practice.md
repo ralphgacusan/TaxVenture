@@ -1,68 +1,92 @@
-# T03 — Operate the physical calculator and attach an unscored practice tape
+# T03 — Restore the familiar folder and introduce the calculator at first office use
 
 Status: **Implemented, internally verified; user manual pending**. Blocked by: T02.
 
-Priority: P1. Phase: A — New tool introduction. Estimated scope: M; target one fresh agent context. If unexpected shared refactoring is required, document and split it before broadening this ticket.
+Priority: P1. Phase: A — Familiar tools. Estimated scope: M; one fresh agent context. If real call-site work exceeds this bound, record a bounded split before adding unrelated framework work.
 
 ## Goal and visible accomplishment
 
-At the actual desk the player selects values, performs subtraction and attaches persistent calculation tape using the same tool later used for tax work.
+The actual existing Case Folder opens in Level3 with readable Client/Supporting Documents pages. At first office calculation a brief contextual calculator demonstration teaches the new action once.
 
-This is local Level3 numbering. Read [AGENTS](../AGENTS.md), [SPEC](../SPEC.md), [CONTENT](../CONTENT.md), [source map](../REUSE_AND_ARCHITECTURE.md), [presentation](../WORLD_AND_FEEDBACK.md), [rewards](../REWARDS_AND_VALIDATION.md), [verification](../VERIFICATION.md) and this ticket before execution. Implemented 30 October 2026 on an implementation instruction; evidence in [PROGRESS](../PROGRESS.md), limitations in [KNOWN_ISSUES](../KNOWN_ISSUES.md).
+Revision: **3 November 2026**. Read [REVISION_PLAN](../REVISION_PLAN.md), [SPEC](../SPEC.md), [reuse map](../REUSE_AND_ARCHITECTURE.md), [visual contract](../WORLD_AND_FEEDBACK.md), [verification](../VERIFICATION.md) and [AGENTS](../AGENTS.md). Planned refers to changed revision acceptance, not absence of reusable implementation. Historical baseline: T03 physical decimal calculator/model/keypad/printed-tape work is reusable. Its standalone 80/72 budget card and mandatory phase are retired, not rebuilt.
 
 ## Existing systems to reuse
 
-Verified existing paths relative to repository root; recheck live behavior rather than rely on stale comments:
+Existing source paths relative to repository root; inspect live callbacks/content before changing them. Narrow Level_03 adapters only; no duplicate folder/stamp/calculator/input/save/shop framework.
 
-- `Assets/Synty/PolygonOffice/Prefabs/Props/Desk Props/SM_Prop_Calculator_01.prefab`
-- `Assets/Scripts/UI/Computer/ComputerUI.cs`
-- `Assets/Scripts/Player/CameraController.cs`
-- `Assets/Scripts/UI/WorkstationUI.cs`
-- `Assets/Scripts/UI/HUD/HudWindowLock.cs`
-- `Assets/Scripts/UI/Guide/GuideTargets.cs`
-- `Assets/Scripts/AudioManager/AudioManager.cs`
-
-New L3 components/resources mentioned below are proposed outputs, not verified existing APIs. Prefer existing owners/adapters and level configuration; do not copy global frameworks.
+- `Assets/Scripts/UI/CaseFolderUI.cs`
+- `Assets/Scripts/UI/CaseFolderPageContent.cs`
+- `Assets/Scripts/UI/SupportingDocumentsPageLink.cs`
+- `Assets/Scripts/UI/HUD/CaseFolder3DView.cs`
+- `Assets/Scripts/CaseFolder/FolderToHUDIcon.cs`
+- `Assets/Scripts/Level3/Level3DeskCalculator.cs`
+- `Assets/Scripts/Level3/Level3PracticeRules.cs`
+- `Assets/Scripts/Data/DragDrop/ValueTransferManager.cs`
 
 ## Work and interaction mechanics
 
-1. Reuse supplied calculator prop; add local readable focus/display/key hit targets and a real 3D paper tape dock. Fit source mesh bounds to consultant desk; do not edit source prefab or use a flat minigame as its world replacement.
-2. Add bounded pure arithmetic/input/tape state and presentation under the L3 owner. Support digits/decimal, clear-entry, backspace, +/−/×/÷, deterministic percent, Equals, source selection and Attach result. Tap-release enters once; malformed/overflow/divide-by-zero reports input issue without mastery/trust effect.
-3. Existing guide teaches unrelated budget100−20=80, then80−8=72. Clearly separate sample from campaign coins/tax rules. Use same live calculator/tape controller for practice and later work; no fake animation-only tutorial. Stop at actual player actions, not page advancement.
-4. Equals produces a draft source-linked expression/result; Attach names the destination before confirmation. Saved practice progress/tapes resume without animation/reward replay. Manual numeric entry remains possible; provenance for later case use is implemented through the source-link seam, not forced guessing.
-5. Use existing workstation/guide/window lock and pause predicates. Back/Exit Desk/settings/focus loss/disable settle held input and release only owned holds. Tutorial may pause review; independent later calculator work does not receive an unlimited hidden pause. Complete practice advances Bea objective, no score or wallet/trust change.
+1. Inspect why Level3OfficeStart hides the desk folder; restore the existing object, HUD/Bag opening/return/layer/page roles for Level_03 without reactivating L1 filing/finale or Marie/Rosa starts. No new folder mesh/prefab/parallel panel.
+2. Configure Client and Supporting Documents using existing page content/link viewer and acquired IDs. One relevant source opens on demand, no paper fan. Keep all earlier records readable and source-scoped. Away from desk the folder is read-only.
+3. Reuse the current calculator body, decimal core, key targets and tape. Replace budget-card workflow with one short unrelated source/subtract/calculate/attach demonstration at first office use, then restore untouched client working. Use existing guide/action ownership; no answer from the actual client.
+4. Persist the taught marker only after its required action completes. Resume/cancel does not duplicate a lesson, source acquisition or reward. Ensure future T07 real calculation slots can consume the same existing tool, not a second engine.
+5. Prove shared transfer selection across folder/support pages using a narrow L3 adapter boundary; never use DataValue.AsFloat or old flat-rate callbacks as monetary authority. Clear only owned selection/locks on closing, case switch or mode change. T07 owns live computational destinations.
 
 ## Assets, motion and feedback
 
-Existing calculator; new bounded tape mesh/body/display and hit targets. Proposed press0.06–0.1s, tape feed0.15–0.25s, attach0.2–0.35s. Reuse suitable resolved neutral library cue, not an invented dedicated calculator sound.
 
-Follow WORLD_AND_FEEDBACK and fixed document types. Bind every new world object to actual 3D body, collider/target, correct source/record identity and existing camera/input/audio ownership. Record resolved anchors/clip names and any unsupported asset assumption. No user scene-assembly chores or claims of rendered acceptance from declarations.
+Implement this slice with actual existing 3D bodies, readable paper faces, reachable targets and current page/camera/audio ownership. One active task/primary action; temporary source/reference only on demand. Reuse L1/L2 styling and quiet lift/settle/feed/stamp cues. No tiny auto-shrunk text, full-tool overlay or correctness flash on draft placement. Bind models/colliders/callbacks here; T17 cannot substitute for this ticket’s visual implementation. User verifies rendered/touch/feel results.
 
 ## Integration requirements
 
-Do not globally route existing L1 ComputerUI.Show clearing behavior into this persistent state. Keep new capability opted into L3; old computer/guide routes keep their behavior. Source keys/answer values are not embedded in tool UI.
-
-Preserve current L1/L2 scenes, source prefabs/GUIDs, signed save owner, mode guards, input/FSM/dialogue/audio frameworks and Android controls. Normal L3 Career remains unavailable until T18. No L4 filing, ending, stand, drawer or global archive feature is added.
+Preserve shared L1/L2 behavior, existing serialized identities/source scenes and all campaign possessions. Keep current exact-decimal L3 rules/provenance; no float prototype bridge. Use existing input/dialogue/FSM/guide/Bag/reward owners. Career3 stays gated until T18, L4/L5 remain unavailable. No remote ticket, package, scene recopy or global cleanup.
 
 ## Persistence and failure rules
 
-Use the existing candidate→save→publish command boundary and stable chapter/case/action IDs. Validate actual prerequisites/revision/source before committing. Failed write leaves prior state, source/copy and retry available, with no success effect. Quiet restore does not raise acquisition/reward/choice/consumption events. Back, repeated input, disable and app focus interruption settle pointer state and release only owned holds. Story/replay/practice/Editor distinctions protect live campaign data.
+Candidate -> signed persist -> publish before success effects. Validate mode/case/source/revision/prerequisites/action IDs; duplicates do not award. Preserve legacy grades/claims/approved snapshots/copies and quiet restores. Failure keeps prior state/source/copy retryable. Clear only owned pointer/selection/locks on Back/settings/disable/focus/camera return; independent work can be left. Practice/replay/Editor cannot mutate live story state.
 
 ## Internal checks — AI source/build/regressions only
 
-- [x] Real key/source→expression→Equals→attached tape path gives 80 and72; no wallet/XP/trust/first-check mutation. (Level3Regression drives Level3Calculator with the card's sources and attaches through Level3PracticeRules: 80, then tape 1 − courier = 72 → BeaRecords; the candidate save equals the fixture except `campaign.levelThree`.)
-- [x] Percent/arithmetic bounds, repeated tap/held key, manual input and malformed operation have deterministic tests. (Precedence, A×20%, A+20% = A+0.20, exact 0.1+0.2, ÷0, overflow, 12/6-digit limits, trailing/leading operators, backspace, CE/C, typed path; tap-release entry with no time-based repeat checked in source.)
-- [x] Exit/reopen/save/reload preserve intended practice state without duplicated tape or held pointer. (Tapes round-trip without repair; repair keeps one tape per slot; filled slots are quiet duplicates; implied lessons skip finished steps; pointer released on disable/focus/pause.)
-- [x] Modal/camera/audio ownership cleans up on cancel/disable/settings and advances only after actual player work. (Leaving the desk, settings, dialogue or pause puts the tools away; taps on the tools suppress the desk behind; guide steps wait on player cues; the objective ticks only from the saved ToolPractice → BeaRecords.)
-- [x] Run targeted behavioral/serialization/failure checks and affected existing regressions named in VERIFICATION for the actual changes. Build changed production paths before tests that load their DLL. Record exact commands/results/warnings; no Unity/editor launch or assumed pass count. (Commands and counts in PROGRESS; existing suites built out of tree.)
+- [x] Single existing folder opens/returns through desk and hotbar; acquired links resolve to correct case; legacy filing does not trigger. (Rules, wiring and scene paths; the opening itself is user Play Mode.)
+- [x] First-use demonstration is unscored, unrelated, resumable and shown once; old mandatory budget objective is absent.
+- [x] Temporary source selection/view ownership survives page changes and clears safely; outside desk is read-only. (Existing manager keeps selections across page turns; owned clear and read-only by source/rules only.)
+- [x] Existing calculator arithmetic/model/tape behavior is reused; shared L1/L2 folder/transfer routes retain their behavior.
+- [x] Build actual changed production paths and run targeted command/save/failure/mode checks plus affected shared regressions; record commands/counts/warnings, not historical passes.
 
 ## USER manual acceptance — Unity/device/visual/feel/listening only
 
-- [ ] User checks real prop scale/depth, screen/key/tape readability, tap targets, responsiveness, SFX settings, camera clipping and Back/Exit feel.
-- [ ] Inspect applicable actual imported references, 3D bodies, paper text, targets, motion, camera/control recovery and Android layout. Manual acceptance remains pending until the user reports it; static tests are not a substitute.
+- [ ] Compare folder/page opening and typography with Levels1/2; no new visual theme, floating duplicate folder or overlap.
+- [ ] Try demonstration/skip cosmetic motion/Back/settings and reopen; calculator keys and printout remain readable.
+- [ ] Confirm real 3D targets/animations/text/safe areas/Back/focus/audio on supported devices; no source declaration counts as visual acceptance.
 
 ## Handoff and completion definition
 
-Delivered: `Level3Calculator` (exact-decimal engine, provenance, draft tape), `Level3PracticeRules` (card sources, two slots, attach command), tape records in `Level3ChapterCheckpoint`, `Level3Checkpointer.CommitPracticeTape`, and the physical tools: `Level3DeskCalculator` (desk rest poses, lift-to-view, tap-release input, attach flight, PUT CALCULATOR AWAY), `Level3CalculatorModel` (scaled Synty SM_Prop_Calculator_01 body via `Resources/Levels/Level_03/scene_assets.asset` + faceplate, display, 20 keycaps, roll, tape), `Level3PracticeCardModel` (clipboard card), `Level3DeskProps`, and guide lessons `calculator-practice`/`own-turn`/`done`. Free shared calculator for later tickets; the protected introduction is complete. Next T04, after L3-18's Bag/hotbar branch.
+Deliver the goal above through its real entry point, including persistence, presentation and checked limitations. Update [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md) with actual evidence and remaining user checks; do not mark implemented for documentation presence. User owns Unity and every Git operation.
 
-Direct dependents: T04, T06. Record actual changed source/content/assets, internal evidence, preserved baseline limitations and remaining user checks in [PROGRESS](../PROGRESS.md)/[KNOWN_ISSUES](../KNOWN_ISSUES.md). Mark implemented/internal-verified only after real entry points and checks work; Git operations and user acceptance remain user-owned. No commits, scene edits or gameplay implementation are performed by authoring this ticket.
+### Evidence — 3 November 2026 (internal only)
+
+- Folder: new `Level3CaseFolder` (Level3Gameplay part) puts the real desk folder into its existing HUD store from Bea's assignment (`FolderToHUDIcon.RestoreStored`; story runs only when the campaign owns it). Bar/Bag open the existing `CaseFolder3DView`; the desk stack return is unchanged. Page 1 "Client" uses a new opt-in `CaseFolderUI.FrontPage` hook (null in Levels 1–2); page 2 "Supporting Documents" attaches the acquired papers (`Level3RecordRules` + `AttachedRecordsPage`). Level 3's guard refuses Level 1's `ReviewDocumentsState`; the Auditor takes only the carried folder.
+- Lesson: the existing card model prints a `Level3CardSpec`; at Bea's computation, until `calculatorTaught` is saved, it shows Supply fund 1,250.00 − Spent on ink 480.00 = 770.00 in place of her sheet. `CommitCalculatorLesson` saves only the marker and its action id. The example has its own draft. Arthur's `calculator-lesson` waits for the player's own actions.
+- Transfer boundary: `Level3ValueTransfer` (exact decimal + case/source/year/revision; refuses floats, foreign case, other content, malformed or unheld sources; never grades). T07 adds destinations.
+- Fixture: Tools > TaxVenture > Level 3 > Fixture: First Office Calculation (Editor only; direct Play; never saved).
+- Level3Regression 1145/1145 (78 T03 checks); five mutation probes caught. Commands, limits and the manual script: [PROGRESS](../PROGRESS.md), [KNOWN_ISSUES](../KNOWN_ISSUES.md) L3-R23–L3-R29.
+
+Direct dependents: T07. Continue the revised index, retaining prior working changes and historical results.
+
+
+### User screenshot follow-up — 3 November 2026
+
+User supersedes the custom Client summary: use existing Taxpayer Information fields/style and native transfer widgets. Known professional context prefilled; unsupplied TIN/citizenship blank, no new classification quiz. Shared Level2 stamps now supply free drag/aim/press on the real folder through a Level3 save/revision adapter; the duplicate L3 builder is no longer called. Calculator example uses equal fixed amount type, larger destination, shorter larger-print tape, paper on right (superseded by the repair below) and shared drag/drop with flight/clip/pop; no double-tap requirement. See the current PROGRESS follow-up for changed paths/commands/limits.
+
+- [ ] User verifies matching folder/stamps against supplied Level2 screenshots, free paper placement and restored ink.
+- [ ] User verifies readable equal-sized lesson amounts, shorter tape, drag/drop/invalid drop/interruptions and no double-tap need on phone.
+
+This is additional authorized presentation work; historical internal checks above remain their original evidence, not rendered acceptance. Full progressive computation still belongs to T07/T08.
+
+### Calculator/paper regression repair — 3 November 2026
+
+Latest correction: **paper LEFT, calculator RIGHT, tape between**. Latest screenshot accepts amount size. Labels enlarged; direct EventSystem tool raycasting replaces transparent hits/stale physics. Borders/clip/roll provide bounded dragging; persistent focus gate removed. Point-to-meter print, bounded tape and one EventSystem owner remain. Both amount-to-display and tape-to-field use shared selection/drag/placement; exact immutable payloads reject changed revisions. Existing folder/stamps, domain/save/reward rules remain. Full progressive Computation stays T07/T08.
+
+- [x] Current runtime/full Editor compilation, shared-manager/command/save-failure and shipped-font checks; exact evidence in [PROGRESS](../PROGRESS.md).
+- [ ] **Reopened user acceptance:** readable amounts/result/tape, motion/HUD clearance and mouse/Remote/phone tap/drop/cancel/focus/Settings/Back/Exit/reopen/orientation; no content-driven tool movement, stale selection or duplicate input. Use PROGRESS fixture route; earlier1160/1160 is historical, not visual acceptance.
+
+4 November: numeric-transfer preserved; free-screen/receipt-motion/held-layer repair internally verified; native acceptance pending. Evidence: [PROGRESS](../PROGRESS.md).

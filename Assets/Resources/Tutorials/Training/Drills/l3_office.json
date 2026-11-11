@@ -1,0 +1,128 @@
+{
+  "_readme": [
+    "Level 3 T16 practice drill (6 November 2026): Bea's three office stages, from her collected summary at the desk (fixture office-practice: the real commands, the calculator already taught; nothing is saved).",
+    "Stage A taxable income, stage B tax due from the annual table, stage C her certificate's credit and the remaining payable. Steps wait on Level 3 guide flags."
+  ],
+  "id": "l3_office",
+  "title": "Three Office Stages",
+  "levelId": "Level_03",
+  "scene": "Office_Level3",
+  "start": "plaza",
+  "fixture": "office-practice",
+  "objectivesDone": [],
+  "hide": [],
+  "guided": {
+    "goal": "Work out Bea's tax",
+    "steps": [
+      {
+        "id": "l3o-intro",
+        "title": "THREE OFFICE STAGES",
+        "pages": [
+          {
+            "mood": "wow",
+            "text": "Practice Bea's computation. Nothing here changes your story."
+          }
+        ]
+      },
+      {
+        "id": "l3o-desk",
+        "title": "THREE OFFICE STAGES",
+        "pages": [
+          {
+            "style": "hint",
+            "waitFor": "mode:Workstation",
+            "text": "Go to your desk and sit down."
+          }
+        ]
+      },
+      {
+        "id": "l3o-taxable",
+        "title": "STAGE A",
+        "pages": [
+          {
+            "style": "hint",
+            "waitFor": "flag:computationTaxable",
+            "text": "Open the Case Folder. Taxable income: income minus deductions."
+          }
+        ]
+      },
+      {
+        "use": "computation-rule"
+      },
+      {
+        "use": "computation-tax"
+      },
+      {
+        "id": "l3o-certificate",
+        "title": "STAGE C",
+        "pages": [
+          {
+            "style": "hint",
+            "waitFor": "flag:certificateReceived",
+            "text": "Bea waits in the conference room with her certificate."
+          }
+        ]
+      },
+      {
+        "id": "l3o-payable",
+        "title": "STAGE C",
+        "pages": [
+          {
+            "style": "hint",
+            "waitFor": "flag:computationPayable",
+            "text": "Link the tax credit, then attach what she still has to pay."
+          }
+        ]
+      },
+      {
+        "id": "l3o-done",
+        "title": "DRILL COMPLETE",
+        "pages": [
+          {
+            "mood": "wow",
+            "text": "All three stages attached. Tax due minus the credit is what's left."
+          }
+        ]
+      }
+    ],
+    "hints": []
+  },
+  "mastery": {
+    "goal": "All three stages attached",
+    "steps": [
+      {
+        "id": "l3o-m-desk",
+        "title": "THREE OFFICE STAGES",
+        "pages": [
+          {
+            "style": "hint",
+            "waitFor": "mode:Workstation",
+            "text": "Sit at your desk."
+          }
+        ]
+      },
+      {
+        "id": "l3o-m-payable",
+        "title": "THREE OFFICE STAGES",
+        "pages": [
+          {
+            "style": "hint",
+            "waitFor": "flag:computationPayable",
+            "text": "Attach taxable income, tax due and the remaining payable."
+          }
+        ]
+      },
+      {
+        "id": "l3o-m-done",
+        "title": "DRILL COMPLETE",
+        "pages": [
+          {
+            "mood": "wow",
+            "text": "All three stages attached."
+          }
+        ]
+      }
+    ],
+    "hints": []
+  }
+}

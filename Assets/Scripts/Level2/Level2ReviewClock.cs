@@ -147,7 +147,7 @@ public sealed class Level2ReviewClock : MonoBehaviour, IReviewCutoffClock
         get
         {
             // The Supply Counter catalogue pauses it, as in Level 1 (T12); reading records in the Bag does not.
-            if (Time.timeScale <= 0f || InGameSettings.IsOpen || DialogueUI.IsAnyDialogueActive ||
+            if (ChapterEndingSequence.BlocksGameplay || Time.timeScale <= 0f || InGameSettings.IsOpen || DialogueUI.IsAnyDialogueActive ||
                 HudRewardScreen.AnyOpen || SideQuestSplash.IsShowing || SupplyShopScreen.PausesClock ||
                 (CaseResultPopupUI.Instance != null && CaseResultPopupUI.Instance.IsVisible) ||
                 (Level2AnnotatedPapers.Instance != null && Level2AnnotatedPapers.Instance.IsCollecting)) return true;

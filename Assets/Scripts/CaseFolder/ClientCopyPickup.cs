@@ -21,6 +21,7 @@ public sealed class ClientCopyPickup : MonoBehaviour, IPointerEnterHandler, IPoi
     private const float FlightDuration = 0.6f;
 
     private Action pickedUp;
+    private Func<RectTransform> collectBeforeFlight;
     private RectTransform icon;
     private Vector3 rest;
     private Quaternion restRotation;
@@ -42,27 +43,40 @@ public sealed class ClientCopyPickup : MonoBehaviour, IPointerEnterHandler, IPoi
     /// popping up from dropFrom (null: already resting, e.g. on resume).
     /// </summary>
     public static ClientCopyPickup Create(Scene scene, GameObject model, Vector3 rest, Quaternion restRotation,
-        Vector3? dropFrom, RectTransform icon, Action pickedUp)
+        Vector3? dropFrom, RectTransform icon, Action pickedUp, Action<Transform> paperVisual = null, Func<RectTransform> collectBeforeFlight = null)
     {
-        if (model == null) return null;
+        if (model == null && paperVisual == null) return null;
         var holder = new GameObject("Client Copy (building)");
         holder.SetActive(false);
         SceneManager.MoveGameObjectToScene(holder, scene);
-        GameObject visual = Instantiate(model, holder.transform);
-        visual.name = "Model";
-        visual.SetActive(true);
-        foreach (MonoBehaviour script in visual.GetComponentsInChildren<MonoBehaviour>(true)) DestroyImmediate(script);
-        foreach (Collider collider in visual.GetComponentsInChildren<Collider>(true)) DestroyImmediate(collider);
-        foreach (Rigidbody body in visual.GetComponentsInChildren<Rigidbody>(true)) DestroyImmediate(body);
-        foreach (Renderer renderer in visual.GetComponentsInChildren<Renderer>(true)) renderer.enabled = true;
+        GameObject visual;
+        if (paperVisual != null)
+        {
+            visual = new GameObject("Paper");
+            visual.transform.SetParent(holder.transform, false);
+            int paperLayer = LayerMask.NameToLayer("Interactable");
+            visual.layer = paperLayer < 0 ? 3 : paperLayer;
+            paperVisual(visual.transform);
+            foreach (UnityEngine.UI.Graphic graphic in visual.GetComponentsInChildren<UnityEngine.UI.Graphic>(true)) graphic.raycastTarget = false;
+        }
+        else
+        {
+            visual = Instantiate(model, holder.transform);
+            visual.name = "Model";
+            visual.SetActive(true);
+            foreach (MonoBehaviour script in visual.GetComponentsInChildren<MonoBehaviour>(true)) DestroyImmediate(script);
+            foreach (Collider collider in visual.GetComponentsInChildren<Collider>(true)) DestroyImmediate(collider);
+            foreach (Rigidbody body in visual.GetComponentsInChildren<Rigidbody>(true)) DestroyImmediate(body);
+            foreach (Renderer renderer in visual.GetComponentsInChildren<Renderer>(true)) renderer.enabled = true;
+        }
 
         var root = new GameObject("Client Copy");
         SceneManager.MoveGameObjectToScene(root, scene);
-        root.layer = model.layer;
+        root.layer = paperVisual != null ? visual.layer : model.layer;
         visual.transform.SetParent(root.transform, false);
         visual.transform.localPosition = Vector3.zero;
         visual.transform.localRotation = Quaternion.identity;
-        visual.transform.localScale = model.transform.lossyScale;
+        visual.transform.localScale = paperVisual != null ? Vector3.one : model.transform.lossyScale;
         Destroy(holder);
 
         // One collider around the model for taps; the stamp lies on its top face (the cover).
@@ -70,10 +84,11 @@ public sealed class ClientCopyPickup : MonoBehaviour, IPointerEnterHandler, IPoi
         var box = root.AddComponent<BoxCollider>();
         box.center = bounds.center;
         box.size = bounds.size + Vector3.one * 0.04f;
-        AddCoverStamp(root.transform, bounds);
+        if (paperVisual == null) AddCoverStamp(root.transform, bounds);
 
         var pickup = root.AddComponent<ClientCopyPickup>();
         pickup.pickedUp = pickedUp;
+        pickup.collectBeforeFlight = collectBeforeFlight;
         pickup.icon = icon;
         pickup.rest = rest;
         pickup.restRotation = restRotation;
@@ -221,6 +236,13 @@ public sealed class ClientCopyPickup : MonoBehaviour, IPointerEnterHandler, IPoi
 
     private void StartFlight(Camera inputCamera)
     {
+        // Optional evidence pickup must commit before any flight, callback or visual removal.
+        if (collectBeforeFlight != null)
+        {
+            RectTransform landing = collectBeforeFlight();
+            if (landing == null) return;
+            icon = landing;
+        }
         AudioManager.Instance?.QueueInteractionSFX("paper");
         flightCamera = inputCamera != null ? inputCamera : Camera.main;
         if (flightCamera == null || icon == null)

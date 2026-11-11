@@ -38,6 +38,7 @@ public class CaseFolderFieldRow :
     /// set, no field accepts, gives or changes a value (reading is unchanged).
     /// </summary>
     public static bool ReadOnly;
+    public static event System.Func<CaseFolderFieldRow, string, object, bool> ValueReceiving;
 
     /// <summary>Read-only now: the Client Copy (ReadOnly), or this folder opened away from the desk (2026-10-26).</summary>
     private bool Locked => ReadOnly || Doc3DLayer.BlocksValueTransfer(transform);
@@ -794,6 +795,7 @@ public class CaseFolderFieldRow :
     {
         if (!CanAccept(value))
             return false;
+        if (ValueReceiving != null && !ValueReceiving(this, semanticKey, value.Value)) return false;
 
         DebugTrace.Log(
             $"[CaseFolder Receive] " +

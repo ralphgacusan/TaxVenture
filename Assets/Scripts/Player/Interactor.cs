@@ -85,7 +85,13 @@ public class Interactor : MonoBehaviour
 
         IInteractable hitInteractable = null;
 
-        if (Physics.Raycast(ray, out RaycastHit hit, interactRange, interactableLayer))
+        CameraController owner = CameraController.Instance;
+        if (owner != null && owner.IsThirdPersonView)
+        {
+            // T03: the follow camera only aims; reach and line of sight are the player's own.
+            hitInteractable = ThirdPersonTarget(ray, owner);
+        }
+        else if (Physics.Raycast(ray, out RaycastHit hit, interactRange, interactableLayer))
         {
             // Debugging: log the name of the object hit by the raycast
             // DebugTrace.Log("Hit: " + hit.collider.name);
@@ -162,6 +168,31 @@ public class Interactor : MonoBehaviour
         if (Camera.main == null) return;
         Gizmos.color = Color.yellow;
         Gizmos.DrawRay(Camera.main.transform.position, Camera.main.transform.forward * interactRange);
+    }
+
+    /// <summary>
+    /// T03 third person: the aim ray reaches past the camera's offset, but the hit counts only when
+    /// the player is within reach of it, it is not behind the player, and nothing solid stands
+    /// between the player's eye and it (so the camera neither blocks nor extends reach).
+    /// </summary>
+    private IInteractable ThirdPersonTarget(Ray ray, CameraController owner)
+    {
+        Vector3 eye = owner.PlayerEye;
+        float extra = Vector3.Distance(ray.origin, eye);
+        if (!Physics.Raycast(ray, out RaycastHit far, interactRange + extra, interactableLayer)) return null;
+        IInteractable target = far.collider.GetComponentInParent<IInteractable>();
+        if (target == null || !(target is Component component)) return null;
+        Transform player = owner.PlayerRoot;
+        float flat = player != null ? InteractionRange.FlatDistance(player.position, component) : 0f;
+        float ahead = Vector3.Dot(far.point - eye, Flat(ray.direction));
+        bool blocked = InteractionRange.Occluded(eye, far.point, component.transform, player);
+        return ExplorationRules.PlayerCanTarget(flat, interactRange, ahead, blocked) ? target : null;
+    }
+
+    private static Vector3 Flat(Vector3 v)
+    {
+        v.y = 0f;
+        return v.sqrMagnitude > 1e-6f ? v.normalized : Vector3.forward;
     }
 
     public void ClearFocus()

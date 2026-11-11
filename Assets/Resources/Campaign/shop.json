@@ -10,6 +10,7 @@
     "Level 1 earns 160 coins. No paid answers, selling or loot boxes. Decor is installed in the office, never carried or sold, and changes no score.",
     "counter: where the Supply Counter stands. entrance door paths (averaged) or fallback; candidates step toward `toward` by each distance and sideways by each offset (metres); the first clear spot on open ground wins. useFixed + fixedPosition [x,y,z] + fixedYaw pin an exact spot; flip turns it round.",
     "anchors: office display spots. surface = a free spot on `target` under `parent`, on the `side` (right | left) seen from the desk seat, toward the far corner; wall = on the wall behind `target`, `above` metres over its top. A piece whose spot is taken moves to its next free anchor; with none free the purchase is refused before any coin moves.",
+    "Level 3 T15 (6 November 2026): office_computer is sold once Level 3 is completed in the story (chapter:Level_03) and installs on printer_desk (the separate desk beside the consultant desk, clear of the folder, stamps, book and calculator). It opens a read-only register of verified client cases (OfficeComputerTerminal / Level3RegisterRules); no filing, printing or figure transfer.",
     "anchors kind floor (T14): the first clear floor spot beside `target` on the seat's `side`, nearest the seat (no anchor uses it since the Desk Drawer unit was removed)."
   ],
   "products": [
@@ -186,13 +187,15 @@
       "itemId": "",
       "area": "",
       "capacity": 0,
-      "anchors": [],
+      "anchors": [
+        "printer_desk"
+      ],
       "price": 250,
       "title": "Office Computer",
       "tagline": "Your own desk computer",
-      "effect": "A computer for your desk that keeps your records together.",
+      "effect": "Opens a read-only register of your verified client cases: Bea's approved computation and her papers. No filing or printing.",
       "icon": "computer",
-      "requires": "pending:office_computer",
+      "requires": "chapter:Level_03",
       "requiresLabel": "Requires corrected Level 3",
       "after": "",
       "consumable": false
@@ -246,6 +249,15 @@
       "target": "SM_Prop_Shelf_06",
       "side": "",
       "above": 0.3
+    },
+    {
+      "id": "printer_desk",
+      "label": "the printer desk beside yours",
+      "kind": "surface",
+      "parent": "Environment/OfficeBuilding/Rooms/ConsultantOffice",
+      "target": "PrinterDesk",
+      "side": "right",
+      "above": 0
     }
   ]
 }

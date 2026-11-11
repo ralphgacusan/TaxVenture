@@ -41,6 +41,15 @@ public sealed class CareerBoardPresenter : MonoBehaviour
     private const float GoalCardHeight = 180f;
     private const float BadgeCardHeight = 112f;
 
+    // The top row, left to right: BACK, SHOP, BAG (one size, one colour each).
+    private const float RowY = 416f;
+    private const float RowFontSize = 30f;
+    private static readonly Vector2 RowButtonSize = new Vector2(180f, 72f);
+    private static readonly Color BackFace = new Color32(62, 102, 148, 255);
+    private static readonly Color ShopFace = HudTheme.Brass;
+    private static readonly Color BagFace = new Color32(48, 128, 88, 255);
+    private static readonly Color ShopInk = new Color32(40, 30, 14, 255);
+
     // Pin positions keep the 3 + 2 arrangement, nudged up and down so the board looks hand-pinned.
     private static readonly Vector2[] ChapterPins =
     {
@@ -95,6 +104,10 @@ public sealed class CareerBoardPresenter : MonoBehaviour
     private SupplyShopScreen menuShop;
     private TextMeshPro shopNotice;
     private float shopNoticeTime;
+    // The Bag, view only: beside SHOP, the same panel as in a chapter over the saved inventory.
+    private CareerBoardButton bagButton;
+    private InventoryScreen menuBag;
+    private bool overlayWasOpen;
     private CareerChapterSheet sheet;
     private CareerPinnedPaper liftedPaper;
 
@@ -166,9 +179,12 @@ public sealed class CareerBoardPresenter : MonoBehaviour
     {
         foreach (Material material in materials) CareerBoardKit.Dispose(material);
         if (menuShop != null) Destroy(menuShop.gameObject);
+        if (menuBag != null) Destroy(menuBag.gameObject);
     }
 
     private bool ShopOpen => menuShop != null && menuShop.IsOpen;
+    private bool BagOpen => menuBag != null && menuBag.IsOpen;
+    private bool OverlayOpen => ShopOpen || BagOpen;
 
     private void HandleProgressChanged(PlayerProgressData _) => progressDirty = true;
 
@@ -182,12 +198,17 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         bool visible = IsBoardVisible();
         bool ready = visible && CanInteractNow();
         if (visible && !wasVisible) ShowBoard(animate: true);
-        if (!visible && wasVisible) { sheet.HideNow(); if (ShopOpen) menuShop.Close(); }
+        if (!visible && wasVisible)
+        {
+            sheet.HideNow();
+            if (ShopOpen) menuShop.Close();
+            if (BagOpen) menuBag.Close(force: true);
+        }
         if (!ready) ClearPointer();
         wasVisible = visible;
 
         // A purchase changes the save: the board catches up (and celebrates) once the catalogue is closed.
-        if (progressDirty && ready && !ShopOpen)
+        if (progressDirty && ready && !OverlayOpen)
         {
             progressDirty = false;
             CareerSnapshot fresh = CareerProgressService.Current();
@@ -196,14 +217,18 @@ public sealed class CareerBoardPresenter : MonoBehaviour
             CareerProgressService.SaveSeen(fresh);
         }
 
-        // While the catalogue is open it owns taps and Back (it closes itself), and the board waits behind it.
-        ApplyInputGate(ready && !ShopOpen);
-        if (ready && !launchStarted && !ShopOpen)
+        // While the catalogue or Bag is open it owns taps and Back (it closes itself), and the board waits behind it.
+        // The tap or Back that closed one is its own: the board listens again from the next frame.
+        bool overlayOpen = OverlayOpen;
+        bool overlayJustClosed = overlayWasOpen && !overlayOpen;
+        overlayWasOpen = overlayOpen;
+        ApplyInputGate(ready && !overlayOpen);
+        if (ready && !launchStarted && !overlayOpen && !overlayJustClosed)
         {
             HandlePointer();
             if (BackPressed()) GoBack();
         }
-        else if (ShopOpen) ClearPointer();
+        else if (overlayOpen) ClearPointer();
         TickCounters(Time.unscaledDeltaTime);
         TickShopNotice(Time.unscaledDeltaTime);
     }
@@ -214,14 +239,14 @@ public sealed class CareerBoardPresenter : MonoBehaviour
 
     private const float ShopNoticeSeconds = 3f;
 
-    /// <summary>SHOP beside BACK (same size and brass), with a padlock while the shop is not yet introduced.</summary>
+    /// <summary>SHOP beside BACK (same size, its own colour), with a padlock while the shop is not yet introduced.</summary>
     private void BuildShopEntry()
     {
-        shopButton = CareerBoardButton.Create(boardRoot, "Shop Button", "SHOP", new Vector3(-525f, 420f, -10f),
-            new Vector2(150f, 56f), HudTheme.Brass, new Color32(40, 30, 14, 255), 22f);
-        shopLock = CareerBoardKit.Padlock(shopButton.transform, new Vector3(-50f, 0f, -16f), 20f, materials);
+        shopButton = CareerBoardButton.Create(boardRoot, "Shop Button", "SHOP", new Vector3(-481f, RowY, -10f),
+            RowButtonSize, ShopFace, ShopInk, RowFontSize);
+        shopLock = CareerBoardKit.Padlock(shopButton.transform, new Vector3(-66f, 0f, -16f), 26f, materials);
         shopButton.Tapped += _ => OpenShop();
-        shopNotice = CareerBoardKit.Text(boardRoot, "Shop Notice", "", 15f, new Vector3(-560f, 376f, -6f), 420f, 22f,
+        shopNotice = CareerBoardKit.Text(boardRoot, "Shop Notice", "", 15f, new Vector3(-560f, 368f, -6f), 420f, 22f,
             CareerBoardKit.Cream, TextAlignmentOptions.Center, FontStyles.Bold, null, embossed);
         RefreshShopEntry();
     }
@@ -254,6 +279,22 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         ClearPointer();
         if (menuShop == null) menuShop = SupplyShopScreen.CreateStandalone();
         menuShop.Open(firstVisit: false);
+    }
+
+    /// <summary>BAG beside SHOP. Always open: it only shows what the save already holds.</summary>
+    private void BuildBagEntry()
+    {
+        bagButton = CareerBoardButton.Create(boardRoot, "Bag Button", "BAG", new Vector3(-287f, RowY, -10f),
+            RowButtonSize, BagFace, CareerBoardKit.Cream, RowFontSize);
+        bagButton.Tapped += _ => OpenBag();
+    }
+
+    private void OpenBag()
+    {
+        if (!Application.isPlaying || launchStarted || !CanInteractNow() || OverlayOpen) return;
+        ClearPointer();
+        if (menuBag == null) menuBag = InventoryScreen.CreateViewOnly();
+        menuBag.Open(SlotRef.None, null);
     }
 
     private void ShowShopNotice(string text)
@@ -296,10 +337,11 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         yarnMaterial = CareerBoardKit.Lit(new Color32(176, 36, 44, 255), materials, 0.1f);
         BuildProgressBoard();
         BuildStoryBoard();
-        backButton = CareerBoardButton.Create(boardRoot, "Back Button", "<  BACK", new Vector3(-690f, 420f, -10f),
-            new Vector2(150f, 56f), HudTheme.Brass, new Color32(40, 30, 14, 255), 22f);
+        backButton = CareerBoardButton.Create(boardRoot, "Back Button", "<  BACK", new Vector3(-675f, RowY, -10f),
+            RowButtonSize, BackFace, CareerBoardKit.Cream, RowFontSize);
         backButton.Tapped += _ => GoBack();
         BuildShopEntry();
+        BuildBagEntry();
         sheet = CareerChapterSheet.Create(boardRoot);
         sheet.StartRequested += LaunchChapter;
         sheet.Closed += HandleSheetClosed;
@@ -924,6 +966,7 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         foreach (BadgeSlotView slot in badgeSlots) slot.Paper.Interactable = boardInput && slot.Paper.Data != null;
         if (backButton != null) backButton.Interactable = ready && !launchStarted;
         if (shopButton != null) shopButton.Interactable = boardInput;
+        if (bagButton != null) bagButton.Interactable = boardInput;
         if (sheet != null) sheet.SetInputEnabled(ready && !launchStarted && !sheet.IsAnimating);
     }
 
@@ -980,9 +1023,14 @@ public sealed class CareerBoardPresenter : MonoBehaviour
         launchStarted = true;
         ApplyInputGate(false);
         // Story for the chapter still to finish, mastery replay for a finished one (T03 run modes).
+        if (ChapterEndingRules.Pending(PlayerProgressManager.Instance != null ? PlayerProgressManager.Instance.CurrentProgress : null))
+        {
+            MenuEntry.Continue(null); // Finish the saved ending/result before starting another run.
+            return;
+        }
         CampaignRun.Begin(CareerProgress.LaunchMode(chapter));
         if (AudioManager.Instance != null) AudioManager.Instance.PlayAchievementSFX();
-        SceneManager.LoadScene(chapter.Def.scene);
+        ChapterOpeningSequence.LoadChapter(chapter.Def.scene);
     }
 
     private void GoBack()

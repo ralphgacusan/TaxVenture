@@ -23,6 +23,7 @@ public class HighlightEffect : MonoBehaviour
     private bool focused;
     private bool requested;
     private bool affordance;
+    private Transform targetRoot;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetActiveEffects()
@@ -121,6 +122,14 @@ public class HighlightEffect : MonoBehaviour
     /// <summary>Refresh after a model is spawned or replaced beneath this interaction root.</summary>
     public void RefreshTargets() => CacheTargetRenderers();
 
+    /// <summary>Separate interaction hit areas can highlight their real model instead of an empty collider.</summary>
+    public void SetTargetRoot(Transform model)
+    {
+        if (targetRoot == model) return;
+        targetRoot = model;
+        CacheTargetRenderers();
+    }
+
     private bool IsWanted => focused || requested || affordance;
 
     private void RefreshRegistration()
@@ -142,7 +151,7 @@ public class HighlightEffect : MonoBehaviour
 
     private void CacheTargetRenderers()
     {
-        Renderer[] candidates = GetComponentsInChildren<Renderer>(true);
+        Renderer[] candidates = (targetRoot != null ? targetRoot : transform).GetComponentsInChildren<Renderer>(true);
         var eligible = new List<Renderer>(candidates.Length);
 
         foreach (Renderer candidate in candidates)
@@ -167,7 +176,7 @@ public class HighlightEffect : MonoBehaviour
         {
             if (current.gameObject.layer == uiLayer)
                 return true;
-            if (current == transform) break;
+            if (current == (targetRoot != null ? targetRoot : transform)) break;
         }
 
         return false;
@@ -175,7 +184,7 @@ public class HighlightEffect : MonoBehaviour
 
     private bool BelongsToNestedInteractiveObject(Transform candidate)
     {
-        for (Transform current = candidate; current != null && current != transform; current = current.parent)
+        for (Transform current = candidate; current != null && current != (targetRoot != null ? targetRoot : transform); current = current.parent)
         {
             MonoBehaviour[] behaviours = current.GetComponents<MonoBehaviour>();
             foreach (MonoBehaviour behaviour in behaviours)

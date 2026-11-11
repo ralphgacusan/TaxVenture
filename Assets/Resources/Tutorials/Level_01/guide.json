@@ -144,6 +144,16 @@
       ]
     },
     {
+      "id": "run-jump",
+      "title": "SPRINT",
+      "when": "lesson:look",
+      "after": "look",
+      "_note": "First-person baseline: silent, optional sprint hint. Retain run-jump lesson ID for saved completion compatibility; jump onboarding is deferred to tentative T22.",
+      "pages": [
+        { "point": "hud:joystick", "gesture": "joystick", "style": "hint", "waitFor": "cue:PlayerSprinted|move:15", "text": "Drag past the walking circle toward the chevrons to run." }
+      ]
+    },
+    {
       "id": "bag-empty",
       "title": "YOUR BAG",
       "when": "lesson:look",

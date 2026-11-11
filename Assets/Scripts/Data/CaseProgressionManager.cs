@@ -645,6 +645,12 @@ public class CaseProgressionManager : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Cases the player actually works this release, for HUD copy and scales only. Level 3 keeps its deferred
+    /// company case in level.json (and every count below), but only Bea's case is active.
+    /// </summary>
+    public int PresentedCasesInLevel => CurrentLevelId == Level3ChapterRules.LevelId ? 1 : TotalCasesInLevel;
+
     public int TotalCasesInLevel =>
         currentLevel?.caseIds?.Count ?? 0;
 

@@ -206,7 +206,7 @@ public sealed class OfficeHours : MonoBehaviour
     /// <summary>The clock waits while the player can't act (tutorial tap pages, reward cards, pause).</summary>
     private bool Paused()
     {
-        if (Time.timeScale <= 0f || HudRewardScreen.AnyOpen || nextMorning != null || SideQuestSplash.IsShowing) return true;
+        if (ChapterEndingSequence.BlocksGameplay || Time.timeScale <= 0f || HudRewardScreen.AnyOpen || nextMorning != null || SideQuestSplash.IsShowing) return true;
         // T12: browsing the Supply Counter catalogue pauses the clock like other shop menus (the Bag does not).
         if (SupplyShopScreen.PausesClock) return true;
         if (GameStateMachine.Instance != null && GameStateMachine.Instance.IsPaused) return true;

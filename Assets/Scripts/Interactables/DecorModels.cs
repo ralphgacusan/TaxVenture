@@ -19,11 +19,26 @@ using UnityEngine.UI;
 /// primitives never show a texture atlas. No colliders.
 /// Origins: the cup's bottom centre; the frame's back centre, its front
 /// facing +Z (hang it with the rotation looking out of the wall).
+///
+/// Level 3 T15: office_computer is the supplied Synty monitor and keyboard
+/// (CampaignShopAssets), fitted to a fixed desk footprint by BuildComputer;
+/// it is not a catalogue miniature (Has() stays the two Delivery A pieces; the
+/// computer card shows its icon). OfficeDecor adds its collider and terminal.
 /// </summary>
 public static class DecorModels
 {
     public static readonly Vector2 PencilCupFootprint = new Vector2(0.09f, 0.09f);
     public static readonly Vector2 PrintSize = new Vector2(0.42f, 0.32f);
+    /// <summary>T15: the computer's desk footprint (monitor behind, keyboard in front), metres.</summary>
+    public static readonly Vector2 ComputerFootprint = new Vector2(0.56f, 0.40f);
+    public const float MonitorWidth = 0.50f;
+    public const float KeyboardWidth = 0.40f;
+    /// <summary>Turns the supplied monitor so its screen faces the viewer (+Z of the piece).</summary>
+    public const float MonitorYaw = 180f;
+    public const float KeyboardYaw = 180f;
+
+    /// <summary>The surface footprint a desk piece needs (the computer's, else the pencil cup's).</summary>
+    public static Vector2 Footprint(string itemId) => itemId == ShopCatalogue.OfficeComputer ? ComputerFootprint : PencilCupFootprint;
 
     private static readonly Dictionary<string, Material> materials = new Dictionary<string, Material>();
 
@@ -48,6 +63,64 @@ public static class DecorModels
         if (itemId == ShopCatalogue.PencilCup) BuildPencilCup(root.transform);
         else BuildIslandPrint(root.transform);
         return root;
+    }
+
+    /// <summary>
+    /// T15: the office computer from the supplied monitor and keyboard (scaled to fixed widths, monitor at
+    /// the back, keyboard in front, both standing at y 0). A missing prefab stands in as a plain dark body,
+    /// said once in the Console. Colliders of the copies are removed (the installer adds one box).
+    /// </summary>
+    public static GameObject BuildComputer(Transform parent)
+    {
+        var root = new GameObject("Decor " + ShopCatalogue.OfficeComputer);
+        root.transform.SetParent(parent, false);
+        CampaignShopAssets assets = CampaignShopAssets.Load();
+        Fit(root.transform, assets != null ? assets.computerMonitorPrefab : null, "Monitor", MonitorWidth, MonitorYaw, -ComputerFootprint.y * 0.5f + 0.09f,
+            new Vector3(MonitorWidth, 0.32f, 0.05f), new Color32(32, 36, 44, 255));
+        Fit(root.transform, assets != null ? assets.computerKeyboardPrefab : null, "Keyboard", KeyboardWidth, KeyboardYaw, ComputerFootprint.y * 0.5f - 0.08f,
+            new Vector3(KeyboardWidth, 0.02f, 0.13f), new Color32(52, 56, 64, 255));
+        return root;
+    }
+
+    private static void Fit(Transform root, GameObject prefab, string name, float width, float yaw, float z, Vector3 standIn, Color color)
+    {
+        GameObject part;
+        if (prefab != null)
+        {
+            part = Object.Instantiate(prefab, root, false);
+            part.name = name;
+            foreach (Collider collider in part.GetComponentsInChildren<Collider>(true)) Object.Destroy(collider);
+        }
+        else
+        {
+            Debug.LogWarning("[OfficeDecor] Resources/" + CampaignShopAssets.ResourcePath + " has no computer " + name.ToLowerInvariant() + " prefab; a plain body stands in.");
+            part = Part(root, PrimitiveType.Cube, name, new Vector3(0f, standIn.y * 0.5f, 0f), standIn, color, 0.2f, 0.4f);
+        }
+        part.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+        Bounds local = LocalBounds(root, part);
+        float scale = local.size.x > 0.0001f ? width / local.size.x : 1f;
+        part.transform.localScale *= scale;
+        local = LocalBounds(root, part);
+        part.transform.localPosition += new Vector3(-local.center.x, -local.min.y, z - local.center.z);
+    }
+
+    /// <summary>Renderer bounds of part in root's local space.</summary>
+    private static Bounds LocalBounds(Transform root, GameObject part)
+    {
+        Matrix4x4 toLocal = root.worldToLocalMatrix;
+        var bounds = new Bounds();
+        bool any = false;
+        foreach (Renderer renderer in part.GetComponentsInChildren<Renderer>(true))
+        {
+            Bounds b = renderer.bounds;
+            for (int i = 0; i < 8; i++)
+            {
+                Vector3 corner = toLocal.MultiplyPoint3x4(b.center + Vector3.Scale(b.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1)));
+                if (!any) { bounds = new Bounds(corner, Vector3.zero); any = true; }
+                else bounds.Encapsulate(corner);
+            }
+        }
+        return bounds;
     }
 
     /// <summary>Puts the model and all its parts (world canvases too) on one layer.</summary>

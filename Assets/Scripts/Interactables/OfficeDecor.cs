@@ -29,6 +29,12 @@ public sealed class OfficeDecorPiece : MonoBehaviour
 /// usable spot in the loaded office stays owned (nothing is sold, refunded or
 /// moved in the save) and the player is told once per visit.
 ///
+/// Level 3 T15: the office computer stands on the printer desk beside the
+/// consultant desk (its own wider footprint, the same corner search), built
+/// from the supplied monitor and keyboard (DecorModels.BuildComputer), with
+/// one box collider on the Interactable layer and OfficeComputerTerminal (its
+/// read-only client register). While it waits to arrive it cannot be used.
+///
 /// DOES NOT: decide ownership or anchors (ShopRules / DecorRules), or move
 /// anything in the scene file.
 /// </summary>
@@ -128,17 +134,19 @@ public sealed class OfficeDecor : MonoBehaviour
         string problem;
         bool placed = anchor.kind == ShopDecorAnchor.KindWall
             ? ResolveWall(anchor, out position, out rotation, out problem)
-            : ResolveSurface(anchor, out position, out rotation, out surface, out problem);
+            : ResolveSurface(anchor, placement.itemId, out position, out rotation, out surface, out problem);
         if (!placed)
         {
             Warn(placement.itemId + "/" + anchor.id, problem + "; tune \"anchors\" in shop.json");
             Unplaced(placement.itemId);
             return null;
         }
-        GameObject root = DecorModels.Build(placement.itemId, transform);
+        bool computer = placement.itemId == ShopCatalogue.OfficeComputer;
+        GameObject root = computer ? DecorModels.BuildComputer(transform) : DecorModels.Build(placement.itemId, transform);
         if (root == null) return null;
         root.name = "Decor " + placement.itemId + " (T13)";
         root.AddComponent<OfficeDecorPiece>().ItemId = placement.itemId;
+        if (computer) MakeTerminal(root);
         root.transform.SetPositionAndRotation(position, rotation);
         var piece = new Piece
         {
@@ -152,6 +160,17 @@ public sealed class OfficeDecor : MonoBehaviour
         };
         SetVisible(piece, !piece.Waiting);
         return piece;
+    }
+
+    /// <summary>T15: one box around the computer on the player's Interactable layer, and its register terminal.</summary>
+    private static void MakeTerminal(GameObject root)
+    {
+        Bounds world = DecorModels.WorldBounds(root);
+        var box = root.AddComponent<BoxCollider>();
+        box.center = root.transform.InverseTransformPoint(world.center);
+        box.size = new Vector3(DecorModels.ComputerFootprint.x, Mathf.Max(0.1f, world.size.y), DecorModels.ComputerFootprint.y);
+        root.layer = LayerMask.NameToLayer("Interactable");
+        root.AddComponent<OfficeComputerTerminal>();
     }
 
     private void Warn(string key, string problem)
@@ -191,7 +210,7 @@ public sealed class OfficeDecor : MonoBehaviour
     }
 
     /// <summary>The desk corner: the free spot on the seat's side nearest the far corner (DecorRules.CornerSpot).</summary>
-    private bool ResolveSurface(ShopDecorAnchor anchor, out Vector3 position, out Quaternion rotation, out Transform surface, out string problem)
+    private bool ResolveSurface(ShopDecorAnchor anchor, string itemId, out Vector3 position, out Quaternion rotation, out Transform surface, out string problem)
     {
         position = Vector3.zero;
         rotation = Quaternion.identity;
@@ -240,7 +259,10 @@ public sealed class OfficeDecor : MonoBehaviour
         Vector3 forward = seat != null ? surface.InverseTransformDirection(seat.forward) : Vector3.forward;
         float side = anchor.side == "left" ? -1f : 1f;
         var box = new PickupRules.Box(local.min.x, local.min.z, local.max.x, local.max.z);
-        float halfX = DecorModels.PencilCupFootprint.x * 0.5f * unit, halfZ = DecorModels.PencilCupFootprint.y * 0.5f * unit;
+        // T15: each piece's own footprint; z uses the surface's own z scale (the printer desk is scaled 3 x 1 x 1).
+        Vector2 footprint = DecorModels.Footprint(itemId);
+        float unitZ = 1f / Mathf.Max(0.0001f, Mathf.Abs(scale.z));
+        float halfX = footprint.x * 0.5f * unit, halfZ = footprint.y * 0.5f * unitZ;
         if (!DecorRules.CornerSpot(box, halfX, halfZ, obstacles, DeskMargin * unit, DeskGap * unit, forward.x, forward.z, side, out float x, out float z))
         {
             problem = "no free room on that side of the surface";
@@ -409,5 +431,7 @@ public sealed class OfficeDecor : MonoBehaviour
     {
         foreach (Renderer renderer in piece.Root.GetComponentsInChildren<Renderer>(true)) renderer.enabled = visible;
         foreach (Canvas canvas in piece.Root.GetComponentsInChildren<Canvas>(true)) canvas.enabled = visible;
+        // T15: a computer waiting to arrive cannot be used (the pencil cup and print have no colliders).
+        foreach (Collider collider in piece.Root.GetComponentsInChildren<Collider>(true)) collider.enabled = visible;
     }
 }

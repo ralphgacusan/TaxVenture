@@ -29,6 +29,7 @@ public class ValueDragSource : MonoBehaviour,
     private IDataValueSource source;
     private object ownerComponent;
 
+    public bool ShowVisual = true;
     private bool isDragging = false;
 
     private static ValueDragSource activeDrag;
@@ -218,9 +219,7 @@ public class ValueDragSource : MonoBehaviour,
         // Show Floating Drag Visual
         // -----------------------------------------------------
 
-        DragVisualManager.Instance.Show(
-            dragDisplayText
-        );
+        if (ShowVisual) DragVisualManager.Instance.Show(dragDisplayText);
 
         // -----------------------------------------------------
         // Position Visual Under Cursor

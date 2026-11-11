@@ -5,6 +5,7 @@ using System.Collections.Generic;
 /// LevelResultData already stored in a LevelRewardAccumulator.
 /// This is a pure data carrier — no calculation logic lives here.
 /// </summary>
+[System.Serializable]
 public class LevelTotalResult
 {
     /// <summary>Unique per finished run, so saving it twice applies it once.</summary>

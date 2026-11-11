@@ -34,6 +34,7 @@ using TouchPhase = UnityEngine.TouchPhase;
 /// The decision is made once at impact by Level2PreliminaryStamp.Stamp
 /// (initial review); animation never decides anything.
 /// </summary>
+[DefaultExecutionOrder(600)]
 public sealed class Level2DeskStamps : MonoBehaviour
 {
     public const string ChildName = "DeskStamps";
@@ -52,9 +53,29 @@ public sealed class Level2DeskStamps : MonoBehaviour
     private const float LiftSeconds = 0.45f;
     private const float ReturnSeconds = 0.35f;
 
+    /// <summary>Optional case adapter; null retains every Level 2 rule and animation.</summary>
+    public interface ICaseStamp
+    {
+        bool Available { get; }
+        int Revision { get; }
+        CaseFolderUI PaperFolder { get; }
+        string InkText(StampType type);
+        bool Commit(StampType type, Vector2 local, float tilt, int page);
+        void Opening();
+    }
+    public ICaseStamp CaseBinding { get; set; }
+    public int PacketRevision => CaseBinding != null ? CaseBinding.Revision : Level2OfficeStart.Review?.packetRevision ?? -1;
+    public bool RevisionCurrent(int revision) => CaseBinding != null
+        ? CaseBinding.Available && CaseBinding.Revision == revision
+        : Level2OfficeStart.Review != null && Level2OfficeStart.Review.packetRevision == revision;
+    public string InkText(StampType type) => CaseBinding != null ? CaseBinding.InkText(type) : InkTextFor(type);
+    public bool CommitAt(StampType type, Vector2 local, float tilt, int page) => CaseBinding != null
+        ? CaseBinding.Commit(type, local, tilt, page)
+        : Level2PreliminaryStamp.Stamp(type, local, tilt) == PreliminaryReview.Outcome.Recorded;
+
     public bool Active { get; private set; }
     public CaseFolderUI Folder { get; private set; }
-    public bool CanUseDesk => CameraController.Instance != null &&
+    public bool CanUseDesk => (CaseBinding == null || CaseBinding.Available) && CameraController.Instance != null &&
         CameraController.Instance.CurrentMode == CameraController.CameraMode.Workstation &&
         !InGameSettings.IsOpen && !DialogueUI.IsAnyDialogueActive &&
         (GameStateMachine.Instance == null || !GameStateMachine.Instance.IsPaused);
@@ -79,9 +100,11 @@ public sealed class Level2DeskStamps : MonoBehaviour
         if (toolLayer != null) return toolLayer;
         toolLayer = Doc3DLayer.Create(null, transform, "Desk stamps");
         toolLayer.PersistentRenderLayer = StampLayer;
+        toolLayer.CaptureNearClip = 0.005f;
         // A folder capture is a screen canvas, above every world camera.
         // Always capture held tools: conditional overlap depends on LateUpdate order.
         toolLayer.AlwaysComposite = true;
+        toolLayer.KeepInFront = true;
         toolLayer.CompositeOverDocuments = true;
         toolLayer.gameObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
         toolLayer.AssignSortingOrder(FloatingWindow.TakeTopSortingOrder());
@@ -406,7 +429,7 @@ public sealed class Level2DeskStamps : MonoBehaviour
         Folder = FindDeskFolder();
         if (Folder == null || !Folder.IsShowing)
         {
-            Level2Say.Line("Open Rosa's folder on the desk first, then use the stamps.");
+            Level2Say.Line(CaseBinding != null ? "Open the Case Folder at your desk first." : "Open Rosa's folder on the desk first, then use the stamps.");
             return;
         }
         SetActive(true);
@@ -419,6 +442,7 @@ public sealed class Level2DeskStamps : MonoBehaviour
         putAwayAt = -1f;
         if (on)
         {
+            CaseBinding?.Opening();
             Folder.Closing -= PutAway;
             Folder.Closing += PutAway;
             if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
@@ -496,6 +520,8 @@ public sealed class Level2DeskStamps : MonoBehaviour
     /// </summary>
     public int StampPageIndex()
     {
+        // A case verdict belongs on the front of the packet, independent of the page inspected.
+        if (CaseBinding != null) return 0;
         CaseReviewState review = Level2OfficeStart.Review;
         if (Folder == null || review == null || review.phase < ReviewPhase.OfficeReconciliation) return 0;
         int index = Folder.FindPageIndex(Level2OfficeReview.FinalTitle);
@@ -527,6 +553,7 @@ public sealed class Level2DeskStamps : MonoBehaviour
     /// <summary>The desk folder's world paper that is open now (not the flat HUD copy).</summary>
     private CaseFolderUI FindDeskFolder()
     {
+        if (CaseBinding != null) return CaseBinding.PaperFolder;
         foreach (CaseFolderUI folder in FindObjectsByType<CaseFolderUI>(FindObjectsInactive.Include))
             if (folder.IsWorldPaper && folder.IsShowing) return folder;
         foreach (CaseFolderUI folder in FindObjectsByType<CaseFolderUI>(FindObjectsInactive.Include))

@@ -8,6 +8,8 @@ using UnityEngine.Rendering.Universal;
 public sealed class OfficeMinimap : MonoBehaviour
 {
     private const float CameraHeight = 25f;
+    private const float MovingMapInterval = 0.05f;
+    private const float IdleMapInterval = 0.25f;
     /// <summary>Highest point the map draws (metres above the floor). Below the office ceiling slabs (~2.53 m).</summary>
     public const float MapTopHeight = 2.45f;
 
@@ -16,6 +18,9 @@ public sealed class OfficeMinimap : MonoBehaviour
     private CameraController sceneCameraController;
     private OfficeMinimapHUD hud;
     private float nextResolveTime;
+    private bool mapDrawn;
+    private float lastMapRenderTime;
+    private Vector3 lastMapRenderPosition;
     private OfficeMinimapMarkers markers;
     private OfficeMinimapObjective objective;
     private SettingsUI settings;
@@ -97,7 +102,24 @@ public sealed class OfficeMinimap : MonoBehaviour
         if (objective == null || !objective.IsValid)
             objective = new OfficeMinimapObjective(hud.MapRect, (RectTransform)hud.transform);
         objective.Tick(mapCamera);
-        SetVisible(true);
+        if (hud != null) hud.SetVisible(true);
+        mapCamera.enabled = ShouldRenderMap();
+    }
+
+    /// <summary>
+    /// The map texture keeps its last image, so it need not be redrawn with every game frame:
+    /// 20 times a second while the player walks and 4 times a second otherwise (for NPCs).
+    /// Markers and the player arrow are UI and still update every frame.
+    /// </summary>
+    private bool ShouldRenderMap()
+    {
+        float now = Time.unscaledTime;
+        bool moved = (transform.position - lastMapRenderPosition).sqrMagnitude > 0.0004f;
+        if (mapDrawn && now - lastMapRenderTime < (moved ? MovingMapInterval : IdleMapInterval)) return false;
+        mapDrawn = true;
+        lastMapRenderTime = now;
+        lastMapRenderPosition = transform.position;
+        return true;
     }
 
     private void OnDisable() => SetVisible(false);
@@ -204,6 +226,7 @@ public sealed class OfficeMinimap : MonoBehaviour
 
     private void SetVisible(bool visible)
     {
+        if (!visible) mapDrawn = false;
         if (mapCamera != null) mapCamera.enabled = visible;
         if (hud != null) hud.SetVisible(visible);
     }

@@ -1,0 +1,38 @@
+{
+  "id": "chapter03.end",
+  "title": "Plans Beyond the Paper",
+  "scene": "CS_Chapter03_End",
+  "duration": 15.0,
+  "fadeInSeconds": 0.25,
+  "fadeOutSeconds": 0.25,
+  "cueFadeSeconds": 0.1,
+  "charsPerLine": 46,
+  "shotStarts": [
+    0.0,
+    4.8,
+    10.1
+  ],
+  "cues": [
+    {
+      "voice": "vo_ch03_end_01_bea", "speaker": "Bea",
+      "text": "Now I can plan for that studio.",
+      "start": 0.6,
+      "end": 4.6,
+      "variant": ""
+    },
+    {
+      "voice": "vo_ch03_end_02_receptionist", "speaker": "Receptionist",
+      "text": "The mayor wants supported findings, not guesses.",
+      "start": 5.2,
+      "end": 9.8,
+      "variant": ""
+    },
+    {
+      "voice": "vo_ch03_end_03_receptionist", "speaker": "Receptionist",
+      "text": "Nina sent two versions. She'll explain next time.",
+      "start": 10.5,
+      "end": 14.5,
+      "variant": ""
+    }
+  ]
+}

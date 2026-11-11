@@ -11,9 +11,9 @@ using UnityEngine.UI;
 /// The game's settings, shown inside the 3D Menu: tapping the 3D SETTINGS
 /// button drops a navy control board with a brass rim on two cables right in
 /// front of the main menu camera (same angle and office background as the
-/// main menu). It has a SETTINGS name plate, a row per option (Music, SFX)
-/// with a round icon badge, world lettering and a chunky 3D pill switch, and
-/// the brass BACK button. While it is open the main menu's 3D buttons are
+/// main menu). It has a SETTINGS name plate, a row per option (Music, SFX,
+/// Voices) with a round icon badge, world lettering, a drag-left-and-right
+/// volume slider and a chunky 3D pill switch, and the brass BACK button. While it is open the main menu's 3D buttons are
 /// hidden; BACK (or Escape / Android back) lifts the board away and brings
 /// them back. There is no separate Settings scene any more.
 ///
@@ -25,6 +25,9 @@ using UnityEngine.UI;
 /// Behaviour matches the old SettingsPanel: the switches call AudioManager
 /// exactly like SettingsUI (the select sound plays before music changes, and
 /// SFX turns on before / off after its click), and AudioManager saves them.
+/// The sliders set each channel's volume live: dragging a switched-off row
+/// turns it on, letting go at 0% turns it off, and switching on a row left at
+/// 0% restores an audible level. The switch never forgets the slider's value.
 /// Other scenes that ask for settings set MenuEntry.OpenSettings and load the
 /// 3D Menu, which opens the board on arrival.
 ///
@@ -42,8 +45,14 @@ public sealed class SettingsBoard3D : MonoBehaviour
     private const int BoardLayer = 30;
 
     private static readonly Vector2 BoardSize = new Vector2(820f, 780f);
-    private static readonly Vector2 RowSize = new Vector2(720f, 130f);
+    private static readonly Vector2 RowSize = new Vector2(720f, 114f);
     private static readonly Vector2 SwitchSize = new Vector2(170f, 76f);
+    private const float SwitchX = 230f;
+    private const float SliderX = -59f;
+    private const float SliderY = -28f;
+    private const float SliderWidth = 334f;
+    /// <summary>Volume a switched-on row returns to when it was left at 0%.</summary>
+    private const float RestoredVolume = 0.5f;
     private static readonly Color BoardNavy = new Color32(24, 34, 50, 255);
     private static readonly Color InsetNavy = new Color32(17, 25, 38, 255);
     private static readonly Color RowNavy = new Color32(32, 46, 66, 255);
@@ -68,8 +77,10 @@ public sealed class SettingsBoard3D : MonoBehaviour
     private Material embossed;
     private SettingsToggle3D musicToggle;
     private SettingsToggle3D sfxToggle;
-    private TextMeshPro musicState;
-    private TextMeshPro sfxState;
+    private SettingsToggle3D voiceToggle;
+    private SettingsSlider3D musicSlider;
+    private SettingsSlider3D sfxSlider;
+    private SettingsSlider3D voiceSlider;
     private CareerBoardButton backButton;
     private enum SettingsAction { None, Quit, Replay, Menu, NewGame, ResumeClientCopy }
     private SettingsAction pendingAction;
@@ -110,6 +121,10 @@ public sealed class SettingsBoard3D : MonoBehaviour
 
     public SettingsToggle3D MusicToggle => musicToggle;
     public SettingsToggle3D SfxToggle => sfxToggle;
+    public SettingsToggle3D VoiceToggle => voiceToggle;
+    public SettingsSlider3D MusicSlider => musicSlider;
+    public SettingsSlider3D SfxSlider => sfxSlider;
+    public SettingsSlider3D VoiceSlider => voiceSlider;
     public CareerBoardButton BackButton => backButton;
 
     /// <summary>True from the moment settings open until the board has lifted away.</summary>
@@ -199,6 +214,10 @@ public sealed class SettingsBoard3D : MonoBehaviour
             ? (TutorialSettings ? "II  TUTORIAL PAUSED" : "II  LEVEL PAUSED") : "SETTINGS";
         if (musicToggle != null) musicToggle.Interactable = optionsReady;
         if (sfxToggle != null) sfxToggle.Interactable = optionsReady;
+        if (voiceToggle != null) voiceToggle.Interactable = optionsReady;
+        if (musicSlider != null) musicSlider.Interactable = optionsReady;
+        if (sfxSlider != null) sfxSlider.Interactable = optionsReady;
+        if (voiceSlider != null) voiceSlider.Interactable = optionsReady;
         if (backButton != null) backButton.Interactable = optionsReady;
         if (ready)
         {
@@ -446,12 +465,16 @@ public sealed class SettingsBoard3D : MonoBehaviour
             200f, 24f, HudTheme.BrassSoft, TextAlignmentOptions.MidlineLeft);
         section.characterSpacing = 6f;
 
-        musicToggle = BuildRow("Music", "MUSIC", "Background music", 200f, HudTheme.Exp, MusicIcon, out musicState);
-        sfxToggle = BuildRow("SFX", "SOUND FX", "Taps, paper and rewards", 40f, HudTheme.Active, SpeakerIcon, out sfxState);
-        musicToggle.Changed += (_, on) => OnMusicChanged(on);
-        sfxToggle.Changed += (_, on) => OnSfxChanged(on);
+        musicToggle = BuildRow("Music", "MUSIC", "Background music", 217f, HudTheme.Exp, MusicIcon, out musicSlider);
+        sfxToggle = BuildRow("SFX", "SOUND FX", "Taps, paper and rewards", 94f, HudTheme.Active, SpeakerIcon, out sfxSlider);
+        voiceToggle = BuildRow("Voices", "VOICES", "Spoken cutscene lines", -29f, HudTheme.BrassSoft, SpeakerIcon, out voiceSlider);
+        BindChannel(musicToggle, musicSlider, OnMusicChanged, SetMusicVolume);
+        BindChannel(sfxToggle, sfxSlider, OnSfxChanged, SetSfxVolume);
+        BindChannel(voiceToggle, voiceSlider, OnVoiceChanged, SetVoiceVolume);
+        // SFX has no sound of its own while dragging: tick so its level can be judged.
+        sfxSlider.Notched += _ => { if (AudioManager.Instance != null) AudioManager.Instance.PlayMouseClickSelectSFX(); };
 
-        CareerBoardKit.Text(board, "Footnote", "Changes are saved automatically", 15f, new Vector3(0f, -58f, -19f), 600f, 22f,
+        CareerBoardKit.Text(board, "Footnote", "Changes are saved automatically", 15f, new Vector3(0f, -99f, -19f), 600f, 22f,
             HudTheme.TextMuted, TextAlignmentOptions.Center, FontStyles.Normal);
         backButton = CareerBoardButton.Create(board, "Back Button", inGame ? "RESUME" : "<  BACK", new Vector3(0f, -296f, -26f),
             new Vector2(320f, 80f), HudTheme.Brass, new Color32(40, 30, 14, 255), 26f);
@@ -465,7 +488,7 @@ public sealed class SettingsBoard3D : MonoBehaviour
         if (inGame)
             pauseStatus = CareerBoardKit.Text(board, "Pause Status", "II  LEVEL PAUSED", 19f,
                 new Vector3(0f, 343f, -23f), 600f, 28f, Mint);
-        CareerBoardKit.Box(board, "Actions Divider", new Vector3(0f, -100f, -20f),
+        CareerBoardKit.Box(board, "Actions Divider", new Vector3(0f, -122f, -20f),
             new Vector3(680f, 2f, 1f), HudTheme.BrassSoft, materials);
         if (inGame) primaryActionButton = AddAction(ReplayLabel, -184f, SettingsAction.Replay);
         exitActionButton = AddAction(inGame ? "BACK TO MENU" : "QUIT GAME", 184f, inGame ? SettingsAction.Menu : SettingsAction.Quit);
@@ -636,7 +659,7 @@ public sealed class SettingsBoard3D : MonoBehaviour
     private delegate void IconBuilder(Transform parent, Material ink);
 
     private SettingsToggle3D BuildRow(string id, string title, string subtitle, float y, Color badge, IconBuilder icon,
-        out TextMeshPro state)
+        out SettingsSlider3D slider)
     {
         Transform row = CareerBoardKit.Node(id + " Row", board, new Vector3(0f, y, -19f));
         rows.Add(row);
@@ -653,14 +676,60 @@ public sealed class SettingsBoard3D : MonoBehaviour
         Transform glyph = CareerBoardKit.Node("Glyph", iconRoot, new Vector3(0f, 0f, -7f));
         icon(glyph, CareerBoardKit.Lit(new Color32(20, 26, 36, 255), materials, 0.3f));
 
-        TextMeshPro label = CareerBoardKit.Text(row, "Title", title, 34f, new Vector3(left + 130f + 160f, 18f, -3f), 320f, 44f,
+        TextMeshPro label = CareerBoardKit.Text(row, "Title", title, 28f, new Vector3(left + 130f + 115f, 35f, -3f), 230f, 36f,
             HudTheme.TextPrimary, TextAlignmentOptions.MidlineLeft, FontStyles.Bold, null, embossed);
         label.characterSpacing = 3f;
-        state = CareerBoardKit.Text(row, "State", subtitle, 17f, new Vector3(left + 130f + 160f, -22f, -3f), 320f, 24f,
+        CareerBoardKit.Text(row, "Subtitle", subtitle, 15f, new Vector3(left + 130f + 160f, 11f, -3f), 320f, 20f,
             HudTheme.TextMuted, TextAlignmentOptions.MidlineLeft, FontStyles.Normal);
 
-        return SettingsToggle3D.Create(row, id + " Switch", Vector3.zero, RowSize, rowMaterial,
-            new Vector3(RowSize.x * 0.5f - 130f, 0f, -4f), SwitchSize, Mint);
+        slider = SettingsSlider3D.Create(row, id + " Slider", new Vector3(SliderX, SliderY, -4f), SliderWidth,
+            new Vector3(0f, 3.5f, -6f), new Vector3(SliderWidth + 26f, 65f, 24f), Mint);
+
+        // The switch owns the right of the row, so a slider tap that lands high can never mute by accident.
+        float switchHitLeft = SliderX + SliderWidth * 0.5f + 16f;
+        float switchHitWidth = RowSize.x * 0.5f - switchHitLeft;
+        return SettingsToggle3D.Create(row, id + " Switch", new Vector3(SwitchX, 0f, -4f), rowMaterial,
+            new Vector3(switchHitLeft + switchHitWidth * 0.5f - SwitchX, 0f, -2f), new Vector2(switchHitWidth, RowSize.y),
+            SwitchSize, Mint);
+    }
+
+    /// <summary>Keeps one row's switch and slider in step.</summary>
+    private void BindChannel(SettingsToggle3D toggle, SettingsSlider3D slider, System.Action<bool> setEnabled, System.Action<float> setVolume)
+    {
+        toggle.Changed += (_, on) =>
+        {
+            if (on && slider.Value <= 0f)
+            {
+                slider.SetValue(RestoredVolume, animate: true);
+                setVolume(RestoredVolume);
+                if (AudioManager.Instance != null) AudioManager.Instance.SaveVolumes();
+                else PlayerPrefs.Save();
+            }
+            setEnabled(on);
+        };
+        slider.Dragged += (_, value) =>
+        {
+            setVolume(value);
+            if (value > 0f && !toggle.IsOn)
+            {
+                toggle.SetOn(true, animate: true);
+                setEnabled(true);
+            }
+            UpdateStates();
+        };
+        slider.Released += _ =>
+        {
+            // A plain tap on a switched-off slider at its current value also wakes the row.
+            bool wanted = slider.Value > 0f;
+            if (wanted != toggle.IsOn)
+            {
+                toggle.SetOn(wanted, animate: true);
+                setEnabled(wanted);
+            }
+            else if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+            if (AudioManager.Instance != null) AudioManager.Instance.SaveVolumes();
+            else PlayerPrefs.Save();
+        };
     }
 
     private static MeshRenderer Disc(Transform parent, string name, float diameter, float z, float depth, Material material)
@@ -719,6 +788,15 @@ public sealed class SettingsBoard3D : MonoBehaviour
         if (musicToggle == null) return;
         musicToggle.SetOn(music, animate);
         sfxToggle.SetOn(sfx, animate);
+        if (voiceToggle != null) voiceToggle.SetOn(AudioManager.Instance != null
+            ? AudioManager.Instance.IsVoiceEnabled() : PlayerPrefs.GetInt("VoiceEnabled", 1) == 1, animate);
+        AudioManager audio = AudioManager.Instance;
+        musicSlider.SetValue(audio != null ? audio.GetMusicVolume()
+            : PlayerPrefs.GetFloat(AudioManager.MusicVolumeKey, AudioManager.DefaultMusicSlider), animate);
+        sfxSlider.SetValue(audio != null ? audio.GetSFXVolume()
+            : PlayerPrefs.GetFloat(AudioManager.SFXVolumeKey, AudioManager.DefaultSFXSlider), animate);
+        voiceSlider.SetValue(audio != null ? audio.GetVoiceVolume()
+            : PlayerPrefs.GetFloat(AudioManager.VoiceVolumeKey, AudioManager.DefaultVoiceSlider), animate);
         UpdateStates();
     }
 
@@ -752,13 +830,43 @@ public sealed class SettingsBoard3D : MonoBehaviour
         UpdateStates();
     }
 
-    private void UpdateStates()
+    private void OnVoiceChanged(bool enabled)
     {
-        musicState.text = $"Background music  ·  <color=#{Hex(musicToggle.IsOn)}>{(musicToggle.IsOn ? "ON" : "OFF")}</color>";
-        sfxState.text = $"Taps, paper and rewards  ·  <color=#{Hex(sfxToggle.IsOn)}>{(sfxToggle.IsOn ? "ON" : "OFF")}</color>";
+        if (AudioManager.Instance != null) AudioManager.Instance.PlaySelectSFX();
+        if (SettingsManager.Instance != null) SettingsManager.Instance.SetVoiceEnabled(enabled);
+        else if (AudioManager.Instance != null) AudioManager.Instance.SetVoiceEnabled(enabled);
+        else
+        {
+            PlayerPrefs.SetInt("VoiceEnabled", enabled ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+        UpdateStates();
     }
 
-    private static string Hex(bool on) => ColorUtility.ToHtmlStringRGB(on ? Mint : HudTheme.TextMuted);
+    private static void SetMusicVolume(float value)
+    {
+        if (AudioManager.Instance != null) AudioManager.Instance.SetMusicVolume(value);
+        else PlayerPrefs.SetFloat(AudioManager.MusicVolumeKey, value);
+    }
+
+    private static void SetSfxVolume(float value)
+    {
+        if (AudioManager.Instance != null) AudioManager.Instance.SetSFXVolume(value);
+        else PlayerPrefs.SetFloat(AudioManager.SFXVolumeKey, value);
+    }
+
+    private static void SetVoiceVolume(float value)
+    {
+        if (AudioManager.Instance != null) AudioManager.Instance.SetVoiceVolume(value);
+        else PlayerPrefs.SetFloat(AudioManager.VoiceVolumeKey, value);
+    }
+
+    private void UpdateStates()
+    {
+        musicSlider.ShowEnabled(musicToggle.IsOn);
+        sfxSlider.ShowEnabled(sfxToggle.IsOn);
+        voiceSlider.ShowEnabled(voiceToggle.IsOn);
+    }
 
     private void GoBack()
     {
@@ -920,6 +1028,8 @@ public sealed class SettingsBoard3D : MonoBehaviour
             pressTarget = target;
             if (pressTarget != null) pressTarget.SetPressed(true);
         }
+        // A drag stays with its slider even when the finger drifts off the row.
+        if (pressTarget is SettingsSlider3D slider) slider.DragTo(viewCamera.ScreenPointToRay(position));
         if (released)
         {
             CareerBoardTarget pressedTarget = pressTarget;

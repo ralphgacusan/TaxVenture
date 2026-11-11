@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 
-/// <summary>A total the player can put on the computation sheet (an attached worksheet subtotal, or a printed draft total).</summary>
+/// <summary>A total the player can put on the computation sheet (the collected summary's Income or Supported deductions, or a printed draft total).</summary>
 public sealed class Level3TotalChoice
 {
     public string ChoiceId;
@@ -67,8 +67,8 @@ public sealed class Level3ComputationFacts
 /// runs on a COPY of the chapter snapshot; the caller writes, then publishes.
 ///
 /// - SelectTotal: Gross income / Allowable expenses take a total the player
-///   picks explicitly: the collected worksheet's Income or Allowable expenses
-///   subtotal, or Bea's draft "Proposed costs" (a plausible wrong choice). The
+///   picks explicitly: the collected summary's (B-WORKSHEET, revised T06) exact
+///   Income or Supported deductions, or Bea's draft "Proposed costs" (a plausible wrong choice). The
 ///   amount is copied at that moment; nothing is ever filled in for them.
 /// - SelectRule: the rate band, chosen from the year's annual table (content
 ///   rules). Never chosen automatically.
@@ -250,16 +250,25 @@ public static class Level3ComputationRules
     {
         var choices = new List<Level3TotalChoice>();
         if (!Level3WorksheetCheck.Collected(state)) return choices;
-        Level3TapeRecord income = Level3WorksheetCheck.SubtotalTape(state, Level3WorksheetRules.Income);
-        Level3TapeRecord expenses = Level3WorksheetCheck.SubtotalTape(state, Level3WorksheetRules.Expenses);
-        if (income != null) choices.Add(new Level3TotalChoice { ChoiceId = WorksheetIncome, Label = "Worksheet · Income subtotal", Amount = income.result });
-        if (expenses != null) choices.Add(new Level3TotalChoice { ChoiceId = WorksheetExpenses, Label = "Worksheet · Allowable expenses subtotal", Amount = expenses.result });
+        // Revised T06: the collected summary's exact totals (its corrected slips), the same B-WORKSHEET for a
+        // pre-revision worksheet whose tapes added those slips; no float bridge, never the answer key.
+        WorksheetTotals(state, out string income, out string expenses);
+        choices.Add(new Level3TotalChoice { ChoiceId = WorksheetIncome, Label = "Bea's summary · Income", Amount = income });
+        choices.Add(new Level3TotalChoice { ChoiceId = WorksheetExpenses, Label = "Bea's summary · " + Level3WorksheetCheck.SupportedDeductionsLabel, Amount = expenses });
         // Bea's own draft total is on her papers too: a plausible choice, offered exactly like the others.
         if (state.Case(Level3ChapterRules.BeaCaseId)?.acquiredSourceIds?.Contains("B-DRAFT") == true && definition?.level3?.totals != null)
             foreach (Level3TotalDefinition total in definition.level3.totals)
                 if (total != null && total.sourceId == "B-DRAFT" && total.fieldKey == "BDraftTotal")
                     choices.Add(new Level3TotalChoice { ChoiceId = DraftCosts, Label = "Bea's draft · " + PrintedLabel(definition, "B-DRAFT", "BDraftTotal"), Amount = total.amount });
         return choices;
+    }
+
+    /// <summary>The collected worksheet's two totals as exact canonical decimals ("900000", "300000").</summary>
+    public static void WorksheetTotals(Level3ChapterCheckpoint state, out string income, out string expenses)
+    {
+        Level3WorksheetCheck.SummaryTotals(state, out decimal i, out decimal e);
+        income = Level3Calculator.Canonical(i);
+        expenses = Level3Calculator.Canonical(e);
     }
 
     private static string PrintedLabel(CaseDefinition definition, string sourceId, string fieldKey)
@@ -454,6 +463,9 @@ public static class Level3ComputationRules
         value = 0m;
         Level3ComputationRecord record = Record(state, caseId);
         if (record == null || string.IsNullOrEmpty(sourceId)) return false;
+        // Direct summary operands retain their original source IDs even before the separate fields are filled.
+        if ((sourceId == WorksheetIncome || sourceId == WorksheetExpenses) && definition?.caseId == caseId)
+            return Money(CurrentAmount(state, definition, sourceId), out value);
         if (sourceId == FieldSource(caseId, Gross)) return !string.IsNullOrEmpty(record.grossChoice) && Money(record.grossAmount, out value);
         if (sourceId == FieldSource(caseId, Expenses)) return !string.IsNullOrEmpty(record.expensesChoice) && Money(record.expensesAmount, out value);
         if (sourceId == FieldSource(caseId, Credits)) return !string.IsNullOrEmpty(record.creditChoice) && Money(record.creditAmount, out value);
@@ -514,23 +526,34 @@ public static class Level3ComputationRules
     {
         var facts = new Level3ComputationFacts();
         Level3ComputationRecord record = Record(state, caseId) ?? new Level3ComputationRecord();
-        Level3TapeRecord incomeTape = Level3WorksheetCheck.SubtotalTape(state, Level3WorksheetRules.Income);
-        Level3TapeRecord expensesTape = Level3WorksheetCheck.SubtotalTape(state, Level3WorksheetRules.Expenses);
         bool collected = Level3WorksheetCheck.Collected(state);
+        WorksheetTotals(state, out string incomeTotal, out string expensesTotal);
 
         var gross = new Level3ComputationFact { Field = Gross, Present = !string.IsNullOrEmpty(record.grossChoice), Current = true, Value = record.grossAmount, Root = "income-sum" };
-        gross.Follows = gross.Present && collected && record.grossChoice == WorksheetIncome && incomeTape != null && SameMoney(record.grossAmount, incomeTape.result);
+        gross.Follows = gross.Present && collected && record.grossChoice == WorksheetIncome && SameMoney(record.grossAmount, incomeTotal);
         gross.Supported = gross.Follows;
         var expenses = new Level3ComputationFact { Field = Expenses, Present = !string.IsNullOrEmpty(record.expensesChoice), Current = true, Value = record.expensesAmount, Root = "expense-sum" };
-        expenses.Follows = expenses.Present && collected && record.expensesChoice == WorksheetExpenses && expensesTape != null && SameMoney(record.expensesAmount, expensesTape.result);
+        expenses.Follows = expenses.Present && collected && record.expensesChoice == WorksheetExpenses && SameMoney(record.expensesAmount, expensesTotal);
         expenses.Supported = expenses.Follows;
+        bool directSummary = collected && IsStep(TapeOf(state, caseId, Taxable), WorksheetIncome, "-", WorksheetExpenses);
+        // T09 (fixed leaves): the page has no Income/Deductions fields. With none ever placed and no
+        // field-linked taxable tape, the collected summary IS the inputs, so the review judges the
+        // taxable tape itself (taxable-operation) instead of a "Gross income is empty" line nobody can fill.
+        bool fieldless = collected && string.IsNullOrEmpty(record.grossChoice) && string.IsNullOrEmpty(record.expensesChoice) &&
+                         !UsesInputFields(state, caseId, TapeOf(state, caseId, Taxable));
+        if (directSummary || fieldless)
+        {
+            gross.Present = gross.Follows = gross.Supported = true; gross.Value = incomeTotal;
+            expenses.Present = expenses.Follows = expenses.Supported = true; expenses.Value = expensesTotal;
+        }
         facts.Steps.Add(gross);
         facts.Steps.Add(expenses);
 
         Level3ComputationFact taxable = TapeFact(state, definition, caseId, Taxable, "taxable-operation");
-        if (taxable.Present && taxable.Current && !taxable.Typed && Money(record.grossAmount, out decimal g) && Money(record.expensesAmount, out decimal e) &&
+        if (taxable.Present && taxable.Current && !taxable.Typed && Money(gross.Value, out decimal g) && Money(expenses.Value, out decimal e) &&
             Money(taxable.Value, out decimal t))
-            taxable.Follows = IsStep(TapeOf(state, caseId, Taxable), FieldSource(caseId, Gross), "-", FieldSource(caseId, Expenses)) && t == g - e;
+            taxable.Follows = (IsStep(TapeOf(state, caseId, Taxable), FieldSource(caseId, Gross), "-", FieldSource(caseId, Expenses)) ||
+                IsStep(TapeOf(state, caseId, Taxable), WorksheetIncome, "-", WorksheetExpenses)) && t == g - e;
         taxable.Supported = taxable.Follows && gross.Supported && expenses.Supported;
         facts.Steps.Add(taxable);
 
@@ -573,6 +596,7 @@ public static class Level3ComputationRules
             bool onlySheet = true;
             foreach (string source in sources)
                 if (!source.StartsWith(FieldPrefix, StringComparison.Ordinal) && !source.StartsWith(SheetPrefix, StringComparison.Ordinal) &&
+                    source != WorksheetIncome && source != WorksheetExpenses &&
                     source != RuleSource(rule.ruleId, Lower) && source != RuleSource(rule.ruleId, Base) && source != RuleSource(rule.ruleId, Rate))
                     onlySheet = false;
             Money(TapeOf(state, caseId, TaxDue).result, out decimal printedDue);
@@ -597,6 +621,7 @@ public static class Level3ComputationRules
             bool onlySheet = true;
             foreach (string source in sources)
                 if (!source.StartsWith(FieldPrefix, StringComparison.Ordinal) && !source.StartsWith(SheetPrefix, StringComparison.Ordinal) &&
+                    source != WorksheetIncome && source != WorksheetExpenses &&
                     (rule == null || (source != RuleSource(rule.ruleId, Lower) && source != RuleSource(rule.ruleId, Base) && source != RuleSource(rule.ruleId, Rate))))
                     onlySheet = false;
             bool dueKnown = false;
@@ -705,5 +730,247 @@ public static class Level3ComputationRules
         return clean;
     }
 
+    /// <summary>The tape rests on the (legacy) Gross/Expenses folder fields.</summary>
+    private static bool UsesInputFields(Level3ChapterCheckpoint state, string caseId, Level3TapeRecord tape)
+    {
+        var used = new HashSet<string>(StringComparer.Ordinal);
+        Expand(state, caseId, tape, used, 0);
+        return used.Contains(FieldSource(caseId, Gross)) || used.Contains(FieldSource(caseId, Expenses));
+    }
+
     private static bool SameMoney(string a, string b) => Money(a, out decimal x) && Money(b, out decimal y) && x == y;
+
+    // =========================================================
+    // REVISED T07/T08 (5 November 2026): THE CASE FOLDER'S COMPUTATION PAGE
+    // =========================================================
+    // Three stages on the existing folder page, one active at a time:
+    // A taxable income (income - deductions), B tax due (the chosen band's
+    // base + rate x excess), C remaining payable (tax due - tax credit).
+    // Amounts arrive from the collected summary / acquired papers through the
+    // shared transfer (PlaceInput); Calculate loads the stage's formula from
+    // the CHOSEN inputs, operation and band onto the existing calculator
+    // (LoadStage) and prints; the printed tape attaches through AttachTape.
+    // Nothing here knows or reveals which band or amount is right.
+
+    public const string StageTaxable = "taxable";
+    public const string StageTaxDue = "tax-due";
+    public const string StageBalance = "balance";
+    public static readonly string[] Stages = { StageTaxable, StageTaxDue, StageBalance };
+
+    public const string RefuseResultSlot = "A printed result goes in the result slot.";
+    public const string RefuseAmountField = "Put an amount from Bea's papers here.";
+    public const string RefuseNoCertificateYet = "Bea's certificate isn't in the folder yet.";
+
+    /// <summary>The sheet step a stage's printed result attaches to.</summary>
+    public static string StageResult(string stage) =>
+        stage == StageTaxable ? Taxable : stage == StageTaxDue ? TaxDue : stage == StageBalance ? Payable : null;
+
+    /// <summary>Short stage titles (OFFICE_CASE_PLAY: up to four words).</summary>
+    public static string StageTitle(string stage) =>
+        stage == StageTaxable ? "Taxable income" : stage == StageTaxDue ? "Tax due" : stage == StageBalance ? "Remaining payable" : "";
+
+    /// <summary>The stage holding a sheet step (the result, its inputs, or the band).</summary>
+    public static string StageOf(string field)
+    {
+        switch (field)
+        {
+            case Gross: case Expenses: case Taxable: return StageTaxable;
+            case Rule: case Excess: case Marginal: case TaxDue: return StageTaxDue;
+            case Credits: case Payable: return StageBalance;
+            default: return null;
+        }
+    }
+
+    /// <summary>Structural only (never a grade): the stage's result is attached and current, with its band / credit chosen.</summary>
+    public static bool StageDone(Level3ChapterCheckpoint state, CaseDefinition definition, string caseId, string stage)
+    {
+        Level3ComputationRecord record = Record(state, caseId);
+        if (record == null) return false;
+        if (stage == StageTaxable) return IsCurrent(state, definition, caseId, Taxable);
+        if (stage == StageTaxDue) return !string.IsNullOrEmpty(record.ruleId) && IsCurrent(state, definition, caseId, TaxDue);
+        if (stage == StageBalance) return !string.IsNullOrEmpty(record.creditChoice) && IsCurrent(state, definition, caseId, Payable);
+        return false;
+    }
+
+    /// <summary>The first stage that is not structurally done (C once A and B are; it may still wait for the certificate).</summary>
+    public static string ActiveStage(Level3ChapterCheckpoint state, CaseDefinition definition, string caseId)
+    {
+        foreach (string stage in Stages)
+            if (!StageDone(state, definition, caseId, stage)) return stage;
+        return StageBalance;
+    }
+
+    /// <summary>Stage C opens only once the case's withholding certificate is acquired (T08); A and B are always open.</summary>
+    public static bool StageOpen(Level3ChapterCheckpoint state, string stage) =>
+        stage != StageBalance || Level3CertificateRules.Acquired(state);
+
+    /// <summary>The stage's result is on the sheet but one of its sources changed (a quiet Recalculate tag).</summary>
+    public static bool StageNeedsRecalculating(Level3ChapterCheckpoint state, CaseDefinition definition, string caseId, string stage)
+    {
+        string result = StageResult(stage);
+        return TapeOf(state, caseId, result) != null && IsStale(state, definition, caseId, result);
+    }
+
+    /// <summary>The operation an attached stage tape used ("-" / "+"), so a resumed page shows the player's own choice; null if none.</summary>
+    public static string StageOperation(Level3ChapterCheckpoint state, string caseId, string stage)
+    {
+        if (stage != StageTaxable && stage != StageBalance) return null;
+        Level3TapeRecord tape = TapeOf(state, caseId, StageResult(stage));
+        if (tape?.expression == null || tape.expression.Count != 3 || tape.expression[1] == null || !tape.expression[1].IsOperator) return null;
+        string op = tape.expression[1].op;
+        return op == "-" || op == "+" ? op : null;
+    }
+
+    /// <summary>
+    /// The current exact amount of a same-case source, resolved from the
+    /// chapter and content (never from a payload or printed text): the
+    /// collected summary's two totals or an acquired paper's printed row /
+    /// total. Null when the case does not hold it.
+    /// </summary>
+    public static string CurrentAmount(Level3ChapterCheckpoint state, CaseDefinition definition, string sourceId)
+    {
+        if (state == null || definition == null || string.IsNullOrEmpty(sourceId)) return null;
+        if (sourceId == WorksheetIncome || sourceId == WorksheetExpenses)
+        {
+            if (!Level3WorksheetCheck.Collected(state)) return null;
+            WorksheetTotals(state, out string income, out string expenses);
+            return sourceId == WorksheetIncome ? income : expenses;
+        }
+        if (sourceId.StartsWith("paper:", StringComparison.Ordinal))
+        {
+            int slash = sourceId.IndexOf('/');
+            if (slash <= 6 || slash == sourceId.Length - 1) return null;
+            return Level3ValueTransfer.FromPaper(definition, state, sourceId.Substring(6, slash - 6), sourceId.Substring(slash + 1))?.Amount;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Revised T07/T08: an amount the player transferred (select source then
+    /// field, or drag) onto Income, Deductions or Tax credit. Mechanically
+    /// invalid values (no Level 3 payload, a float, another case, other
+    /// content, an unheld paper, a printed result, a changed amount) are
+    /// refused; any same-case amount the case holds is accepted as draft work,
+    /// right or wrong (the review judges it). The amount is re-resolved from
+    /// its source; nothing is ever filled in for the player. Tax credit needs
+    /// the certificate acquired; the old explanation step is no longer required
+    /// (a saved creditExplained stays as it was).
+    /// </summary>
+    public static Level3CommandOutcome PlaceInput(Level3ChapterCheckpoint candidate, CaseDefinition definition, string field, DataValue value, out string reason)
+    {
+        if (!Ready(candidate, out reason)) return Level3CommandOutcome.Refused;
+        if (field != Gross && field != Expenses && field != Credits) { reason = RefuseResultSlot; return Level3CommandOutcome.Refused; }
+        if (field == Credits && !Level3CertificateRules.Acquired(candidate)) { reason = RefuseNoCertificateYet; return Level3CommandOutcome.Refused; }
+        if (value?.Value is Level3CalculatorTransferValue) { reason = RefuseAmountField; return Level3CommandOutcome.Refused; }
+        if (!Level3ValueTransfer.TryRead(value, candidate, out Level3TransferValue amount, out string refusal)) { reason = refusal; return Level3CommandOutcome.Refused; }
+        if (amount.SourceId.StartsWith("tape:", StringComparison.Ordinal)) { reason = RefuseAmountField; return Level3CommandOutcome.Refused; }
+        string current = CurrentAmount(candidate, definition, amount.SourceId);
+        if (current == null) { reason = Level3ValueTransfer.RefuseNotHeld; return Level3CommandOutcome.Refused; }
+        if (current != amount.Amount) { reason = RefuseChanged; return Level3CommandOutcome.Refused; }
+        if (definition?.level3 == null || amount.TaxYear != definition.level3.taxYear) { reason = Level3ValueTransfer.RefuseRevision; return Level3CommandOutcome.Refused; }
+        Level3ComputationRecord record = Record(candidate, Level3ChapterRules.BeaCaseId);
+        string had = field == Gross ? record.grossChoice : field == Expenses ? record.expensesChoice : record.creditChoice;
+        string hadAmount = field == Gross ? record.grossAmount : field == Expenses ? record.expensesAmount : record.creditAmount;
+        if (had == amount.SourceId && SameMoney(hadAmount, current)) { reason = "already placed"; return Level3CommandOutcome.Duplicate; }
+        if (field == Gross) { record.grossChoice = amount.SourceId; record.grossAmount = current; }
+        else if (field == Expenses) { record.expensesChoice = amount.SourceId; record.expensesAmount = current; }
+        else { record.creditChoice = amount.SourceId; record.creditAmount = current; }
+        record.revision++;
+        if (field == Credits) NotePayable(candidate, definition, record);
+        return Level3CommandOutcome.Applied;
+    }
+
+    /// <summary>
+    /// Calculate: loads one stage's formula onto the existing calculator from
+    /// the player's CHOSEN inputs, operation and band (sourced tokens, so the
+    /// tape keeps its provenance) and presses = once. A: income (op)
+    /// deductions. B: taxable - floor = x rate = + base = (steps a zero floor
+    /// or base does not need are left out). C: tax due (op) tax credit.
+    /// Returns null when a tape printed, else a short plain reason. Never an
+    /// answer: a wrong band or input calculates exactly like a right one.
+    /// </summary>
+    public static string LoadStage(Level3Calculator calculator, Level3ChapterCheckpoint state, CaseDefinition definition, string stage, string op)
+    {
+        string caseId = Level3ChapterRules.BeaCaseId;
+        Level3ComputationRecord record = Record(state, caseId);
+        if (calculator == null || record == null || !Editable(state, caseId)) return "Bea's computation cannot be changed right now.";
+        bool add = op == "+";
+        if (stage == StageTaxable)
+        {
+            if (string.IsNullOrEmpty(record.grossChoice) || string.IsNullOrEmpty(record.expensesChoice)) return "Place both amounts first.";
+            if (op != "-" && op != "+") return "Choose subtract or add.";
+            calculator.Reset();
+            calculator.SelectSource(FieldSource(caseId, Gross), "Income", record.grossAmount);
+            calculator.Press(add ? Level3CalcKey.Add : Level3CalcKey.Subtract);
+            calculator.SelectSource(FieldSource(caseId, Expenses), "Deductions", record.expensesAmount);
+        }
+        else if (stage == StageTaxDue)
+        {
+            Level3TapeRecord taxable = TapeOf(state, caseId, Taxable);
+            if (taxable == null || IsStale(state, definition, caseId, Taxable)) return "Attach taxable income first.";
+            Level3RuleDefinition rule = FindRule(definition, record.ruleId);
+            if (rule == null) return "Choose a band first.";
+            Money(rule.lower, out decimal lower);
+            Money(rule.baseTax, out decimal baseTax);
+            calculator.Reset();
+            calculator.SelectSource(SheetSource(caseId, Taxable), SectionLabel(Taxable), taxable.result);
+            if (lower != 0m)
+            {
+                calculator.Press(Level3CalcKey.Subtract);
+                calculator.SelectSource(RuleSource(rule.ruleId, Lower), "Floor", rule.lower);
+                calculator.Press(Level3CalcKey.Equals);
+            }
+            calculator.Press(Level3CalcKey.Multiply);
+            calculator.SelectSourcePercent(RuleSource(rule.ruleId, Rate), "Rate", rule.rate);
+            if (baseTax != 0m)
+            {
+                calculator.Press(Level3CalcKey.Equals);
+                calculator.Press(Level3CalcKey.Add);
+                calculator.SelectSource(RuleSource(rule.ruleId, Base), "Base tax", rule.baseTax);
+            }
+        }
+        else if (stage == StageBalance)
+        {
+            if (!Level3CertificateRules.Acquired(state)) return RefuseNoCertificateYet;
+            Level3TapeRecord due = TapeOf(state, caseId, TaxDue);
+            if (due == null || IsStale(state, definition, caseId, TaxDue)) return "Attach tax due first.";
+            if (string.IsNullOrEmpty(record.creditChoice)) return "Place the tax credit first.";
+            if (op != "-" && op != "+") return "Choose subtract or add.";
+            calculator.Reset();
+            calculator.SelectSource(SheetSource(caseId, TaxDue), SectionLabel(TaxDue), due.result);
+            calculator.Press(add ? Level3CalcKey.Add : Level3CalcKey.Subtract);
+            calculator.SelectSource(FieldSource(caseId, Credits), "Tax credit", record.creditAmount);
+        }
+        else return "Choose a stage.";
+        Level3CalcResult printed = calculator.Press(Level3CalcKey.Equals);
+        return printed.Printed ? null : (printed.Issue ?? "Press Calculate again.");
+    }
+
+    /// <summary>"₱600,000.00", a negative "−₱187,500.00" (display only; the value stays exact, its sign kept).</summary>
+    public static string Peso(string canonical)
+    {
+        if (string.IsNullOrEmpty(canonical)) return "";
+        if (Level3Calculator.TryParse(canonical, out decimal value) && value < 0m)
+            return "−₱" + Level3Calculator.Format(Level3Calculator.Canonical(-value));
+        return "₱" + Level3Calculator.Format(canonical);
+    }
+
+    /// <summary>
+    /// The selected band's formula with current values, for stage B:
+    /// "22,500 + 20% × (600,000 − 400,000)". Built from the CHOSEN band and the
+    /// attached taxable income (or the words "taxable income"), never from an
+    /// expected answer.
+    /// </summary>
+    public static string BandWorking(Level3RuleDefinition rule, string taxable)
+    {
+        if (rule == null) return "";
+        Money(rule.baseTax, out decimal baseTax);
+        Money(rule.lower, out decimal lower);
+        Money(rule.rate, out decimal rate);
+        if (rate == 0m && baseTax == 0m) return "No tax in this band";
+        string basis = Money(taxable, out decimal t) ? Whole(Level3Calculator.Canonical(t)) : "taxable income";
+        string excess = lower == 0m ? basis : "(" + basis + " − " + Whole(rule.lower) + ")";
+        string share = Percent(rule.rate) + " × " + excess;
+        return baseTax == 0m ? share : Whole(rule.baseTax) + " + " + share;
+    }
 }

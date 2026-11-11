@@ -847,6 +847,8 @@ public class Level1CaseResult
 [Serializable]
 public class CampaignRecord
 {
+    /// <summary>T04: pending ending and result, saved with service; empty in old completed campaigns.</summary>
+    public ChapterEndingRecord ending = new ChapterEndingRecord();
     public const int StartingTrust = 40;
     public const int MaxTrust = 100;
     public const string FirstChapterId = "Level_01";
@@ -910,6 +912,15 @@ public class CampaignRecord
 }
 
 [Serializable]
+public sealed class ChapterEndingRecord
+{
+    public string chapterId = "";
+    public string variant = "";
+    public bool consumed;
+    public string resultJson = "";
+}
+
+[Serializable]
 public sealed class RosaEthicsRecord
 {
     public string caseId = "";
@@ -937,7 +948,13 @@ public sealed class RosaEthicsRecord
 [Serializable]
 public class Level3ChapterCheckpoint
 {
-    public const int CurrentVersion = 1;
+    /// <summary>
+    /// 2 = the 3 November 2026 revision (fresh entry skips the retired budget
+    /// practice). 1 = an earlier snapshot, continued once by
+    /// Level3ChapterRules.TryContinueLegacy before it is used or written.
+    /// </summary>
+    public const int CurrentVersion = 2;
+    public const int LegacyVersion = 1;
 
     public int version;
     public int writes;
@@ -958,6 +975,8 @@ public class Level3ChapterCheckpoint
     public Level3WorksheetDraft worksheet = new Level3WorksheetDraft();
     /// <summary>T06: the worksheet's frozen first check and its latest check (decision ids and the player's own keys only).</summary>
     public Level3WorksheetResult worksheetCheck = new Level3WorksheetResult();
+    /// <summary>Revision: the calculator's first-use demonstration was given (or the player already learned it in the old practice); never a reward.</summary>
+    public bool calculatorTaught;
 
     public Level3TapeRecord Tape(string destinationId)
     {
@@ -989,7 +1008,8 @@ public class Level3ChapterCheckpoint
             phase = phase,
             activeCaseId = activeCaseId,
             actionIds = actionIds != null ? new List<string>(actionIds) : new List<string>(),
-            milestones = milestones != null ? new List<string>(milestones) : new List<string>()
+            milestones = milestones != null ? new List<string>(milestones) : new List<string>(),
+            calculatorTaught = calculatorTaught
         };
         if (cases != null)
             foreach (Level3CaseProgress c in cases)
@@ -1210,6 +1230,8 @@ public class Level3NoteRecord
 [Serializable]
 public class Level3WorksheetResult
 {
+    /// <summary>The assessment the frozen first check was graded under ("L3-worksheet-v1": twelve decisions); "" before any check. Never regraded.</summary>
+    public string assessmentVersion = "";
     public bool firstChecked;
     public int firstRevision;
     public int firstCorrect;
@@ -1224,22 +1246,44 @@ public class Level3WorksheetResult
     public List<string> lastWrong = new List<string>();
     /// <summary>"decisionId=value" as the last check read them (the player's own keys).</summary>
     public List<string> lastValues = new List<string>();
+    /// <summary>
+    /// Revision (T05 reads, T06 writes): machine batches ("earnings", "costs", "questions") a deliberate
+    /// check accepted. Their rows are read-only and the next batch opens. Batch ids only, never an answer.
+    /// Absent in older saves (none accepted).
+    /// </summary>
+    public List<string> acceptedBatches = new List<string>();
+    /// <summary>
+    /// T06 (L3-worksheet-v2): machine batches whose FIRST complete check is frozen into firstWrong /
+    /// firstCorrect / firstTotal (once each, never improved by a correction). firstChecked turns true
+    /// only when all three are frozen (nine decisions). Absent in older saves (none).
+    /// </summary>
+    public List<string> checkedBatches = new List<string>();
+    /// <summary>T06: the batch the last saved check read (its marks are lastWrong/lastValues); "" before any machine check.</summary>
+    public string lastBatch = "";
 
     public Level3WorksheetResult Copy() => new Level3WorksheetResult
     {
+        assessmentVersion = assessmentVersion,
         firstChecked = firstChecked, firstRevision = firstRevision, firstCorrect = firstCorrect, firstTotal = firstTotal,
         firstWrong = firstWrong != null ? new List<string>(firstWrong) : new List<string>(),
         firstTier = firstTier, firstXp = firstXp, checks = checks, lastRevision = lastRevision,
         lastWrong = lastWrong != null ? new List<string>(lastWrong) : new List<string>(),
-        lastValues = lastValues != null ? new List<string>(lastValues) : new List<string>()
+        lastValues = lastValues != null ? new List<string>(lastValues) : new List<string>(),
+        acceptedBatches = acceptedBatches != null ? new List<string>(acceptedBatches) : new List<string>(),
+        checkedBatches = checkedBatches != null ? new List<string>(checkedBatches) : new List<string>(),
+        lastBatch = lastBatch ?? ""
     };
 
     public bool Repair()
     {
         bool changed = false;
+        if (assessmentVersion == null) { assessmentVersion = ""; changed = true; }
         firstWrong = Level3ChapterCheckpoint.CleanIds(firstWrong, ref changed);
         lastWrong = Level3ChapterCheckpoint.CleanIds(lastWrong, ref changed);
         lastValues = Level3ChapterCheckpoint.CleanIds(lastValues, ref changed);
+        acceptedBatches = Level3ChapterCheckpoint.CleanIds(acceptedBatches, ref changed);
+        checkedBatches = Level3ChapterCheckpoint.CleanIds(checkedBatches, ref changed);
+        if (lastBatch == null) { lastBatch = ""; changed = true; }
         if (firstRevision < 0) { firstRevision = 0; changed = true; }
         if (firstCorrect < 0) { firstCorrect = 0; changed = true; }
         if (firstTotal < 0) { firstTotal = 0; changed = true; }
@@ -1367,7 +1411,11 @@ public class Level3StampRecord
     public int revision = -1;
     public string actionId = "";
 
-    public Level3StampRecord Copy() => new Level3StampRecord { type = type, revision = revision, actionId = actionId };
+    public bool placed;
+    public int page;
+    public float x, y, tilt;
+    public Level3StampRecord Copy() => new Level3StampRecord
+    { type = type, revision = revision, actionId = actionId, placed = placed, page = page, x = x, y = y, tilt = tilt };
 
     public bool Repair()
     {
@@ -1375,6 +1423,9 @@ public class Level3StampRecord
         if (type == null) { type = ""; changed = true; }
         if (actionId == null) { actionId = ""; changed = true; }
         if (revision < -1) { revision = -1; changed = true; }
+        if (placed && (page < 0 || page > 32 || float.IsNaN(x) || float.IsInfinity(x) ||
+            float.IsNaN(y) || float.IsInfinity(y) || float.IsNaN(tilt) || float.IsInfinity(tilt)))
+        { placed = false; x = y = tilt = 0f; page = 0; changed = true; }
         return changed;
     }
 }
@@ -1399,6 +1450,8 @@ public class Level3ReviewRecord
     public string lastRoot = "";
     /// <summary>The sheet line the Auditor marked last (a Level3ComputationRules field id).</summary>
     public string lastField = "";
+    /// <summary>T09 revision: why that line was marked ("Missing", "Stale", "Typed", "Wrong", "AsExpense"; "" before this field existed).</summary>
+    public string lastKind = "";
     /// <summary>The sheet revision and stamp of the last decided hand-in (an unchanged one is refused).</summary>
     public string lastSignature = "";
     /// <summary>The first review cutoff passed before approval (the existing punctuality treatment, inside the cap).</summary>
@@ -1415,7 +1468,7 @@ public class Level3ReviewRecord
     {
         submissions = submissions, returned = returned, holds = holds, retries = retries,
         chargedRoots = chargedRoots != null ? new List<string>(chargedRoots) : new List<string>(),
-        lastOutcome = lastOutcome, lastRoot = lastRoot, lastField = lastField, lastSignature = lastSignature, late = late,
+        lastOutcome = lastOutcome, lastRoot = lastRoot, lastField = lastField, lastKind = lastKind, lastSignature = lastSignature, late = late,
         approved = approved, xp = xp, approvedRevision = approvedRevision,
         taxableIncome = taxableIncome, taxDue = taxDue, credits = credits, remainingPayable = remainingPayable
     };
@@ -1431,6 +1484,7 @@ public class Level3ReviewRecord
         if (lastOutcome == null) { lastOutcome = ""; changed = true; }
         if (lastRoot == null) { lastRoot = ""; changed = true; }
         if (lastField == null) { lastField = ""; changed = true; }
+        if (lastKind == null) { lastKind = ""; changed = true; }
         if (lastSignature == null) { lastSignature = ""; changed = true; }
         if (taxableIncome == null) { taxableIncome = ""; changed = true; }
         if (taxDue == null) { taxDue = ""; changed = true; }
@@ -1439,6 +1493,14 @@ public class Level3ReviewRecord
         if (xp < 0) { xp = 0; changed = true; }
         return changed;
     }
+}
+
+[Serializable]
+public class Level3FolderPacket
+{
+    public string fullName = "", tin = "", classification = "", taxpayerType = "", incomeSource = "";
+    public bool summaryAttached, certificateAttached, onDesk;
+    public Level3FolderPacket Copy() => (Level3FolderPacket)MemberwiseClone();
 }
 
 /// <summary>One Level 3 case inside the chapter snapshot (T02 skeleton; later tickets add their work).</summary>
@@ -1454,6 +1516,12 @@ public class Level3CaseProgress
     public int packetRevision;
     /// <summary>Where this case's computation copy is: "" / "atAuditor" / "carried" / "done" (T10/T12).</summary>
     public string copyPhase = "";
+    /// <summary>T10: Bea's balance question was answered from her approved copy (saved before the handover; older saves restore false).</summary>
+    public bool balanceExplained;
+    /// <summary>Saved wrong figure choices during Bea's follow-through, before delivery.</summary>
+    public int balanceWrongAnswers;
+    public bool sideQuestIntroSeen;
+    public Level3FolderPacket folder;
     /// <summary>The player's own collected work in this case's folder (T06: "B-WORKSHEET", Bea's checked worksheet); never answers.</summary>
     public List<string> workIds = new List<string>();
     /// <summary>T07: this case's computation sheet at the office desk (the player's choices; its tapes are the chapter's).</summary>
@@ -1470,6 +1538,10 @@ public class Level3CaseProgress
         acquiredSourceIds = acquiredSourceIds != null ? new List<string>(acquiredSourceIds) : new List<string>(),
         packetRevision = packetRevision,
         copyPhase = copyPhase,
+        balanceExplained = balanceExplained,
+        balanceWrongAnswers = balanceWrongAnswers,
+        sideQuestIntroSeen = sideQuestIntroSeen,
+        folder = folder?.Copy(),
         workIds = workIds != null ? new List<string>(workIds) : new List<string>(),
         computation = computation != null ? computation.Copy() : new Level3ComputationRecord(),
         stamp = stamp != null ? stamp.Copy() : new Level3StampRecord(),
@@ -1502,6 +1574,7 @@ public class Level3CaseProgress
         if (clock.remaining < 0f) { clock.remaining = 0f; changed = true; }
         if (packetRevision < 0) { packetRevision = 0; changed = true; }
         if (copyPhase == null) { copyPhase = ""; changed = true; }
+        if (balanceWrongAnswers < 0) { balanceWrongAnswers = 0; changed = true; }
         return changed;
     }
 }
@@ -1871,6 +1944,7 @@ public class PlayerProgressData
     {
         bool changed = false;
         CampaignRecord c = campaign;
+        if (c.ending == null) { c.ending = new ChapterEndingRecord(); changed = true; }
         if (c.campaignId != null && c.campaignId.Trim() != c.campaignId) { c.campaignId = c.campaignId.Trim(); changed = true; }
         if (c.completedChapterIds == null) { c.completedChapterIds = new List<string>(); changed = true; }
         if (c.rewardClaims == null) { c.rewardClaims = new List<string>(); changed = true; }

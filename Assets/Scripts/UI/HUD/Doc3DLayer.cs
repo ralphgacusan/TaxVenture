@@ -54,12 +54,17 @@ public sealed class Doc3DLayer : MonoBehaviour
 
     public Transform Source => source;
     public int SortingOrder => sortingOrder;
+    public int LastRaisedFrame { get; private set; } = -1;
     public bool IsVisible => isActiveAndEnabled && source != null && source.gameObject.activeInHierarchy;
     public bool IsComposited => composited;
     /// <summary>Opt-in for held tools that must also cover composited desk documents.</summary>
     public bool CompositeOverDocuments { get; set; }
     /// <summary>Held tools remain visible even where world geometry would occlude them.</summary>
     public bool AlwaysComposite { get; set; }
+    /// <summary>Opt-in foreground reservation for one owned physical gesture.
+    /// Reasserted after UI focus updates, before captures are displayed. The
+    /// owner releases it on Up/cancel, or after a receipt's return/flight.</summary>
+    public bool KeepInFront { get; set; }
     /// <summary>
     /// A reference document (T30 revision: Arthur's Reviewed File): nothing inside it can give, take,
     /// select or change a value anywhere, at the desk included. Reading and page turns are unchanged.
@@ -67,6 +72,7 @@ public sealed class Doc3DLayer : MonoBehaviour
     public bool AlwaysReadOnly { get; set; }
     /// <summary>Optional stable layer for runtime tools; ordinary documents use temporary isolation.</summary>
     public int PersistentRenderLayer { get; set; } = -1;
+    public float CaptureNearClip { get; set; }
     /// <summary>
     /// Opt-in: re-render only when the document moved relative to the camera
     /// (or the screen size changed). For still documents pinned to the
@@ -113,6 +119,7 @@ public sealed class Doc3DLayer : MonoBehaviour
         RectTransform root = HudTheme.CreateRect("3D Document Layer " + name, hudCanvas);
         HudTheme.Stretch(root);
         var canvas = root.gameObject.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.overrideSorting = true;
 
         RectTransform imageRect = HudTheme.CreateRect("Document", root);
@@ -186,6 +193,7 @@ public sealed class Doc3DLayer : MonoBehaviour
         for (int i = 0; i < All.Count; i++)
             if (All[i] != this && All[i].IsVisible && All[i].sortingOrder > sortingOrder) alreadyTop = false;
         if (alreadyTop) return;
+        LastRaisedFrame = Time.frameCount;
 
         AssignSortingOrder(FloatingWindow.TakeTopSortingOrder());
         popElapsed = animate ? 0f : -1f;
@@ -263,6 +271,18 @@ public sealed class Doc3DLayer : MonoBehaviour
         return false;
     }
 
+    private void UpdateForegroundOrder()
+    {
+        if (KeepInFront) BringToFront(false);
+        // Canvas enable/reparent can reset native sorting independently of
+        // our cached order. Repair the actual overlay, even if already top.
+        if (overlay != null)
+        {
+            if (!overlay.overrideSorting) overlay.overrideSorting = true;
+            if (overlay.sortingOrder != sortingOrder) overlay.sortingOrder = sortingOrder;
+        }
+    }
+
     private void LateUpdate()
     {
         Camera main = CameraController.Instance != null ? CameraController.Instance.MainCamera : Camera.main;
@@ -273,6 +293,9 @@ public sealed class Doc3DLayer : MonoBehaviour
             return;
         }
 
+        // A press-time focus request can be superseded by other UI updates.
+        // Reserve the owned held visual until its gesture/flight really ends.
+        UpdateForegroundOrder();
         // Enabling a copied/nested canvas can reset its override; keep input and drawing together.
         SyncPageSorting();
         footprintValid = ComputeFootprint(main, out footprint);
@@ -362,6 +385,7 @@ public sealed class Doc3DLayer : MonoBehaviour
         // Render the copied view into the whole texture, then place that
         // texture in the original viewport (including letterboxed views).
         docCamera.rect = new Rect(0f, 0f, 1f, 1f);
+        if (CaptureNearClip > 0f) docCamera.nearClipPlane = CaptureNearClip;
         image.rectTransform.anchorMin = main.rect.min;
         image.rectTransform.anchorMax = main.rect.max;
         image.rectTransform.offsetMin = image.rectTransform.offsetMax = Vector2.zero;
@@ -396,6 +420,13 @@ public sealed class Doc3DLayer : MonoBehaviour
     /// canvas update runs after LateUpdate). Moving or turning never changes them, so a drag at a
     /// fixed size skips the rebuild; a lift, return, stack or flip pop changes the scale and refreshes.
     /// </summary>
+    /// <summary>A page rebuild changes glyphs even when the held paper stays at the same scale.</summary>
+    public void InvalidateText()
+    {
+        refreshedTextScale = -1f;
+        RefreshTextBeforeCapture = true;
+    }
+
     private void RefreshText()
     {
         if (textProbe != null && textProbe.isActiveAndEnabled && refreshedTextScale > 0f &&

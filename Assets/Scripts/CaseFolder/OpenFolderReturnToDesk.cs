@@ -242,6 +242,8 @@ public class OpenFolderReturnToDesk :
             deskAnimator.Complete(originalClosedFolder.transform);
         }
 
+        // Storage also disabled the closed folder's drag component. Showing its mesh alone leaves the retry inert.
+        originalClosedFolder.GetComponentInParent<CaseFolder3DDrag>(true)?.RestoreAndEnableFolder();
         ReturnFolderToDesk(false);
     }
 }

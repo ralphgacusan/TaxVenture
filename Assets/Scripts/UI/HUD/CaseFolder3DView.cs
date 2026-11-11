@@ -96,6 +96,32 @@ public sealed class CaseFolder3DView : MonoBehaviour
     public bool IsOut => phase != Phase.Closed;
     public Doc3DLayer Layer => layer;
 
+    /// <summary>Opt-in workspace fitting of this same folder; ordinary icon/desk opening keeps its authored pose.</summary>
+    public void PlaceInScreenArea(Rect area)
+    {
+        Camera camera = MainCamera();
+        if (!IsOpen || camera == null || folder == null || area.width <= 0f || area.height <= 0f) return;
+        Vector3 currentPosition = folder.position;
+        Quaternion currentRotation = folder.rotation;
+        float currentScale = folder.lossyScale.x;
+        ApplyPose(toPosition, toRotation, toScale);
+        if (HeldOnScreen.TryScreenBox(folder, camera, out Rect box))
+        {
+            toScale *= Mathf.Min(1f, Mathf.Min(area.width / Mathf.Max(1f, box.width), area.height / Mathf.Max(1f, box.height)));
+            ApplyPose(toPosition, toRotation, toScale);
+            if (HeldOnScreen.TryScreenBox(folder, camera, out box))
+            {
+                Vector3 at = camera.WorldToScreenPoint(toPosition);
+                Vector2 delta = area.center - box.center;
+                toPosition = camera.ScreenToWorldPoint(new Vector3(at.x + delta.x, at.y + delta.y, at.z));
+            }
+        }
+        fromPosition = currentPosition; fromRotation = currentRotation; fromScale = currentScale;
+        ApplyPose(fromPosition, fromRotation, fromScale);
+        elapsed = 0f;
+        phase = Phase.Opening;
+    }
+
     public static CaseFolder3DView Create(GameObject host, Scene scene, RectTransform caseFolderIcon, Doc3DLayer folderLayer)
     {
         Transform folder = Find(scene, OpenFolderPath);
@@ -129,6 +155,7 @@ public sealed class CaseFolder3DView : MonoBehaviour
         view.model = folder.GetComponent<FloatingModel3D>();
         view.icon = caseFolderIcon;
         view.layer = folderLayer;
+        if (folderLayer != null) folderLayer.InvalidateText();
         foreach (CaseFolder3DDrag drag in Object.FindObjectsByType<CaseFolder3DDrag>(FindObjectsInactive.Include))
             if (drag != null && drag.gameObject.scene == scene) { view.deskDrag = drag; break; }
         if (view.pages != null && view.pages != null && view.pages.PaperRect != null)
@@ -159,7 +186,7 @@ public sealed class CaseFolder3DView : MonoBehaviour
         if (!reference && FolderToHUDIcon.GetStoredFolderCount() <= 0) return false;
 
         // Level order: the case starts only after the side quest (rewards.json). A reference copy is not the case.
-        if (phase == Phase.Closed && !reference && !LevelGate.TryCase()) return false;
+        if (phase == Phase.Closed && !reference && !(Level3BeaTable.Instance != null && Level3BeaTable.Instance.Seated && Level3BeaTable.Instance.SummaryAvailable) && !LevelGate.TryCase()) return false;
 
         if (phase != Phase.Closed)
         {
@@ -435,7 +462,8 @@ public sealed class CaseFolder3DView : MonoBehaviour
         Vector3 centre = folder.InverseTransformPoint(paper.TransformPoint(paper.rect.center));
         Vector2 screen = screenPosition ?? main.pixelRect.center;
         CameraController cc = CameraController.Instance;
-        bool seated = cc != null && cc.CurrentMode == CameraController.CameraMode.Workstation;
+        bool seated = cc != null && cc.CurrentMode == CameraController.CameraMode.Workstation &&
+            !(Level3BeaTable.Instance != null && Level3BeaTable.Instance.Seated);
         if (seated) RememberSeat();
         if (hasDeskPose && (seated || seatKnown || viewpoint != null))
         {
@@ -491,7 +519,8 @@ public sealed class CaseFolder3DView : MonoBehaviour
     private void RememberSeat()
     {
         CameraController cc = CameraController.Instance;
-        if (cc == null || cc.CurrentMode != CameraController.CameraMode.Workstation) return;   // the latest seated frame wins
+        if (cc == null || cc.CurrentMode != CameraController.CameraMode.Workstation ||
+            (Level3BeaTable.Instance != null && Level3BeaTable.Instance.Seated)) return;   // the latest seated frame wins
         Camera main = MainCamera();
         if (main == null) return;
         seatPosition = main.transform.position;

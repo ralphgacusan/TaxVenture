@@ -313,7 +313,7 @@ public sealed class HudProgressionPanel : MonoBehaviour
     public void RefreshFromGame(bool animate)
     {
         CaseProgressionManager progressionManager = CaseProgressionManager.Instance;
-        int cases = Mathf.Max(1, progressionManager != null ? progressionManager.TotalCasesInLevel : 0);
+        int cases = Mathf.Max(1, progressionManager != null ? progressionManager.PresentedCasesInLevel : 0);
         int exp = 0;
         int reputation = 0;
         int maxExp = cases * RewardsCalculator.MaxExp;

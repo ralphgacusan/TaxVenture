@@ -51,6 +51,21 @@ public sealed class OfficeDoorGate : MonoBehaviour
     /// <summary>True while the entrance is shut (for tests and other systems).</summary>
     public static bool IsClosed { get; private set; }
 
+    // Milestone T03: the entrance doorway line, worked out from the same door leaves, so the
+    // camera owner can switch outdoor third person / indoor first person on a stable threshold.
+    private static bool hasEntrance;
+    private static Vector3 entranceCentre, entranceOutward;
+    private static float entranceHalfWidth;
+
+    /// <summary>T03: the office entrance's centre, unit outward normal (toward the plaza) and half width.</summary>
+    public static bool TryGetEntrance(out Vector3 centre, out Vector3 outward, out float halfWidth)
+    {
+        centre = entranceCentre;
+        outward = entranceOutward;
+        halfWidth = entranceHalfWidth;
+        return hasEntrance;
+    }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void InitializeForLoadedScenes()
     {
@@ -81,6 +96,7 @@ public sealed class OfficeDoorGate : MonoBehaviour
     private void OnDestroy()
     {
         IsClosed = false;
+        hasEntrance = false;
     }
 
     private void Update()
@@ -142,6 +158,22 @@ public sealed class OfficeDoorGate : MonoBehaviour
             leaves.Add(BuildLeaf(door, partner, inside));
         }
         BuildBarrier(found);
+        RecordEntrance(found, inside);
+    }
+
+    private static void RecordEntrance(List<Transform> doors, Vector3 inside)
+    {
+        Vector3 a = doors[0].position;
+        Vector3 b = doors.Count > 1 ? doors[1].position : a + Flat(LeafCenter(doors[0]) - a) * 2f;
+        Vector3 across = Flat(b - a);
+        if (across.sqrMagnitude < 0.01f) return;
+        Vector3 centre = (a + b) * 0.5f;
+        Vector3 normal = Vector3.Cross(across.normalized, Vector3.up);
+        if (Vector3.Dot(Flat(inside - centre), normal) > 0f) normal = -normal;   // outward points away from the reception floor
+        entranceCentre = centre;
+        entranceOutward = normal;
+        entranceHalfWidth = Mathf.Max(0.5f, across.magnitude * 0.5f);
+        hasEntrance = true;
     }
 
     private Leaf BuildLeaf(Transform door, Transform partner, Vector3 inside)

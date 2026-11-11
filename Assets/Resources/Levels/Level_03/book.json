@@ -1,16 +1,13 @@
 {
   "_readme": [
-    "Level 3 Tax Code Book leaves (LevelBookLeaves). They appear after the shared book's three sections in Office_Level3 only; Levels 1 and 2 keep their own books.",
-    "T06 (L3-33): Section 4 Costs and Purpose and Section 5 Count Once land before Bea's worksheet check grades anything; the worksheet hints name them. T07: Section 6 Taxable Income, Section 7 the annual individual table (2023 onwards) and Section 8 Base Plus Excess, with the separate Practice Design Studio example. Later tickets append corporate conditions, credit versus expense and checking a computation (CONTENT.md).",
-    "Each term is printed like the shared pages' values (readOnly: true, so it cannot be picked up) with its explanation underneath: one paragraph (blank-line separated) per value; keep those counts equal.",
-    "Leaves explain concepts. Never put a client's amounts, a placement, a reason to choose or a total here.",
-    "Simplified classroom rules for this bounded exercise, not legal advice; content-authority review is pending (TAX_AUTHORITY.md).",
-    "Fields starting with '_' are notes and are ignored by the game."
+    "Chapter 3 keeps Section 3 and its original section numbers; classification pages 1–2 are omitted in this level only.",
+    "Section 7 is the single annual table and transfer source. All other terms are optional reading. No client answers appear here.",
+    "One blank-line-separated paragraph per value. Simplified classroom exercise; educator review remains pending."
   ],
   "sections": [
     {
       "heading": "Section 4 – Costs and Purpose",
-      "body": "Spent to earn this year's business income, for the work itself, and shown by a record. It is listed with the other allowable costs and reduces the income they helped earn.\n\nPersonal spending, such as a family celebration or a gift, never reduces business income, even with a receipt.\n\nA receipt proves that a payment happened, not what it was for. Read the record, and ask the client when its purpose is unclear, before deciding.",
+      "body": "A recorded cost of earning this year's business income. It reduces gross income.\n\nPersonal spending does not reduce business income, even with a receipt.\n\nA receipt shows payment. Read its purpose; ask the client if that is unclear.\n\nAsk of every record: Was it earned? Was it for the business? Is it supported? Is it already counted?",
       "clickableValues": [
         {
           "displayText": "Allowable Expense",
@@ -32,12 +29,19 @@
           "type": 1,
           "semanticKey": "BookTerm",
           "readOnly": true
+        },
+        {
+          "displayText": "Four Questions",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
         }
       ]
     },
     {
       "heading": "Section 5 – Count Once",
-      "body": "One payment can appear on several papers: a summary row, the supplier's bill, a draft list. It is still one cost, counted once.\n\nA bill or agreement that backs up a row already counted. Keep it with the worksheet as support, but do not add it again.\n\nPapers that share a reference number, such as an order or invoice number, usually describe the same transaction. Compare them before adding anything.\n\nAdd exactly the entries in one section, each once, using the amounts from their records. When an entry moves in or out, the old subtotal is out of date: work it out again.",
+      "body": "The same payment may appear on several papers. Count the transaction once.\n\nA bill can support an entry without becoming a second expense.\n\nCompare invoice and order references before adding a payment.\n\nAdd each included entry once. Recalculate when an entry changes.",
       "clickableValues": [
         {
           "displayText": "One Transaction, One Count",
@@ -71,7 +75,7 @@
     },
     {
       "heading": "Section 6 – Taxable Income",
-      "body": "All the income the year's records support, before anything is taken away.\n\nThe costs the records support for earning that income (Sections 4 and 5).\n\nGross income minus allowable expenses. This is the amount the rate table is applied to; it is not the tax.",
+      "body": "Supported income before expenses are taken away.\n\nSupported costs of earning that income (Sections 4–5).\n\nGross income minus allowable expenses. Apply the annual table to this amount, not to gross income.",
       "clickableValues": [
         {
           "displayText": "Gross Income",
@@ -97,50 +101,50 @@
       ]
     },
     {
-      "heading": "Section 7 – Annual Individual Table (2023 onwards)",
-      "body": "No tax.\n\n15% of the excess over 250,000.\n\n22,500 plus 20% of the excess over 400,000.\n\n102,500 plus 25% of the excess over 800,000.\n\n402,500 plus 30% of the excess over 2,000,000.\n\n2,202,500 plus 35% of the excess over 8,000,000.\n\nAnnual taxable income, for a whole year. Find the one row whose range holds the amount: each row starts just above the one before it and includes its own top figure.",
+      "heading": "Section 7 – Annual bands (2023 onwards)",
+      "body": "No tax.\n\n15% of the excess over 250,000.\n\n22,500 plus 20% of the excess over 400,000.\n\n102,500 plus 25% of the excess over 800,000.\n\n402,500 plus 30% of the excess over 2,000,000.\n\n2,202,500 plus 35% of the excess over 8,000,000.\n\nUse annual taxable income. Each range excludes its lower limit and includes its upper limit; the first includes zero.",
       "clickableValues": [
         {
           "displayText": "Up to 250,000",
-          "enumValue": "",
-          "type": 1,
-          "semanticKey": "BookTerm",
-          "readOnly": true
+          "enumValue": "IND-0",
+          "type": 2,
+          "semanticKey": "Level3:AnnualBand",
+          "readOnly": false
         },
         {
           "displayText": "Over 250,000 to 400,000",
-          "enumValue": "",
-          "type": 1,
-          "semanticKey": "BookTerm",
-          "readOnly": true
+          "enumValue": "IND-15",
+          "type": 2,
+          "semanticKey": "Level3:AnnualBand",
+          "readOnly": false
         },
         {
           "displayText": "Over 400,000 to 800,000",
-          "enumValue": "",
-          "type": 1,
-          "semanticKey": "BookTerm",
-          "readOnly": true
+          "enumValue": "IND-20",
+          "type": 2,
+          "semanticKey": "Level3:AnnualBand",
+          "readOnly": false
         },
         {
           "displayText": "Over 800,000 to 2,000,000",
-          "enumValue": "",
-          "type": 1,
-          "semanticKey": "BookTerm",
-          "readOnly": true
+          "enumValue": "IND-25",
+          "type": 2,
+          "semanticKey": "Level3:AnnualBand",
+          "readOnly": false
         },
         {
           "displayText": "Over 2,000,000 to 8,000,000",
-          "enumValue": "",
-          "type": 1,
-          "semanticKey": "BookTerm",
-          "readOnly": true
+          "enumValue": "IND-30",
+          "type": 2,
+          "semanticKey": "Level3:AnnualBand",
+          "readOnly": false
         },
         {
           "displayText": "Over 8,000,000",
-          "enumValue": "",
-          "type": 1,
-          "semanticKey": "BookTerm",
-          "readOnly": true
+          "enumValue": "IND-35",
+          "type": 2,
+          "semanticKey": "Level3:AnnualBand",
+          "readOnly": false
         },
         {
           "displayText": "Reading the Table",
@@ -153,7 +157,7 @@
     },
     {
       "heading": "Section 8 – Base Plus Excess",
-      "body": "The row's floor is where its range starts. Taxable income minus the floor is the excess.\n\nOnly the excess is multiplied by the row's rate; the income below the floor is already covered by the base tax.\n\nTax due is the row's base tax plus the tax on the excess. Keep every step on a tape, and round only the finished tax due to cents.\n\nPractice Design Studio (not a client) has taxable income of 350,000: its row starts at 250,000, so the excess is 100,000, and 15% of it is 15,000 tax due (that row has no base tax).",
+      "body": "Taxable income minus the band's floor gives the excess.\n\nMultiply only the excess by the band's rate.\n\nAdd the band's base tax. Round the finished tax due to cents.\n\nExample: Practice Design Studio has 350,000 taxable income. Excess: 100,000 over 250,000. At 15%, that is 15,000 tax due; base tax is zero.",
       "clickableValues": [
         {
           "displayText": "The Excess",
@@ -187,7 +191,7 @@
     },
     {
       "heading": "Section 9 – Credit Versus Expense",
-      "body": "An expense is a cost of earning income: allowable expenses come off gross income before the tax is worked out.\n\nTax withheld is different. When a payer withholds part of a payment, it pays that much of the payee's tax for them, and gives a certificate showing the payer, the payee, the period, the income payment and the tax withheld.\n\nThat tax is a credit. It comes off the tax due at the very end: tax due − credits = remaining payable. It is never another expense, and the income payment on the certificate is already in the payee's income records: count it once.\n\nUse the certificate's tax withheld, for the same payee and the same tax year. Practice Design Studio (not a client) owes 15,000 tax due and holds a certificate for 2,000 withheld: 15,000 − 2,000 = 13,000 still to pay. More credits than tax due leave a balance below zero: keep its sign.",
+      "body": "An allowable expense reduces income before tax is calculated.\n\nTax withheld is already paid for the payee. Its certificate identifies the payer, payee, period and amounts.\n\nTax due minus tax credits equals remaining payable. Example: 15,000 − 2,000 = 13,000. Keep a negative balance's sign.\n\nUse tax withheld for this payee and year. The certificate's income payment is already in the income records; never add it again.",
       "clickableValues": [
         {
           "displayText": "Expense",
@@ -221,7 +225,7 @@
     },
     {
       "heading": "Section 10 – Checking a Computation",
-      "body": "Check a computation in order: its sources and totals, taxable income, the rate row, tax due, then credits and the remaining payable. When one line is wrong, the lines built on it follow it: fix the first one, then recalculate what depends on it.\n\nReady for computation review means every line is supported and current. It is a recommendation to the Auditor, not filing a return or paying tax.\n\nNot Ready is an honest hold: use it while a line is still open. Holding a fully supported computation, or stamping Ready over an open line, sends it back.\n\nA stamp covers the sheet as it was when you stamped it. Any change afterwards makes it out of date: stamp the current sheet again before you hand it in.",
+      "body": "Check sources, taxable income, annual band, tax due, credits, then balance. Fix the earliest error first.\n\nReady means every line is supported and current. This review does not file a return or pay tax.\n\nUse Not Ready while a line needs work. Check it again before requesting approval.\n\nChanging a stamped sheet makes the stamp outdated. Stamp the current version before hand-in.",
       "clickableValues": [
         {
           "displayText": "Check in Order",
@@ -252,6 +256,37 @@
           "readOnly": true
         }
       ]
+    },
+    {
+      "heading": "Section 11 – Explaining the Client Copy",
+      "body": "Point to the amount still payable after credits, then explain what it means.\n\nTax due is the whole tax. Withheld tax is a payment toward it; the remaining balance is what is left.\n\nKeep the approved copy with the records that support it. An unexplained difference is a reason to check, not proof of intent.",
+      "clickableValues": [
+        {
+          "displayText": "Show the Balance",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        },
+        {
+          "displayText": "Separate Tax and Payment",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        },
+        {
+          "displayText": "Keep the Supporting Records",
+          "enumValue": "",
+          "type": 1,
+          "semanticKey": "BookTerm",
+          "readOnly": true
+        }
+      ]
     }
+  ],
+  "omitSharedSections": [
+    "Section 1",
+    "Section 2"
   ]
 }

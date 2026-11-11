@@ -11,3 +11,11 @@
 ## Current Cutscene2.0 status — 2026-10-21
 
 Routing now targets Cutscene2.0 and no runtime overlay subtitles/title card are built. The earlier missing-both-Timelines and subtitle-retiming notes are historical: EnvTimeline.playable is present for GUID 6c754999587818b498193e98e38ca657, while Cutscene2.0's other director still references absent GUID 50b7538047e10b04c824eebc6b82fb2f. Import that authored Timeline with its original metadata/bindings to restore its content; do not invent animation or rewrite the scene. Unity playback is pending. The existing skip/save contract remains unchanged. Authored text in the scene remains visible; only the generated overlay was removed.
+
+## Current subtitle update — 6 November 2026
+
+The user's new request supersedes the old no-overlay policy above. Cutscene2.0 now reuses the chapter subtitle renderer and real `EnvTimeline` dialogue-audio windows. The original 66-second estimated captions and track-with-most-clips guessing are no longer used for the current data. Missing/ambiguous audio references retain the measured JSON fallback; no guessed Timeline reconstruction occurs.
+
+CLIP 10's three caption groups follow its existing authored text beats; actual spoken-word alignment within that recording still needs listening-based acceptance. All 11 cues fit two lines at the shipped font/38px, but rendered placement/contrast, coexistence with authored scene text, safe areas and phone readability remain user checks. CoreAudio decoding through afconvert was unavailable in this environment; afinfo could inspect all source lengths. No audio listening or Unity playback was performed.
+
+The existing missing second Timeline reference is outside this subtitle change and remains unmodified. First-view Skip/viewed save and Office_Level1 continuation stay intact. Newest status/evidence is in PROGRESS.md.

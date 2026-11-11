@@ -6,6 +6,19 @@ public class SettingsManager : MonoBehaviour
 
     private const string MusicEnabledKey = "MusicEnabled";
     private const string SFXEnabledKey = "SFXEnabled";
+    private const string VoiceEnabledKey = "VoiceEnabled";
+
+    public bool GetVoiceEnabled() => PlayerPrefs.GetInt(VoiceEnabledKey, 1) == 1;
+
+    public void SetVoiceEnabled(bool enabled)
+    {
+        if (AudioManager.Instance != null) AudioManager.Instance.SetVoiceEnabled(enabled);
+        else
+        {
+            PlayerPrefs.SetInt(VoiceEnabledKey, enabled ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+    }
 
     private void Awake()
     {

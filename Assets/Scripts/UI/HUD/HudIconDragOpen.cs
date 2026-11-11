@@ -23,6 +23,7 @@ public sealed class HudIconDragOpen : MonoBehaviour,
     /// <summary>Opens the window at the drop point; returns true when it opened.</summary>
     public Func<Vector2, bool> OpenAt;
 
+    public Action<Vector2> Moved;
     private bool dragging;
 
     public bool IsDragging => dragging;
@@ -46,13 +47,14 @@ public sealed class HudIconDragOpen : MonoBehaviour,
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (dragging) Visual.Move(eventData.position);
+        if (dragging) { Visual.Move(eventData.position); Moved?.Invoke(eventData.position); }
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
         if (!dragging) return;
         dragging = false;
+        Moved?.Invoke(new Vector2(-10000f, -10000f));
 
         bool backOnIcon = RectTransformUtility.RectangleContainsScreenPoint((RectTransform)transform, eventData.position, null);
         if (!backOnIcon && OpenAt(eventData.position))
@@ -65,6 +67,7 @@ public sealed class HudIconDragOpen : MonoBehaviour,
     {
         if (!dragging) return;
         dragging = false;
+        Moved?.Invoke(new Vector2(-10000f, -10000f));
         Visual.Drop(Vector2.zero, HudDragOutcome.Returned);
     }
 }

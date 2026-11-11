@@ -1,0 +1,103 @@
+{
+  "_readme": [
+    "Level 3 T16 practice drill (6 November 2026): Bea's paper machine, from her handed-over records (fixture bea-table-restored, built with the real commands; nothing is saved).",
+    "Steps wait on Level 3 guide flags (Level3Checkpointer.Flag). The worksheet's grade and rewards here are practice only: the story's first check and claims never change."
+  ],
+  "id": "l3_machine",
+  "title": "Worth the Tax?",
+  "levelId": "Level_03",
+  "scene": "Office_Level3",
+  "start": "plaza",
+  "fixture": "bea-table-restored",
+  "objectivesDone": [],
+  "hide": [],
+  "guided": {
+    "goal": "Sort and check Bea's records",
+    "steps": [
+      {
+        "id": "l3m-intro",
+        "title": "WORTH THE TAX?",
+        "pages": [
+          {
+            "mood": "wow",
+            "text": "Practice with Bea's records. Nothing here changes your story."
+          }
+        ]
+      },
+      {
+        "id": "l3m-table",
+        "title": "WORTH THE TAX?",
+        "pages": [
+          {
+            "style": "hint",
+            "waitFor": "flag:atBeaTable",
+            "text": "Walk to Bea's table in the plaza and sit down."
+          }
+        ]
+      },
+      {
+        "use": "machine-batch-filed"
+      },
+      {
+        "id": "l3m-ready",
+        "title": "WORTH THE TAX?",
+        "pages": [
+          {
+            "style": "hint",
+            "waitFor": "flag:worksheetReady",
+            "text": "Check all three batches. Fix anything marked, then check again."
+          }
+        ]
+      },
+      {
+        "id": "l3m-done",
+        "title": "DRILL COMPLETE",
+        "pages": [
+          {
+            "mood": "wow",
+            "text": "All three batches checked. That's Bea's summary, ready for the office."
+          }
+        ]
+      }
+    ],
+    "hints": []
+  },
+  "mastery": {
+    "goal": "All three batches checked",
+    "steps": [
+      {
+        "id": "l3m-m-table",
+        "title": "WORTH THE TAX?",
+        "pages": [
+          {
+            "style": "hint",
+            "waitFor": "flag:atBeaTable",
+            "text": "Sit at Bea's table."
+          }
+        ]
+      },
+      {
+        "id": "l3m-m-ready",
+        "title": "WORTH THE TAX?",
+        "pages": [
+          {
+            "style": "hint",
+            "waitFor": "flag:worksheetReady",
+            "text": "Sort and check all three batches."
+          }
+        ]
+      },
+      {
+        "id": "l3m-m-done",
+        "title": "DRILL COMPLETE",
+        "pages": [
+          {
+            "mood": "wow",
+            "text": "All three batches checked."
+          }
+        ]
+      }
+    ],
+    "hints": []
+  }
+}

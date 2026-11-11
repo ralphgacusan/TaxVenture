@@ -138,6 +138,8 @@ public class InventoryCatalogue
     public const string ReviewedFile = "arthur_reviewed_file";
     /// <summary>T18: Rosa's four marked records from Mark the Money! (Level2AnnotatedPapers' icon).</summary>
     public const string MarkedRecords = "marked_records";
+    public const string BeaSummary = "bea_summary";
+    public const string BeaCertificate = "bea_certificate";
 
     public List<InventoryItemDefinition> items = new List<InventoryItemDefinition>();
     public List<InventoryJournalFact> journal = new List<InventoryJournalFact>();
@@ -235,6 +237,13 @@ public class InventoryCatalogue
             id = MarkedRecords, label = "Marked Records", category = CaseFiles, icon = "papers", required = true, container = true, scope = "Level_02",
             description = "Rosa's four records as you marked them at her desk: highlight and cards. Read them anywhere; compare them at your desk."
         });
+        catalogue.items.Add(new InventoryItemDefinition
+        {
+            id = BeaSummary, label = "Bea's Income & Expense Summary", category = CaseFiles, icon = "summary", required = true,
+            description = "Bea's checked income and supported expenses. Turn it over for the entries and their sources; return it to her stand or keep it in your Bag."
+        });
+        catalogue.items.Add(new InventoryItemDefinition { id = BeaCertificate, label = "Bea's Withholding Certificate", category = CaseFiles,
+            icon = "certificate", required = true, description = "Bea's printed withholding certificate. Read it from your Bag; transfer its amounts at your desk." });
         catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_marie", text = "You met Marie Bautista in the plaza and took a copy of her ID.", sourceItemId = ProfileBinder });
         catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_jhunjhun", text = "You met Jhun-jhun in the plaza and took a copy of his ID.", sourceItemId = ProfileBinder });
         catalogue.journal.Add(new InventoryJournalFact { id = "met-npc_milo", text = "You met Milo in the plaza and took a copy of his ID.", sourceItemId = ProfileBinder });

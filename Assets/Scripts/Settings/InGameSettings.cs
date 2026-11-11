@@ -207,7 +207,7 @@ public sealed class InGameSettings : MonoBehaviour
     // OPEN / CLOSE
     // =========================================================
 
-    public bool Open() => board != null && board.Open();
+    public bool Open() => !ChapterEndingSequence.BlocksGameplay && board != null && board.Open();
 
     /// <summary>Confirmed scene exit. Keep time frozen until the old scene is destroyed.</summary>
     public bool LeaveLevel(bool replay)

@@ -308,7 +308,7 @@ public class TaxCodeBookUI : MonoBehaviour
             {
                 sections = new List<TaxCodeSection>();
                 if (bookData != null && bookData.sections != null) sections.AddRange(bookData.sections);
-                sections.AddRange(LevelBookLeaves.Load(OfficeLevelProfile.LevelIdFor(this)));
+                sections.AddRange(LevelBookLeaves.Load(OfficeLevelProfile.LevelIdFor(this), sections));
             }
             return sections;
         }

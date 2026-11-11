@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e268a9d5fe74eba9cb6ad142e1caf2a, type: 3}
+  m_Name: chapter02_start
+  m_EditorClassIdentifier: Assembly-CSharp::ChapterCinematicVoiceCatalogue
+  entries:
+  - id: vo_ch02_start_01_marco
+    speaker: "Marco"
+    text: "Bayview's first records. More will follow."
+    variant: ""
+    clip: {fileID: 8300000, guid: 67904d68ce8a4ce0aace438af4a5168d, type: 3}
+  - id: vo_ch02_start_02_receptionist
+    speaker: "Receptionist"
+    text: "Start with the company details."
+    variant: ""
+    clip: {fileID: 8300000, guid: 1a8510cfe7ed40039745577b9300e3c1, type: 3}

@@ -16,6 +16,24 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
     /// </summary>
     public static System.Func<string, string> GreetingFilter;
 
+    /// <summary>
+    /// Optional level message the receptionist passes on after her greeting
+    /// (Level 3 T14: Mayor Quax's message once Bea's finding is saved). Null in
+    /// Levels 1 and 2. The owner sets it while enabled and clears only its own;
+    /// it supplies the lines and saves that the message was heard. Cancelling
+    /// the conversation saves nothing, so the message waits for the next talk.
+    /// </summary>
+    public interface ILevelMessage
+    {
+        bool MessagePending { get; }
+        System.Collections.Generic.List<DialogueLine> MessageLines();
+        void MessageHeard();
+    }
+
+    public static ILevelMessage LevelMessage;
+
+    private static bool MessageWaiting => LevelMessage != null && LevelMessage.MessagePending;
+
     // Stores which case this receptionist has already spoken to.
     // This automatically allows interaction again when a new case loads.
     private string spokenForCaseId = null;
@@ -87,6 +105,13 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
             Debug.LogError(
                 "[Receptionist] dialogueUI is NULL. Assign it in Inspector."
             );
+            return;
+        }
+
+        // A level message waits (Level 3 T14): she passes it on instead of the greeting.
+        if (MessageWaiting)
+        {
+            StartLevelMessage();
             return;
         }
 
@@ -217,6 +242,30 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
         }
     }
 
+    /// <summary>The level's message through the same dialogue and NPC states; heard only when it completes.</summary>
+    private void StartLevelMessage()
+    {
+        ILevelMessage owner = LevelMessage;
+        var lines = owner.MessageLines();
+        if (lines == null || lines.Count == 0) return;
+        INpcState priorNpcState = npcState.CurrentState;
+        bool admitted = dialogueUI.TryStartDialogue(
+            lines,
+            () =>
+            {
+                dialogueSessionActive = false;
+                npcState.ChangeState(new NpcCompletedState());
+                if (ReferenceEquals(LevelMessage, owner)) owner.MessageHeard();
+            },
+            () => OnConversationCancelled(priorNpcState),
+            this
+        );
+        if (!admitted) return;
+        dialogueSessionActive = true;
+        npcState.ChangeState(new NpcInteractState());
+        npcState.ChangeState(new NpcDialogueState());
+    }
+
     private void OnConversationCancelled(INpcState priorNpcState)
     {
         dialogueSessionActive = false;
@@ -252,8 +301,8 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
             CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
             return NpcAvailabilityRules.Receptionist(
                 def != null,
-                def != null && def.receptionistGreeting != null && def.receptionistGreeting.Count > 0,
-                def != null && spokenForCaseId == def.caseId);
+                def != null && ((def.receptionistGreeting != null && def.receptionistGreeting.Count > 0) || MessageWaiting),
+                def != null && spokenForCaseId == def.caseId && !MessageWaiting);
         }
     }
 
@@ -272,7 +321,7 @@ public class ReceptionistInteractable : MonoBehaviour, IInteractable, INpcAvaila
         string currentCaseId =
             CaseManager.Instance.CurrentDefinition.caseId;
 
-        if (spokenForCaseId == currentCaseId)
+        if (spokenForCaseId == currentCaseId && !MessageWaiting)
         {
             return "Receptionist";
         }

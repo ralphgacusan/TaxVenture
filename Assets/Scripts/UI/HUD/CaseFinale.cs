@@ -28,6 +28,7 @@ using UnityEngine.UI;
 /// (ClientCopyHandover). The scene then waits for the handover and plays
 /// afterwards with her farewell lines instead (she said her closing lines in
 /// the conversation). Each line may carry an emote, shown on the bubble.
+/// A chapter cutscene, when one plays, comes before this scene and its card.
 /// </summary>
 public sealed class CaseFinale : MonoBehaviour
 {
@@ -57,6 +58,8 @@ public sealed class CaseFinale : MonoBehaviour
     private bool WouldStage()
     {
         if (finished) return false;
+        if (OfficeLevelProfile.LevelIdFor(this) == Level3ChapterRules.LevelId)
+            return Running || Level3ClosingRules.StageOf(Level3Checkpointer.Active?.State) == Level3ClosingRules.Stage.Result;
         if (Running) return true;
         CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
         if (def == null || def.clientFinale == null || !def.clientFinale.enabled) return false;
@@ -132,7 +135,7 @@ public sealed class CaseFinale : MonoBehaviour
     private void HandleCaseCompleted()
     {
         // T08: the Client Copy handover comes first; it plays this scene when Marie has her copy.
-        if (ClientCopyHandover.Defers) return;
+        if (OfficeLevelProfile.LevelIdFor(this) == Level3ChapterRules.LevelId || ClientCopyHandover.Defers) return;
         Begin(quiet: false);
     }
 
@@ -148,11 +151,20 @@ public sealed class CaseFinale : MonoBehaviour
         if (Running) return;
         CaseDefinition def = CaseManager.Instance != null ? CaseManager.Instance.CurrentDefinition : null;
         settings = def != null ? def.clientFinale : null;
-        if (settings == null || !settings.enabled) return;
+        if (settings == null || !settings.enabled)
+        {
+            Debug.Log($"[CaseFinale] Not staged: case '{(def != null ? def.caseId : "none")}' has no enabled clientFinale.");
+            return;
+        }
 
         // Only when this case ends the level (the Level Complete card follows).
         CaseProgressionManager progression = CaseProgressionManager.Instance;
-        if (progression != null && progression.CurrentCaseNumber < progression.TotalCasesInLevel) return;
+        if (OfficeLevelProfile.LevelIdFor(this) != Level3ChapterRules.LevelId &&
+            progression != null && progression.CurrentCaseNumber < progression.TotalCasesInLevel)
+        {
+            Debug.Log($"[CaseFinale] Not staged: case {progression.CurrentCaseNumber} of {progression.TotalCasesInLevel} does not end the level.");
+            return;
+        }
 
         quietLines = quiet;
         Running = true;
@@ -165,7 +177,15 @@ public sealed class CaseFinale : MonoBehaviour
     private IEnumerator Play()
     {
         BuildUi();
-        yield return Fade(0f, 1f, 0.35f);
+        if (ChapterEndingSequence.HasHandled(OfficeLevelProfile.LevelIdFor(this)))
+        {
+            // Straight from the chapter cutscene's black curtain: no glimpse of the office,
+            // and stage only once its duplicate office set has left the scene.
+            black.alpha = 1f;
+            black.blocksRaycasts = true;
+            while (ChapterEndingSequence.CinematicLoaded) yield return null;
+        }
+        else yield return Fade(0f, 1f, 0.35f);
 
         // While the screen is dark: stage the conference room.
         bool staged = false;
@@ -181,6 +201,7 @@ public sealed class CaseFinale : MonoBehaviour
             yield break;
         }
 
+        Debug.Log($"[CaseFinale] Staged {settings.name} in the conference room.");
         yield return WaitReal(0.35f);
         // The room fades in; halfway through, the Level Complete card starts
         // its own pop-in animation.
@@ -210,6 +231,11 @@ public sealed class CaseFinale : MonoBehaviour
     /// <summary>How the current case went (first try and on time / one slip / more), for her lines.</summary>
     public static CaseFinaleRules.Tier TierNow()
     {
+        if (OfficeLevelProfile.LevelIdFor(SceneManager.GetActiveScene()) == Level3ChapterRules.LevelId)
+        {
+            Level3CaseProgress bea = Level3Checkpointer.Active?.State?.Case(Level3ChapterRules.BeaCaseId);
+            return CaseFinaleRules.TierFor(bea?.review?.returned ?? 0, bea?.review?.late != true, bea?.clock?.day ?? 1);
+        }
         // A review case (Level 2) knows its own returned submissions and cutoff.
         CaseReviewState review = CaseManager.Instance != null && CaseManager.Instance.CurrentCase != null
             ? CaseManager.Instance.CurrentCase.review : null;
@@ -308,11 +334,17 @@ public sealed class CaseFinale : MonoBehaviour
 
         clone = MakeVisualCopy(original.gameObject, scene);
         if (clone == null) return false;
+        realClient = original;
         // T08: after the handover the real Marie stands at this spot; she steps aside for her copy's shot.
         foreach (Renderer r in original.GetComponentsInChildren<Renderer>())
             if (r.enabled) { r.enabled = false; hiddenRenderers.Add(r); }
         foreach (NpcStatusMarker m in original.GetComponentsInChildren<NpcStatusMarker>())
             if (m.enabled) { m.enabled = false; disabledMarkers.Add(m); }
+
+        // The player may be standing in the room after the handover: never in the shot.
+        if (GuideTargets.Player != null)
+            foreach (Renderer r in GuideTargets.Player.GetComponentsInChildren<Renderer>())
+                if (r.enabled) { r.enabled = false; hiddenRenderers.Add(r); }
 
         // The real conference client (and its marker) steps aside for the shot.
         foreach (Renderer r in spot.GetComponentsInChildren<Renderer>())
@@ -368,7 +400,7 @@ public sealed class CaseFinale : MonoBehaviour
             Vector3 dir = Quaternion.Euler(0f, turn, 0f) * toRoom;
             Vector3 camPos = new Vector3(feet.x, 0f, feet.z) + dir * baseDistance * s + eye;
             Vector3 target = new Vector3(feet.x, eye.y, feet.z);
-            if (Physics.CheckSphere(camPos, 0.18f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) continue;
+            if (CameraSpotBlocked(camPos, spot)) continue;
             if (LineBlocked(camPos, target, spot)) continue;
             PlaceShot(camPos, target, dir);
             return true;
@@ -413,6 +445,25 @@ public sealed class CaseFinale : MonoBehaviour
         return false;
     }
 
+    private Transform realClient;
+
+    /// <summary>The people who step out of the shot don't block it, so a story run frames the same as a replay.</summary>
+    private bool OutOfShot(Transform t, Transform ignore)
+    {
+        if (ignore != null && t.IsChildOf(ignore)) return true;
+        if (realClient != null && t.IsChildOf(realClient)) return true;
+        Transform player = GuideTargets.Player;
+        return player != null && t.IsChildOf(player);
+    }
+
+    private bool CameraSpotBlocked(Vector3 position, Transform ignore)
+    {
+        int n = Physics.OverlapSphereNonAlloc(position, 0.18f, overlaps, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < n; i++)
+            if (!OutOfShot(overlaps[i].transform, ignore)) return true;
+        return false;
+    }
+
     private readonly RaycastHit[] lineHits = new RaycastHit[16];
 
     /// <summary>Something between the camera and her (the hidden real client at the spot doesn't count).</summary>
@@ -421,7 +472,7 @@ public sealed class CaseFinale : MonoBehaviour
         Vector3 d = to - from;
         int n = Physics.RaycastNonAlloc(from, d.normalized, lineHits, d.magnitude, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
         for (int i = 0; i < n; i++)
-            if (ignore == null || !lineHits[i].transform.IsChildOf(ignore)) return true;
+            if (!OutOfShot(lineHits[i].transform, ignore)) return true;
         return false;
     }
 
@@ -432,13 +483,7 @@ public sealed class CaseFinale : MonoBehaviour
         int n = Physics.OverlapCapsuleNonAlloc(feet + Vector3.up * 0.55f, feet + Vector3.up * 1.5f, 0.28f, overlaps,
             Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
         for (int i = 0; i < n; i++)
-        {
-            Transform t = overlaps[i].transform;
-            if (ignore != null && t.IsChildOf(ignore)) continue;
-            Transform player = GuideTargets.Player;
-            if (player != null && t.IsChildOf(player)) continue;
-            return true;
-        }
+            if (!OutOfShot(overlaps[i].transform, ignore)) return true;
         return false;
     }
 

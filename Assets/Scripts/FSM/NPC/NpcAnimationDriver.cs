@@ -102,6 +102,8 @@ public sealed class NpcAnimationDriver : MonoBehaviour
     private IdleAction currentAction, lastAction;
     private float actionStart, actionDuration, actionSign, nextActionTime;
     private Transform headBone, neckBone, spineBone, chestBone;
+    private HeadPose[] rigPoses;
+    private bool rigWasMoved;
     private bool bonesCachedLive;
     private int lineIndex;
     private ConversationMotion.LineMood lineMood;
@@ -214,6 +216,9 @@ public sealed class NpcAnimationDriver : MonoBehaviour
 
     private void Update()
     {
+        // Remove last frame's procedural layer before the Animator evaluates.
+        // Constant/omitted curves or a skipped evaluation must not retain it.
+        RestoreRigPose();
         // A model revealed later (Arthur) starts on the controller's default state: give it this NPC's own.
         if (activeStateHash == 0 && AnimatorOwnsPose)
             ApplyBehavior(isMoving && !ownsCurrentConversation ? Behavior.Walking : requestedBehavior);
@@ -832,8 +837,14 @@ public sealed class NpcAnimationDriver : MonoBehaviour
 
         if (bonesActive)
         {
-            // Runs after the Animator wrote this frame's pose, so offsets
-            // layer on top of the idle clip without accumulating.
+            // Keep the unmodified pose even when the Animator does not write
+            // every bone next frame (including paused or culled evaluation).
+            if (rigPoses == null) rigPoses = new HeadPose[4];
+            CacheRigPose(0, spineBone);
+            CacheRigPose(1, chestBone);
+            CacheRigPose(2, neckBone);
+            CacheRigPose(3, headBone);
+            rigWasMoved = true;
             float spineShare = chestBone != null ? 0.5f : 1f;
             RotateBone(spineBone, smoothedBody * spineShare);
             RotateBone(chestBone, smoothedBody * (1f - spineShare));
@@ -876,6 +887,20 @@ public sealed class NpcAnimationDriver : MonoBehaviour
         bone.rotation = root * Quaternion.Euler(euler) * Quaternion.Inverse(root) * bone.rotation;
     }
 
+    private void CacheRigPose(int index, Transform bone)
+    {
+        rigPoses[index].part = bone;
+        if (bone != null) rigPoses[index].localRotation = bone.localRotation;
+    }
+
+    private void RestoreRigPose()
+    {
+        if (!rigWasMoved) return;
+        foreach (HeadPose pose in rigPoses)
+            if (pose.part != null) pose.part.localRotation = pose.localRotation;
+        rigWasMoved = false;
+    }
+
     private void CacheBones()
     {
         if (animator == null || !animator.isHuman) return;
@@ -889,6 +914,7 @@ public sealed class NpcAnimationDriver : MonoBehaviour
 
     private void RestoreHead()
     {
+        RestoreRigPose();
         if (headPoses != null)
             foreach (HeadPose pose in headPoses)
                 if (pose.part != null)

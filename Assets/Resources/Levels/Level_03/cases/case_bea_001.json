@@ -33,8 +33,16 @@
     "businessAddress": "",
     "dependentCount": 0
   },
-  "requiredFields": [],
-  "missingFieldKeys": [],
+  "requiredFields": [
+    {
+      "key": "incomeSource",
+      "hint": "Use Income Sources in Section 3.",
+      "mistakeCost": "The income source must describe Bea's professional fees."
+    }
+  ],
+  "missingFieldKeys": [
+    "IncomeSource"
+  ],
   "documents": [
     {
       "documentName": "B-ID",
@@ -75,9 +83,9 @@
           "semanticKey": "B-ID/name"
         },
         {
-          "label": "ID number",
-          "displayValue": "•••• B26",
-          "correctValue": "•••• B26",
+          "label": "TIN",
+          "displayValue": "312-845-679-000",
+          "correctValue": "312-845-679-000",
           "type": "Text",
           "semanticKey": "B-ID/id-number"
         },
@@ -547,12 +555,12 @@
     },
     {
       "speaker": "Npc",
-      "text": "Before you meet her, try the calculator at your desk. Its tape keeps every step you attach.",
+      "text": "Bea is waiting at her table in the plaza with her records.",
       "portraitId": "default"
     },
     {
       "speaker": "Player",
-      "text": "Got it. The calculator first, then Bea.",
+      "text": "Got it. I'll go and meet her.",
       "portraitId": "Auditor_Default"
     }
   ],
@@ -958,6 +966,38 @@
       {
         "field": "finalTaxPayable",
         "amount": "50000.00"
+      }
+    ]
+  },
+  "clientFinale": {
+    "enabled": true,
+    "name": "Bea",
+    "modelPath": "Level3Gameplay/BeaTable/Bea",
+    "spotPath": "Environment/OfficeBuilding/Rooms/ConferenceRoom/Client",
+    "roomPath": "Environment/OfficeBuilding/Rooms/ConferenceRoom",
+    "floorPath": "Environment/OfficeBuilding/Rooms/ConferenceRoom/Floors",
+    "farewellGreat": [
+      {
+        "speaker": "Npc",
+        "text": "Now I understand what is left to pay. Thank you for walking me through it.",
+        "portraitId": "Bea_Default",
+        "emote": "heart"
+      }
+    ],
+    "farewellGood": [
+      {
+        "speaker": "Npc",
+        "text": "Thank you for checking the figures with me. I'll keep this copy with my records.",
+        "portraitId": "Bea_Default",
+        "emote": "music"
+      }
+    ],
+    "farewellOkay": [
+      {
+        "speaker": "Npc",
+        "text": "We got there together. I'll keep my receipts and this copy safe.",
+        "portraitId": "Bea_Default",
+        "emote": "heart"
       }
     ]
   }

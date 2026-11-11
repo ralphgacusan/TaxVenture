@@ -8,6 +8,8 @@ public class Level3HintSet
 {
     public List<string> decisions = new List<string>();
     public List<string> lines = new List<string>();
+    /// <summary>Revised T06 (optional): one short "where to look" line for the machine's compact cards; never the answer.</summary>
+    public string brief = "";
 }
 
 [Serializable]
@@ -66,6 +68,21 @@ public static class Level3WorksheetHints
 
     public static string For(string decisionId, int level) => For(Load(), decisionId, level);
 
+    /// <summary>
+    /// Revised T06: the paper machine's look-again line for a decision: its brief line (else hint 1) the
+    /// first time; hint 2 (the idea) after a repeated look-again. Never hint 3, which names the answer.
+    /// </summary>
+    public static string LookAgain(Level3HintFile file, string decisionId, bool repeated)
+    {
+        if (repeated) return For(file, decisionId, 2);
+        if (file?.hints != null)
+            foreach (Level3HintSet set in file.hints)
+                if (set?.decisions != null && set.decisions.Contains(decisionId) && !string.IsNullOrWhiteSpace(set.brief)) return set.brief.Trim();
+        return For(file, decisionId, 1);
+    }
+
+    public static string LookAgain(string decisionId, bool repeated) => LookAgain(Load(), decisionId, repeated);
+
     public static Level3HintFile Load()
     {
         if (cached != null) return cached;
@@ -91,31 +108,38 @@ public static class Level3WorksheetHints
     public static Level3HintFile BuiltIn()
     {
         var file = new Level3HintFile();
-        void Set(string[] ids, string a, string b, string c) => file.hints.Add(new Level3HintSet { decisions = new List<string>(ids), lines = new List<string> { a, b, c } });
+        void Set(string[] ids, string a, string b, string c, string brief = "") =>
+            file.hints.Add(new Level3HintSet { decisions = new List<string>(ids), lines = new List<string> { a, b, c }, brief = brief });
         Set(new[] { "dest-R1", "dest-R2" },
             "Read Bea's Studio fees sheet: who paid her, and for what work?",
             "Money Bea earned from her design work is what her costs are taken from.",
-            "Studio fees go in Income.");
+            "Studio fees go in Income.",
+            "Was it earned? Read who paid Bea, and for what work.");
         Set(new[] { "dest-R3", "dest-R4", "dest-R5" },
             "Read the cost schedule row and the record that backs it. Tax Code Book, Section 4: Costs and Purpose.",
             "This was paid for the studio's work, in 2026, and a record shows it.",
-            "A supported business cost of the year goes in Allowable expenses.");
+            "A supported business cost of the year goes in Allowable expenses.",
+            "For the business, and supported? Read its record. Book, Section 4.");
         Set(new[] { "dest-R6" },
             "Read the Party shop receipt again, or ask Bea: what was it for? Tax Code Book, Section 4.",
             "A cost lowers Bea's income only if it was spent to earn her fees. Her own celebration wasn't.",
-            "Put the party purchases in Not deductible.");
+            "Put the party purchases in Not deductible.",
+            "Was it for the business? Read the receipt, or ask Bea.");
         Set(new[] { "dest-R7" },
             "Compare the Print bill with the Cost schedule. Tax Code Book, Section 5: Count Once.",
             "Both papers show the same printing order, PRINT-26. Counting the bill as well would count it twice.",
-            "Keep the printing bill in Supporting only: it backs up the schedule's row.");
+            "Keep the printing bill in Supporting only: it backs up the schedule's row.",
+            "Already counted? Compare the Print bill with the Cost schedule.");
         Set(new[] { "reason-R6" },
             "Ask Bea what the party purchases were for.",
             "Was the dinner for the studio's work, or for her own celebration?",
-            "Choose Personal purpose.");
+            "Choose Personal purpose.",
+            "Which question does it fail? Think about what it was for.");
         Set(new[] { "reason-R7" },
             "Look for PRINT-26 on Bea's other papers. Tax Code Book, Section 5: Count Once.",
             "Bea's draft adds the printing bill on top of a cost schedule that already includes it.",
-            "Choose Already represented.");
+            "Choose Already represented.",
+            "Which question does it fail? Look for PRINT-26 on her papers.");
         Set(new[] { "related-R7" },
             "Which worksheet row already records the same printing order?",
             "Look for the row with the same reference, PRINT-26, on the Cost schedule.",

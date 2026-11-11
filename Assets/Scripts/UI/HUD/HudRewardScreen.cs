@@ -48,6 +48,12 @@ public sealed class RewardScreenData
     public string Footer;
     /// <summary>Text of the screen's own button (null keeps the scene's label).</summary>
     public string ButtonLabel;
+    /// <summary>
+    /// Optional second choice beside the screen's own button (Level 3 T14: stay in the
+    /// office). Both null (every other card): the single button stays centred, unchanged.
+    /// </summary>
+    public string SecondaryLabel;
+    public System.Action Secondary;
 
     /// <summary>
     /// A chapter's closing card (2026-10-26): on the right 60% of the screen over
@@ -106,6 +112,7 @@ public sealed class HudRewardScreen : MonoBehaviour
     private const float ButtonHeight = 76f;
     private const float ButtonWidth = 380f;
     private const float ButtonBottom = 30f;
+    private const float ButtonGap = 40f;
     private const float BarWidth = 600f;
     private const float BarHeight = 24f;
     private const float HeartSize = 44f;
@@ -203,6 +210,10 @@ public sealed class HudRewardScreen : MonoBehaviour
     private bool sideLayout;
     private Image backdropImage;
     private TextMeshProUGUI buttonLabel;
+    // Optional second choice (RewardScreenData.Secondary), built once beside the scene's button.
+    private RectTransform secondaryRect;
+    private TextMeshProUGUI secondaryLabel;
+    private System.Action secondaryAction;
     private RectTransform autoStrip;
     private float autoSeconds;
     private float autoElapsed;
@@ -523,6 +534,43 @@ public sealed class HudRewardScreen : MonoBehaviour
         }
     }
 
+    /// <summary>One centred button, or (with a second choice) the scene's button right and the second choice left.</summary>
+    private void LayoutButtons(RewardScreenData data)
+    {
+        bool two = continueButton != null && data.Secondary != null && !string.IsNullOrEmpty(data.SecondaryLabel);
+        secondaryAction = two ? data.Secondary : null;
+        if (two && secondaryRect == null) BuildSecondaryButton();
+        if (secondaryRect != null) secondaryRect.gameObject.SetActive(two);
+        if (continueButton != null) continueButton.anchoredPosition = new Vector2(two ? (ButtonWidth + ButtonGap) * 0.5f : 0f, ButtonBottom);
+        if (!two) return;
+        secondaryRect.anchoredPosition = new Vector2(-(ButtonWidth + ButtonGap) * 0.5f, ButtonBottom);
+        secondaryLabel.text = data.SecondaryLabel.ToUpperInvariant();
+    }
+
+    /// <summary>The second choice: the same size and font as the scene's button, a quieter face, no auto-size.</summary>
+    private void BuildSecondaryButton()
+    {
+        secondaryRect = HudTheme.CreateRect("Secondary Button", card);
+        secondaryRect.anchorMin = secondaryRect.anchorMax = new Vector2(0.5f, 0f);
+        secondaryRect.pivot = new Vector2(0.5f, 0f);
+        secondaryRect.sizeDelta = new Vector2(ButtonWidth, ButtonHeight);
+        Image face = HudTheme.AddImage(secondaryRect, HudTheme.Rounded, HudTheme.Track, 16f);
+        face.raycastTarget = true;
+        Button button = secondaryRect.gameObject.AddComponent<Button>();
+        button.targetGraphic = face;
+        button.onClick.AddListener(() =>
+        {
+            if (animating || revealHeld || secondaryAction == null) return;
+            AudioManager.Instance?.QueueInteractionSFX("continue");
+            secondaryAction.Invoke();
+        });
+        secondaryLabel = HudTheme.CreateLabel("Label", secondaryRect, "", 26f, HudTheme.TextPrimary, TextAlignmentOptions.Center, FontStyles.Bold);
+        secondaryLabel.characterSpacing = 3f;
+        secondaryLabel.enableAutoSizing = false;
+        HudTheme.Stretch(secondaryLabel.rectTransform, 10f);
+        secondaryRect.SetAsLastSibling();
+    }
+
     private static void SkinButton(Button button)
     {
         Image image = button.GetComponent<Image>();
@@ -590,6 +638,7 @@ public sealed class HudRewardScreen : MonoBehaviour
         glow = null;
 
         if (buttonLabel != null && !string.IsNullOrEmpty(data.ButtonLabel)) buttonLabel.text = data.ButtonLabel.ToUpperInvariant();
+        LayoutButtons(data);
         autoSeconds = sceneButton != null ? Mathf.Max(0f, data.AutoContinueSeconds) : 0f;
         autoElapsed = 0f;
         if (autoStrip != null) autoStrip.gameObject.SetActive(autoSeconds > 0f);
@@ -629,8 +678,9 @@ public sealed class HudRewardScreen : MonoBehaviour
         }
         if (!string.IsNullOrEmpty(data.Footer))
         {
-            Label(data.Footer, 21f, HudTheme.TextMuted, y, 28f);
-            y += 28f + 4f;
+            float footerHeight = data.Footer.Contains("\n") ? 64f : 32f;
+            Label(data.Footer, 21f, HudTheme.TextMuted, y, footerHeight);
+            y += footerHeight + 4f;
         }
 
         content.sizeDelta = new Vector2(ContentWidth, y);
@@ -851,11 +901,12 @@ public sealed class HudRewardScreen : MonoBehaviour
     private float BuildFacts(RewardScreenData data, float y)
     {
         if (data.Facts.Count == 0) return y;
-        RectTransform row = Rect("Facts", y, 52f);
+        RectTransform row = null;
         var chips = new List<RectTransform>();
-        float total = 0f;
+        float used = 0f, rowHeight = 52f;
         foreach (var fact in data.Facts)
         {
+            if (row == null) row = Rect("Facts", y, rowHeight);
             RectTransform chip = HudTheme.CreateRect("Fact " + fact.Key, row);
             HudTheme.AddImage(chip, HudTheme.Rounded, new Color(HudTheme.Brass.r, HudTheme.Brass.g, HudTheme.Brass.b, 0.55f), 14f);
             RectTransform chipFill = HudTheme.CreateRect("Fill", chip);
@@ -865,24 +916,38 @@ public sealed class HudRewardScreen : MonoBehaviour
                 $"<color=#A8B4C0><size=70%>{fact.Key.ToUpperInvariant()}</size></color>   {fact.Value}", 24f,
                 HudTheme.TextPrimary, TextAlignmentOptions.Center, FontStyles.Bold);
             text.enableAutoSizing = false;
-            float w = text.GetPreferredValues(text.text).x + 44f;
-            HudTheme.Stretch((RectTransform)text.transform);
+            float width = Mathf.Min(ContentWidth, text.GetPreferredValues(text.text).x + 44f);
+            if (chips.Count > 0 && used + 16f + width > ContentWidth)
+            {
+                CentreFactRow(chips, used);
+                y += rowHeight + 12f;
+                row = Rect("Facts", y, 52f);
+                chip.SetParent(row, false);
+                chips.Clear(); used = 0f; rowHeight = 52f;
+            }
+            text.textWrappingMode = TextWrappingModes.Normal;
+            float height = Mathf.Max(52f, text.GetPreferredValues(text.text, width - 32f, 0f).y + 12f);
+            HudTheme.Stretch((RectTransform)text.transform, 12f);
             chip.anchorMin = chip.anchorMax = new Vector2(0.5f, 1f);
             chip.pivot = new Vector2(0f, 1f);
-            chip.sizeDelta = new Vector2(w, 52f);
+            chip.sizeDelta = new Vector2(width, height);
+            used += (chips.Count > 0 ? 16f : 0f) + width;
+            rowHeight = Mathf.Max(rowHeight, height);
+            row.sizeDelta = new Vector2(row.sizeDelta.x, rowHeight);
             chips.Add(chip);
-            total += w;
         }
-        total += (chips.Count - 1) * 16f;
-        // Larger text must never push the chips past the card.
-        if (total > ContentWidth) row.localScale = new Vector3(ContentWidth / total, ContentWidth / total, 1f);
-        float x = -total * 0.5f;
+        CentreFactRow(chips, used);
+        return y + rowHeight + 20f;
+    }
+
+    private static void CentreFactRow(List<RectTransform> chips, float width)
+    {
+        float x = -width * 0.5f;
         foreach (RectTransform chip in chips)
         {
             chip.anchoredPosition = new Vector2(x, 0f);
             x += chip.sizeDelta.x + 16f;
         }
-        return y + 52f + 20f;
     }
 
     private float BuildRewardTiles(RewardScreenData data, float y)

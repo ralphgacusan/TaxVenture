@@ -3,7 +3,7 @@
     "Level 3: The Numbers Tell a Story. Two clients in order: Bea (case_bea_001), then the company (case_marine_001). Documentation/Level3TheNumbersTellAStory.",
     "caseIds are resource stems (Levels/Level_03/cases); the cases' own ids are L3-BEA-001 and L3-MARINE-001. The chapter phase (Level3ChapterRules), not the old case-to-case Continue, moves between them.",
     "officeFeatures: the shared office systems Office_Level3 uses. No 'finale': the chapter ends with its own wrap-up (T14), never the old single-case finale.",
-    "Career keeps Chapter 3 'coming soon' until T18 (Resources/Career/chapters.json).",
+    "Chapter 3 Career entry is enabled after completed Level 2 for the user-requested APK playtest (5 November 2026); T18 final release acceptance remains pending.",
     "Fields starting with '_' are notes and are ignored by the game."
   ],
   "levelId": "Level_03",
